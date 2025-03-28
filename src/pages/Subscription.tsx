@@ -24,10 +24,11 @@ interface PricingPlan {
   id: string;
   name: string;
   description: string;
-  monthlyPrice: number;
-  annualPrice: number;
+  monthlyPrice: number | null;
+  annualPrice: number | null;
   badge?: string;
   features: PlanFeature[];
+  comingSoon?: boolean;
 }
 
 const plans: PricingPlan[] = [
@@ -77,6 +78,23 @@ const plans: PricingPlan[] = [
       { name: "Prioridade no suporte", included: true },
     ],
   },
+  {
+    id: "global",
+    name: "Global Investor",
+    description: "Para investidores internacionais",
+    monthlyPrice: null,
+    annualPrice: null,
+    badge: "Em breve",
+    comingSoon: true,
+    features: [
+      { name: "Todas as funcionalidades do plano Premium", included: true },
+      { name: "Sincronização com corretoras internacionais", included: true },
+      { name: "Insights de IA para mercados globais", included: true },
+      { name: "Comparação entre mercados", included: true },
+      { name: "Análise de correlação global", included: true },
+      { name: "Suporte prioritário 24/7", included: true },
+    ],
+  },
 ];
 
 export default function Subscription() {
@@ -86,6 +104,11 @@ export default function Subscription() {
   const handleSubscribe = async (planId: string) => {
     if (planId === "free") {
       toast.success("Você já está no plano gratuito!");
+      return;
+    }
+
+    if (planId === "global") {
+      toast.info("Este plano estará disponível em breve. Fique atento às novidades!");
       return;
     }
 
@@ -134,7 +157,7 @@ export default function Subscription() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {plans.map((plan) => (
           <Card 
             key={plan.id} 
@@ -153,14 +176,22 @@ export default function Subscription() {
             </CardHeader>
             <CardContent className="flex-grow">
               <div className="flex items-baseline mb-6">
-                <span className="text-4xl font-bold">
-                  R$ {pricingPeriod === "monthly" 
-                    ? plan.monthlyPrice.toFixed(2).replace('.', ',') 
-                    : (plan.annualPrice * 0.8).toFixed(2).replace('.', ',')}
-                </span>
-                <span className="text-muted-foreground ml-2">
-                  {pricingPeriod === "monthly" ? "/mês" : "/ano"}
-                </span>
+                {plan.monthlyPrice !== null ? (
+                  <>
+                    <span className="text-4xl font-bold">
+                      R$ {pricingPeriod === "monthly" 
+                        ? plan.monthlyPrice.toFixed(2).replace('.', ',') 
+                        : ((plan.annualPrice || 0) * 0.8).toFixed(2).replace('.', ',')}
+                    </span>
+                    <span className="text-muted-foreground ml-2">
+                      {pricingPeriod === "monthly" ? "/mês" : "/ano"}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-3xl font-bold text-primary">
+                    Em breve
+                  </span>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -182,13 +213,15 @@ export default function Subscription() {
               <Button 
                 onClick={() => handleSubscribe(plan.id)} 
                 className="w-full" 
-                variant={plan.id === "free" ? "outline" : "default"}
+                variant={plan.id === "free" || plan.comingSoon ? "outline" : "default"}
                 disabled={loading[plan.id]}
               >
                 {loading[plan.id] ? (
                   "Processando..."
                 ) : plan.id === "free" ? (
                   "Plano Atual"
+                ) : plan.comingSoon ? (
+                  "Notifique-me"
                 ) : (
                   "Assinar Agora"
                 )}
