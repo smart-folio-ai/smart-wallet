@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { connectionsService } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { Check, CircleDollarSign, RefreshCw, Unlink, Wallet } from "lucide-react";
+import { Check, CircleDollarSign, RefreshCw, Star, Unlink, Wallet } from "lucide-react";
 
 // Mock data para brokerages e exchanges
 const brokerages = [

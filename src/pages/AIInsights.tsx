@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,8 +125,8 @@ const formatCurrency = (value: number) => {
 };
 
 const recommendationColors = {
-  compra: "success",
-  manter: "warning",
+  compra: "default",
+  manter: "secondary",
   venda: "destructive",
 } as const;
 
@@ -337,7 +336,7 @@ const AIInsights = () => {
                         {rec.premium && !isPremium && (
                           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-transparent to-background/90">
                             <div className="flex flex-col items-center">
-                              <Lock className="h-5 w-5 mb-1" />
+                              <Lock className="h-5 w-5" />
                               <span className="text-sm font-medium">Recurso Premium</span>
                             </div>
                           </div>
@@ -416,8 +415,7 @@ const AIInsights = () => {
                           </div>
                           <div className="text-right">
                             <Badge variant={
-                              // @ts-ignore
-                              recommendationColors[asset.recommendation] as any
+                              recommendationColors[asset.recommendation]
                             } className="capitalize">
                               {asset.recommendation}
                             </Badge>
@@ -503,7 +501,7 @@ const AIInsights = () => {
                       <p className="text-sm text-muted-foreground">Análise de curto prazo</p>
                     </div>
                     <Badge variant={
-                      insights.market.sentiment === "positivo" ? "success" : 
+                      insights.market.sentiment === "positivo" ? "default" : 
                       insights.market.sentiment === "negativo" ? "destructive" : "secondary"
                     } className="px-4 py-1 capitalize">
                       {insights.market.sentiment}
@@ -517,7 +515,7 @@ const AIInsights = () => {
                         <div key={index} className={`p-3 bg-card/50 rounded-lg flex justify-between items-center ${sector.premium && !isPremium ? 'relative overflow-hidden' : ''}`}>
                           <span className={sector.premium && !isPremium ? 'blur-sm' : ''}>{sector.name}</span>
                           <Badge variant={
-                            sector.trend === "positivo" ? "success" : 
+                            sector.trend === "positivo" ? "default" : 
                             sector.trend === "negativo" ? "destructive" : "secondary"
                           } className="capitalize">
                             {sector.trend}

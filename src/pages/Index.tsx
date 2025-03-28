@@ -1,13 +1,12 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { portfolioService } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowDown, ArrowUp, ChevronRight, Wallet } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Star, Wallet } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AreaChart, Bar, BarChart, ResponsiveContainer, Area, XAxis, YAxis, Tooltip } from "recharts";
+import { AreaChart, Bar, BarChart, ResponsiveContainer, Area, XAxis, YAxis, Tooltip, Cell } from "recharts";
 
 interface Asset {
   id: string;
