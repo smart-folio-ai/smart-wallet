@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { Asset } from "@/types/portfolio";
 import { formatCurrency } from "@/utils/formatters";
+import { Building, Coins, TrendingUp } from "lucide-react";
 
 interface AssetAllocationChartProps {
   loading: boolean;
