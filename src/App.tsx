@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import SyncAccounts from "./pages/SyncAccounts";
 import AIInsights from "./pages/AIInsights";
 import Subscription from "./pages/Subscription";
+import Portfolio from "./pages/Portfolio";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
                   <Route path="/sync-accounts" element={<SyncAccounts />} />
                   <Route path="/ai-insights" element={<AIInsights />} />
                   <Route path="/subscription" element={<Subscription />} />
+                  <Route path="/portfolio" element={<Portfolio />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
