@@ -1,19 +1,19 @@
+import React from 'react';
+import {Check, X, CircleDollarSign, Star, Calendar} from 'lucide-react';
+import {Button} from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {Badge} from '@/components/ui/badge';
+import {subscriptionService} from '@/lib/api';
+import {toast} from 'sonner';
 
-import React from "react";
-import { 
-  Check, 
-  X, 
-  CircleDollarSign, 
-  Star, 
-  Calendar
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { subscriptionService } from "@/lib/api";
-import { toast } from "sonner";
-
-type PricingPeriod = "monthly" | "annual";
+type PricingPeriod = 'monthly' | 'annual';
 
 interface PlanFeature {
   name: string;
@@ -33,124 +33,128 @@ interface PricingPlan {
 
 const plans: PricingPlan[] = [
   {
-    id: "free",
-    name: "Gratuito",
-    description: "Para investidores iniciantes",
+    id: 'free',
+    name: 'Gratuito',
+    description: 'Para investidores iniciantes',
     monthlyPrice: 0,
     annualPrice: 0,
     features: [
-      { name: "Dashboard de carteira", included: true },
-      { name: "Sincronização B3 (manual)", included: true },
-      { name: "Relatórios básicos", included: true },
-      { name: "Insights de IA", included: false },
-      { name: "Análise de criptomoedas", included: false },
-      { name: "Recomendações personalizadas", included: false },
+      {name: 'Dashboard de carteira', included: true},
+      {name: 'Sincronização B3 (manual)', included: true},
+      {name: 'Relatórios básicos', included: true},
+      {name: 'Insights de IA', included: false},
+      {name: 'Análise de criptomoedas', included: false},
+      {name: 'Recomendações personalizadas', included: false},
     ],
   },
   {
-    id: "pro",
-    name: "Investidor Pro",
-    description: "Para investidores focados em B3",
-    monthlyPrice: 14.90,
-    annualPrice: 14.90 * 12,
-    badge: "Popular",
+    id: 'pro',
+    name: 'Investidor Pro',
+    description: 'Para investidores focados em B3',
+    monthlyPrice: 14.9,
+    annualPrice: 14.9 * 12,
+    badge: 'Popular',
     features: [
-      { name: "Todas as funcionalidades do plano Gratuito", included: true },
-      { name: "Sincronização automática com B3", included: true },
-      { name: "Insights de IA para ativos B3", included: true },
-      { name: "Preço teto e suporte por ativo", included: true },
-      { name: "Recomendações de compra/venda", included: true },
-      { name: "Análise de criptomoedas", included: false },
+      {name: 'Todas as funcionalidades do plano Gratuito', included: true},
+      {name: 'Sincronização automática com B3', included: true},
+      {name: 'Insights de IA para ativos B3', included: true},
+      {name: 'Preço teto e suporte por ativo', included: true},
+      {name: 'Recomendações de compra/venda', included: true},
+      {name: 'Análise de criptomoedas', included: false},
     ],
   },
   {
-    id: "premium",
-    name: "Premium",
-    description: "Para investidores diversificados",
-    monthlyPrice: 24.90,
-    annualPrice: 24.90 * 12,
+    id: 'premium',
+    name: 'Premium',
+    description: 'Para investidores diversificados',
+    monthlyPrice: 24.9,
+    annualPrice: 24.9 * 12,
     features: [
-      { name: "Todas as funcionalidades do plano Pro", included: true },
-      { name: "Sincronização com exchanges de criptomoedas", included: true },
-      { name: "Insights de IA para criptomoedas", included: true },
-      { name: "Alertas de preço em tempo real", included: true },
-      { name: "Recomendações de portfólio completo", included: true },
-      { name: "Prioridade no suporte", included: true },
+      {name: 'Todas as funcionalidades do plano Pro', included: true},
+      {name: 'Sincronização com exchanges de criptomoedas', included: true},
+      {name: 'Insights de IA para criptomoedas', included: true},
+      {name: 'Alertas de preço em tempo real', included: true},
+      {name: 'Recomendações de portfólio completo', included: true},
+      {name: 'Prioridade no suporte', included: true},
     ],
   },
   {
-    id: "global",
-    name: "Global Investor",
-    description: "Para investidores internacionais",
+    id: 'global',
+    name: 'Global Investor',
+    description: 'Para investidores internacionais',
     monthlyPrice: null,
     annualPrice: null,
-    badge: "Em breve",
+    badge: 'Em breve',
     comingSoon: true,
     features: [
-      { name: "Todas as funcionalidades do plano Premium", included: true },
-      { name: "Sincronização com corretoras internacionais", included: true },
-      { name: "Insights de IA para mercados globais", included: true },
-      { name: "Comparação entre mercados", included: true },
-      { name: "Análise de correlação global", included: true },
-      { name: "Suporte prioritário 24/7", included: true },
+      {name: 'Todas as funcionalidades do plano Premium', included: true},
+      {name: 'Sincronização com corretoras internacionais', included: true},
+      {name: 'Insights de IA para mercados globais', included: true},
+      {name: 'Comparação entre mercados', included: true},
+      {name: 'Análise de correlação global', included: true},
+      {name: 'Suporte prioritário 24/7', included: true},
     ],
   },
 ];
 
 export default function Subscription() {
-  const [pricingPeriod, setPricingPeriod] = React.useState<PricingPeriod>("monthly");
+  const [pricingPeriod, setPricingPeriod] =
+    React.useState<PricingPeriod>('monthly');
   const [loading, setLoading] = React.useState<Record<string, boolean>>({});
 
   const handleSubscribe = async (planId: string) => {
-    if (planId === "free") {
-      toast.success("Você já está no plano gratuito!");
+    if (planId === 'free') {
+      toast.success('Você já está no plano gratuito!');
       return;
     }
 
-    if (planId === "global") {
-      toast.info("Este plano estará disponível em breve. Fique atento às novidades!");
+    if (planId === 'global') {
+      toast.info(
+        'Este plano estará disponível em breve. Fique atento às novidades!'
+      );
       return;
     }
 
-    setLoading({ ...loading, [planId]: true });
+    setLoading({...loading, [planId]: true});
     try {
       // Em um ambiente real, isso chamaria a API para iniciar o processo de checkout
       await subscriptionService.upgradePlan(planId);
-      toast.success("Redirecionando para o checkout...");
+      toast.success('Redirecionando para o checkout...');
     } catch (error) {
-      console.error("Erro ao iniciar assinatura:", error);
-      toast.error("Não foi possível iniciar o processo de assinatura. Tente novamente mais tarde.");
+      console.error('Erro ao iniciar assinatura:', error);
+      toast.error(
+        'Não foi possível iniciar o processo de assinatura. Tente novamente mais tarde.'
+      );
     } finally {
-      setLoading({ ...loading, [planId]: false });
+      setLoading({...loading, [planId]: false});
     }
   };
 
   return (
     <div className="container py-10">
       <div className="text-center max-w-3xl mx-auto mb-12">
-        <h1 className="text-4xl font-bold tracking-tight mb-3">Invista melhor com o SmartFolio</h1>
+        <h1 className="text-4xl font-bold tracking-tight mb-3">
+          Invista melhor com o SmartFolio
+        </h1>
         <p className="text-xl text-muted-foreground mb-8">
           Escolha o plano ideal para suas necessidades de investimento
         </p>
 
         <div className="flex items-center justify-center bg-muted p-1 rounded-lg w-fit mx-auto mb-8">
           <Button
-            variant={pricingPeriod === "monthly" ? "default" : "ghost"}
+            variant={pricingPeriod === 'monthly' ? 'default' : 'ghost'}
             className="rounded-lg"
-            onClick={() => setPricingPeriod("monthly")}
-          >
+            onClick={() => setPricingPeriod('monthly')}>
             Mensal
           </Button>
           <Button
-            variant={pricingPeriod === "annual" ? "default" : "ghost"}
+            variant={pricingPeriod === 'annual' ? 'default' : 'ghost'}
             className="rounded-lg"
-            onClick={() => setPricingPeriod("annual")}
-          >
+            onClick={() => setPricingPeriod('annual')}>
             <span>Anual</span>
             <Badge
               variant="outline"
-              className="ml-2 bg-primary/20 text-primary-foreground border-none"
-            >
+              className="ml-2 bg-primary/20 text-primary-foreground border-none">
               Economize 20%
             </Badge>
           </Button>
@@ -159,12 +163,11 @@ export default function Subscription() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {plans.map((plan) => (
-          <Card 
-            key={plan.id} 
+          <Card
+            key={plan.id}
             className={`flex flex-col h-full border-2 ${
               plan.badge ? 'border-primary' : 'border-border'
-            }`}
-          >
+            }`}>
             <CardHeader>
               {plan.badge && (
                 <Badge className="w-fit mb-2" variant="default">
@@ -179,12 +182,15 @@ export default function Subscription() {
                 {plan.monthlyPrice !== null ? (
                   <>
                     <span className="text-4xl font-bold">
-                      R$ {pricingPeriod === "monthly" 
-                        ? plan.monthlyPrice.toFixed(2).replace('.', ',') 
-                        : ((plan.annualPrice || 0) * 0.8).toFixed(2).replace('.', ',')}
+                      R${' '}
+                      {pricingPeriod === 'monthly'
+                        ? plan.monthlyPrice.toFixed(2).replace('.', ',')
+                        : ((plan.annualPrice || 0) * 0.8)
+                            .toFixed(2)
+                            .replace('.', ',')}
                     </span>
                     <span className="text-muted-foreground ml-2">
-                      {pricingPeriod === "monthly" ? "/mês" : "/ano"}
+                      {pricingPeriod === 'monthly' ? '/mês' : '/ano'}
                     </span>
                   </>
                 ) : (
@@ -202,7 +208,10 @@ export default function Subscription() {
                     ) : (
                       <X className="h-5 w-5 text-muted-foreground mr-2 flex-shrink-0" />
                     )}
-                    <span className={feature.included ? "" : "text-muted-foreground"}>
+                    <span
+                      className={
+                        feature.included ? '' : 'text-muted-foreground'
+                      }>
                       {feature.name}
                     </span>
                   </div>
@@ -210,21 +219,20 @@ export default function Subscription() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button 
-                onClick={() => handleSubscribe(plan.id)} 
-                className="w-full" 
-                variant={plan.id === "free" || plan.comingSoon ? "outline" : "default"}
-                disabled={loading[plan.id]}
-              >
-                {loading[plan.id] ? (
-                  "Processando..."
-                ) : plan.id === "free" ? (
-                  "Plano Atual"
-                ) : plan.comingSoon ? (
-                  "Notifique-me"
-                ) : (
-                  "Assinar Agora"
-                )}
+              <Button
+                onClick={() => handleSubscribe(plan.id)}
+                className="w-full"
+                variant={
+                  plan.id === 'free' || plan.comingSoon ? 'outline' : 'default'
+                }
+                disabled={loading[plan.id]}>
+                {loading[plan.id]
+                  ? 'Processando...'
+                  : plan.id === 'free'
+                  ? 'Plano Atual'
+                  : plan.comingSoon
+                  ? 'Notifique-me'
+                  : 'Assinar Agora'}
               </Button>
             </CardFooter>
           </Card>
@@ -236,12 +244,15 @@ export default function Subscription() {
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <CircleDollarSign className="h-6 w-6 text-primary" />
           </div>
-          <h3 className="text-lg font-semibold mb-2">Cancelamento a qualquer momento</h3>
+          <h3 className="text-lg font-semibold mb-2">
+            Cancelamento a qualquer momento
+          </h3>
           <p className="text-muted-foreground">
-            Você pode cancelar sua assinatura quando quiser, sem custos adicionais.
+            Você pode cancelar sua assinatura quando quiser, sem custos
+            adicionais.
           </p>
         </div>
-        
+
         <div className="flex flex-col items-center text-center">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <Star className="h-6 w-6 text-primary" />
@@ -251,14 +262,15 @@ export default function Subscription() {
             Devolução do valor integral em até 7 dias se não estiver satisfeito.
           </p>
         </div>
-        
+
         <div className="flex flex-col items-center text-center">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <Calendar className="h-6 w-6 text-primary" />
           </div>
           <h3 className="text-lg font-semibold mb-2">Suporte dedicado</h3>
           <p className="text-muted-foreground">
-            Nosso time de especialistas está pronto para ajudar você em sua jornada.
+            Nosso time de especialistas está pronto para ajudar você em sua
+            jornada.
           </p>
         </div>
       </div>
