@@ -1,12 +1,27 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { portfolioService } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowDown, ArrowUp, ChevronRight, Star, Wallet } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, CircleDollarSign, Star, Wallet } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AreaChart, Bar, BarChart, ResponsiveContainer, Area, XAxis, YAxis, Tooltip, Cell } from "recharts";
+import { 
+  AreaChart, 
+  Bar, 
+  BarChart, 
+  ResponsiveContainer, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  Cell, 
+  PieChart,
+  Pie,
+  Legend
+} from "recharts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Asset {
   id: string;
@@ -18,15 +33,23 @@ interface Asset {
   value: number;
   allocation: number;
   type: "stock" | "crypto" | "fii" | "other";
+  dividendYield?: number;
+  lastDividend?: number;
 }
 
 interface PortfolioSummary {
   totalValue: number;
   change24h: number;
   changePercentage24h: number;
+  totalDividends: number;
   distribution: {
     stocks: number;
     crypto: number;
+    fiis: number;
+    other: number;
+  };
+  dividendsByType: {
+    stocks: number;
     fiis: number;
     other: number;
   };
@@ -34,17 +57,29 @@ interface PortfolioSummary {
     date: string;
     value: number;
   }[];
+  lastDividends: {
+    date: string;
+    symbol: string;
+    value: number;
+    type: "stock" | "fii" | "other";
+  }[];
 }
 
 const mockSummary: PortfolioSummary = {
   totalValue: 25430.75,
   change24h: 452.30,
   changePercentage24h: 1.81,
+  totalDividends: 1250.45,
   distribution: {
     stocks: 45,
     crypto: 30,
     fiis: 20,
     other: 5,
+  },
+  dividendsByType: {
+    stocks: 420.30,
+    fiis: 780.15,
+    other: 50.00,
   },
   history: Array.from({ length: 30 }, (_, i) => {
     const date = new Date();
@@ -54,6 +89,38 @@ const mockSummary: PortfolioSummary = {
       value: 24000 + Math.random() * 3000,
     };
   }),
+  lastDividends: [
+    {
+      date: "2023-11-15",
+      symbol: "PETR4",
+      value: 120.50,
+      type: "stock",
+    },
+    {
+      date: "2023-11-10",
+      symbol: "HGLG11",
+      value: 182.75,
+      type: "fii",
+    },
+    {
+      date: "2023-10-28",
+      symbol: "ITSA4",
+      value: 87.20,
+      type: "stock",
+    },
+    {
+      date: "2023-10-15",
+      symbol: "XPLG11",
+      value: 152.60,
+      type: "fii",
+    },
+    {
+      date: "2023-10-05",
+      symbol: "BBAS3",
+      value: 95.70,
+      type: "stock",
+    }
+  ]
 };
 
 const mockAssets: Asset[] = [
@@ -67,6 +134,8 @@ const mockAssets: Asset[] = [
     value: 3045.00,
     allocation: 12,
     type: "stock",
+    dividendYield: 12.5,
+    lastDividend: 1.25,
   },
   {
     id: "2",
@@ -78,6 +147,8 @@ const mockAssets: Asset[] = [
     value: 3285.00,
     allocation: 13,
     type: "stock",
+    dividendYield: 8.7,
+    lastDividend: 0.85,
   },
   {
     id: "3",
@@ -100,6 +171,8 @@ const mockAssets: Asset[] = [
     value: 4815.00,
     allocation: 19,
     type: "fii",
+    dividendYield: 9.2,
+    lastDividend: 1.38,
   },
   {
     id: "5",
@@ -117,6 +190,12 @@ const mockAssets: Asset[] = [
 const ALLOCATION_COLORS = {
   stocks: "#22c55e",
   crypto: "#3b82f6",
+  fiis: "#8b5cf6",
+  other: "#f59e0b",
+};
+
+const DIVIDEND_COLORS = {
+  stocks: "#22c55e",
   fiis: "#8b5cf6",
   other: "#f59e0b",
 };
@@ -171,6 +250,12 @@ const Dashboard = () => {
     { name: "Cripto", value: summary.distribution.crypto, color: ALLOCATION_COLORS.crypto },
     { name: "FIIs", value: summary.distribution.fiis, color: ALLOCATION_COLORS.fiis },
     { name: "Outros", value: summary.distribution.other, color: ALLOCATION_COLORS.other },
+  ] : [];
+
+  const dividendsByTypeData = summary ? [
+    { name: "Ações", value: summary.dividendsByType.stocks, color: DIVIDEND_COLORS.stocks },
+    { name: "FIIs", value: summary.dividendsByType.fiis, color: DIVIDEND_COLORS.fiis },
+    { name: "Outros", value: summary.dividendsByType.other, color: DIVIDEND_COLORS.other },
   ] : [];
 
   return (
@@ -311,6 +396,106 @@ const Dashboard = () => {
         </Card>
       </div>
       
+      {/* Dividends Card */}
+      <Card className="mb-8 card-gradient">
+        <CardHeader className="pb-2">
+          <CardTitle>Dividendos</CardTitle>
+          <CardDescription>Resumo dos dividendos recebidos</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              {loading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-12 w-48" />
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-44 w-full" />
+                </div>
+              ) : (
+                <>
+                  <div className="mb-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <CircleDollarSign className="h-6 w-6 text-green-500" />
+                      <h3 className="text-2xl font-bold text-primary">
+                        {formatCurrency(summary?.totalDividends || 0)}
+                      </h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Total de dividendos recebidos</p>
+                  </div>
+                  
+                  <div className="h-52">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={dividendsByTypeData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={80}
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {dividendsByTypeData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value) => [formatCurrency(Number(value)), "Valor"]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <div>
+              <h4 className="font-medium mb-4">Últimos Dividendos Recebidos</h4>
+              {loading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-auto max-h-64">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Ativo</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {summary?.lastDividends.map((dividend) => (
+                        <TableRow key={`${dividend.symbol}-${dividend.date}`}>
+                          <TableCell className="font-medium">
+                            {new Date(dividend.date).toLocaleDateString('pt-BR')}
+                          </TableCell>
+                          <TableCell>{dividend.symbol}</TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(dividend.value)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              
+              <div className="flex justify-end mt-4">
+                <a href="/dividends" className="text-primary hover:underline flex items-center text-sm">
+                  <span className="mr-1">Ver histórico completo</span>
+                  <ChevronRight className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
       {/* Assets */}
       <Card className="mb-8 card-gradient">
         <CardHeader className="pb-2">
@@ -360,6 +545,11 @@ const Dashboard = () => {
                         <p className={`text-sm ${asset.change24h >= 0 ? 'text-success' : 'text-destructive'}`}>
                           {asset.change24h >= 0 ? '+' : ''}{asset.change24h.toFixed(2)}%
                         </p>
+                        {asset.dividendYield && (
+                          <p className="text-xs text-muted-foreground">
+                            Dividend: {asset.dividendYield.toFixed(2)}%
+                          </p>
+                        )}
                       </div>
                       <ChevronRight className="ml-2 h-5 w-5 text-muted-foreground" />
                     </div>
