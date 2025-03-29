@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -71,9 +70,12 @@ interface Asset {
   lastDividend?: number;
   sector?: string;
   purchasePrice?: number;
+  avgPrice?: number;
   purchaseDate?: string;
   profitLoss?: number;
   profitLossPercentage?: number;
+  aiRecommendation?: "buy" | "hold" | "sell";
+  aiConfidence?: number;
   history?: {
     date: string;
     price: number;
@@ -106,9 +108,12 @@ const mockAssets: Asset[] = [
     lastDividend: 1.25,
     sector: "Petróleo e Gás",
     purchasePrice: 28.75,
+    avgPrice: 28.75,
     purchaseDate: "2023-05-15",
     profitLoss: 170.00,
     profitLossPercentage: 5.91,
+    aiRecommendation: "hold",
+    aiConfidence: 75,
     history: Array.from({ length: 30 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (29 - i));
@@ -138,9 +143,12 @@ const mockAssets: Asset[] = [
     lastDividend: 0.85,
     sector: "Mineração",
     purchasePrice: 62.30,
+    avgPrice: 62.30,
     purchaseDate: "2023-03-10",
     profitLoss: 170.00,
     profitLossPercentage: 5.45,
+    aiRecommendation: "buy",
+    aiConfidence: 82,
     history: Array.from({ length: 30 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (29 - i));
@@ -167,9 +175,12 @@ const mockAssets: Asset[] = [
     allocation: 22,
     type: "crypto",
     purchasePrice: 200000.00,
+    avgPrice: 195000.00,
     purchaseDate: "2023-01-15",
     profitLoss: 625.00,
     profitLossPercentage: 12.5,
+    aiRecommendation: "buy",
+    aiConfidence: 88,
     history: Array.from({ length: 30 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (29 - i));
@@ -193,9 +204,12 @@ const mockAssets: Asset[] = [
     lastDividend: 1.38,
     sector: "Logística",
     purchasePrice: 155.20,
+    avgPrice: 152.45,
     purchaseDate: "2023-02-20",
     profitLoss: 159.00,
     profitLossPercentage: 3.41,
+    aiRecommendation: "buy",
+    aiConfidence: 79,
     history: Array.from({ length: 30 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (29 - i));
@@ -224,9 +238,12 @@ const mockAssets: Asset[] = [
     allocation: 10,
     type: "crypto",
     purchasePrice: 13000.00,
+    avgPrice: 13250.00,
     purchaseDate: "2023-04-10",
     profitLoss: -100.00,
     profitLossPercentage: -4.0,
+    aiRecommendation: "hold",
+    aiConfidence: 65,
     history: Array.from({ length: 30 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (29 - i));
@@ -250,9 +267,12 @@ const mockAssets: Asset[] = [
     lastDividend: 0.95,
     sector: "Títulos e Valores Mobiliários",
     purchasePrice: 90.50,
+    avgPrice: 91.75,
     purchaseDate: "2023-06-05",
     profitLoss: 117.50,
     profitLossPercentage: 5.19,
+    aiRecommendation: "hold",
+    aiConfidence: 70,
     history: Array.from({ length: 30 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (29 - i));
@@ -284,9 +304,12 @@ const mockAssets: Asset[] = [
     lastDividend: 0.15,
     sector: "Financeiro",
     purchasePrice: 11.90,
+    avgPrice: 11.95,
     purchaseDate: "2023-07-20",
     profitLoss: 90.00,
     profitLossPercentage: 3.78,
+    aiRecommendation: "sell",
+    aiConfidence: 68,
     history: Array.from({ length: 30 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (29 - i));
@@ -313,9 +336,12 @@ const mockAssets: Asset[] = [
     allocation: 5,
     type: "crypto",
     purchasePrice: 2.90,
+    avgPrice: 2.85,
     purchaseDate: "2023-08-15",
     profitLoss: 140.00,
     profitLossPercentage: 12.07,
+    aiRecommendation: "hold",
+    aiConfidence: 60,
     history: Array.from({ length: 30 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (29 - i));
@@ -764,6 +790,8 @@ const Portfolio = () => {
                   <SelectItem value="value" onClick={() => requestSort('value')}>Valor</SelectItem>
                   <SelectItem value="change" onClick={() => requestSort('change24h')}>Variação</SelectItem>
                   <SelectItem value="allocation" onClick={() => requestSort('allocation')}>Alocação</SelectItem>
+                  <SelectItem value="avgPrice" onClick={() => requestSort('avgPrice')}>Preço Médio</SelectItem>
+                  <SelectItem value="aiRecommendation" onClick={() => requestSort('aiRecommendation')}>Recomendação IA</SelectItem>
                   {activeTab !== "crypto" && (
                     <SelectItem value="dividendYield" onClick={() => requestSort('dividendYield')}>Dividend Yield</SelectItem>
                   )}
@@ -839,6 +867,19 @@ const Portfolio = () => {
                        selectedAsset.type === 'fii' ? 'FII' : 
                        selectedAsset.type === 'crypto' ? 'Cripto' : 'Outro'}
                     </Badge>
+                    {selectedAsset.aiRecommendation && (
+                      <Badge 
+                        className={`ml-2 ${
+                          selectedAsset.aiRecommendation === 'buy' ? 'bg-success/20 text-success' : 
+                          selectedAsset.aiRecommendation === 'sell' ? 'bg-destructive/20 text-destructive' : 
+                          'bg-yellow-500/20 text-yellow-500'
+                        }`}
+                      >
+                        {selectedAsset.aiRecommendation === 'buy' ? 'Comprar' : 
+                         selectedAsset.aiRecommendation === 'sell' ? 'Vender' : 
+                         'Manter'}
+                      </Badge>
+                    )}
                   </h2>
                   <p className="text-muted-foreground">{selectedAsset.name}</p>
                 </div>
@@ -853,6 +894,10 @@ const Portfolio = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Preço Atual</span>
                       <span className="font-medium">{formatCurrency(selectedAsset.price)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Preço Médio</span>
+                      <span className="font-medium">{formatCurrency(selectedAsset.avgPrice || 0)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Quantidade</span>
@@ -898,6 +943,20 @@ const Portfolio = () => {
                         {formatPercentage(selectedAsset.profitLossPercentage || 0)}
                       </span>
                     </div>
+                    {selectedAsset.aiRecommendation && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Recomendação IA</span>
+                        <span className={`font-medium ${
+                          selectedAsset.aiRecommendation === 'buy' ? 'text-success' : 
+                          selectedAsset.aiRecommendation === 'sell' ? 'text-destructive' : 
+                          'text-yellow-500'
+                        }`}>
+                          {selectedAsset.aiRecommendation === 'buy' ? 'Comprar' : 
+                           selectedAsset.aiRecommendation === 'sell' ? 'Vender' : 
+                           'Manter'} ({selectedAsset.aiConfidence}%)
+                        </span>
+                      </div>
+                    )}
                     {(selectedAsset.type === 'stock' || selectedAsset.type === 'fii') && (
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Dividend Yield</span>
@@ -1008,6 +1067,30 @@ const AssetsList = ({ assets, loading, onAssetClick, requestSort, sortConfig }: 
     );
   };
 
+  // Helper function to get recommendation badge color
+  const getRecommendationColor = (recommendation?: 'buy' | 'hold' | 'sell') => {
+    if (!recommendation) return '';
+    
+    switch(recommendation) {
+      case 'buy': return 'bg-success/20 text-success';
+      case 'sell': return 'bg-destructive/20 text-destructive';
+      case 'hold': return 'bg-yellow-500/20 text-yellow-500';
+      default: return '';
+    }
+  };
+
+  // Helper function to translate recommendation
+  const translateRecommendation = (recommendation?: 'buy' | 'hold' | 'sell') => {
+    if (!recommendation) return '-';
+    
+    switch(recommendation) {
+      case 'buy': return 'Comprar';
+      case 'sell': return 'Vender';
+      case 'hold': return 'Manter';
+      default: return '-';
+    }
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -1025,10 +1108,18 @@ const AssetsList = ({ assets, loading, onAssetClick, requestSort, sortConfig }: 
             </TableHead>
             <TableHead 
               className="cursor-pointer hover:text-primary"
+              onClick={() => requestSort('avgPrice')}
+            >
+              <div className="flex items-center">
+                Preço Médio {getSortIcon('avgPrice')}
+              </div>
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer hover:text-primary"
               onClick={() => requestSort('change24h')}
             >
               <div className="flex items-center">
-                Variação 24h {getSortIcon('change24h')}
+                Var. 24h {getSortIcon('change24h')}
               </div>
             </TableHead>
             <TableHead 
@@ -1036,7 +1127,7 @@ const AssetsList = ({ assets, loading, onAssetClick, requestSort, sortConfig }: 
               onClick={() => requestSort('amount')}
             >
               <div className="flex items-center">
-                Quantidade {getSortIcon('amount')}
+                Qtd. {getSortIcon('amount')}
               </div>
             </TableHead>
             <TableHead 
@@ -1045,6 +1136,14 @@ const AssetsList = ({ assets, loading, onAssetClick, requestSort, sortConfig }: 
             >
               <div className="flex items-center justify-end">
                 Valor {getSortIcon('value')}
+              </div>
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer hover:text-primary"
+              onClick={() => requestSort('aiRecommendation')}
+            >
+              <div className="flex items-center">
+                Recomendação IA {getSortIcon('aiRecommendation')}
               </div>
             </TableHead>
             <TableHead 
@@ -1061,14 +1160,14 @@ const AssetsList = ({ assets, loading, onAssetClick, requestSort, sortConfig }: 
           {loading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <TableRow key={i}>
-                <TableCell colSpan={7}>
+                <TableCell colSpan={8}>
                   <div className="h-10 animate-pulse bg-muted rounded" />
                 </TableCell>
               </TableRow>
             ))
           ) : assets.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+              <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                 Nenhum ativo encontrado
               </TableCell>
             </TableRow>
@@ -1099,6 +1198,7 @@ const AssetsList = ({ assets, loading, onAssetClick, requestSort, sortConfig }: 
                   <div className="text-xs text-muted-foreground">{asset.name}</div>
                 </TableCell>
                 <TableCell>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(asset.price)}</TableCell>
+                <TableCell>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(asset.avgPrice || 0)}</TableCell>
                 <TableCell>
                   <div className={`flex items-center ${asset.change24h >= 0 ? 'text-success' : 'text-destructive'}`}>
                     {asset.change24h >= 0 ? (
@@ -1111,6 +1211,15 @@ const AssetsList = ({ assets, loading, onAssetClick, requestSort, sortConfig }: 
                 </TableCell>
                 <TableCell>{asset.amount}</TableCell>
                 <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(asset.value)}</TableCell>
+                <TableCell>
+                  {asset.aiRecommendation ? (
+                    <Badge className={getRecommendationColor(asset.aiRecommendation)}>
+                      {translateRecommendation(asset.aiRecommendation)}
+                    </Badge>
+                  ) : (
+                    <span>-</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end">
                     <span className="mr-2">{asset.allocation}%</span>
