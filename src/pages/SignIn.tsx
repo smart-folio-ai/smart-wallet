@@ -23,12 +23,14 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Checkbox } from "@/components/ui/checkbox";
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
 
 const formSchema = z.object({
   email: z.string().email('Digite um email válido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  rememberMe: z.boolean().optional().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -42,6 +44,7 @@ export default function Login() {
     defaultValues: {
       email: '',
       password: '',
+      rememberMe: false,
     },
   });
 
@@ -52,6 +55,13 @@ export default function Login() {
     // For demonstration purposes, we'll simulate a successful login
     setTimeout(() => {
       toast.success('Login realizado com sucesso!');
+      
+      // If rememberMe is true, you could set a token with longer expiration in localStorage
+      if (data.rememberMe) {
+        console.log('User will be kept connected');
+        // In a real app, you would store this preference
+      }
+      
       navigate('/');
     }, 1000);
   };
@@ -134,6 +144,27 @@ export default function Login() {
                         </Button>
                       </div>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="rememberMe"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="data-[state=checked]:bg-primary"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="font-normal text-sm">
+                          Manter conectado
+                        </FormLabel>
+                      </div>
                     </FormItem>
                   )}
                 />
