@@ -4,7 +4,7 @@ import {useNavigate} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-import {Eye, EyeOff, LogIn, User} from 'lucide-react';
+import {Eye, EyeOff, LogIn, Mail, User} from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -23,46 +23,49 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Checkbox } from "@/components/ui/checkbox";
+import {Checkbox} from "@/components/ui/checkbox";
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
 
 const formSchema = z.object({
+  name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Digite um email válido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-  rememberMe: z.boolean().optional().default(false),
+  confirmPassword: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  acceptTerms: z.boolean().refine(value => value === true, {
+    message: 'Você precisa aceitar os termos para continuar',
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não correspondem",
+  path: ["confirmPassword"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function Login() {
+export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
-      rememberMe: false,
+      confirmPassword: '',
+      acceptTerms: false,
     },
   });
 
   const onSubmit = (data: FormValues) => {
-    // In a real app, you would authenticate with a server here
+    // In a real app, you would register with a server here
     console.log('Form submitted:', data);
 
-    // For demonstration purposes, we'll simulate a successful login
+    // For demonstration purposes, we'll simulate a successful registration
     setTimeout(() => {
-      toast.success('Login realizado com sucesso!');
-      
-      // If rememberMe is true, you could set a token with longer expiration in localStorage
-      if (data.rememberMe) {
-        console.log('User will be kept connected');
-        // In a real app, you would store this preference
-      }
-      
-      navigate('/');
+      toast.success('Conta criada com sucesso!');
+      navigate('/login');
     }, 1000);
   };
 
@@ -78,10 +81,10 @@ export default function Login() {
 
           <CardHeader className="relative">
             <CardTitle className="text-2xl font-bold text-center">
-              Bem-vindo ao SmartFolio
+              Criar uma conta
             </CardTitle>
             <CardDescription className="text-center">
-              Entre com suas credenciais para acessar sua conta
+              Preencha os dados abaixo para se cadastrar
             </CardDescription>
           </CardHeader>
 
@@ -90,6 +93,27 @@ export default function Login() {
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>Nome completo</FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                          <Input
+                            placeholder="Seu nome completo"
+                            {...field}
+                            className="pl-10"
+                          />
+                        </FormControl>
+                        <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="email"
@@ -104,7 +128,7 @@ export default function Login() {
                             className="pl-10"
                           />
                         </FormControl>
-                        <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                        <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -150,7 +174,44 @@ export default function Login() {
 
                 <FormField
                   control={form.control}
-                  name="rememberMe"
+                  name="confirmPassword"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>Confirmar senha</FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                          <Input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            {...field}
+                            className="pl-10"
+                          />
+                        </FormControl>
+                        <LogIn className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1 h-8 w-8"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                          <span className="sr-only">
+                            {showConfirmPassword ? 'Esconder senha' : 'Mostrar senha'}
+                          </span>
+                        </Button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="acceptTerms"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                       <FormControl>
@@ -162,7 +223,7 @@ export default function Login() {
                       </FormControl>
                       <div className="space-y-1 leading-none">
                         <FormLabel className="font-normal text-sm">
-                          Manter conectado
+                          Eu aceito os <a href="#" className="text-primary hover:underline">Termos de Serviço</a> e <a href="#" className="text-primary hover:underline">Política de Privacidade</a>
                         </FormLabel>
                       </div>
                     </FormItem>
@@ -173,16 +234,10 @@ export default function Login() {
                   type="submit"
                   className="w-full success-gradient border-0"
                   size="lg">
-                  Entrar
+                  Criar conta
                 </Button>
               </form>
             </Form>
-
-            <div className="text-center">
-              <a href="/forgot-password" className="text-sm text-primary hover:underline">
-                Esqueceu sua senha?
-              </a>
-            </div>
           </CardContent>
 
           <CardFooter className="relative flex flex-col space-y-4 pt-0">
@@ -195,21 +250,9 @@ export default function Login() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => navigate('/register')}>
-              Criar uma conta
+              onClick={() => navigate('/login')}>
+              Já tenho uma conta
             </Button>
-
-            <p className="text-xs text-center text-muted-foreground">
-              Ao entrar, você concorda com nossos{' '}
-              <a href="#" className="text-primary hover:underline">
-                Termos de Serviço
-              </a>{' '}
-              e{' '}
-              <a href="#" className="text-primary hover:underline">
-                Política de Privacidade
-              </a>
-              .
-            </p>
           </CardFooter>
         </Card>
       </div>
