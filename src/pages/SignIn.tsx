@@ -22,12 +22,15 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {Checkbox} from '@/components/ui/checkbox';
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
+import AuthenticationService from '../services/authentication';
 
 const formSchema = z.object({
   email: z.string().email('Digite um email válido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  keepConnect: z.boolean().optional().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -41,22 +44,31 @@ export default function Login() {
     defaultValues: {
       email: '',
       password: '',
+      keepConnect: false,
     },
   });
 
-  const onSubmit = (data: FormValues) => {
-    // In a real app, you would authenticate with a server here
-    console.log('Form submitted:', data);
+  const onSubmit = async (data: FormValues) => {
+    const response: boolean = await AuthenticationService.authenticate(
+      data.email,
+      data.password,
+      data.keepConnect
+    );
+    if (!response) {
+      toast.error(
+        'Erro ao realizar login. Verifique suas credenciais e tente novamente.'
+      );
+      return;
+    }
 
-    // For demonstration purposes, we'll simulate a successful login
     setTimeout(() => {
       toast.success('Login realizado com sucesso!');
-      navigate('/');
+      navigate('/dashboard');
     }, 1000);
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-background to-secondary/30">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-info/40 via-primary/30 to-secondary/50">
       <div className="w-full max-w-md">
         <div className="mb-8 flex justify-center">
           <AppLogo size="lg" />
@@ -133,6 +145,27 @@ export default function Login() {
                         </Button>
                       </div>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="keepConnect"
+                  render={({field}) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="data-[state=checked]:bg-primary"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="font-normal text-sm">
+                          Manter conectado
+                        </FormLabel>
+                      </div>
                     </FormItem>
                   )}
                 />
