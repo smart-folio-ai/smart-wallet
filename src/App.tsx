@@ -23,7 +23,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Login />} />
           <Route
             path="*"
             element={
@@ -36,7 +36,7 @@ const App = () => (
                     </div>
                     <main className="flex-1 overflow-auto">
                       <Routes>
-                        <Route path="/" element={<Index />} />
+                        <Route path="/dashboard" element={<Index />} />
                         <Route
                           path="/sync-accounts"
                           element={<SyncAccounts />}
