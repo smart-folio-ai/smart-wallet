@@ -1,3 +1,4 @@
+
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
@@ -56,7 +57,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-background to-secondary/30">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-info/20 via-primary/20 to-secondary/30">
       <div className="w-full max-w-md">
         <div className="mb-8 flex justify-center">
           <AppLogo size="lg" />
