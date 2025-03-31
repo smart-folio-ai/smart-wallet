@@ -126,7 +126,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Link to="/logout">
+              <Link to="/signout">
                 <Users className="h-5 w-5" />
                 <span>Sair</span>
               </Link>
