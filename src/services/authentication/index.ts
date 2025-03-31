@@ -1,5 +1,6 @@
 import IAuthentication from '@/interface/authentication';
 import {authService} from '@/lib/api';
+import {AxiosResponse} from 'axios';
 
 class AuthenticationService implements IAuthentication {
   async authenticate(
@@ -9,12 +10,9 @@ class AuthenticationService implements IAuthentication {
   ): Promise<boolean> {
     try {
       const response = await authService.login(email, password, keepConnected);
-      console.log('Response:', email, password, keepConnected);
       if (response.data.token) {
-        console.log('data:', response.data);
         localStorage.setItem('auth_token', response.data.token);
         localStorage.setItem('keepConnected', JSON.stringify(keepConnected));
-        console.log('Login successful');
       }
       return true;
     } catch (error) {
@@ -25,8 +23,19 @@ class AuthenticationService implements IAuthentication {
   register(username: string, password: string): Promise<boolean> {
     throw new Error('Method not implemented.');
   }
-  logout(): Promise<void> {
-    throw new Error('Method not implemented.');
+  async logout(): Promise<boolean> {
+    const token = localStorage.getItem('auth_token');
+    const response = authService.logout(token);
+    try {
+      if (!response) {
+        return false;
+      }
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('keepConnected');
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 }
 

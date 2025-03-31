@@ -27,7 +27,7 @@ export const authService = {
     apiClient.post('/auth/signin', {email, password, keepConnected}),
   register: (name: string, email: string, password: string) =>
     apiClient.post('/auth/register', {name, email, password}),
-  logout: () => apiClient.post('/auth/logout'),
+  logout: (token: string) => apiClient.post('/auth/signout', {token}),
   getProfile: () => apiClient.get('/auth/profile'),
 };
 

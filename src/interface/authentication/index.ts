@@ -5,7 +5,7 @@ interface IAuthentication {
     keepConnected: boolean
   ): Promise<boolean>;
   register(username: string, password: string): Promise<boolean>;
-  logout(): Promise<void>;
+  logout(): Promise<boolean>;
 }
 export default IAuthentication;
 

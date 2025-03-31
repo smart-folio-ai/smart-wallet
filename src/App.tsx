@@ -15,6 +15,7 @@ import Portfolio from './pages/Portifolio';
 import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
+import SignOut from './pages/SignOut';
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/" element={<SignIn />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/signout" element={<SignOut />} />
           <Route
             path="*"
             element={
