@@ -12,7 +12,9 @@ import AIInsights from './pages/AIInsights';
 import Subscription from './pages/Subscription';
 import NotFound from './pages/NotFound';
 import Portfolio from './pages/Portifolio';
-import Login from './pages/SignIn';
+import SignIn from './pages/SignIn';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 
 const queryClient = new QueryClient();
 
@@ -23,7 +25,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<SignIn />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route
             path="*"
             element={

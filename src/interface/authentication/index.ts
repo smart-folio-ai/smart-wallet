@@ -8,3 +8,9 @@ interface IAuthentication {
   logout(): Promise<void>;
 }
 export default IAuthentication;
+
+export interface FormValues {
+  email: string;
+  password: string;
+  keepConnect: boolean;
+}
