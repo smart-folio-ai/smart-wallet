@@ -12,6 +12,7 @@ class AuthenticationService implements IAuthentication {
       const response = await authService.login(email, password, keepConnected);
       if (response.data.token) {
         localStorage.setItem('auth_token', response.data.token);
+        localStorage.setItem('refresh_token', response.data.refreshToken);
         localStorage.setItem('keepConnected', JSON.stringify(keepConnected));
       }
       return true;
