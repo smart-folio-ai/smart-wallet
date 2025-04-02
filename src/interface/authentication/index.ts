@@ -14,3 +14,9 @@ export interface FormValues {
   password: string;
   keepConnect: boolean;
 }
+
+export interface IAuthenticationResponse {
+  token: string;
+  refreshToken: string;
+  expiresIn: string;
+}
