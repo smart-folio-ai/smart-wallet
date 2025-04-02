@@ -1,8 +1,8 @@
-
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader } from 'lucide-react';
-import { toast } from 'sonner';
+import React, {useEffect} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {Loader} from 'lucide-react';
+import {toast} from 'sonner';
+import AuthenticationService from '../services/authentication';
 
 const SignOut = () => {
   const navigate = useNavigate();
@@ -11,30 +11,20 @@ const SignOut = () => {
     // Simula o processo de logout
     const logoutProcess = async () => {
       try {
-        // Aqui seria a chamada real para a API de logout
-        // authService.logout()
-        
-        // Simulando uma chamada de API com um timeout
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Limpa qualquer dado local de autenticação
-        localStorage.removeItem('auth_token');
-        
-        // Exibe mensagem de sucesso
+        const response = await AuthenticationService.logout();
+        if (!response) {
+          toast.error('Erro ao realizar logout. Tente novamente.');
+          return;
+        }
+
         toast.success('Você saiu com sucesso!');
-        
-        // Redireciona para a página de login após um pequeno delay
+
         setTimeout(() => {
-          navigate('/login');
+          navigate('/');
         }, 500);
       } catch (error) {
-        console.error('Erro ao fazer logout:', error);
         toast.error('Ocorreu um erro ao tentar sair');
-        
-        // Mesmo em caso de erro, redireciona para login
-        setTimeout(() => {
-          navigate('/login');
-        }, 1000);
+        navigate('/');
       }
     };
 

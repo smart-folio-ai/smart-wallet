@@ -1,10 +1,9 @@
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import React, {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {zodResolver} from '@hookform/resolvers/zod';
+import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-import { ArrowLeft, Mail } from 'lucide-react';
+import {ArrowLeft, Mail} from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -13,8 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
+import {Button} from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -23,8 +22,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { AppLogo } from '@/components/AppLogo';
-import { toast } from 'sonner';
+import {AppLogo} from '@/components/AppLogo';
+import {toast} from 'sonner';
 
 const formSchema = z.object({
   email: z.string().email('Digite um email válido'),
@@ -65,23 +64,22 @@ export default function ForgotPassword() {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-info/10 opacity-50 pointer-events-none" />
 
           <CardHeader className="relative">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="absolute left-2 top-2"
-              onClick={() => navigate('/login')}
-            >
+              onClick={() => navigate('/login')}>
               <ArrowLeft className="h-5 w-5" />
               <span className="sr-only">Voltar</span>
             </Button>
-            
+
             <CardTitle className="text-2xl font-bold text-center">
               Recuperar senha
             </CardTitle>
             <CardDescription className="text-center">
-              {!isSubmitted 
-                ? "Digite seu e-mail para receber instruções de recuperação de senha" 
-                : "Verifique seu email para instruções de recuperação de senha"}
+              {!isSubmitted
+                ? 'Digite seu e-mail para receber instruções de recuperação de senha'
+                : 'Verifique seu email para instruções de recuperação de senha'}
             </CardDescription>
           </CardHeader>
 
@@ -123,9 +121,13 @@ export default function ForgotPassword() {
             ) : (
               <div className="space-y-4">
                 <div className="p-4 bg-green-50 text-green-700 rounded-md">
-                  <p>Um email foi enviado para <strong>{form.getValues().email}</strong> com instruções para recuperar sua senha.</p>
+                  <p>
+                    Um email foi enviado para{' '}
+                    <strong>{form.getValues().email}</strong> com instruções
+                    para recuperar sua senha.
+                  </p>
                 </div>
-                
+
                 <Button
                   className="w-full info-gradient border-0"
                   size="lg"

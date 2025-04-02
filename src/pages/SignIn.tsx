@@ -1,4 +1,3 @@
-
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
@@ -23,19 +22,20 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Checkbox } from "@/components/ui/checkbox";
+import {Checkbox} from '@/components/ui/checkbox';
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
+import AuthenticationService from '../services/authentication';
 
 const formSchema = z.object({
   email: z.string().email('Digite um email válido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-  rememberMe: z.boolean().optional().default(false),
+  keepConnect: z.boolean().optional().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function Login() {
+export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
@@ -44,25 +44,26 @@ export default function Login() {
     defaultValues: {
       email: '',
       password: '',
-      rememberMe: false,
+      keepConnect: false,
     },
   });
 
-  const onSubmit = (data: FormValues) => {
-    // In a real app, you would authenticate with a server here
-    console.log('Form submitted:', data);
+  const onSubmit = async (data: FormValues) => {
+    const response: boolean = await AuthenticationService.authenticate(
+      data.email,
+      data.password,
+      data.keepConnect
+    );
+    if (!response) {
+      toast.error(
+        'Erro ao realizar login. Verifique suas credenciais e tente novamente.'
+      );
+      return;
+    }
 
-    // For demonstration purposes, we'll simulate a successful login
     setTimeout(() => {
       toast.success('Login realizado com sucesso!');
-      
-      // If rememberMe is true, you could set a token with longer expiration in localStorage
-      if (data.rememberMe) {
-        console.log('User will be kept connected');
-        // In a real app, you would store this preference
-      }
-      
-      navigate('/');
+      navigate('/dashboard');
     }, 1000);
   };
 
@@ -150,8 +151,8 @@ export default function Login() {
 
                 <FormField
                   control={form.control}
-                  name="rememberMe"
-                  render={({ field }) => (
+                  name="keepConnect"
+                  render={({field}) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                       <FormControl>
                         <Checkbox
@@ -179,7 +180,9 @@ export default function Login() {
             </Form>
 
             <div className="text-center">
-              <a href="/forgot-password" className="text-sm text-primary hover:underline">
+              <a
+                href="/forgot-password"
+                className="text-sm text-primary hover:underline">
                 Esqueceu sua senha?
               </a>
             </div>
