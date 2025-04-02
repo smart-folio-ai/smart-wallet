@@ -1,3 +1,31 @@
+## SmartMoney - Intelligent Investment Management
+
+### Link online project: [smart-folio-ai](https://smartfolioai.netlify.app)
+
+### SmartMoney is an innovative SaaS platform for managing portfolios of financial assets. Our aim is to provide intelligent analysis of your investments, helping you to make strategic decisions about buying and selling assets based on data and artificial intelligence.
+
+### Connect to B3 and Exchanges: Integration with APIs to automatically synchronize your portfolio.
+
+🔹 Intelligent Reports and Forecasts: AI to analyze your portfolio and suggest optimizations.
+Interactive Dashboard: Charts and insights into your investments.
+🔹 Buy and Sell Suggestions: Discover opportunities based on market analysis.
+
+## 🛠 Technologies used
+
+Backend: NestJS + Prisma + MongoDB
+
+Frontend Web: React + Vite + TailwindCSS + TypeScript + Shadcn-ui + Axios + Gateway Stripe
+
+Mobile: Flutter
+
+Database: MongoDB
+
+Messaging: RabbitMQ
+
+APIs: B3, Binance, Coinbase, OpenAI (ChatGPT) ...
+
+Infrastructure: Docker
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
@@ -23,29 +51,3 @@ npm i
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify.

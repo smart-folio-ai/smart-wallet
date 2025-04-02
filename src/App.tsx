@@ -1,4 +1,3 @@
-
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {BrowserRouter, Routes, Route} from 'react-router-dom';
 import {Toaster} from '@/components/ui/toaster';
@@ -13,7 +12,7 @@ import AIInsights from './pages/AIInsights';
 import Subscription from './pages/Subscription';
 import NotFound from './pages/NotFound';
 import Portfolio from './pages/Portifolio';
-import Login from './pages/SignIn';
+import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import SignOut from './pages/SignOut';
@@ -27,7 +26,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<SignIn />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/signout" element={<SignOut />} />
@@ -43,7 +42,7 @@ const App = () => (
                     </div>
                     <main className="flex-1 overflow-auto">
                       <Routes>
-                        <Route path="/" element={<Index />} />
+                        <Route path="/dashboard" element={<Index />} />
                         <Route
                           path="/sync-accounts"
                           element={<SyncAccounts />}

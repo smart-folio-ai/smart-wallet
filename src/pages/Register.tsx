@@ -1,4 +1,3 @@
-
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
@@ -23,22 +22,26 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {Checkbox} from "@/components/ui/checkbox";
+import {Checkbox} from '@/components/ui/checkbox';
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
 
-const formSchema = z.object({
-  name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Digite um email válido'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-  confirmPassword: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-  acceptTerms: z.boolean().refine(value => value === true, {
-    message: 'Você precisa aceitar os termos para continuar',
-  }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "As senhas não correspondem",
-  path: ["confirmPassword"],
-});
+const formSchema = z
+  .object({
+    name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
+    email: z.string().email('Digite um email válido'),
+    password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+    confirmPassword: z
+      .string()
+      .min(6, 'A senha deve ter pelo menos 6 caracteres'),
+    acceptTerms: z.boolean().refine((value) => value === true, {
+      message: 'Você precisa aceitar os termos para continuar',
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'As senhas não correspondem',
+    path: ['confirmPassword'],
+  });
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -193,14 +196,18 @@ export default function Register() {
                           variant="ghost"
                           size="icon"
                           className="absolute right-1 top-1 h-8 w-8"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }>
                           {showConfirmPassword ? (
                             <EyeOff className="h-4 w-4" />
                           ) : (
                             <Eye className="h-4 w-4" />
                           )}
                           <span className="sr-only">
-                            {showConfirmPassword ? 'Esconder senha' : 'Mostrar senha'}
+                            {showConfirmPassword
+                              ? 'Esconder senha'
+                              : 'Mostrar senha'}
                           </span>
                         </Button>
                       </div>
@@ -212,7 +219,7 @@ export default function Register() {
                 <FormField
                   control={form.control}
                   name="acceptTerms"
-                  render={({ field }) => (
+                  render={({field}) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                       <FormControl>
                         <Checkbox
@@ -223,7 +230,14 @@ export default function Register() {
                       </FormControl>
                       <div className="space-y-1 leading-none">
                         <FormLabel className="font-normal text-sm">
-                          Eu aceito os <a href="#" className="text-primary hover:underline">Termos de Serviço</a> e <a href="#" className="text-primary hover:underline">Política de Privacidade</a>
+                          Eu aceito os{' '}
+                          <a href="#" className="text-primary hover:underline">
+                            Termos de Serviço
+                          </a>{' '}
+                          e{' '}
+                          <a href="#" className="text-primary hover:underline">
+                            Política de Privacidade
+                          </a>
                         </FormLabel>
                       </div>
                     </FormItem>

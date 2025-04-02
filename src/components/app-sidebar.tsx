@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -10,9 +9,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar";
-import { AppLogo } from "@/components/AppLogo";
-import { ThemeToggle } from "@/components/ThemeToggle";
+} from '@/components/ui/sidebar';
+import {AppLogo} from '@/components/AppLogo';
+import {ThemeToggle} from '@/components/ThemeToggle';
 import {
   BarChart3,
   CircleDollarSign,
@@ -22,8 +21,8 @@ import {
   Star,
   Users,
   Wallet,
-} from "lucide-react";
-import { Link } from "react-router-dom";
+} from 'lucide-react';
+import {Link} from 'react-router-dom';
 
 export function AppSidebar() {
   return (
@@ -41,7 +40,7 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Link to="/">
+                  <Link to="/dashboard">
                     <BarChart3 className="h-5 w-5" />
                     <span>Dashboard</span>
                   </Link>
@@ -66,7 +65,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        
+
         <SidebarGroup>
           <SidebarGroupLabel>Análise</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -90,7 +89,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        
+
         <SidebarGroup>
           <SidebarGroupLabel>Conectar</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -122,6 +121,14 @@ export function AppSidebar() {
               <Link to="/subscription">
                 <Users className="h-5 w-5" />
                 <span>Assinatura</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/signout">
+                <Users className="h-5 w-5" />
+                <span>Sair</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
