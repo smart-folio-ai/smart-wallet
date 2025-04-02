@@ -1,10 +1,12 @@
+import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
 import axios from 'axios';
 // import './interceptor';+-
 
+console.log('apiUrlDevelopment', apiUrlDevelopment);
+console.log('apiUrlProduction', apiUrlProduction);
+
 const apiClient = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL_DEVELOPMENT ||
-    import.meta.env.VITE_API_URL_PRODUCTION,
+  baseURL: isDev ? apiUrlDevelopment : apiUrlProduction,
   headers: {
     'Content-Type': 'application/json',
   },
