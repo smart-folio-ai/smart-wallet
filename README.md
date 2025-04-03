@@ -2,6 +2,8 @@
 
 ### Link online project: [smart-folio-ai](https://smartfolioai.netlify.app)
 
+* User : teste@teste.com password: Testeadmin@123
+
 ### SmartMoney is an innovative SaaS platform for managing portfolios of financial assets. Our aim is to provide intelligent analysis of your investments, helping you to make strategic decisions about buying and selling assets based on data and artificial intelligence.
 
 ### Connect to B3 and Exchanges: Integration with APIs to automatically synchronize your portfolio.
