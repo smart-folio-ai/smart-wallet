@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -35,7 +34,17 @@ import { toast } from 'sonner';
 interface UserProfile {
   id: string;
   name: string;
+  lastName: string;
   email: string;
+  cpf: string;
+  address: {
+    street: string;
+    number: string;
+    complement?: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
   avatar?: string;
   createdAt: string;
 }
@@ -69,7 +78,20 @@ interface Subscription {
 export default function Settings() {
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [profileData, setProfileData] = useState({ name: '', email: '' });
+  const [profileData, setProfileData] = useState({
+    name: '',
+    lastName: '',
+    email: '',
+    cpf: '',
+    address: {
+      street: '',
+      number: '',
+      complement: '',
+      city: '',
+      state: '',
+      zipCode: '',
+    },
+  });
   const [settings, setSettings] = useState<UserSettings>({
     notifications: {
       email: true,
@@ -95,8 +117,18 @@ export default function Settings() {
       // await authService.getProfile();
       return {
         id: '1',
-        name: 'João Silva',
+        name: 'João',
+        lastName: 'Silva',
         email: 'joao.silva@email.com',
+        cpf: '123.456.789-00',
+        address: {
+          street: 'Rua das Flores',
+          number: '123',
+          complement: 'Apto 45',
+          city: 'São Paulo',
+          state: 'SP',
+          zipCode: '01234-567',
+        },
         avatar: '',
         createdAt: '2024-01-15T10:00:00Z',
       };
@@ -149,9 +181,31 @@ export default function Settings() {
     });
   };
 
+  const formatCPF = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
+  };
+
+  const formatZipCode = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .replace(/(-\d{3})\d+?$/, '$1');
+  };
+
   React.useEffect(() => {
     if (user) {
-      setProfileData({ name: user.name, email: user.email });
+      setProfileData({
+        name: user.name,
+        lastName: user.lastName,
+        email: user.email,
+        cpf: user.cpf,
+        address: user.address,
+      });
     }
   }, [user]);
 
@@ -200,26 +254,132 @@ export default function Settings() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
-                  <Input
-                    id="name"
-                    value={profileData.name}
-                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                    disabled={!isEditing}
-                  />
+            <CardContent className="space-y-6">
+              {/* Dados Pessoais */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Dados Pessoais</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome</Label>
+                    <Input
+                      id="name"
+                      value={profileData.name}
+                      onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Sobrenome</Label>
+                    <Input
+                      id="lastName"
+                      value={profileData.lastName}
+                      onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={profileData.email}
+                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf">CPF</Label>
+                    <Input
+                      id="cpf"
+                      value={profileData.cpf}
+                      onChange={(e) => setProfileData({ ...profileData, cpf: formatCPF(e.target.value) })}
+                      disabled={!isEditing}
+                      maxLength={14}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                    disabled={!isEditing}
-                  />
+              </div>
+
+              {/* Endereço */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Endereço</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="street">Rua</Label>
+                    <Input
+                      id="street"
+                      value={profileData.address.street}
+                      onChange={(e) => setProfileData({
+                        ...profileData,
+                        address: { ...profileData.address, street: e.target.value }
+                      })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="number">Número</Label>
+                    <Input
+                      id="number"
+                      value={profileData.address.number}
+                      onChange={(e) => setProfileData({
+                        ...profileData,
+                        address: { ...profileData.address, number: e.target.value }
+                      })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="complement">Complemento</Label>
+                    <Input
+                      id="complement"
+                      value={profileData.address.complement}
+                      onChange={(e) => setProfileData({
+                        ...profileData,
+                        address: { ...profileData.address, complement: e.target.value }
+                      })}
+                      disabled={!isEditing}
+                      placeholder="Opcional"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Cidade</Label>
+                    <Input
+                      id="city"
+                      value={profileData.address.city}
+                      onChange={(e) => setProfileData({
+                        ...profileData,
+                        address: { ...profileData.address, city: e.target.value }
+                      })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">Estado</Label>
+                    <Input
+                      id="state"
+                      value={profileData.address.state}
+                      onChange={(e) => setProfileData({
+                        ...profileData,
+                        address: { ...profileData.address, state: e.target.value }
+                      })}
+                      disabled={!isEditing}
+                      maxLength={2}
+                      placeholder="SP"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="zipCode">CEP</Label>
+                    <Input
+                      id="zipCode"
+                      value={profileData.address.zipCode}
+                      onChange={(e) => setProfileData({
+                        ...profileData,
+                        address: { ...profileData.address, zipCode: formatZipCode(e.target.value) }
+                      })}
+                      disabled={!isEditing}
+                      maxLength={9}
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
