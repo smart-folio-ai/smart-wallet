@@ -1,8 +1,8 @@
 import React, {useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Loader} from 'lucide-react';
 import {toast} from 'sonner';
 import AuthenticationService from '../services/authentication';
+import Loader from '@/components/loader';
 
 const SignOut = () => {
   const navigate = useNavigate();
@@ -31,21 +31,7 @@ const SignOut = () => {
     logoutProcess();
   }, [navigate]);
 
-  return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm z-50">
-      <div className="flex flex-col items-center justify-center space-y-6">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-16 w-16 rounded-full border-4 border-primary/30 opacity-75"></div>
-          </div>
-          <Loader className="h-16 w-16 animate-spin text-primary" />
-        </div>
-        <h2 className="text-xl font-medium text-foreground animate-pulse">
-          Saindo...
-        </h2>
-      </div>
-    </div>
-  );
+  return <Loader text="Saindo..." />;
 };
 
 export default SignOut;
