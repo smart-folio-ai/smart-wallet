@@ -25,15 +25,20 @@ import {
 import {Checkbox} from '@/components/ui/checkbox';
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
+import {ICreateUser} from '@/interface/authentication';
+import AuthenticationService from '../services/authentication';
+import Loader from '@/components/loader';
+import {AxiosError} from 'axios';
 
 const formSchema = z
   .object({
-    name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
+    firstname: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
+    lastname: z.string().min(2, 'O sobrenome deve ter pelo menos 2 caracteres'),
     email: z.string().email('Digite um email válido'),
-    password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+    password: z.string().min(6, 'A senha deve ter pelo menos 8 caracteres'),
     confirmPassword: z
       .string()
-      .min(6, 'A senha deve ter pelo menos 6 caracteres'),
+      .min(6, 'A senha deve ter pelo menos 8 caracteres'),
     acceptTerms: z.boolean().refine((value) => value === true, {
       message: 'Você precisa aceitar os termos para continuar',
     }),
@@ -48,12 +53,14 @@ type FormValues = z.infer<typeof formSchema>;
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
+      firstname: '',
+      lastname: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -61,17 +68,29 @@ export default function Register() {
     },
   });
 
-  const onSubmit = (data: FormValues) => {
-    // In a real app, you would register with a server here
-    console.log('Form submitted:', data);
+  const onSubmit = async (data: FormValues) => {
+    try {
+      setLoading(true);
+      const newUser: ICreateUser = {
+        firstName: data.firstname,
+        lastName: data.lastname,
+        email: data.email,
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+      };
 
-    // For demonstration purposes, we'll simulate a successful registration
-    setTimeout(() => {
-      toast.success('Conta criada com sucesso!');
-      navigate('/login');
-    }, 1000);
+      const success = await AuthenticationService.register(newUser);
+      if (!success) {
+        throw new Error('Erro ao criar conta. Tente novamente.');
+      }
+      toast.success('Conta criada com sucesso!', {duration: 2000});
+      setLoading(false);
+      navigate('/dashboard');
+    } catch (error) {
+      setLoading(false);
+      toast.error(error.message || 'Erro desconhecido. Tente novamente.');
+    }
   };
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-info/40 via-primary/30 to-secondary/50">
       <div className="w-full max-w-md">
@@ -98,14 +117,34 @@ export default function Register() {
                 className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="firstname"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>Nome completo</FormLabel>
+                      <FormLabel>Informe seu nome</FormLabel>
                       <div className="relative">
                         <FormControl>
                           <Input
-                            placeholder="Seu nome completo"
+                            placeholder="Nome"
+                            {...field}
+                            className="pl-10"
+                          />
+                        </FormControl>
+                        <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastname"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>Informe seu sobrenome</FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                          <Input
+                            placeholder="Sobrenome"
                             {...field}
                             className="pl-10"
                           />
@@ -226,6 +265,7 @@ export default function Register() {
                           checked={field.value}
                           onCheckedChange={field.onChange}
                           className="data-[state=checked]:bg-primary"
+                          required
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
@@ -244,11 +284,14 @@ export default function Register() {
                   )}
                 />
 
+                {loading && (
+                  <Loader text="Estamos Criando sua Conta, Por favor aguarde..." />
+                )}
                 <Button
                   type="submit"
                   className="w-full success-gradient border-0"
                   size="lg">
-                  Criar conta
+                  {loading ? 'Criando Conta...' : 'Criar Conta'}
                 </Button>
               </form>
             </Form>
@@ -264,7 +307,7 @@ export default function Register() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => navigate('/login')}>
+              onClick={() => navigate('/')}>
               Já tenho uma conta
             </Button>
           </CardFooter>
