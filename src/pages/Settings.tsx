@@ -93,6 +93,24 @@ export default function Settings() {
     },
   });
 
+  const [settings, setSettings] = useState<UserSettings>({
+    notifications: {
+      email: true,
+      push: true,
+      marketAlerts: false,
+      portfolioUpdates: true,
+    },
+    security: {
+      twoFactorEnabled: false,
+      sessionTimeout: 30,
+    },
+    preferences: {
+      language: 'pt-BR',
+      currency: 'BRL',
+      theme: 'light',
+    },
+  });
+
   // Simular dados do usuário (em produção, viria da API)
   const { data: user } = useQuery({
     queryKey: ['user-profile'],
