@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {Check, X, CircleDollarSign, Star, Calendar} from 'lucide-react';
 import {Button} from '@/components/ui/button';
@@ -26,6 +27,7 @@ interface PricingPlan {
   description: string;
   monthlyPrice: number | null;
   annualPrice: number | null;
+  stripePriceId?: string; // ID do preço no Stripe
   badge?: string;
   features: PlanFeature[];
   comingSoon?: boolean;
@@ -53,6 +55,7 @@ const plans: PricingPlan[] = [
     description: 'Para investidores focados em B3',
     monthlyPrice: 14.9,
     annualPrice: 14.9 * 12,
+    stripePriceId: 'price_1234567890', // Substitua pelo ID real do Stripe
     badge: 'Popular',
     features: [
       {name: 'Todas as funcionalidades do plano Gratuito', included: true},
@@ -69,6 +72,7 @@ const plans: PricingPlan[] = [
     description: 'Para investidores diversificados',
     monthlyPrice: 24.9,
     annualPrice: 24.9 * 12,
+    stripePriceId: 'price_0987654321', // Substitua pelo ID real do Stripe
     features: [
       {name: 'Todas as funcionalidades do plano Pro', included: true},
       {name: 'Sincronização com exchanges de criptomoedas', included: true},
@@ -102,32 +106,78 @@ export default function Subscription() {
     React.useState<PricingPeriod>('monthly');
   const [loading, setLoading] = React.useState<Record<string, boolean>>({});
 
+  // Função para iniciar checkout do Stripe
+  const handleStripeCheckout = async (plan: PricingPlan) => {
+    if (!plan.stripePriceId) {
+      toast.error('ID do preço do Stripe não configurado para este plano');
+      return;
+    }
+
+    setLoading({...loading, [plan.id]: true});
+    
+    try {
+      console.log('Iniciando checkout para o plano:', plan.name);
+      console.log('Price ID:', plan.stripePriceId);
+      
+      // TODO: Implementar chamada para Supabase Edge Function
+      // Esta função deve:
+      // 1. Verificar se o usuário está autenticado
+      // 2. Criar sessão de checkout no Stripe
+      // 3. Retornar URL para redirecionamento
+      
+      /*
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          priceId: plan.stripePriceId,
+          planId: plan.id,
+          period: pricingPeriod
+        }
+      });
+
+      if (error) throw error;
+
+      // Redirecionar para checkout do Stripe
+      if (data.url) {
+        window.location.href = data.url;
+      }
+      */
+      
+      // Por enquanto, apenas simular o processo
+      toast.success(`Redirecionando para checkout do plano ${plan.name}...`);
+      
+      // Simular redirecionamento após 2 segundos
+      setTimeout(() => {
+        toast.info('Checkout simulado - integração com Stripe pendente');
+      }, 2000);
+
+    } catch (error) {
+      console.error('Erro ao iniciar checkout:', error);
+      toast.error('Não foi possível iniciar o processo de pagamento. Tente novamente.');
+    } finally {
+      setLoading({...loading, [plan.id]: false});
+    }
+  };
+
   const handleSubscribe = async (planId: string) => {
+    const plan = plans.find(p => p.id === planId);
+    
+    if (!plan) {
+      toast.error('Plano não encontrado');
+      return;
+    }
+
     if (planId === 'free') {
       toast.success('Você já está no plano gratuito!');
       return;
     }
 
     if (planId === 'global') {
-      toast.info(
-        'Este plano estará disponível em breve. Fique atento às novidades!'
-      );
+      toast.info('Este plano estará disponível em breve. Fique atento às novidades!');
       return;
     }
 
-    setLoading({...loading, [planId]: true});
-    try {
-      // Em um ambiente real, isso chamaria a API para iniciar o processo de checkout
-      await subscriptionService.upgradePlan(planId);
-      toast.success('Redirecionando para o checkout...');
-    } catch (error) {
-      console.error('Erro ao iniciar assinatura:', error);
-      toast.error(
-        'Não foi possível iniciar o processo de assinatura. Tente novamente mais tarde.'
-      );
-    } finally {
-      setLoading({...loading, [planId]: false});
-    }
+    // Iniciar processo de checkout do Stripe
+    await handleStripeCheckout(plan);
   };
 
   return (
@@ -239,6 +289,7 @@ export default function Subscription() {
         ))}
       </div>
 
+      {/* Seção de informações adicionais */}
       <div className="mt-16 grid md:grid-cols-3 gap-8">
         <div className="flex flex-col items-center text-center">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -272,6 +323,37 @@ export default function Subscription() {
             Nosso time de especialistas está pronto para ajudar você em sua
             jornada.
           </p>
+        </div>
+      </div>
+
+      {/* Seção de instruções para configuração do Stripe */}
+      <div className="mt-16 p-6 bg-muted rounded-lg">
+        <h3 className="text-lg font-semibold mb-4">📋 Configuração do Stripe</h3>
+        <div className="space-y-4 text-sm">
+          <div>
+            <h4 className="font-medium mb-2">1. Configure os Price IDs do Stripe:</h4>
+            <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+              <li>Substitua <code className="bg-background px-1 rounded">price_1234567890</code> pelo Price ID real do plano Pro</li>
+              <li>Substitua <code className="bg-background px-1 rounded">price_0987654321</code> pelo Price ID real do plano Premium</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-medium mb-2">2. Implemente a Edge Function 'create-checkout':</h4>
+            <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+              <li>Crie uma Supabase Edge Function para processar checkouts</li>
+              <li>Configure as chaves secretas do Stripe no Supabase</li>
+              <li>Descomente e ajuste o código na função <code className="bg-background px-1 rounded">handleStripeCheckout</code></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-2">3. Configure URLs de retorno:</h4>
+            <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+              <li>Defina as páginas de sucesso e cancelamento</li>
+              <li>Configure webhooks para atualizar status de assinatura</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

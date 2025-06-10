@@ -40,7 +40,7 @@ interface UserProfile {
   address: {
     street: string;
     number: string;
-    complement?: string;
+    complement: string;
     city: string;
     state: string;
     zipCode: string;
@@ -90,23 +90,6 @@ export default function Settings() {
       city: '',
       state: '',
       zipCode: '',
-    },
-  });
-  const [settings, setSettings] = useState<UserSettings>({
-    notifications: {
-      email: true,
-      push: false,
-      marketAlerts: true,
-      portfolioUpdates: true,
-    },
-    security: {
-      twoFactorEnabled: false,
-      sessionTimeout: 30,
-    },
-    preferences: {
-      language: 'pt-BR',
-      currency: 'BRL',
-      theme: 'system',
     },
   });
 
