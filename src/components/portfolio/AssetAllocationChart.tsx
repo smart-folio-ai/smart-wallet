@@ -23,6 +23,19 @@ interface AssetAllocationChartProps {
   openAssetDetails: (asset: Asset) => void;
 }
 
+// Custom tooltip component for better styling
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background border border-border rounded-lg shadow-lg px-3 py-2 text-sm font-medium text-foreground">
+        <p className="font-semibold">{payload[0].name}</p>
+        <p className="text-primary">{`${payload[0].value.toFixed(2)}%`}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export const AssetAllocationChart = ({ 
   loading, 
   assets, 
@@ -57,9 +70,7 @@ export const AssetAllocationChart = ({
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    formatter={(value) => [`${Number(value).toFixed(2)}%`, "Alocação"]}
-                  />
+                  <Tooltip content={<CustomTooltip />} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
