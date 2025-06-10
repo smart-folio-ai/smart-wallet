@@ -1,5 +1,7 @@
 ## SmartMoney - Intelligent Investment Management
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/0f1561b3-1a47-4e59-91e1-bbb9f4e47136/deploy-status)](https://app.netlify.com/projects/smartfolioai/deploys)
+
 ### Link online project: [smart-folio-ai](https://smartfolioai.netlify.app)
 
 * User : teste@teste.com password: Testeadmin@123
