@@ -1,12 +1,9 @@
+import {ICreateUser} from '@/interface/authentication';
 import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
 import axios from 'axios';
-// import './interceptor';+-
-
-console.log('apiUrlDevelopment', apiUrlDevelopment);
-console.log('apiUrlProduction', apiUrlProduction);
 
 const apiClient = axios.create({
-  baseURL: isDev ? apiUrlDevelopment : apiUrlProduction,
+  baseURL: apiUrlDevelopment,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -23,25 +20,15 @@ const onRefreshed = (token) => {
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth_token');
+    console.log('token:', token);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('Request:', config.method, config.url, config.data);
     return config;
   },
   (error) => Promise.reject(error)
 );
-
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -94,8 +81,7 @@ apiClient.interceptors.response.use(
 export const authService = {
   login: (email: string, password: string, keepConnected: boolean) =>
     apiClient.post('/auth/signin', {email, password, keepConnected}),
-  register: (name: string, email: string, password: string) =>
-    apiClient.post('/auth/register', {name, email, password}),
+  register: (data: ICreateUser) => apiClient.post('/users/create', data),
   logout: (token: string) => apiClient.post('/auth/signout', {token}),
   getProfile: () => apiClient.get('/auth/profile'),
 };

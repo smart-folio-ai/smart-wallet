@@ -26,6 +26,7 @@ import {Checkbox} from '@/components/ui/checkbox';
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
 import AuthenticationService from '../services/authentication';
+import Loader from '@/components/loader';
 
 const formSchema = z.object({
   email: z.string().email('Digite um email válido'),
@@ -37,6 +38,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const form = useForm<FormValues>({
@@ -49,6 +51,7 @@ export default function SignIn() {
   });
 
   const onSubmit = async (data: FormValues) => {
+    setLoading(true);
     const response: boolean = await AuthenticationService.authenticate(
       data.email,
       data.password,
@@ -58,6 +61,7 @@ export default function SignIn() {
       toast.error(
         'Erro ao realizar login. Verifique suas credenciais e tente novamente.'
       );
+      setLoading(false);
       return;
     }
 
@@ -154,6 +158,7 @@ export default function SignIn() {
                   name="keepConnect"
                   render={({field}) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      {loading && <Loader text="Entrando..." />}
                       <FormControl>
                         <Checkbox
                           checked={field.value}
@@ -174,7 +179,7 @@ export default function SignIn() {
                   type="submit"
                   className="w-full success-gradient border-0"
                   size="lg">
-                  Entrar
+                  {loading ? 'Entrando...' : 'Entrar'}
                 </Button>
               </form>
             </Form>
