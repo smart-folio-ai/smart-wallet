@@ -16,6 +16,7 @@ import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import SignOut from './pages/SignOut';
+import Settings from './pages/Settings';
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
                           element={<Subscription />}
                         />
                         <Route path="/portfolio" element={<Portfolio />} />
+                        <Route path="/settings" element={<Settings />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
