@@ -20,19 +20,8 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
 apiClient.interceptors.response.use(
-  (response) => response, // Se a resposta for bem-sucedida, retorna normalmente
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
     const refreshToken = localStorage.getItem('refresh_token');
@@ -58,7 +47,6 @@ apiClient.interceptors.response.use(
 
       try {
         const {data} = await axios.post(urlResponse, {refreshToken});
-
         const newAccessToken = data.accessToken;
         localStorage.setItem('auth_token', newAccessToken);
         onRefreshed(newAccessToken);
