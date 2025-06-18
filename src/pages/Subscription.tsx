@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {Badge} from '@/components/ui/badge';
-import {subscriptionService} from '@/lib/api';
+import {subscriptionService} from '@/server/api/api';
 import {toast} from 'sonner';
 
 type PricingPeriod = 'monthly' | 'annual';
