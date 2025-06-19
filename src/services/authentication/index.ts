@@ -1,5 +1,5 @@
 import IAuthentication, {ICreateUser} from '@/interface/authentication';
-import {authService} from '@/lib/api';
+import {authService} from '@/server/api/api';
 import {AxiosError, AxiosResponse} from 'axios';
 
 class AuthenticationService implements IAuthentication {
@@ -10,10 +10,13 @@ class AuthenticationService implements IAuthentication {
   ): Promise<boolean> {
     try {
       const response = await authService.login(email, password, keepConnected);
-      if (response.data.token) {
-        localStorage.setItem('auth_token', response.data.token);
+      console.log('response', response);
+      if (response.data.accessToken) {
+        localStorage.setItem('access_token', response.data.accessToken);
         localStorage.setItem('refresh_token', response.data.refreshToken);
         localStorage.setItem('keepConnected', JSON.stringify(keepConnected));
+
+        window.dispatchEvent(new CustomEvent('auth:login'));
       }
       return true;
     } catch (error) {
@@ -25,7 +28,11 @@ class AuthenticationService implements IAuthentication {
     try {
       const response = await authService.register(data);
 
-      localStorage.setItem('auth_token', response.data.accessToken);
+      localStorage.setItem('access_token', response.data.accessToken);
+
+      // Emite evento de registro bem-sucedido
+      window.dispatchEvent(new CustomEvent('auth:login'));
+
       return true;
     } catch (error) {
       if (error instanceof AxiosError) {
@@ -33,7 +40,7 @@ class AuthenticationService implements IAuthentication {
           case 400:
             throw new Error('Erro ao criar conta. Tente novamente.');
           case 409:
-            throw new Error('E-mail já cadastrado. Tente W outro.');
+            throw new Error('E-mail já cadastrado. Tente outro.');
           case 500:
             throw new Error(
               'Erro interno do servidor. Tente novamente mais tarde.'
@@ -46,15 +53,19 @@ class AuthenticationService implements IAuthentication {
     }
   }
   async logout(): Promise<boolean> {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('access_token');
     const response = authService.logout(token);
     try {
       if (!response) {
         return false;
       }
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('access_token');
       localStorage.removeItem('keepConnected');
       localStorage.removeItem('refresh_token');
+
+      // Emite evento de logout
+      window.dispatchEvent(new CustomEvent('auth:logout'));
+
       return true;
     } catch (error) {
       return false;

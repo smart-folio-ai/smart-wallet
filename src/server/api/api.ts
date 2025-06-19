@@ -9,13 +9,6 @@ const apiClient = axios.create({
   },
 });
 
-let refreshSubscribers = [];
-
-const onRefreshed = (token) => {
-  refreshSubscribers.forEach((callback) => callback(token));
-  refreshSubscribers = [];
-};
-
 // Serviços de API
 export const authService = {
   login: (email: string, password: string, keepConnected: boolean) =>

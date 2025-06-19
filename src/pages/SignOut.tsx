@@ -8,7 +8,6 @@ const SignOut = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Simula o processo de logout
     const logoutProcess = async () => {
       try {
         const response = await AuthenticationService.logout();
