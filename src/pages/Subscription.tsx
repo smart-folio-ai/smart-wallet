@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {Check, X, CircleDollarSign, Star, Calendar} from 'lucide-react';
 import {Button} from '@/components/ui/button';
@@ -11,8 +10,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {Badge} from '@/components/ui/badge';
-import {subscriptionService} from '@/lib/api';
+import {subscriptionService} from '@/server/api/api';
 import {toast} from 'sonner';
+import stripe from '@/services/payment/stripe';
 
 type PricingPeriod = 'monthly' | 'annual';
 
@@ -55,7 +55,7 @@ const plans: PricingPlan[] = [
     description: 'Para investidores focados em B3',
     monthlyPrice: 14.9,
     annualPrice: 14.9 * 12,
-    stripePriceId: 'price_1234567890', // Substitua pelo ID real do Stripe
+    stripePriceId: 'prod_STE8PhGBvpxVk8', // Substitua pelo ID real do Stripe
     badge: 'Popular',
     features: [
       {name: 'Todas as funcionalidades do plano Gratuito', included: true},
@@ -72,7 +72,7 @@ const plans: PricingPlan[] = [
     description: 'Para investidores diversificados',
     monthlyPrice: 24.9,
     annualPrice: 24.9 * 12,
-    stripePriceId: 'price_0987654321', // Substitua pelo ID real do Stripe
+    stripePriceId: 'prod_STE7fuAobkPrxH', // Substitua pelo ID real do Stripe
     features: [
       {name: 'Todas as funcionalidades do plano Pro', included: true},
       {name: 'Sincronização com exchanges de criptomoedas', included: true},
@@ -114,17 +114,17 @@ export default function Subscription() {
     }
 
     setLoading({...loading, [plan.id]: true});
-    
+
     try {
       console.log('Iniciando checkout para o plano:', plan.name);
       console.log('Price ID:', plan.stripePriceId);
-      
+
       // TODO: Implementar chamada para Supabase Edge Function
       // Esta função deve:
       // 1. Verificar se o usuário está autenticado
       // 2. Criar sessão de checkout no Stripe
       // 3. Retornar URL para redirecionamento
-      
+
       /*
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
@@ -141,26 +141,27 @@ export default function Subscription() {
         window.location.href = data.url;
       }
       */
-      
+
       // Por enquanto, apenas simular o processo
       toast.success(`Redirecionando para checkout do plano ${plan.name}...`);
-      
+
       // Simular redirecionamento após 2 segundos
       setTimeout(() => {
         toast.info('Checkout simulado - integração com Stripe pendente');
       }, 2000);
-
     } catch (error) {
       console.error('Erro ao iniciar checkout:', error);
-      toast.error('Não foi possível iniciar o processo de pagamento. Tente novamente.');
+      toast.error(
+        'Não foi possível iniciar o processo de pagamento. Tente novamente.'
+      );
     } finally {
       setLoading({...loading, [plan.id]: false});
     }
   };
 
   const handleSubscribe = async (planId: string) => {
-    const plan = plans.find(p => p.id === planId);
-    
+    const plan = plans.find((p) => p.id === planId);
+
     if (!plan) {
       toast.error('Plano não encontrado');
       return;
@@ -172,7 +173,9 @@ export default function Subscription() {
     }
 
     if (planId === 'global') {
-      toast.info('Este plano estará disponível em breve. Fique atento às novidades!');
+      toast.info(
+        'Este plano estará disponível em breve. Fique atento às novidades!'
+      );
       return;
     }
 
@@ -328,22 +331,45 @@ export default function Subscription() {
 
       {/* Seção de instruções para configuração do Stripe */}
       <div className="mt-16 p-6 bg-muted rounded-lg">
-        <h3 className="text-lg font-semibold mb-4">📋 Configuração do Stripe</h3>
+        <h3 className="text-lg font-semibold mb-4">
+          📋 Configuração do Stripe
+        </h3>
         <div className="space-y-4 text-sm">
           <div>
-            <h4 className="font-medium mb-2">1. Configure os Price IDs do Stripe:</h4>
+            <h4 className="font-medium mb-2">
+              1. Configure os Price IDs do Stripe:
+            </h4>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-              <li>Substitua <code className="bg-background px-1 rounded">price_1234567890</code> pelo Price ID real do plano Pro</li>
-              <li>Substitua <code className="bg-background px-1 rounded">price_0987654321</code> pelo Price ID real do plano Premium</li>
+              <li>
+                Substitua{' '}
+                <code className="bg-background px-1 rounded">
+                  price_1234567890
+                </code>{' '}
+                pelo Price ID real do plano Pro
+              </li>
+              <li>
+                Substitua{' '}
+                <code className="bg-background px-1 rounded">
+                  price_0987654321
+                </code>{' '}
+                pelo Price ID real do plano Premium
+              </li>
             </ul>
           </div>
-          
+
           <div>
-            <h4 className="font-medium mb-2">2. Implemente a Edge Function 'create-checkout':</h4>
+            <h4 className="font-medium mb-2">
+              2. Implemente a Edge Function 'create-checkout':
+            </h4>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
               <li>Crie uma Supabase Edge Function para processar checkouts</li>
               <li>Configure as chaves secretas do Stripe no Supabase</li>
-              <li>Descomente e ajuste o código na função <code className="bg-background px-1 rounded">handleStripeCheckout</code></li>
+              <li>
+                Descomente e ajuste o código na função{' '}
+                <code className="bg-background px-1 rounded">
+                  handleStripeCheckout
+                </code>
+              </li>
             </ul>
           </div>
 

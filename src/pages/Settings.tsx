@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { 
-  User, 
-  Crown, 
-  Bell, 
-  Shield, 
-  Globe, 
-  Eye, 
+import React, {useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {
+  User,
+  Crown,
+  Bell,
+  Shield,
+  Globe,
+  Eye,
   EyeOff,
   Save,
   Edit,
   Check,
-  X
+  X,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {Button} from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -22,14 +22,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { authService, settingsService, subscriptionService } from '@/lib/api';
-import { toast } from 'sonner';
+import {Badge} from '@/components/ui/badge';
+import {Switch} from '@/components/ui/switch';
+import {Label} from '@/components/ui/label';
+import {Input} from '@/components/ui/input';
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
+// import { authService, settingsService, subscriptionService } from '@/lib/api';
+import {toast} from 'sonner';
 
 interface UserProfile {
   id: string;
@@ -40,7 +40,7 @@ interface UserProfile {
   address: {
     street: string;
     number: string;
-    complement: string;
+    complement?: string;
     city: string;
     state: string;
     zipCode: string;
@@ -92,12 +92,11 @@ export default function Settings() {
       zipCode: '',
     },
   });
-
   const [settings, setSettings] = useState<UserSettings>({
     notifications: {
       email: true,
-      push: true,
-      marketAlerts: false,
+      push: false,
+      marketAlerts: true,
       portfolioUpdates: true,
     },
     security: {
@@ -107,12 +106,12 @@ export default function Settings() {
     preferences: {
       language: 'pt-BR',
       currency: 'BRL',
-      theme: 'light',
+      theme: 'system',
     },
   });
 
   // Simular dados do usuário (em produção, viria da API)
-  const { data: user } = useQuery({
+  const {data: user} = useQuery({
     queryKey: ['user-profile'],
     queryFn: async (): Promise<UserProfile> => {
       // await authService.getProfile();
@@ -136,7 +135,7 @@ export default function Settings() {
     },
   });
 
-  const { data: subscription } = useQuery({
+  const {data: subscription} = useQuery({
     queryKey: ['current-subscription'],
     queryFn: async (): Promise<Subscription> => {
       // await subscriptionService.getCurrentPlan();
@@ -205,7 +204,14 @@ export default function Settings() {
         lastName: user.lastName,
         email: user.email,
         cpf: user.cpf,
-        address: user.address,
+        address: {
+          street: user.address.street,
+          number: user.address.number,
+          complement: user.address.complement,
+          city: user.address.city,
+          state: user.address.state,
+          zipCode: user.address.zipCode,
+        },
       });
     }
   }, [user]);
@@ -248,9 +254,12 @@ export default function Settings() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsEditing(!isEditing)}
-                >
-                  {isEditing ? <X className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
+                  onClick={() => setIsEditing(!isEditing)}>
+                  {isEditing ? (
+                    <X className="h-4 w-4" />
+                  ) : (
+                    <Edit className="h-4 w-4" />
+                  )}
                   {isEditing ? 'Cancelar' : 'Editar'}
                 </Button>
               </div>
@@ -265,7 +274,9 @@ export default function Settings() {
                     <Input
                       id="name"
                       value={profileData.name}
-                      onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                      onChange={(e) =>
+                        setProfileData({...profileData, name: e.target.value})
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -274,7 +285,12 @@ export default function Settings() {
                     <Input
                       id="lastName"
                       value={profileData.lastName}
-                      onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          lastName: e.target.value,
+                        })
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -284,7 +300,9 @@ export default function Settings() {
                       id="email"
                       type="email"
                       value={profileData.email}
-                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                      onChange={(e) =>
+                        setProfileData({...profileData, email: e.target.value})
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -293,7 +311,12 @@ export default function Settings() {
                     <Input
                       id="cpf"
                       value={profileData.cpf}
-                      onChange={(e) => setProfileData({ ...profileData, cpf: formatCPF(e.target.value) })}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          cpf: formatCPF(e.target.value),
+                        })
+                      }
                       disabled={!isEditing}
                       maxLength={14}
                     />
@@ -310,10 +333,15 @@ export default function Settings() {
                     <Input
                       id="street"
                       value={profileData.address.street}
-                      onChange={(e) => setProfileData({
-                        ...profileData,
-                        address: { ...profileData.address, street: e.target.value }
-                      })}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            street: e.target.value,
+                          },
+                        })
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -322,10 +350,15 @@ export default function Settings() {
                     <Input
                       id="number"
                       value={profileData.address.number}
-                      onChange={(e) => setProfileData({
-                        ...profileData,
-                        address: { ...profileData.address, number: e.target.value }
-                      })}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            number: e.target.value,
+                          },
+                        })
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -334,10 +367,15 @@ export default function Settings() {
                     <Input
                       id="complement"
                       value={profileData.address.complement}
-                      onChange={(e) => setProfileData({
-                        ...profileData,
-                        address: { ...profileData.address, complement: e.target.value }
-                      })}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            complement: e.target.value,
+                          },
+                        })
+                      }
                       disabled={!isEditing}
                       placeholder="Opcional"
                     />
@@ -347,10 +385,15 @@ export default function Settings() {
                     <Input
                       id="city"
                       value={profileData.address.city}
-                      onChange={(e) => setProfileData({
-                        ...profileData,
-                        address: { ...profileData.address, city: e.target.value }
-                      })}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            city: e.target.value,
+                          },
+                        })
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -359,10 +402,15 @@ export default function Settings() {
                     <Input
                       id="state"
                       value={profileData.address.state}
-                      onChange={(e) => setProfileData({
-                        ...profileData,
-                        address: { ...profileData.address, state: e.target.value }
-                      })}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            state: e.target.value,
+                          },
+                        })
+                      }
                       disabled={!isEditing}
                       maxLength={2}
                       placeholder="SP"
@@ -373,10 +421,15 @@ export default function Settings() {
                     <Input
                       id="zipCode"
                       value={profileData.address.zipCode}
-                      onChange={(e) => setProfileData({
-                        ...profileData,
-                        address: { ...profileData.address, zipCode: formatZipCode(e.target.value) }
-                      })}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            zipCode: formatZipCode(e.target.value),
+                          },
+                        })
+                      }
                       disabled={!isEditing}
                       maxLength={9}
                     />
@@ -395,6 +448,7 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
+        {/* ... keep existing code (subscription, notifications, and security tabs) */}
         <TabsContent value="subscription" className="space-y-6">
           <Card>
             <CardHeader>
@@ -406,9 +460,14 @@ export default function Settings() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold">{subscription?.planName}</h3>
+                  <h3 className="text-xl font-semibold">
+                    {subscription?.planName}
+                  </h3>
                   <p className="text-muted-foreground">
-                    Status: <Badge variant="default">{subscription?.status === 'active' ? 'Ativo' : 'Inativo'}</Badge>
+                    Status:{' '}
+                    <Badge variant="default">
+                      {subscription?.status === 'active' ? 'Ativo' : 'Inativo'}
+                    </Badge>
                   </p>
                   {subscription?.expiresAt && (
                     <p className="text-sm text-muted-foreground">
@@ -420,7 +479,7 @@ export default function Settings() {
                   <a href="/subscription">Gerenciar Plano</a>
                 </Button>
               </div>
-              
+
               <div className="border-t pt-4">
                 <h4 className="font-medium mb-2">Recursos inclusos:</h4>
                 <ul className="space-y-1">
@@ -451,7 +510,9 @@ export default function Settings() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label htmlFor="email-notifications">Notificações por Email</Label>
+                    <Label htmlFor="email-notifications">
+                      Notificações por Email
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Receba resumos e atualizações importantes por email
                     </p>
@@ -462,15 +523,20 @@ export default function Settings() {
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notifications: { ...settings.notifications, email: checked },
+                        notifications: {
+                          ...settings.notifications,
+                          email: checked,
+                        },
                       })
                     }
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label htmlFor="push-notifications">Notificações Push</Label>
+                    <Label htmlFor="push-notifications">
+                      Notificações Push
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Receba notificações em tempo real no navegador
                     </p>
@@ -481,7 +547,10 @@ export default function Settings() {
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notifications: { ...settings.notifications, push: checked },
+                        notifications: {
+                          ...settings.notifications,
+                          push: checked,
+                        },
                       })
                     }
                   />
@@ -500,7 +569,10 @@ export default function Settings() {
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notifications: { ...settings.notifications, marketAlerts: checked },
+                        notifications: {
+                          ...settings.notifications,
+                          marketAlerts: checked,
+                        },
                       })
                     }
                   />
@@ -508,7 +580,9 @@ export default function Settings() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label htmlFor="portfolio-updates">Atualizações de Portfólio</Label>
+                    <Label htmlFor="portfolio-updates">
+                      Atualizações de Portfólio
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Notificações sobre mudanças na sua carteira
                     </p>
@@ -519,7 +593,10 @@ export default function Settings() {
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notifications: { ...settings.notifications, portfolioUpdates: checked },
+                        notifications: {
+                          ...settings.notifications,
+                          portfolioUpdates: checked,
+                        },
                       })
                     }
                   />
@@ -542,14 +619,14 @@ export default function Settings() {
                 <Shield className="h-5 w-5" />
                 <CardTitle>Segurança</CardTitle>
               </div>
-              <CardDescription>
-                Mantenha sua conta segura
-              </CardDescription>
+              <CardDescription>Mantenha sua conta segura</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="two-factor">Autenticação de Dois Fatores</Label>
+                  <Label htmlFor="two-factor">
+                    Autenticação de Dois Fatores
+                  </Label>
                   <p className="text-sm text-muted-foreground">
                     Adicione uma camada extra de segurança à sua conta
                   </p>
@@ -560,7 +637,10 @@ export default function Settings() {
                   onCheckedChange={(checked) =>
                     setSettings({
                       ...settings,
-                      security: { ...settings.security, twoFactorEnabled: checked },
+                      security: {
+                        ...settings.security,
+                        twoFactorEnabled: checked,
+                      },
                     })
                   }
                 />
@@ -578,15 +658,15 @@ export default function Settings() {
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
-                  <Input
-                    type="password"
-                    placeholder="Confirmar nova senha"
-                  />
+                  <Input type="password" placeholder="Confirmar nova senha" />
                   <Button variant="outline" size="sm">
                     Alterar Senha
                   </Button>
@@ -594,7 +674,9 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="session-timeout">Timeout de Sessão (minutos)</Label>
+                <Label htmlFor="session-timeout">
+                  Timeout de Sessão (minutos)
+                </Label>
                 <Input
                   id="session-timeout"
                   type="number"
@@ -602,7 +684,10 @@ export default function Settings() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      security: { ...settings.security, sessionTimeout: parseInt(e.target.value) },
+                      security: {
+                        ...settings.security,
+                        sessionTimeout: parseInt(e.target.value),
+                      },
                     })
                   }
                 />

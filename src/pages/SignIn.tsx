@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useLocation} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
@@ -40,6 +40,10 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Pega a página de onde o usuário veio (se foi redirecionado)
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -67,7 +71,7 @@ export default function SignIn() {
 
     setTimeout(() => {
       toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
+      navigate(from, {replace: true});
     }, 1000);
   };
 
