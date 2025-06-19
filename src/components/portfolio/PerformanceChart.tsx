@@ -28,40 +28,6 @@ interface PerformanceChartProps {
 }
 
 // Custom tooltip component for better styling
-const CustomTooltip = ({active, payload, label}: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-background border border-border rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-foreground">
-        <p className="font-semibold text-base mb-1">
-          {new Date(label).toLocaleDateString('pt-BR')}
-        </p>
-        <p className="text-primary text-base">
-          {formatCurrency(Number(payload[0].value))}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
-// Custom tooltip component for better styling
-const CustomTooltip = ({active, payload, label}: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-background border border-border rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-foreground">
-        <p className="font-semibold text-base mb-1">
-          {new Date(label).toLocaleDateString('pt-BR')}
-        </p>
-        <p className="text-primary text-base">
-          {formatCurrency(Number(payload[0].value))}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
-// Custom tooltip component for better styling
 const CustomTooltip = ({
   active,
   payload,

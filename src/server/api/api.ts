@@ -1,4 +1,3 @@
-
 import {ICreateUser} from '@/interface/authentication';
 import {apiUrlDevelopment} from '@/utils/env';
 import axios from 'axios';
@@ -24,14 +23,14 @@ export const portfolioService = {
   getAssets: () => apiClient.get('/portfolio/assets'),
   getAssetDetails: (assetId: string) =>
     apiClient.get(`/portfolio/assets/${assetId}`),
-  getTransactions: (params?: any) =>
+  getTransactions: (params?: Record<string, unknown>) =>
     apiClient.get('/portfolio/transactions', {params}),
 };
 
 export const connectionsService = {
   getBrokerages: () => apiClient.get('/connections/brokerages'),
   getCryptoExchanges: () => apiClient.get('/connections/crypto-exchanges'),
-  connectAccount: (type: string, credentials: any) =>
+  connectAccount: (type: string, credentials: Record<string, unknown>) =>
     apiClient.post(`/connections/${type}`, credentials),
   getConnections: () => apiClient.get('/connections'),
   removeConnection: (id: string) => apiClient.delete(`/connections/${id}`),
@@ -47,7 +46,8 @@ export const aiService = {
 
 export const settingsService = {
   getSettings: () => apiClient.get('/settings'),
-  updateSettings: (settings: any) => apiClient.put('/settings', settings),
+  updateSettings: (settings: Record<string, unknown>) =>
+    apiClient.put('/settings', settings),
 };
 
 export const subscriptionService = {

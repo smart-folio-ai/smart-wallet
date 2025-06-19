@@ -18,7 +18,6 @@ import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import SignOut from './pages/SignOut';
-import Settings from './pages/Settings';
 
 const queryClient = new QueryClient();
 
