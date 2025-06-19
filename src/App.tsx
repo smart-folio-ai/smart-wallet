@@ -11,6 +11,7 @@ import Index from './pages/Index';
 import SyncAccounts from './pages/SyncAccounts';
 import AIInsights from './pages/AIInsights';
 import Subscription from './pages/Subscription';
+import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import Portfolio from './pages/Portifolio';
 import SignIn from './pages/SignIn';

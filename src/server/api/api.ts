@@ -1,3 +1,4 @@
+
 import {ICreateUser} from '@/interface/authentication';
 import {apiUrlDevelopment} from '@/utils/env';
 import axios from 'axios';
@@ -18,36 +19,36 @@ export const authService = {
   getProfile: () => apiClient.get('/auth/profile'),
 };
 
-// export const portfolioService = {
-//   getSummary: () => apiClient.get('/portfolio/summary'),
-//   getAssets: () => apiClient.get('/portfolio/assets'),
-//   getAssetDetails: (assetId: string) =>
-//     apiClient.get(`/portfolio/assets/${assetId}`),
-//   getTransactions: (params?: any) =>
-//     apiClient.get('/portfolio/transactions', {params}),
-// };
+export const portfolioService = {
+  getSummary: () => apiClient.get('/portfolio/summary'),
+  getAssets: () => apiClient.get('/portfolio/assets'),
+  getAssetDetails: (assetId: string) =>
+    apiClient.get(`/portfolio/assets/${assetId}`),
+  getTransactions: (params?: any) =>
+    apiClient.get('/portfolio/transactions', {params}),
+};
 
-// export const connectionsService = {
-//   getBrokerages: () => apiClient.get('/connections/brokerages'),
-//   getCryptoExchanges: () => apiClient.get('/connections/crypto-exchanges'),
-//   connectAccount: (type: string, credentials: any) =>
-//     apiClient.post(`/connections/${type}`, credentials),
-//   getConnections: () => apiClient.get('/connections'),
-//   removeConnection: (id: string) => apiClient.delete(`/connections/${id}`),
-//   syncConnection: (id: string) => apiClient.post(`/connections/${id}/sync`),
-// };
+export const connectionsService = {
+  getBrokerages: () => apiClient.get('/connections/brokerages'),
+  getCryptoExchanges: () => apiClient.get('/connections/crypto-exchanges'),
+  connectAccount: (type: string, credentials: any) =>
+    apiClient.post(`/connections/${type}`, credentials),
+  getConnections: () => apiClient.get('/connections'),
+  removeConnection: (id: string) => apiClient.delete(`/connections/${id}`),
+  syncConnection: (id: string) => apiClient.post(`/connections/${id}/sync`),
+};
 
-// export const aiService = {
-//   getInsights: () => apiClient.get('/ai/insights'),
-//   getAssetAnalysis: (assetId: string) =>
-//     apiClient.get(`/ai/asset-analysis/${assetId}`),
-//   getMarketOverview: () => apiClient.get('/ai/market-overview'),
-// };
+export const aiService = {
+  getInsights: () => apiClient.get('/ai/insights'),
+  getAssetAnalysis: (assetId: string) =>
+    apiClient.get(`/ai/asset-analysis/${assetId}`),
+  getMarketOverview: () => apiClient.get('/ai/market-overview'),
+};
 
-// export const settingsService = {
-//   getSettings: () => apiClient.get('/settings'),
-//   updateSettings: (settings: any) => apiClient.put('/settings', settings),
-// };
+export const settingsService = {
+  getSettings: () => apiClient.get('/settings'),
+  updateSettings: (settings: any) => apiClient.put('/settings', settings),
+};
 
 export const subscriptionService = {
   getPlans: () => apiClient.get('/subscription/plans'),
