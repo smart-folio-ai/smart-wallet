@@ -1,18 +1,24 @@
-
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { 
-  AreaChart, 
-  Area, 
+import {useState} from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {Button} from '@/components/ui/button';
+import {
+  AreaChart,
+  Area,
   ResponsiveContainer,
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid
-} from "recharts";
-import { Asset, AssetPerformance } from "@/types/portfolio";
-import { formatCurrency } from "@/utils/formatters";
+  CartesianGrid,
+  TooltipProps,
+} from 'recharts';
+import {Asset, AssetPerformance} from '@/types/portfolio';
+import {formatCurrency} from '@/utils/formatters';
 
 interface PerformanceChartProps {
   loading: boolean;
@@ -21,17 +27,43 @@ interface PerformanceChartProps {
   performanceData: Record<string, AssetPerformance[]>;
 }
 
-export const PerformanceChart = ({ loading, activeTab, assets, performanceData }: PerformanceChartProps) => {
-  const [selectedPeriod, setSelectedPeriod] = useState("1M");
+// Custom tooltip component for better styling
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: TooltipProps<number, string>) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background border border-border rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-foreground">
+        <p className="font-semibold text-base mb-1">
+          {new Date(label).toLocaleDateString('pt-BR')}
+        </p>
+        <p className="text-primary text-base">
+          {formatCurrency(Number(payload[0].value))}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+export const PerformanceChart = ({
+  loading,
+  activeTab,
+  assets,
+  performanceData,
+}: PerformanceChartProps) => {
+  const [selectedPeriod, setSelectedPeriod] = useState('1M');
 
   // Get performance data based on active tab
   const getPerformanceData = () => {
     switch (activeTab) {
-      case "stock":
+      case 'stock':
         return performanceData.stocks;
-      case "fii":
+      case 'fii':
         return performanceData.fiis;
-      case "crypto":
+      case 'crypto':
         return performanceData.crypto;
       default:
         return performanceData.stocks;
@@ -47,17 +79,18 @@ export const PerformanceChart = ({ loading, activeTab, assets, performanceData }
             <CardDescription>Evolução do valor por período</CardDescription>
           </div>
           <div className="flex space-x-1">
-            {["1D", "1S", "1M", "3M", "6M", "YTD", "1A", "MAX"].map((period) => (
-              <Button 
-                key={period} 
-                variant={selectedPeriod === period ? "default" : "outline"} 
-                size="sm"
-                onClick={() => setSelectedPeriod(period)}
-                className="text-xs h-8"
-              >
-                {period}
-              </Button>
-            ))}
+            {['1D', '1S', '1M', '3M', '6M', 'YTD', '1A', 'MAX'].map(
+              (period) => (
+                <Button
+                  key={period}
+                  variant={selectedPeriod === period ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod(period)}
+                  className="text-xs h-8">
+                  {period}
+                </Button>
+              )
+            )}
           </div>
         </div>
       </CardHeader>
@@ -68,18 +101,29 @@ export const PerformanceChart = ({ loading, activeTab, assets, performanceData }
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={getPerformanceData().flatMap(data => 
-                  data.period === selectedPeriod ? 
-                  assets
-                    .filter(asset => activeTab === "all" || asset.type === activeTab)
-                    .flatMap(asset => asset.history || [])
-                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) : 
-                  []
+                data={getPerformanceData().flatMap((data) =>
+                  data.period === selectedPeriod
+                    ? assets
+                        .filter(
+                          (asset) =>
+                            activeTab === 'all' || asset.type === activeTab
+                        )
+                        .flatMap((asset) => asset.history || [])
+                        .sort(
+                          (a, b) =>
+                            new Date(a.date).getTime() -
+                            new Date(b.date).getTime()
+                        )
+                    : []
                 )}
-                margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-              >
+                margin={{top: 10, right: 10, left: 10, bottom: 10}}>
                 <defs>
-                  <linearGradient id="colorPerformance" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    id="colorPerformance"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1">
                     <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
                     <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
                   </linearGradient>
@@ -87,21 +131,21 @@ export const PerformanceChart = ({ loading, activeTab, assets, performanceData }
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 12 }}
+                  tick={{fontSize: 12}}
                   tickFormatter={(value) => {
                     const date = new Date(value);
-                    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                    return date.toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                    });
                   }}
                 />
                 <YAxis
-                  tick={{ fontSize: 12 }}
+                  tick={{fontSize: 12}}
                   tickFormatter={(value) => formatCurrency(value)}
                   domain={['auto', 'auto']}
                 />
-                <Tooltip
-                  formatter={(value) => [formatCurrency(Number(value)), "Valor"]}
-                  labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR')}
-                />
+                <Tooltip content={<CustomTooltip />} />
                 <Area
                   type="monotone"
                   dataKey="price"

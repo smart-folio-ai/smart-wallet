@@ -9,8 +9,6 @@ const apiClient = axios.create({
   },
 });
 
-console.log(apiUrlDevelopment);
-
 // Serviços de API
 export const authService = {
   login: (email: string, password: string, keepConnected: boolean) =>
