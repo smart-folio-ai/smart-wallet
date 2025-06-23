@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {
   User,
@@ -28,44 +28,17 @@ import {Label} from '@/components/ui/label';
 import {Input} from '@/components/ui/input';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-// import { authService, settingsService, subscriptionService } from '@/lib/api';
 import {toast} from 'sonner';
-
-interface UserProfile {
-  id: string;
-  name: string;
-  lastName: string;
-  email: string;
-  cpf: string;
-  address: {
-    street: string;
-    number: string;
-    complement?: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  avatar?: string;
-  createdAt: string;
-}
-
-interface UserSettings {
-  notifications: {
-    email: boolean;
-    push: boolean;
-    marketAlerts: boolean;
-    portfolioUpdates: boolean;
-  };
-  security: {
-    twoFactorEnabled: boolean;
-    sessionTimeout: number;
-  };
-  preferences: {
-    language: string;
-    currency: string;
-    theme: string;
-  };
-}
+import {z} from 'zod';
+import Profile from '@/services/profile';
+import Address from '@/services/address';
+import {
+  IUserProfileResponse,
+  UserResponse,
+  UserSettings,
+} from '@/interface/users';
+import {AddressResponse} from '@/interface/address';
+import {getActiveResourcesInfo} from 'process';
 
 interface Subscription {
   planId: string;
@@ -75,11 +48,28 @@ interface Subscription {
   features: string[];
 }
 
+const formSchema = z.object({
+  firstName: z.string().min(3, 'Digite um nome válido'),
+  lastName: z.string().min(3, 'Digite um sobrenome válido'),
+  email: z.string().email('Digite um email válido'),
+  cpf: z.string().min(11, 'Digite um CPF válido'),
+  address: z.object({
+    street: z.string().min(3, 'Digite uma rua válida'),
+    number: z.string().min(1, 'Digite um número válido'),
+    complement: z.string().optional(),
+    city: z.string().min(3, 'Digite uma cidade válida'),
+    state: z.string().min(2, 'Digite um estado válido'),
+    zipCode: z.string().min(8, 'Digite um CEP válido'),
+  }),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
 export default function Settings() {
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [profileData, setProfileData] = useState({
-    name: '',
+  const [profileData, setProfileData] = useState<FormValues>({
+    firstName: '',
     lastName: '',
     email: '',
     cpf: '',
@@ -110,27 +100,46 @@ export default function Settings() {
     },
   });
 
-  // Simular dados do usuário (em produção, viria da API)
+  const onSubmit = async (data: FormValues) => {
+    console.log(data);
+  };
+
+  const fetchProfileUser = async () => {
+    const userProfile: IUserProfileResponse = await Profile.getProfile();
+
+    return userProfile;
+  };
+
+  const fetchGetAddressByUser = async () => {
+    const getUserId = await fetchProfileUser();
+    const userAddress: AddressResponse = await Address.getAddressByUser(
+      getUserId._id
+    );
+    return userAddress;
+  };
+
   const {data: user} = useQuery({
     queryKey: ['user-profile'],
-    queryFn: async (): Promise<UserProfile> => {
-      // await authService.getProfile();
+    queryFn: async (): Promise<IUserProfileResponse> => {
+      const userProfile = await fetchProfileUser();
+      const userAddress = await fetchGetAddressByUser();
+
       return {
-        id: '1',
-        name: 'João',
-        lastName: 'Silva',
-        email: 'joao.silva@email.com',
-        cpf: '123.456.789-00',
+        _id: userProfile._id,
+        user: userProfile._id, // TODO: ajustar
+        firstName: userProfile.firstName,
+        lastName: userProfile.lastName,
+        email: userProfile.email,
+        cpf: userProfile.cpf,
         address: {
-          street: 'Rua das Flores',
-          number: '123',
-          complement: 'Apto 45',
-          city: 'São Paulo',
-          state: 'SP',
-          zipCode: '01234-567',
+          street: userAddress.street,
+          number: userAddress.number,
+          complement: userAddress.complement,
+          city: userAddress.city,
+          state: userAddress.state,
+          zipCode: userAddress.zipCode,
         },
-        avatar: '',
-        createdAt: '2024-01-15T10:00:00Z',
+        avatar: 'https://github.com/shadcn.png',
       };
     },
   });
@@ -200,7 +209,7 @@ export default function Settings() {
   React.useEffect(() => {
     if (user) {
       setProfileData({
-        name: user.name,
+        firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         cpf: user.cpf,
@@ -273,9 +282,12 @@ export default function Settings() {
                     <Label htmlFor="name">Nome</Label>
                     <Input
                       id="name"
-                      value={profileData.name}
+                      value={profileData.firstName}
                       onChange={(e) =>
-                        setProfileData({...profileData, name: e.target.value})
+                        setProfileData({
+                          ...profileData,
+                          firstName: e.target.value,
+                        })
                       }
                       disabled={!isEditing}
                     />
