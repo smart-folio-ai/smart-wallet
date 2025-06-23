@@ -12,4 +12,4 @@ export const apiUrlDevelopment = import.meta.env.VITE_API_URL_DEVELOPMENT;
 export const apiUrlProduction = import.meta.env.VITE_API_URL_PRODUCTION;
 export const stripePublicApiKey = import.meta.env.VITE_STRIPE_PUBLIC_API_KEY;
 export const stripPrivateApiKey = import.meta.env.VITE_STRIPE_PRIVATE_API_KEY;
-export const isDev = import.meta.env.VITE_DEV_MODE === true;
+export const isDev = import.meta.env.VITE_DEV_MODE === 'true';
