@@ -24,9 +24,6 @@ import {
 // Mock data para brokerages e exchanges
 const brokerages = [
   {id: 'b3', name: 'B3', logo: '🇧🇷', connected: false},
-  {id: 'xp', name: 'XP Investimentos', logo: 'XP', connected: false},
-  {id: 'clear', name: 'Clear', logo: 'C', connected: false},
-  {id: 'nuinvest', name: 'NuInvest', logo: 'NU', connected: false},
 ];
 
 const cryptoExchanges = [
@@ -46,58 +43,63 @@ const SyncAccounts = () => {
   const {toast} = useToast();
   const [activeTab, setActiveTab] = useState('brokerages');
   const [connecting, setConnecting] = useState(false);
+  const [cpf, setCpf] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
 
   const handleConnect = async () => {
-    if (!selectedProvider || !apiKey || !apiSecret) {
-      toast({
-        title: 'Campos obrigatórios',
-        description: 'Por favor, preencha todos os campos necessários.',
-        variant: 'destructive',
-      });
-      return;
+    // Check if it's B3 brokerage connection
+    if (brokerages.find(b => b.id === selectedProvider)) {
+      if (!selectedProvider || !cpf) {
+        toast({
+          title: 'CPF obrigatório',
+          description: 'Por favor, preencha o CPF.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setConnecting(true);
+
+      // Simulating API call for B3
+      setTimeout(() => {
+        setConnecting(false);
+        setCpf('');
+        setSelectedProvider(null);
+
+        toast({
+          title: 'Conta B3 conectada',
+          description: 'Sua conta B3 foi conectada com sucesso.',
+        });
+      }, 2000);
+    } 
+    // Check if it's crypto exchange connection
+    else if (cryptoExchanges.find(e => e.id === selectedProvider)) {
+      if (!selectedProvider || !apiKey || !apiSecret) {
+        toast({
+          title: 'Campos obrigatórios',
+          description: 'Por favor, preencha todos os campos necessários.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setConnecting(true);
+
+      // Simulating API call for crypto
+      setTimeout(() => {
+        setConnecting(false);
+        setApiKey('');
+        setApiSecret('');
+        setSelectedProvider(null);
+
+        toast({
+          title: 'Exchange conectada',
+          description: 'Sua exchange foi conectada com sucesso.',
+        });
+      }, 2000);
     }
-
-    setConnecting(true);
-
-    // Simulating API call
-    setTimeout(() => {
-      setConnecting(false);
-      setApiKey('');
-      setApiSecret('');
-      setSelectedProvider(null);
-
-      toast({
-        title: 'Conta conectada',
-        description: 'Sua conta foi conectada com sucesso.',
-      });
-
-      // When real API is ready:
-      // try {
-      //   await connectionsService.connectAccount(selectedProvider, {
-      //     apiKey,
-      //     apiSecret,
-      //   });
-      //   setApiKey("");
-      //   setApiSecret("");
-      //   setSelectedProvider(null);
-      //   toast({
-      //     title: "Conta conectada",
-      //     description: "Sua conta foi conectada com sucesso.",
-      //   });
-      // } catch (error) {
-      //   console.error("Failed to connect account", error);
-      //   toast({
-      //     title: "Erro",
-      //     description: "Falha ao conectar a conta. Verifique suas credenciais.",
-      //     variant: "destructive",
-      //   });
-      // } finally {
-      //   setConnecting(false);
-      // }
-    }, 2000);
   };
 
   const handleSync = (providerId: string) => {
@@ -199,25 +201,15 @@ const SyncAccounts = () => {
 
               {selectedProvider && (
                 <div className="space-y-4 p-4 bg-card/30 rounded-lg">
-                  <h3 className="font-medium">Conectar conta</h3>
+                  <h3 className="font-medium">Conectar conta B3</h3>
                   <div className="grid gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="apiKey">Chave API</Label>
+                      <Label htmlFor="cpf">CPF</Label>
                       <Input
-                        id="apiKey"
-                        placeholder="Insira sua chave API"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="apiSecret">Senha API</Label>
-                      <Input
-                        id="apiSecret"
-                        type="password"
-                        placeholder="Insira sua senha API"
-                        value={apiSecret}
-                        onChange={(e) => setApiSecret(e.target.value)}
+                        id="cpf"
+                        placeholder="000.000.000-00"
+                        value={cpf}
+                        onChange={(e) => setCpf(e.target.value)}
                       />
                     </div>
                   </div>
