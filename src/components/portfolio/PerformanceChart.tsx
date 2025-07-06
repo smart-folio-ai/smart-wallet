@@ -35,7 +35,7 @@ const CustomTooltip = ({
 }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-background border border-border rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-foreground">
+      <div className="bg-muted border border-border rounded-xl shadow-lg px-4 py-3 text-sm font-medium text-foreground">
         <p className="font-semibold text-base mb-1">
           {new Date(label).toLocaleDateString('pt-BR')}
         </p>

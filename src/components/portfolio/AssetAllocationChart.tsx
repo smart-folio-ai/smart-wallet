@@ -37,7 +37,7 @@ const CustomTooltip = ({
 }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-background border border-border rounded-lg shadow-lg px-3 py-2 text-sm font-medium text-foreground">
+      <div className="bg-muted border border-border rounded-xl shadow-lg px-3 py-2 text-sm font-medium text-foreground">
         <p className="font-semibold">{payload[0].name}</p>
         <p className="text-primary">{`${payload[0].value.toFixed(2)}%`}</p>
       </div>

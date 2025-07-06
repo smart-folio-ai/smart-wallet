@@ -14,6 +14,7 @@ import Subscription from './pages/Subscription';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import Portfolio from './pages/Portifolio';
+import Planning from './pages/Planning';
 import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -56,6 +57,7 @@ const App = () => (
                             element={<Subscription />}
                           />
                           <Route path="/portfolio" element={<Portfolio />} />
+                          <Route path="/planning" element={<Planning />} />
                           <Route path="/settings" element={<Settings />} />
                           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                           <Route path="*" element={<NotFound />} />

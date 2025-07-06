@@ -14,6 +14,7 @@ import {AppLogo} from '@/components/AppLogo';
 import {ThemeToggle} from '@/components/ThemeToggle';
 import {
   BarChart3,
+  Calculator,
   CircleDollarSign,
   Layers,
   LineChart,
@@ -51,6 +52,14 @@ export function AppSidebar() {
                   <Link to="/portfolio">
                     <Layers className="h-5 w-5" />
                     <span>Portfolio</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/planning">
+                    <Calculator className="h-5 w-5" />
+                    <span>Planejamento</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
