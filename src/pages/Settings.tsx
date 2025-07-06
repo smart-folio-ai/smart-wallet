@@ -139,6 +139,7 @@ export default function Settings() {
           state: userAddress.state,
           zipCode: userAddress.zipCode,
         },
+        createdAt: userProfile.createdAt,
         avatar: 'https://github.com/shadcn.png',
       };
     },
@@ -182,7 +183,7 @@ export default function Settings() {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: Date | string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       year: 'numeric',
       month: 'long',
@@ -460,7 +461,6 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        {/* ... keep existing code (subscription, notifications, and security tabs) */}
         <TabsContent value="subscription" className="space-y-6">
           <Card>
             <CardHeader>
