@@ -202,7 +202,7 @@ export const AssetDetailModal = ({ selectedAsset, setSelectedAsset }: AssetDetai
             <Button variant="outline" className="mr-2" onClick={() => setSelectedAsset(null)}>
               Fechar
             </Button>
-            <Button onClick={() => window.location.href = `/portfolio/${selectedAsset.symbol}`}>
+            <Button onClick={() => window.location.href = `/asset/${selectedAsset.symbol}`}>
               <ChevronRight className="h-4 w-4 mr-2" />
               Ver Detalhes Completos
             </Button>

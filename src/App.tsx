@@ -15,6 +15,7 @@ import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import Portfolio from './pages/Portifolio';
 import AssetDetail from './pages/AssetDetail';
+import AssetSearch from './pages/AssetSearch';
 import Planning from './pages/Planning';
 import SignIn from './pages/SignIn';
 import Register from './pages/Register';
@@ -53,12 +54,14 @@ const App = () => (
                             element={<SyncAccounts />}
                           />
                           <Route path="/ai-insights" element={<AIInsights />} />
+                          <Route path="/asset-search" element={<AssetSearch />} />
                           <Route
                             path="/subscription"
                             element={<Subscription />}
                           />
                           <Route path="/portfolio" element={<Portfolio />} />
                           <Route path="/portfolio/:symbol" element={<AssetDetail />} />
+                          <Route path="/asset/:symbol" element={<AssetDetail />} />
                           <Route path="/planning" element={<Planning />} />
                           <Route path="/settings" element={<Settings />} />
                           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

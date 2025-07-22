@@ -18,6 +18,7 @@ import {
   CircleDollarSign,
   Layers,
   LineChart,
+  Search,
   Settings,
   Star,
   Users,
@@ -84,6 +85,14 @@ export function AppSidebar() {
                   <Link to="/ai-insights">
                     <Star className="h-5 w-5" />
                     <span>IA Insights</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/asset-search">
+                    <Search className="h-5 w-5" />
+                    <span>Buscar Ativos</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
