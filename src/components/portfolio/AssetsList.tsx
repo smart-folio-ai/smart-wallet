@@ -139,7 +139,7 @@ export const AssetsList = ({
               <TableRow 
                 key={asset.id}
                 className="cursor-pointer hover:bg-accent/50"
-                onClick={() => onAssetClick(asset)}
+                onClick={() => window.location.href = `/asset/${asset.symbol}`}
               >
                 <TableCell>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
