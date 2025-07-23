@@ -17,6 +17,7 @@ import {Asset} from '@/types/portfolio';
 import {formatCurrency} from '@/utils/formatters';
 import {Building, Coins, TrendingUp} from 'lucide-react';
 import {TooltipProps} from 'recharts';
+import {CustomTooltip} from '@/components/ui/custom-tooltip';
 
 interface AssetAllocationChartProps {
   loading: boolean;
@@ -28,23 +29,6 @@ interface AssetAllocationChartProps {
   }[];
   openAssetDetails: (asset: Asset) => void;
 }
-
-// Custom tooltip component for better styling
-const CustomTooltip = ({
-  active,
-  payload,
-  label,
-}: TooltipProps<number, string>) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-muted border border-border rounded-xl shadow-lg px-3 py-2 text-sm font-medium text-foreground">
-        <p className="font-semibold">{payload[0].name}</p>
-        <p className="text-primary">{`${payload[0].value.toFixed(2)}%`}</p>
-      </div>
-    );
-  }
-  return null;
-};
 
 export const AssetAllocationChart = ({
   loading,
@@ -81,7 +65,16 @@ export const AssetAllocationChart = ({
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip
+                    content={
+                      <CustomTooltip
+                        formatter={(value) => [
+                          `${Number(value).toFixed(1)}%`,
+                          'Alocação',
+                        ]}
+                      />
+                    }
+                  />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
