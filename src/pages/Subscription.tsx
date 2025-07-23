@@ -13,6 +13,7 @@ import {Badge} from '@/components/ui/badge';
 // import {subscriptionService} from '@/server/api/api';
 import {toast} from 'sonner';
 import stripe from '@/services/payment/stripe';
+import {useNavigate} from 'react-router-dom';
 
 type PricingPeriod = 'monthly' | 'annual';
 
@@ -105,7 +106,7 @@ export default function Subscription() {
   const [pricingPeriod, setPricingPeriod] =
     React.useState<PricingPeriod>('monthly');
   const [loading, setLoading] = React.useState<Record<string, boolean>>({});
-
+  const navigate = useNavigate();
   // Função para iniciar checkout do Stripe
   const handleStripeCheckout = async (plan: PricingPlan) => {
     if (!plan.stripePriceId) {
@@ -147,7 +148,16 @@ export default function Subscription() {
 
       // Simular redirecionamento após 2 segundos
       setTimeout(() => {
-        toast.info('Checkout simulado - integração com Stripe pendente');
+        // Simular sucesso ou cancelamento aleatoriamente para demonstração
+        const isSuccess = Math.random() > 0.3; // 70% chance de sucesso
+        if (isSuccess) {
+          navigate(
+            '/subscription-success?session_id=cs_test_' +
+              Math.random().toString(36).substr(2, 9)
+          );
+        } else {
+          navigate('/subscription-cancelled');
+        }
       }, 2000);
     } catch (error) {
       console.error('Erro ao iniciar checkout:', error);

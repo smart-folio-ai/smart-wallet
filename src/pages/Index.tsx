@@ -42,6 +42,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {formatCurrency} from '@/utils';
+import {CustomTooltip} from '@/components/ui/custom-tooltip';
 
 interface Asset {
   id: string;
@@ -390,6 +391,22 @@ const Dashboard = () => {
                         ]}
                         labelFormatter={(label) =>
                           new Date(label).toLocaleDateString('pt-BR')
+                        }
+                        content={
+                          <CustomTooltip
+                            formatter={(value) => [
+                              formatCurrency(Number(value)),
+                              'Valor da Carteira',
+                            ]}
+                            labelFormatter={(label) =>
+                              new Date(label).toLocaleDateString('pt-BR', {
+                                weekday: 'short',
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            }
+                          />
                         }
                       />
                       <Area

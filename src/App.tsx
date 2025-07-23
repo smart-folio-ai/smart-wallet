@@ -21,6 +21,8 @@ import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import SignOut from './pages/SignOut';
+import SubscriptionSuccess from './pages/SubscriptionSuccess';
+import SubscriptionCancelled from './pages/SubscriptionCancelled';
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,14 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/signout" element={<SignOut />} />
+          <Route
+            path="/subscription-success"
+            element={<SubscriptionSuccess />}
+          />
+          <Route
+            path="/subscription-cancelled"
+            element={<SubscriptionCancelled />}
+          />
           <Route
             path="*"
             element={
@@ -54,16 +64,33 @@ const App = () => (
                             element={<SyncAccounts />}
                           />
                           <Route path="/ai-insights" element={<AIInsights />} />
-                          <Route path="/asset-search" element={<AssetSearch />} />
+                          <Route
+                            path="/asset-search"
+                            element={<AssetSearch />}
+                          />
                           <Route
                             path="/subscription"
                             element={<Subscription />}
                           />
                           <Route path="/portfolio" element={<Portfolio />} />
-                          <Route path="/portfolio/:symbol" element={<AssetDetail />} />
-                          <Route path="/asset/:symbol" element={<AssetDetail />} />
+                          <Route
+                            path="/portfolio/:symbol"
+                            element={<AssetDetail />}
+                          />
+                          <Route
+                            path="/asset/:symbol"
+                            element={<AssetDetail />}
+                          />
                           <Route path="/planning" element={<Planning />} />
                           <Route path="/settings" element={<Settings />} />
+                          <Route
+                            path="/subscription-success"
+                            element={<SubscriptionSuccess />}
+                          />
+                          <Route
+                            path="/subscription-cancelled"
+                            element={<SubscriptionCancelled />}
+                          />
                           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                           <Route path="*" element={<NotFound />} />
                         </Routes>
