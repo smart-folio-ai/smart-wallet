@@ -1,6 +1,5 @@
-
 export interface Asset {
-  id: string;
+  _id: string;
   symbol: string;
   name: string;
   price: number;
@@ -8,7 +7,7 @@ export interface Asset {
   amount: number;
   value: number;
   allocation: number;
-  type: "stock" | "crypto" | "fii" | "other";
+  type: 'stock' | 'crypto' | 'fii' | 'other';
   dividendYield?: number;
   lastDividend?: number;
   sector?: string;
@@ -17,7 +16,7 @@ export interface Asset {
   purchaseDate?: string;
   profitLoss?: number;
   profitLossPercentage?: number;
-  aiRecommendation?: "buy" | "hold" | "sell";
+  aiRecommendation?: 'buy' | 'hold' | 'sell';
   aiConfidence?: number;
   history?: {
     date: string;
@@ -36,6 +35,6 @@ export interface AssetPerformance {
 }
 
 export interface SortConfig {
-  key: keyof Asset | "";
-  direction: "asc" | "desc";
+  key: keyof Asset | '';
+  direction: 'asc' | 'desc';
 }
