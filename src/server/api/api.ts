@@ -2,7 +2,8 @@ import {ICreateUser} from '@/interface/authentication';
 import {
   ICreateSubscription,
   IUpdateSubscriptionFeature,
-} from '@/types/subscription';
+} from '@/interface/subscription';
+
 import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
 import axios from 'axios';
 
