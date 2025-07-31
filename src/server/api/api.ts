@@ -1,4 +1,8 @@
 import {ICreateUser} from '@/interface/authentication';
+import {
+  ICreateSubscription,
+  IUpdateSubscriptionFeature,
+} from '@/types/subscription';
 import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
 import axios from 'axios';
 
@@ -56,11 +60,31 @@ export const profileService = {
 //     apiClient.put('/settings', settings),
 // };
 
-// export const subscriptionService = {
-//   getPlans: () => apiClient.get('/subscription/plans'),
-//   getCurrentPlan: () => apiClient.get('/subscription/current'),
-//   upgradePlan: (planId: string) =>
-//     apiClient.post('/subscription/upgrade', {planId}),
-// };
+export const subscriptionService = {
+  getPlans: () => apiClient.get('/subscription'),
+  getById: (id: string) => apiClient.get(`/subscription/${id}`),
+  getCurrentPlan: () => apiClient.get('/subscription/current'),
+  createPlan: (data: ICreateSubscription) =>
+    apiClient.post('/subscription/create', data),
+  upgradePlan: (planId: string) =>
+    apiClient.post('/subscription/upgrade', {planId}),
+  updateFeaturePlan: (planId: string, data: IUpdateSubscriptionFeature) =>
+    apiClient.post(`/subscription/${planId}/features`, {planId, data}),
+  createCheckoutSession: (
+    planId: string,
+    userId: string,
+    successUrl: string,
+    cancelUrl: string
+  ) =>
+    apiClient.post(`/subscription/${planId}/checkout`, {
+      userId,
+      successUrl,
+      cancelUrl,
+    }),
+  cancelSubscription: (userId: string) =>
+    apiClient.post('/subscription/cancel', {userId}),
+  deleteSubscription: (userId: string) =>
+    apiClient.post(`/subscription/delete/${userId}`, {userId}),
+};
 
 export default apiClient;
