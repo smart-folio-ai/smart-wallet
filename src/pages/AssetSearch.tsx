@@ -1,27 +1,82 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Search, TrendingUp, Building, Coins } from 'lucide-react';
-import { formatCurrency } from '@/utils/formatters';
+import {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {Input} from '@/components/ui/input';
+import {Button} from '@/components/ui/button';
+import {Badge} from '@/components/ui/badge';
+import {Search, TrendingUp, Building, Coins} from 'lucide-react';
+import {formatCurrency} from '@/utils/formatters';
 
 // Mock search results
 const mockSearchResults = [
-  { symbol: 'PETR4', name: 'Petrobras PN', type: 'stock', price: 38.45, change24h: 2.15 },
-  { symbol: 'VALE3', name: 'Vale ON', type: 'stock', price: 65.80, change24h: -1.25 },
-  { symbol: 'ITUB4', name: 'Itaú Unibanco PN', type: 'stock', price: 33.25, change24h: 0.85 },
-  { symbol: 'BBDC4', name: 'Bradesco PN', type: 'stock', price: 14.75, change24h: -0.45 },
-  { symbol: 'HGLG11', name: 'CSHG Logística FII', type: 'fii', price: 158.90, change24h: 1.20 },
-  { symbol: 'XPML11', name: 'XP Malls FII', type: 'fii', price: 95.60, change24h: -0.80 },
-  { symbol: 'BTC', name: 'Bitcoin', type: 'crypto', price: 250000, change24h: 3.45 },
-  { symbol: 'ETH', name: 'Ethereum', type: 'crypto', price: 15000, change24h: -2.10 }
+  {
+    symbol: 'PETR4',
+    name: 'Petrobras PN',
+    type: 'stock',
+    price: 38.45,
+    change24h: 2.15,
+  },
+  {
+    symbol: 'VALE3',
+    name: 'Vale ON',
+    type: 'stock',
+    price: 65.8,
+    change24h: -1.25,
+  },
+  {
+    symbol: 'ITUB4',
+    name: 'Itaú Unibanco PN',
+    type: 'stock',
+    price: 33.25,
+    change24h: 0.85,
+  },
+  {
+    symbol: 'BBDC4',
+    name: 'Bradesco PN',
+    type: 'stock',
+    price: 14.75,
+    change24h: -0.45,
+  },
+  {
+    symbol: 'HGLG11',
+    name: 'CSHG Logística FII',
+    type: 'fii',
+    price: 158.9,
+    change24h: 1.2,
+  },
+  {
+    symbol: 'XPML11',
+    name: 'XP Malls FII',
+    type: 'fii',
+    price: 95.6,
+    change24h: -0.8,
+  },
+  {
+    symbol: 'BTC',
+    name: 'Bitcoin',
+    type: 'crypto',
+    price: 250000,
+    change24h: 3.45,
+  },
+  {
+    symbol: 'ETH',
+    name: 'Ethereum',
+    type: 'crypto',
+    price: 15000,
+    change24h: -2.1,
+  },
 ];
 
 const AssetSearch = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -29,11 +84,11 @@ const AssetSearch = () => {
     if (!searchTerm.trim()) return;
 
     setIsSearching(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       const results = mockSearchResults.filter(
-        asset => 
+        (asset) =>
           asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
           asset.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -61,10 +116,14 @@ const AssetSearch = () => {
 
   const getAssetTypeName = (type: string) => {
     switch (type) {
-      case 'stock': return 'Ação';
-      case 'fii': return 'FII';
-      case 'crypto': return 'Cripto';
-      default: return 'Outro';
+      case 'stock':
+        return 'Ação';
+      case 'fii':
+        return 'FII';
+      case 'crypto':
+        return 'Cripto';
+      default:
+        return 'Outro';
     }
   };
 
@@ -74,7 +133,8 @@ const AssetSearch = () => {
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Buscar Ativos</h1>
           <p className="text-muted-foreground">
-            Pesquise por ações, FIIs ou criptomoedas para ver análises detalhadas
+            Pesquise por ações, FIIs ou criptomoedas para ver análises
+            detalhadas
           </p>
         </div>
 
@@ -117,28 +177,40 @@ const AssetSearch = () => {
                   <div
                     key={index}
                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
-                    onClick={() => handleAssetClick(asset.symbol)}
-                  >
+                    onClick={() => handleAssetClick(asset.symbol)}>
                     <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        asset.type === 'stock' ? 'bg-success/20' : 
-                        asset.type === 'fii' ? 'bg-purple-500/20' : 
-                        'bg-blue-500/20'
-                      }`}>
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          asset.type === 'stock'
+                            ? 'bg-success/20'
+                            : asset.type === 'fii'
+                            ? 'bg-purple-500/20'
+                            : 'bg-blue-500/20'
+                        }`}>
                         {getAssetIcon(asset.type)}
                       </div>
                       <div>
                         <div className="font-medium">{asset.symbol}</div>
-                        <div className="text-sm text-muted-foreground">{asset.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {asset.name}
+                        </div>
                       </div>
                       <Badge variant="secondary">
                         {getAssetTypeName(asset.type)}
                       </Badge>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{formatCurrency(asset.price)}</div>
-                      <div className={`text-sm ${asset.change24h >= 0 ? 'text-success' : 'text-destructive'}`}>
-                        {asset.change24h >= 0 ? '+' : ''}{asset.change24h.toFixed(2)}%
+                      <div className="font-medium">
+                        {formatCurrency(asset.price)}
+                      </div>
+                      <div
+                        className={`text-sm ${
+                          asset.change24h >= 0
+                            ? 'text-success'
+                            : 'text-destructive'
+                        }`}>
+                        {asset.change24h >= 0 ? '+' : ''}
+                        {asset.change24h.toFixed(2)}%
                       </div>
                     </div>
                   </div>

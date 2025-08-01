@@ -3,9 +3,11 @@ import {cn} from '@/lib/utils';
 
 interface CustomTooltipProps {
   active?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload?: any[];
   label?: string;
   className?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formatter?: (value: any, name: string) => [string, string];
   labelFormatter?: (label: string) => string;
 }
