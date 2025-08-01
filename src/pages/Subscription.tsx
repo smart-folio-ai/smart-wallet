@@ -7,7 +7,7 @@ import Profile from '@/services/profile';
 import {PlanCard} from '@/components/plans/PlanCard';
 import {ISubscription} from '@/interface/subscription';
 import {Calendar, CircleDollarSign, Star} from 'lucide-react';
-import {configUrlAplication, styleToast} from '@/utils';
+import {configUrlStripePaymentSuccessOrCancel, styleToast} from '@/utils';
 import {SeletorPrice} from '@/components/plans/SeletorPrice';
 import {cancelUrl, successUrl} from '@/utils/env';
 
@@ -27,8 +27,8 @@ export interface IPlanWithFeatures extends Omit<ISubscription, 'features'> {
 }
 
 export default function Subscriptions() {
-  const successCheckoutUrl = configUrlAplication(successUrl);
-  const cancelCheckoutUrl = configUrlAplication(cancelUrl);
+  const successCheckoutUrl = configUrlStripePaymentSuccessOrCancel(successUrl);
+  const cancelCheckoutUrl = configUrlStripePaymentSuccessOrCancel(cancelUrl);
   const [pricingPeriod, setPricingPeriod] =
     React.useState<PricingPeriod>('monthly');
   const [loading, setLoading] = React.useState<Record<string, boolean>>({});

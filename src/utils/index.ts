@@ -1,4 +1,10 @@
-import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
+import {
+  apiUrlDevelopment,
+  apiUrlProduction,
+  isDev,
+  urlLocalhost,
+  urlWebProduction,
+} from '@/utils/env';
 
 export const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -19,9 +25,9 @@ export const styleToast = () => ({
   },
 });
 
-export const configUrlAplication = (url: string) => {
+export const configUrlStripePaymentSuccessOrCancel = (url: string) => {
   if (isDev) {
-    return apiUrlDevelopment + url;
+    return `${urlLocalhost + url}`;
   }
-  return apiUrlProduction + url;
+  return `${urlWebProduction + url}`;
 };

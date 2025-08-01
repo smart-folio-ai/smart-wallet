@@ -1,12 +1,11 @@
-import {SubscriptionInterface} from '@/interface/subscription';
-import apiClient, {profileService, subscriptionService} from '@/server/api/api';
 import {
   ICreateSubscription,
   ISubscription,
   IUpdateSubscription,
   IUpdateSubscriptionFeature,
-  IUserSubscription,
-} from '@/types/subscription';
+  SubscriptionInterface,
+} from '@/interface/subscription';
+import {subscriptionService} from '@/server/api/api';
 
 class Subscription implements SubscriptionInterface {
   async getPlans(): Promise<ISubscription[]> {
@@ -54,7 +53,6 @@ class Subscription implements SubscriptionInterface {
       successUrl,
       cancelUrl
     );
-    console.log('CREATE CHECKOUT:', response.data);
     return response.data;
   }
 }
