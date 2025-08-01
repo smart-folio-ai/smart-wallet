@@ -30,7 +30,6 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   loading,
   onSubscribe,
 }) => {
-  console.log(plan);
   return (
     <Card
       className={`flex flex-col h-full border-2 ${
