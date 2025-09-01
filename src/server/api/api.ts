@@ -29,6 +29,13 @@ export const profileService = {
   getAddressUser: (userId: string) => apiClient.get(`addresses/user/${userId}`),
 };
 
+export const stockService = {
+  searchAllGlobalAssets: () => apiClient.get(`/stocks/all-global`),
+  searchAllNationalAssets: () => apiClient.get(`/stocks/all-national`),
+  searchNationalAssets: (query: string) =>
+    apiClient.get(`/stocks/quote?query=${query}`),
+};
+
 // export const portfolioService = {
 //   getSummary: () => apiClient.get('/portfolio/summary'),
 //   getAssets: () => apiClient.get('/portfolio/assets'),
