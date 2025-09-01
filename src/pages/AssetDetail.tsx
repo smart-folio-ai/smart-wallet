@@ -8,6 +8,7 @@ import {
   Building2,
   DollarSign,
   BarChart3,
+  Star,
 } from 'lucide-react';
 import {
   Card,
@@ -34,6 +35,7 @@ import {Asset} from '@/types/portfolio';
 import {mockAssets} from '@/utils/mockData';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
+import {PremiumBlur} from '@/components/ui/premium-blur';
 
 interface AssetIndicators {
   valuation: {
@@ -287,12 +289,13 @@ export default function AssetDetail() {
 
         {/* Tabs principais */}
         <Tabs defaultValue="indicators" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="indicators">Indicadores</TabsTrigger>
             <TabsTrigger value="fair-price">Preço Justo</TabsTrigger>
             <TabsTrigger value="financial">Contábil</TabsTrigger>
             <TabsTrigger value="dividends">Dividendos</TabsTrigger>
             <TabsTrigger value="company">Empresa</TabsTrigger>
+            <TabsTrigger value="ai-insights">IA Insights</TabsTrigger>
           </TabsList>
 
           {/* Indicadores */}
@@ -815,6 +818,160 @@ export default function AssetDetail() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Nova aba IA Insights */}
+          <TabsContent value="ai-insights">
+            <PremiumBlur
+              title="IA Insights Premium"
+              description="Análises avançadas geradas por inteligência artificial"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Star className="h-5 w-5 text-primary" />
+                      Análise de Sentimento
+                    </CardTitle>
+                    <CardDescription>
+                      Análise de notícias e redes sociais sobre {asset?.symbol}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="text-center p-6 bg-green-500/10 rounded-lg">
+                        <p className="text-2xl font-bold text-green-500 mb-2">85%</p>
+                        <p className="text-sm text-muted-foreground">Sentimento Positivo</p>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">Notícias Positivas</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-2 bg-muted rounded-full">
+                              <div className="w-4/5 h-2 bg-green-500 rounded-full"></div>
+                            </div>
+                            <span className="text-sm font-medium">80%</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">Redes Sociais</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-2 bg-muted rounded-full">
+                              <div className="w-full h-2 bg-green-500 rounded-full"></div>
+                            </div>
+                            <span className="text-sm font-medium">90%</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">Analistas</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-2 bg-muted rounded-full">
+                              <div className="w-3/4 h-2 bg-yellow-500 rounded-full"></div>
+                            </div>
+                            <span className="text-sm font-medium">75%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recomendação da IA</CardTitle>
+                    <CardDescription>
+                      Baseada em mais de 50 indicadores técnicos e fundamentalistas
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="text-center p-6 bg-primary/10 rounded-lg">
+                        <Badge variant="default" className="text-lg px-4 py-2 mb-2">
+                          COMPRAR
+                        </Badge>
+                        <p className="text-sm text-muted-foreground">
+                          Confiança: 92%
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <h4 className="font-semibold">Principais Fatores:</h4>
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            Fundamentos sólidos com P/L atrativo
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            Crescimento consistente de receita
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            Dividend yield acima da média do setor
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            Volatilidade moderada do setor
+                          </li>
+                        </ul>
+                      </div>
+                      
+                      <div className="pt-4 border-t">
+                        <h4 className="font-semibold mb-2">Preço Alvo (12 meses):</h4>
+                        <p className="text-2xl font-bold text-primary">
+                          {asset && formatCurrency(asset.price * 1.25)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Potencial de alta: +25%
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle>Comparação com Setor</CardTitle>
+                    <CardDescription>
+                      Como {asset?.symbol} se compara com empresas similares
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center">
+                        <h4 className="font-semibold mb-2">P/L</h4>
+                        <div className="relative">
+                          <div className="text-2xl font-bold">{mockIndicators.valuation.pe}</div>
+                          <div className="text-sm text-green-500">vs 15.2 (setor)</div>
+                          <Badge variant="default" className="mt-2">Melhor que setor</Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="text-center">
+                        <h4 className="font-semibold mb-2">ROE</h4>
+                        <div className="relative">
+                          <div className="text-2xl font-bold">{formatPercentage(mockIndicators.efficiency.roe)}</div>
+                          <div className="text-sm text-green-500">vs 12.8% (setor)</div>
+                          <Badge variant="default" className="mt-2">Acima da média</Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="text-center">
+                        <h4 className="font-semibold mb-2">Dividend Yield</h4>
+                        <div className="relative">
+                          <div className="text-2xl font-bold">{formatPercentage(asset?.dividendYield || 0)}</div>
+                          <div className="text-sm text-green-500">vs 4.2% (setor)</div>
+                          <Badge variant="default" className="mt-2">Superior</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </PremiumBlur>
           </TabsContent>
         </Tabs>
       </div>
