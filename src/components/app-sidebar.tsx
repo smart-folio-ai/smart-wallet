@@ -1,3 +1,4 @@
+
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +24,8 @@ import {
   Star,
   Users,
   Wallet,
+  GitCompare,
+  Plus,
 } from 'lucide-react';
 import {Link} from 'react-router-dom';
 
@@ -66,6 +69,14 @@ export function AppSidebar() {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
+                  <Link to="/comparator">
+                    <GitCompare className="h-5 w-5" />
+                    <span>Comparador</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
                   <Link to="/transactions">
                     <Wallet className="h-5 w-5" />
                     <span>Transações</span>
@@ -101,6 +112,22 @@ export function AppSidebar() {
                   <Link to="/market">
                     <LineChart className="h-5 w-5" />
                     <span>Mercado</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Wallet</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/add-asset">
+                    <Plus className="h-5 w-5" />
+                    <span>Adicionar Ativo</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

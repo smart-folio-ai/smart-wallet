@@ -137,7 +137,7 @@ export const AssetsList = ({
           ) : (
             assets.map((asset) => (
               <TableRow 
-                key={asset.id}
+                key={asset.symbol}
                 className="cursor-pointer hover:bg-accent/50"
                 onClick={() => window.location.href = `/asset/${asset.symbol}`}
               >
