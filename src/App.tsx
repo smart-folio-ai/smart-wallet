@@ -23,6 +23,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import SignOut from './pages/SignOut';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancelled from './pages/SubscriptionCancelled';
+import AddAsset from './pages/AddAsset';
+import Comparator from './pages/Comparator';
 
 const queryClient = new QueryClient();
 
@@ -68,6 +70,8 @@ const App = () => (
                             path="/asset-search"
                             element={<AssetSearch />}
                           />
+                          <Route path="/add-asset" element={<AddAsset />} />
+                          <Route path="/comparator" element={<Comparator />} />
                           <Route
                             path="/subscription"
                             element={<Subscription />}
