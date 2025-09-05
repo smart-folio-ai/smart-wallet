@@ -195,10 +195,7 @@ const Portfolio = () => {
 
       {/* Asset Allocation Chart */}
       <AssetAllocationChart
-        loading={loading}
         assets={assets}
-        assetAllocationData={assetAllocationData}
-        openAssetDetails={openAssetDetails}
       />
 
       {/* Assets List */}
