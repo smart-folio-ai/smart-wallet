@@ -29,10 +29,11 @@ export const profileService = {
   getAddressUser: (userId: string) => apiClient.get(`addresses/user/${userId}`),
 };
 
-export const stockService = {
-  searchAllGlobalAssets: () => apiClient.get(`/stocks/all-global`),
-  searchAllNationalAssets: () => apiClient.get(`/stocks/all-national`),
-  searchNationalAssets: (query: string) =>
+export const stockServices = {
+  getGlobalStock: (query: string) =>
+    apiClient.get(`/stocks/global/quote?symbol=${query}`),
+  getAllNationalStocks: () => apiClient.get(`/stocks/all-national`),
+  getNationalStock: (query: string) =>
     apiClient.get(`/stocks/quote?query=${query}`),
 };
 
