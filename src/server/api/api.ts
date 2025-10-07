@@ -32,9 +32,9 @@ export const profileService = {
 export const stockServices = {
   getGlobalStock: (query: string) =>
     apiClient.get(`/stocks/global/quote?symbol=${query}`),
-  getAllNationalStocks: () => apiClient.get(`/stocks/all-national`),
-  getNationalStock: (query: string) =>
-    apiClient.get(`/stocks/quote?query=${query}`),
+  getAllNationalStocks: () => apiClient.get(`/stocks/all/national`),
+  getNationalStock: (symbol: string) =>
+    apiClient.get(`/stocks/national/quote?symbol=${symbol}`),
 };
 
 // export const portfolioService = {

@@ -30,6 +30,18 @@ interface Asset {
   type: string;
 }
 
+interface Fiis {
+  stock: string;
+  name: string;
+  close: number;
+  change: number;
+  volume: number;
+  market_cap: number | null;
+  logo: string;
+  sector: string;
+  type: string;
+}
+
 const AssetSearch = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,12 +49,11 @@ const AssetSearch = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
 
-  // Fetch all national stocks
-  const { data: allStocks, isLoading } = useQuery({
+  const {data: allStocks, isLoading} = useQuery({
     queryKey: ['all-national-stocks'],
     queryFn: async (): Promise<StockAllNacionalResponse> => {
       const response = await Stock.getAllNacionalStocks();
-      return response[0];
+      return Array.isArray(response) ? response[0] : response;
     },
   });
 
@@ -53,19 +64,19 @@ const AssetSearch = () => {
 
     try {
       const nationalResponse = await Stock.getNationalStock(searchTerm);
-      const results: Asset[] = nationalResponse.flatMap(stockData => 
-        stockData.results.map(result => ({
-          stock: result.symbol,
-          name: result.longName || result.shortName,
-          close: result.regularMarketPrice,
-          change: result.regularMarketChangePercent,
-          volume: result.regularMarketVolume,
-          market_cap: result.marketCap,
-          logo: result.logourl || '',
-          sector: 'N/A',
-          type: 'stock'
-        }))
-      );
+
+      const results: Asset[] = nationalResponse.results.map((result) => ({
+        stock: result.symbol,
+        name: result.longName || result.shortName,
+        close: result.regularMarketPrice,
+        change: result.regularMarketChangePercent,
+        volume: result.regularMarketVolume,
+        market_cap: result.marketCap,
+        logo: result.logourl || '',
+        sector: 'N/A',
+        type: 'stock',
+      }));
+
       setSearchResults(results);
     } catch (error) {
       console.error('Error searching stocks:', error);
@@ -112,53 +123,76 @@ const AssetSearch = () => {
   // Get filtered assets based on active tab
   const getFilteredAssets = () => {
     if (!allStocks) return [];
-    
+
     let assets: Asset[] = [];
-    
-    if (activeTab === 'all' || activeTab === 'stocks') {
-      assets = [...assets, ...allStocks.stocks.map(stock => ({
-        stock: stock.stock,
-        name: stock.name,
-        close: stock.close,
-        change: stock.change,
-        volume: stock.volume,
-        market_cap: stock.market_cap,
-        logo: stock.logo,
-        sector: stock.sector,
-        type: stock.type
-      }))];
+
+    if (activeTab === 'all' || activeTab === 'stocks' || activeTab === 'fiis') {
+      assets = [
+        ...assets,
+        ...allStocks.stocks.map((stock) => ({
+          stock: stock.stock,
+          name: stock.name,
+          close: stock.close,
+          change: stock.change,
+          volume: stock.volume,
+          market_cap: stock.market_cap,
+          logo: stock.logo,
+          sector: stock.sector,
+          type: stock.type,
+        })),
+      ];
     }
-    
+
+    if (activeTab === 'all' || activeTab === 'fiis') {
+      const fiis: Fiis[] = allStocks.stocks
+        .filter((stock) => stock.type.toLowerCase() === 'fii')
+        .map((stock) => ({
+          stock: stock.stock,
+          name: stock.name,
+          close: stock.close,
+          change: stock.change,
+          volume: stock.volume,
+          market_cap: stock.market_cap,
+          logo: stock.logo,
+          sector: stock.sector,
+          type: stock.type,
+        }));
+
+      assets = [...assets, ...fiis];
+    }
+
     if (activeTab === 'all' || activeTab === 'indexes') {
-      assets = [...assets, ...allStocks.indexes.map(index => ({
-        stock: index.stock,
-        name: index.name,
-        close: 0,
-        change: 0,
-        volume: 0,
-        market_cap: null,
-        logo: '',
-        sector: 'Índice',
-        type: 'index'
-      }))];
+      assets = [
+        ...assets,
+        ...allStocks.indexes.map((index) => ({
+          stock: index.stock,
+          name: index.name,
+          close: 0,
+          change: 0,
+          volume: 0,
+          market_cap: null,
+          logo: '',
+          sector: 'Índice',
+          type: 'index',
+        })),
+      ];
     }
-    
+
     return assets;
   };
 
   const filteredAssets = getFilteredAssets();
 
-  const AssetCard = ({ asset }: { asset: Asset }) => (
-    <Card 
+  const AssetCard = ({asset}: {asset: Asset}) => (
+    <Card
       className="card-gradient hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-primary/50"
-      onClick={() => handleAssetClick(asset.stock)}
-    >
+      onClick={() => handleAssetClick(asset.stock)}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             {asset.logo ? (
-              <img 
-                src={asset.logo} 
+              <img
+                src={asset.logo}
                 alt={asset.name}
                 className="w-10 h-10 rounded-full object-cover"
                 onError={(e) => {
@@ -168,38 +202,46 @@ const AssetSearch = () => {
                 }}
               />
             ) : null}
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-r ${
-              asset.type === 'stock' ? 'from-success/20 to-success/40' :
-              asset.type === 'index' ? 'from-orange-500/20 to-orange-500/40' :
-              'from-primary/20 to-primary/40'
-            } ${asset.logo ? 'hidden' : ''}`}>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-r ${
+                asset.type === 'stock'
+                  ? 'from-success/20 to-success/40'
+                  : asset.type === 'index'
+                  ? 'from-orange-500/20 to-orange-500/40'
+                  : 'from-primary/20 to-primary/40'
+              } ${asset.logo ? 'hidden' : ''}`}>
               {getAssetIcon(asset.type)}
             </div>
             <div>
               <h3 className="font-bold text-lg">{asset.stock}</h3>
-              <p className="text-sm text-muted-foreground truncate max-w-48">{asset.name}</p>
+              <p className="text-sm text-muted-foreground truncate max-w-48">
+                {asset.name}
+              </p>
             </div>
           </div>
           <Badge variant="secondary" className="font-medium">
             {getAssetTypeName(asset.type)}
           </Badge>
         </div>
-        
+
         <div className="flex items-center justify-between">
           <div>
             <p className="text-2xl font-bold">{formatCurrency(asset.close)}</p>
             <p className="text-sm text-muted-foreground">Cotação atual</p>
           </div>
           {asset.change !== 0 && (
-            <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
-              asset.change >= 0 ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
-            }`}>
+            <div
+              className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
+                asset.change >= 0
+                  ? 'bg-success/20 text-success'
+                  : 'bg-destructive/20 text-destructive'
+              }`}>
               {asset.change >= 0 ? '+' : ''}
               {asset.change.toFixed(2)}%
             </div>
           )}
         </div>
-        
+
         {asset.volume > 0 && (
           <div className="mt-3 pt-3 border-t">
             <p className="text-xs text-muted-foreground">
@@ -217,7 +259,8 @@ const AssetSearch = () => {
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Buscar Ativos</h1>
           <p className="text-muted-foreground">
-            Explore e pesquise ações, FIIs e índices da B3 para análises detalhadas
+            Explore e pesquise ações, FIIs e índices da B3 para análises
+            detalhadas
           </p>
         </div>
 
@@ -282,17 +325,22 @@ const AssetSearch = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="all">Todos</TabsTrigger>
                 <TabsTrigger value="stocks">Ações</TabsTrigger>
+                <TabsTrigger value="fiis">FIIs</TabsTrigger>
+                <TabsTrigger value="crypto">Cryptos</TabsTrigger>
                 <TabsTrigger value="indexes">Índices</TabsTrigger>
               </TabsList>
 
               <TabsContent value="all" className="mt-6">
                 {isLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Array.from({ length: 9 }).map((_, i) => (
+                    {Array.from({length: 9}).map((_, i) => (
                       <Card key={i} className="card-gradient">
                         <CardContent className="p-6">
                           <div className="flex items-center gap-3 mb-4">
@@ -320,7 +368,7 @@ const AssetSearch = () => {
               <TabsContent value="stocks" className="mt-6">
                 {isLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Array.from({ length: 9 }).map((_, i) => (
+                    {Array.from({length: 9}).map((_, i) => (
                       <Card key={i} className="card-gradient">
                         <CardContent className="p-6">
                           <div className="flex items-center gap-3 mb-4">
@@ -348,7 +396,7 @@ const AssetSearch = () => {
               <TabsContent value="indexes" className="mt-6">
                 {isLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Array.from({ length: 9 }).map((_, i) => (
+                    {Array.from({length: 9}).map((_, i) => (
                       <Card key={i} className="card-gradient">
                         <CardContent className="p-6">
                           <div className="flex items-center gap-3 mb-4">
@@ -367,17 +415,20 @@ const AssetSearch = () => {
                 ) : allStocks ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {allStocks.indexes.map((index) => (
-                      <AssetCard key={index.stock} asset={{
-                        stock: index.stock,
-                        name: index.name,
-                        close: 0,
-                        change: 0,
-                        volume: 0,
-                        market_cap: null,
-                        logo: '',
-                        sector: 'Índice',
-                        type: 'index'
-                      }} />
+                      <AssetCard
+                        key={index.stock}
+                        asset={{
+                          stock: index.stock,
+                          name: index.name,
+                          close: 0,
+                          change: 0,
+                          volume: 0,
+                          market_cap: null,
+                          logo: '',
+                          sector: 'Índice',
+                          type: 'index',
+                        }}
+                      />
                     ))}
                   </div>
                 ) : null}

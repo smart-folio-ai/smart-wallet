@@ -7,17 +7,18 @@ import {
 } from '@/types/stock';
 
 export class Stock implements IStock {
-  async getAllNacionalStocks(): Promise<StockAllNacionalResponse[]> {
+  async getAllNacionalStocks(): Promise<StockAllNacionalResponse> {
     const response = await stockServices.getAllNationalStocks();
     return response.data;
   }
-  async getNationalStock(stock: string): Promise<StockNacionalResponse[]> {
-    const response = await stockServices.getNationalStock(stock);
+
+  async getNationalStock(symbol: string): Promise<StockNacionalResponse> {
+    const response = await stockServices.getNationalStock(symbol);
     return response.data;
   }
 
-  async getGlobalStock(stock: string): Promise<StockGlobalResponse[]> {
-    const response = await stockServices.getGlobalStock(stock);
+  async getGlobalStock(symbol: string): Promise<StockGlobalResponse> {
+    const response = await stockServices.getGlobalStock(symbol);
     return response.data;
   }
 }
