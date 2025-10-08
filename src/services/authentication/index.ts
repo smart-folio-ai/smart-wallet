@@ -1,6 +1,6 @@
 import IAuthentication, {ICreateUser} from '@/interface/authentication';
 import {authService} from '@/server/api/api';
-import {AxiosError, AxiosResponse} from 'axios';
+import {AxiosError} from 'axios';
 
 class AuthenticationService implements IAuthentication {
   async authenticate(
