@@ -20,11 +20,13 @@ export const authService = {
     apiClient.post('/auth/signin', {email, password, keepConnected}),
   register: (data: ICreateUser) => apiClient.post('/users/create', data),
   logout: (token: string) => apiClient.post('/auth/signout', {token}),
+  changePassword: (data: any) => apiClient.post('/auth/change-password', data),
 };
 
 export const profileService = {
   getProfile: (userId: string) => apiClient.get(`profile/${userId}`),
   getUser: (userId: string) => apiClient.get(`users/${userId}`),
+  updateUser: (userId: string, data: any) => apiClient.patch(`/users/update/${userId}`, data),
   getAllAddress: () => apiClient.get(`addresses/addresses`),
   getAddressUser: (userId: string) => apiClient.get(`addresses/user/${userId}`),
 };

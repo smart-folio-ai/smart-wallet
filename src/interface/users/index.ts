@@ -11,6 +11,7 @@ export type UserResponse = {
   createdAt: string;
   updatedAt: string;
   refreshToken: string;
+  stripeCustomerId: string;
 };
 
 export type IUserProfileResponse = {

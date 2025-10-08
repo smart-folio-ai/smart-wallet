@@ -126,7 +126,7 @@ export default function Settings() {
 
       return {
         _id: userProfile._id,
-        user: userProfile._id, // TODO: ajustar
+        user: userProfile.user,
         firstName: userProfile.firstName,
         lastName: userProfile.lastName,
         email: userProfile.email,
