@@ -7,6 +7,11 @@ class Users implements IUser {
     const response = await profileService.getUser(userId);
     return response.data;
   }
+
+  async update(userId: string, data: UserResponse): Promise<UserResponse> {
+    const response = await profileService.updateUser(userId, data);
+    return response.data;
+  }
 }
 
 export default new Users();
