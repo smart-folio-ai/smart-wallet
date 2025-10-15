@@ -1,12 +1,11 @@
 import Stripe from 'stripe';
-import {version} from 'package.json';
 import {stripPrivateApiKey} from '@/utils/env';
 
 export const stripe = new Stripe(stripPrivateApiKey, {
   apiVersion: '2025-05-28.basil',
   appInfo: {
-    name: 'Smartfolio',
-    version,
+    name: 'Trakker',
+    version: '1.0.0',
   },
 });
 

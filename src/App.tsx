@@ -8,6 +8,7 @@ import {AppSidebar} from '@/components/app-sidebar';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 import Index from './pages/Index';
+import Landing from './pages/Landing';
 import SyncAccounts from './pages/SyncAccounts';
 import AIInsights from './pages/AIInsights';
 import Subscription from './pages/Subscription';
@@ -35,6 +36,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/landing" element={<Landing />} />
           <Route path="/" element={<SignIn />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
