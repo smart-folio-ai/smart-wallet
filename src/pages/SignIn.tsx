@@ -87,7 +87,7 @@ export default function SignIn() {
 
           <CardHeader className="relative">
             <CardTitle className="text-2xl font-bold text-center">
-              Bem-vindo ao SmartFolio
+              Bem-vindo ao Trakker
             </CardTitle>
             <CardDescription className="text-center">
               Entre com suas credenciais para acessar sua conta

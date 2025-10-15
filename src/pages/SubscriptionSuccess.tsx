@@ -230,9 +230,9 @@ export default function SubscriptionSuccess() {
               <p className="text-sm text-muted-foreground">
                 Precisa de ajuda? Entre em contato conosco em{' '}
                 <a
-                  href="mailto:suporte@smartfolio.com"
+                  href="mailto:suporte@trakker.com"
                   className="text-primary hover:underline">
-                  suporte@smartfolio.com
+                  suporte@trakker.com
                 </a>
               </p>
             </div>

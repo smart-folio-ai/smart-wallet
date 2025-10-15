@@ -37,7 +37,7 @@ export default function SubscriptionCancelled() {
       icon: <MessageCircle className="h-5 w-5" />,
       title: 'Falar com suporte',
       description: 'Nossa equipe pode esclarecer suas dúvidas',
-      action: () => window.open('mailto:suporte@smartfolio.com'),
+      action: () => window.open('mailto:suporte@trakker.com'),
     },
   ];
 
@@ -165,9 +165,9 @@ export default function SubscriptionCancelled() {
               <p className="text-sm text-muted-foreground">
                 Ainda tem dúvidas? Fale conosco em{' '}
                 <a
-                  href="mailto:suporte@smartfolio.com"
+                  href="mailto:suporte@trakker.com"
                   className="text-primary hover:underline">
-                  suporte@smartfolio.com
+                  suporte@trakker.com
                 </a>
               </p>
             </div>

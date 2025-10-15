@@ -151,7 +151,7 @@ export default function Subscriptions() {
       <div className="container py-10">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h1 className="text-4xl font-bold tracking-tight mb-3">
-            Invista melhor com o SmartFolio
+            Invista melhor com o Trakker
           </h1>
           <p className="text-xl text-muted-foreground mb-8">
             Escolha o plano ideal para suas necessidades de investimento
