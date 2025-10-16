@@ -26,7 +26,7 @@ import {Checkbox} from '@/components/ui/checkbox';
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
 import AuthenticationService from '../services/authentication';
-import Loader from '@/components/loader';
+import WalletLoadingScreen from '@/components/WalletLoadingScreen';
 
 const formSchema = z.object({
   email: z.string().email('Digite um email válido'),
@@ -76,7 +76,9 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <>
+      <WalletLoadingScreen isLoading={loading} loadingText="Entrando..." />
+      <div className="min-h-screen flex">
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20" />
 
@@ -242,7 +244,6 @@ export default function SignIn() {
                     name="keepConnect"
                     render={({field}) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        {loading && <Loader text="Entrando..." />}
                         <FormControl>
                           <Checkbox
                             checked={field.value}
@@ -304,5 +305,6 @@ export default function SignIn() {
         </div>
       </div>
     </div>
+    </>
   );
 }
