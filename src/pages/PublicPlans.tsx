@@ -1,15 +1,10 @@
-import React, {useMemo} from 'react';
-import {toast} from 'sonner';
-import Subscription from '@/services/subscription';
-import {useQuery} from '@tanstack/react-query';
-import {IUserProfileResponse} from '@/interface/users';
-import Profile from '@/services/profile';
+import React from 'react';
+import {mockSubscriptionPlans} from '@/utils/mockData';
 import {PlanCard} from '@/components/plans/PlanCard';
-import {ISubscription} from '@/interface/subscription';
-import {Calendar, CircleDollarSign, Star} from 'lucide-react';
-import {configUrlStripePaymentSuccessOrCancel, styleToast} from '@/utils';
 import {SeletorPrice} from '@/components/plans/SeletorPrice';
-import {cancelUrl, successUrl} from '@/utils/env';
+import {Calendar, CircleDollarSign, Star} from 'lucide-react';
+import {toast} from 'sonner';
+import {useNavigate} from 'react-router-dom';
 
 type PricingPeriod = 'monthly' | 'annual';
 
@@ -18,60 +13,26 @@ interface IFeature {
   included: boolean;
 }
 
-export interface IPlanWithFeatures extends Omit<ISubscription, 'features'> {
+export interface IPlanWithFeatures {
+  _id: string;
+  name: string;
+  description: string;
   monthlyPrice: number;
   annualPrice: number;
   badge?: string;
   comingSoon?: boolean;
   features: IFeature[];
+  isActive: boolean;
 }
 
-export default function Subscriptions() {
-  const successCheckoutUrl = configUrlStripePaymentSuccessOrCancel(successUrl);
-  const cancelCheckoutUrl = configUrlStripePaymentSuccessOrCancel(cancelUrl);
+export default function PublicPlans() {
+  const navigate = useNavigate();
   const [pricingPeriod, setPricingPeriod] =
     React.useState<PricingPeriod>('monthly');
   const [loading, setLoading] = React.useState<Record<string, boolean>>({});
 
-  const fetchProfileUser = async () => {
-    const userProfile: IUserProfileResponse = await Profile.getProfile();
-    return userProfile;
-  };
-
-  const fetchGetCurrentUser = async () => {
-    const getUserId = await fetchProfileUser();
-    return getUserId;
-  };
-
-  const fetchGetPlans = async () => {
-    const plans = await Subscription.getPlans();
-    return plans;
-  };
-
-  const createCheckout = async (planId: string) => {
-    try {
-      const user = await fetchGetCurrentUser();
-      const createCheckout = await Subscription.createCheckoutSession(
-        planId,
-        user._id,
-        successCheckoutUrl,
-        cancelCheckoutUrl
-      );
-      return createCheckout;
-    } catch (error) {
-      throw new Error('Serviço de pagamento não disponível. Configure o backend para processar pagamentos.');
-    }
-  };
-
-  const {data: rawPlans, isLoading} = useQuery<ISubscription[]>({
-    queryKey: ['plans'],
-    queryFn: fetchGetPlans,
-  });
-
   const plans = React.useMemo<IPlanWithFeatures[]>(() => {
-    if (!rawPlans) return [];
-
-    return rawPlans.map((plan) => {
+    return mockSubscriptionPlans.map((plan) => {
       const planId = plan._id;
       const annualPrice = plan.price * 12 * 0.7;
 
@@ -114,17 +75,17 @@ export default function Subscriptions() {
 
       return {
         ...plan,
-        id: planId,
+        _id: planId,
         monthlyPrice: plan.price,
         annualPrice,
-        comingSoon: false,
+        comingSoon: !plan.isActive,
         badge,
         features,
       };
     });
-  }, [rawPlans]);
+  }, []);
 
-  const handleSubscribe = async (planId: string) => {
+  const handleSubscribe = (planId: string) => {
     const plan = plans.find((p) => p._id === planId);
     if (!plan) {
       toast.error('Plano não encontrado');
@@ -136,21 +97,18 @@ export default function Subscriptions() {
       return;
     }
 
-    try {
-      toast.success('Redirecionando para o checkout...', {
-        style: styleToast().success,
-      });
-      setLoading((prev) => ({...prev, [plan._id]: true}));
-      const session = await createCheckout(plan._id);
-      window.location.href = session.url; // Redireciona pro checkout
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Erro ao iniciar o checkout';
-      toast.error(errorMessage, {
-        style: styleToast().error,
-      });
-    } finally {
-      setLoading((prev) => ({...prev, [plan._id]: false}));
+    if (plan.name === 'Gratuito') {
+      toast.info('Este é o plano gratuito. Crie uma conta para começar!');
+      navigate('/register');
+      return;
     }
+
+    toast.info('Faça login para assinar este plano', {
+      action: {
+        label: 'Fazer Login',
+        onClick: () => navigate('/'),
+      },
+    });
   };
 
   return (
@@ -174,23 +132,18 @@ export default function Subscriptions() {
         </div>
         <div className="container py-10">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {isLoading ? (
-              <div>Carregando planos...</div>
-            ) : (
-              plans?.map((plan) => (
-                <PlanCard
-                  features={plan.features}
-                  key={plan._id}
-                  plan={plan}
-                  pricingPeriod={pricingPeriod}
-                  loading={loading[plan._id]}
-                  onSubscribe={() => handleSubscribe(plan._id)}
-                />
-              ))
-            )}
+            {plans?.map((plan) => (
+              <PlanCard
+                features={plan.features}
+                key={plan._id}
+                plan={plan}
+                pricingPeriod={pricingPeriod}
+                loading={loading[plan._id]}
+                onSubscribe={() => handleSubscribe(plan._id)}
+              />
+            ))}
           </div>
         </div>
-        {/* Seção de informações adicionais */}
         <div className="mt-16 grid md:grid-cols-3 gap-8">
           <div className="flex flex-col items-center text-center">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">

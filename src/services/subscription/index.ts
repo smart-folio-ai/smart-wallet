@@ -6,11 +6,17 @@ import {
   SubscriptionInterface,
 } from '@/interface/subscription';
 import {subscriptionService} from '@/server/api/api';
+import {mockSubscriptionPlans} from '@/utils/mockData';
 
 class Subscription implements SubscriptionInterface {
   async getPlans(): Promise<ISubscription[]> {
-    const response = await subscriptionService.getPlans();
-    return response.data;
+    try {
+      const response = await subscriptionService.getPlans();
+      return response.data;
+    } catch (error) {
+      console.log('Usando dados mockados de planos de assinatura');
+      return mockSubscriptionPlans;
+    }
   }
 
   async getById(id: string): Promise<ISubscription> {
