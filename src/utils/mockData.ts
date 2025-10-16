@@ -1,5 +1,4 @@
 import {Asset, AssetPerformance} from '@/types/portfolio';
-import {ISubscription} from '@/interface/subscription';
 
 // Mock data
 export const mockAssets: Asset[] = [
@@ -259,93 +258,6 @@ export const mockAssets: Asset[] = [
         price: 2.8 + Math.random() * 0.8,
       };
     }),
-  },
-];
-
-export const mockSubscriptionPlans: ISubscription[] = [
-  {
-    _id: '1',
-    name: 'Gratuito',
-    description: 'Ideal para começar a investir',
-    price: 0,
-    currency: 'BRL',
-    interval: 'month',
-    intervalCount: 1,
-    stripePriceId: 'price_mock_free',
-    stripeProductId: 'prod_mock_free',
-    features: [
-      'Portfólio até 5 ativos',
-      'Acompanhamento básico de preços',
-      'Gráficos simples de performance',
-    ],
-    isActive: true,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
-  },
-  {
-    _id: '2',
-    name: 'Investidor Pro',
-    description: 'Para investidores sérios',
-    price: 29.9,
-    currency: 'BRL',
-    interval: 'month',
-    intervalCount: 1,
-    stripePriceId: 'price_mock_pro',
-    stripeProductId: 'prod_mock_pro',
-    features: [
-      'Portfólio ilimitado',
-      'Sincronização automática com a B3',
-      'Preço teto e suporte por ativo',
-      'Insight de IA para ativos da B3',
-      'Gráficos avançados',
-    ],
-    isActive: true,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
-  },
-  {
-    _id: '3',
-    name: 'Premium',
-    description: 'Experiência completa',
-    price: 99.9,
-    currency: 'BRL',
-    interval: 'month',
-    intervalCount: 1,
-    stripePriceId: 'price_mock_premium',
-    stripeProductId: 'prod_mock_premium',
-    features: [
-      'Análise de criptomoedas',
-      'Alertas de Preço em Tempo Real',
-      'Insight de IA para Investimento',
-      'Insight de IA para crypto',
-      'Relatórios financeiros',
-      'Acesso a market data',
-      'Suporte prioritário',
-    ],
-    isActive: true,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
-  },
-  {
-    _id: '4',
-    name: 'Enterprise',
-    description: 'Soluções corporativas',
-    price: 0,
-    currency: 'BRL',
-    interval: 'month',
-    intervalCount: 1,
-    stripePriceId: 'price_mock_enterprise',
-    stripeProductId: 'prod_mock_enterprise',
-    features: [
-      'Soluções personalizadas',
-      'API dedicada',
-      'Suporte 24/7',
-      'Treinamento dedicado',
-      'Análise avançada de risco',
-    ],
-    isActive: false,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
   },
 ];
 

@@ -26,7 +26,6 @@ import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancelled from './pages/SubscriptionCancelled';
 import AddAsset from './pages/AddAsset';
 import Comparator from './pages/Comparator';
-import PublicPlans from './pages/PublicPlans';
 
 const queryClient = new QueryClient();
 
@@ -42,7 +41,6 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/signout" element={<SignOut />} />
-          <Route path="/plans" element={<PublicPlans />} />
           <Route
             path="/subscription-success"
             element={<SubscriptionSuccess />}
