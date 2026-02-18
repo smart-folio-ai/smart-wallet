@@ -1,12 +1,12 @@
 export interface SubscriptionInterface {
   getPlans(): Promise<ISubscription[]>;
-  getCurrentPlan(): Promise<ISubscription>;
+  getCurrentPlan(): Promise<ICurrentUserSubscription>;
   upgradePlan(planId: string): Promise<IUpdateSubscription>;
   createCheckoutSession(
     planId: string,
     userId: string,
     successUrl: string,
-    cancelUrl: string
+    cancelUrl: string,
   ): Promise<{url: string}>;
 }
 
@@ -62,4 +62,30 @@ export interface IUserSubscription {
   stripeCustomerId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ICurrentUserSubscription {
+  _id: string;
+  status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid';
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  stripeSubscriptionId: string;
+  stripeCustomerId: string;
+  cancelAtPeriodEnd: boolean;
+  plan: ISubscription;
+}
+
+export interface CurrentSubscriptionResponse {
+  hasSubscription: boolean;
+  subscription?: {
+    _id: string;
+    status: string;
+    currentPeriodStart: string;
+    currentPeriodEnd: string;
+    cancelAtPeriodEnd: boolean;
+    stripeSubscriptionId: string;
+    stripeCustomerId: string;
+    quantity?: number;
+  } | null;
+  plan?: ISubscription | null;
 }

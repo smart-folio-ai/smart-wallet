@@ -1,5 +1,6 @@
 import {
   ICreateSubscription,
+  ICurrentUserSubscription,
   ISubscription,
   IUpdateSubscription,
   IUpdateSubscriptionFeature,
@@ -7,7 +8,7 @@ import {
 } from '@/interface/subscription';
 import {subscriptionService} from '@/server/api/api';
 
-class Subscription implements SubscriptionInterface {
+class SubscriptionService implements SubscriptionInterface {
   async getPlans(): Promise<ISubscription[]> {
     const response = await subscriptionService.getPlans();
     return response.data;
@@ -18,7 +19,7 @@ class Subscription implements SubscriptionInterface {
     return response.data;
   }
 
-  async getCurrentPlan(): Promise<ISubscription> {
+  async getCurrentPlan(): Promise<ICurrentUserSubscription> {
     const response = await subscriptionService.getCurrentPlan();
     return response.data;
   }
@@ -35,7 +36,7 @@ class Subscription implements SubscriptionInterface {
 
   async updateFeaturePlan(
     planId: string,
-    data: IUpdateSubscriptionFeature
+    data: IUpdateSubscriptionFeature,
   ): Promise<IUpdateSubscription> {
     const response = await subscriptionService.updateFeaturePlan(planId, data);
     return response.data;
@@ -45,16 +46,16 @@ class Subscription implements SubscriptionInterface {
     planId: string,
     userId: string,
     successUrl: string,
-    cancelUrl: string
+    cancelUrl: string,
   ): Promise<{url: string}> {
     const response = await subscriptionService.createCheckoutSession(
       planId,
       userId,
       successUrl,
-      cancelUrl
+      cancelUrl,
     );
     return response.data;
   }
 }
 
-export default new Subscription();
+export default new SubscriptionService();

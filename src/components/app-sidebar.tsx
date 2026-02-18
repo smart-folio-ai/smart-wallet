@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -120,7 +119,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Wallet</SidebarGroupLabel>
+          <SidebarGroupLabel>Carteira</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>

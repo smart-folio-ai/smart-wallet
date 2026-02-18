@@ -12,6 +12,9 @@ import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
+import {useQuery} from '@tanstack/react-query';
+import {ICurrentUserSubscription} from '@/interface/subscription';
+import SubscriptionService from '@/services/subscription';
 
 interface SubscriptionDetails {
   planName: string;
@@ -26,38 +29,25 @@ interface SubscriptionDetails {
 export default function SubscriptionSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [loading, setLoading] = useState(true);
-  const [subscriptionDetails, setSubscriptionDetails] =
-    useState<SubscriptionDetails | null>(null);
 
   const sessionId = searchParams.get('session_id');
 
-  useEffect(() => {
-    // Simular busca dos detalhes da assinatura
-    // Em produção, você faria uma chamada para verificar o session_id no Stripe
-    setTimeout(() => {
-      setSubscriptionDetails({
-        planName: 'Investidor Pro',
-        amount: 14.9,
-        currency: 'BRL',
-        interval: 'month',
-        status: 'active',
-        nextBilling: new Date(
-          Date.now() + 30 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        features: [
-          'Sincronização automática com B3',
-          'Insights de IA para ativos B3',
-          'Preço teto e suporte por ativo',
-          'Recomendações de compra/venda',
-          'Relatórios avançados',
-          'Suporte prioritário',
-        ],
-      });
-      setLoading(false);
-      toast.success('Assinatura ativada com sucesso!');
-    }, 1500);
-  }, [sessionId]);
+  const {data, isLoading} = useQuery<ICurrentUserSubscription>({
+    queryKey: ['current-subscription'],
+    queryFn: SubscriptionService.getCurrentPlan,
+  });
+
+  const subscriptionDetails: SubscriptionDetails | null = data
+    ? {
+        planName: data.subscription.name,
+        amount: data.subscription.price,
+        currency: data.subscription.currency,
+        interval: data.subscription.interval,
+        status: data.status,
+        nextBilling: data.currentPeriodEnd,
+        features: data.subscription.features,
+      }
+    : null;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -74,7 +64,7 @@ export default function SubscriptionSuccess() {
     });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-info/40 via-primary/30 to-secondary/50">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>

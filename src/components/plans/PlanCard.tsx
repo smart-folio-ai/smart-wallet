@@ -22,6 +22,7 @@ interface PlanCardProps {
   pricingPeriod: 'monthly' | 'annual';
   loading: boolean;
   onSubscribe: () => void;
+  isCurrentPlan: boolean;
 }
 
 export const PlanCard: React.FC<PlanCardProps> = ({
@@ -29,6 +30,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   pricingPeriod,
   loading,
   onSubscribe,
+  isCurrentPlan,
 }) => {
   return (
     <Card
@@ -82,17 +84,15 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         <Button
           onClick={onSubscribe}
           className="w-full"
-          variant={
-            plan.name === 'Gratuito' || plan.comingSoon ? 'outline' : 'default'
-          }
-          disabled={loading || plan.name === 'Gratuito'}>
+          variant={isCurrentPlan ? 'outline' : 'default'}
+          disabled={loading || isCurrentPlan}>
           {loading
             ? 'Processando...'
-            : plan.name === 'Gratuito'
-            ? 'Plano Atual'
-            : plan.comingSoon
-            ? 'Notifique-me'
-            : 'Assinar Agora'}
+            : isCurrentPlan
+              ? 'Plano Atual'
+              : plan.comingSoon
+                ? 'Notifique-me'
+                : 'Assinar Agora'}
         </Button>
       </CardFooter>
     </Card>

@@ -1,11 +1,15 @@
 import React, {useMemo} from 'react';
 import {toast} from 'sonner';
-import Subscription from '@/services/subscription';
+import SubscriptionService from '@/services/subscription';
 import {useQuery} from '@tanstack/react-query';
 import {IUserProfileResponse} from '@/interface/users';
 import Profile from '@/services/profile';
 import {PlanCard} from '@/components/plans/PlanCard';
-import {ISubscription} from '@/interface/subscription';
+import {
+  CurrentSubscriptionResponse,
+  ICurrentUserSubscription,
+  ISubscription,
+} from '@/interface/subscription';
 import {Calendar, CircleDollarSign, Star} from 'lucide-react';
 import {configUrlStripePaymentSuccessOrCancel, styleToast} from '@/utils';
 import {SeletorPrice} from '@/components/plans/SeletorPrice';
@@ -44,24 +48,37 @@ export default function Subscriptions() {
   };
 
   const fetchGetPlans = async () => {
-    const plans = await Subscription.getPlans();
+    const plans = await SubscriptionService.getPlans();
     return plans;
   };
 
   const createCheckout = async (planId: string) => {
     try {
       const user = await fetchGetCurrentUser();
-      const createCheckout = await Subscription.createCheckoutSession(
+      const createCheckout = await SubscriptionService.createCheckoutSession(
         planId,
         user._id,
         successCheckoutUrl,
-        cancelCheckoutUrl
+        cancelCheckoutUrl,
       );
       return createCheckout;
     } catch (error) {
-      throw new Error('Serviço de pagamento não disponível. Configure o backend para processar pagamentos.');
+      throw new Error(
+        'Serviço de pagamento não disponível. Configure o backend para processar pagamentos.',
+      );
     }
   };
+
+  const fetchCurrentSubscription = async () => {
+    return SubscriptionService.getCurrentPlan();
+  };
+
+  const {data: currentSubscription} = useQuery<ICurrentUserSubscription>({
+    queryKey: ['current-subscription'],
+    queryFn: fetchCurrentSubscription,
+  });
+
+  const currentPlanId = currentSubscription?.plan?._id ?? null;
 
   const {data: rawPlans, isLoading} = useQuery<ISubscription[]>({
     queryKey: ['plans'],
@@ -75,51 +92,17 @@ export default function Subscriptions() {
       const planId = plan._id;
       const annualPrice = plan.price * 12 * 0.7;
 
-      let features: IFeature[] = plan.features.map((name) => ({
-        name,
-        included: true,
-      }));
-      let badge: string | undefined = undefined;
-
-      if (plan.name === 'Gratuito') {
-        features = [
-          ...features,
-          {name: 'Sincronização automática com a B3', included: false},
-          {name: 'Preço teto e suporte por ativo', included: false},
-          {name: 'Insight de IA para ativos da B3', included: false},
-          {name: 'Relatórios financeiros', included: false},
-          {name: 'Análise de criptomoedas', included: false},
-          {name: 'Alertas de Preço em Tempo Real', included: false},
-          {name: 'Insight de IA para Investimento', included: false},
-          {name: 'Insight de IA para crypto', included: false},
-          {name: 'Acesso a market data', included: false},
-        ];
-      } else if (plan.name === 'Investidor Pro') {
-        badge = 'Popular';
-        features = [
-          ...features,
-          {name: 'Análise de criptomoedas', included: false},
-          {name: 'Alertas de Preço em Tempo Real', included: false},
-          {name: 'Insight de IA para Investimento', included: false},
-          {name: 'Insight de IA para crypto', included: false},
-          {name: 'Relatórios financeiros', included: false},
-          {name: 'Acesso a market data', included: false},
-        ];
-      } else if (plan.name === 'Premium') {
-        features = [
-          {name: 'Todas as funcionalidades do plano Pro', included: true},
-          ...features,
-        ];
-      }
-
       return {
         ...plan,
         id: planId,
         monthlyPrice: plan.price,
         annualPrice,
         comingSoon: false,
-        badge,
-        features,
+        badge: plan.name === 'Investidor Pro' ? 'Popular' : undefined,
+        features: plan.features.map((name) => ({
+          name,
+          included: true,
+        })),
       };
     });
   }, [rawPlans]);
@@ -143,8 +126,11 @@ export default function Subscriptions() {
       setLoading((prev) => ({...prev, [plan._id]: true}));
       const session = await createCheckout(plan._id);
       window.location.href = session.url; // Redireciona pro checkout
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Erro ao iniciar o checkout';
+    } catch (err: unknown) {
+      let errorMessage = 'Erro ao iniciar o checkout';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
       toast.error(errorMessage, {
         style: styleToast().error,
       });
@@ -185,6 +171,7 @@ export default function Subscriptions() {
                   pricingPeriod={pricingPeriod}
                   loading={loading[plan._id]}
                   onSubscribe={() => handleSubscribe(plan._id)}
+                  isCurrentPlan={currentPlanId === plan._id}
                 />
               ))
             )}
