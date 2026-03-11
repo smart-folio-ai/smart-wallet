@@ -78,7 +78,11 @@ export default function Subscriptions() {
     queryFn: fetchCurrentSubscription,
   });
 
-  const currentPlanId = currentSubscription?.plan?._id ?? null;
+  const currentPlanId = 
+    currentSubscription?.plan?._id || 
+    (currentSubscription as any)?.planId || 
+    (currentSubscription as any)?.plan?._id || 
+    null;
 
   const {data: rawPlans, isLoading} = useQuery<ISubscription[]>({
     queryKey: ['plans'],
@@ -139,6 +143,24 @@ export default function Subscriptions() {
     }
   };
 
+  const handleManagePlan = async () => {
+    try {
+      setLoading((prev) => ({...prev, portal: true}));
+      const user = await fetchGetCurrentUser();
+      const session = await SubscriptionService.createPortalSession(
+        user._id,
+        window.location.href, // Return URL
+      );
+      window.location.href = session.url;
+    } catch (err: unknown) {
+      toast.error('Erro ao acessar o portal de assinaturas', {
+        style: styleToast().error,
+      });
+    } finally {
+      setLoading((prev) => ({...prev, portal: false}));
+    }
+  };
+
   return (
     <>
       <div className="container py-10">
@@ -172,6 +194,8 @@ export default function Subscriptions() {
                   loading={loading[plan._id]}
                   onSubscribe={() => handleSubscribe(plan._id)}
                   isCurrentPlan={currentPlanId === plan._id}
+                  onManagePlan={handleManagePlan}
+                  isManagingPlan={loading['portal']}
                 />
               ))
             )}

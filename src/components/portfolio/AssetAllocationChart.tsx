@@ -1,5 +1,11 @@
-
-import {ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend} from 'recharts';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+} from 'recharts';
 import {Asset} from '@/types/portfolio';
 import {formatCurrency} from '@/utils/formatters';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
@@ -32,13 +38,34 @@ export const AssetAllocationChart = ({assets}: AssetAllocationChartProps) => {
             data={data}
             cx="50%"
             cy="50%"
-            labelLine={false}
-            label={({name, percentage}) => `${name} (${percentage}%)`}
+            labelLine={{stroke: 'hsl(var(--foreground))', strokeOpacity: 0.2}}
+            label={(props: any) => {
+              const {cx, cy, midAngle, outerRadius, name, percentage} = props;
+              const RADIAN = Math.PI / 180;
+              const radius = outerRadius + 15;
+              const x = cx + radius * Math.cos(-midAngle * RADIAN);
+              const y = cy + radius * Math.sin(-midAngle * RADIAN);
+              return (
+                <text
+                  x={x}
+                  y={y}
+                  fill="hsl(var(--foreground))"
+                  textAnchor={x > cx ? 'start' : 'end'}
+                  dominantBaseline="central"
+                  fontSize={12}>
+                  {name} ({percentage}%)
+                </text>
+              );
+            }}
             outerRadius={80}
-            fill="#8884d8"
             dataKey="value">
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.fill} />
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.fill}
+                stroke="hsl(var(--background))"
+                strokeWidth={2}
+              />
             ))}
           </Pie>
           <Tooltip

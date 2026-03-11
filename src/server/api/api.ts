@@ -25,28 +25,39 @@ export const authService = {
 
 export const profileService = {
   getProfile: (userId: string) => apiClient.get(`profile/${userId}`),
+  getMyProfile: () => apiClient.get('profile/me'),
   getUser: (userId: string) => apiClient.get(`users/${userId}`),
-  updateUser: (userId: string, data: any) => apiClient.patch(`/users/update/${userId}`, data),
+  updateUser: (userId: string, data: any) =>
+    apiClient.patch(`/users/update/${userId}`, data),
+  updateProfile: (profileId: string, data: any) =>
+    apiClient.patch(`/profile/${profileId}`, data),
+  createProfile: (userId: string, data: any) =>
+    apiClient.post(`/profile/create/${userId}`, data),
   getAllAddress: () => apiClient.get(`addresses/addresses`),
   getAddressUser: (userId: string) => apiClient.get(`addresses/user/${userId}`),
+};
+
+export const aiService = {
+  analyze: (payload: any) => apiClient.post('/ai/analyze', payload),
 };
 
 export const stockServices = {
   getGlobalStock: (query: string) =>
     apiClient.get(`/stocks/global/quote?symbol=${query}`),
-  getAllNationalStocks: () => apiClient.get(`/stocks/all/national`),
+  getAllNationalStocks: (search = '') =>
+    apiClient.get(`/stocks/all/national${search ? `?search=${encodeURIComponent(search)}&limit=30` : '?limit=100'}`),
   getNationalStock: (symbol: string) =>
     apiClient.get(`/stocks/national/quote?symbol=${symbol}`),
 };
 
-// export const portfolioService = {
-//   getSummary: () => apiClient.get('/portfolio/summary'),
-//   getAssets: () => apiClient.get('/portfolio/assets'),
-//   getAssetDetails: (assetId: string) =>
-//     apiClient.get(`/portfolio/assets/${assetId}`),
-//   getTransactions: (params?: Record<string, unknown>) =>
-//     apiClient.get('/portfolio/transactions', {params}),
-// };
+export const portfolioService = {
+  getSummary: () => apiClient.get('/portfolio/summary'),
+  getAssets: () => apiClient.get('/portfolio/assets'),
+  getAssetDetails: (assetId: string) =>
+    apiClient.get(`/portfolio/assets/${assetId}`),
+  getTransactions: (params?: Record<string, unknown>) =>
+    apiClient.get('/portfolio/transactions', {params}),
+};
 
 // export const connectionsService = {
 //   getBrokerages: () => apiClient.get('/connections/brokerages'),
@@ -85,7 +96,7 @@ export const subscriptionService = {
     planId: string,
     userId: string,
     successUrl: string,
-    cancelUrl: string
+    cancelUrl: string,
   ) =>
     apiClient.post(`/subscription/${planId}/checkout`, {
       userId,
@@ -96,6 +107,37 @@ export const subscriptionService = {
     apiClient.post('/subscription/cancel', {userId}),
   deleteSubscription: (userId: string) =>
     apiClient.post(`/subscription/delete/${userId}`, {userId}),
+  createPortalSession: async (userId: string, returnUrl: string) => {
+    const token = localStorage.getItem('access_token');
+    return apiClient.post<{url: string}>(
+      '/subscription/portal',
+      {userId, returnUrl},
+      {headers: {Authorization: `Bearer ${token}`}},
+    );
+  },
 };
 
+export const twoFactorService = {
+  setup: () => apiClient.post('/auth/2fa/setup'),
+  verify: (code: string) => apiClient.post('/auth/2fa/verify', {code}),
+  disable: (code: string) =>
+    apiClient.delete('/auth/2fa/disable', {data: {code}}),
+  authenticate: (tempToken: string, code: string) =>
+    apiClient.post('/auth/2fa/authenticate', {tempToken, code}),
+};
+
+export const brokerSyncService = {
+  getConnections: () => apiClient.get('/broker-sync/connections'),
+  connect: (data: {
+    provider: string;
+    apiKey?: string;
+    apiSecret?: string;
+    cpf?: string;
+  }) => apiClient.post('/broker-sync/connect', data),
+  sync: (provider: string) => apiClient.post(`/broker-sync/sync/${provider}`),
+  disconnect: (provider: string) =>
+    apiClient.delete(`/broker-sync/disconnect/${provider}`),
+};
+
+export {apiClient as api};
 export default apiClient;

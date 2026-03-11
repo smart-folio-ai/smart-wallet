@@ -25,6 +25,36 @@ interface Result {
   logourl: string;
   priceEarnings: number;
   earningsPerShare: number;
+  // Extended Brapi fields
+  dividendYield?: number;
+  lastDividendValue?: number;
+  sector?: string;
+  bookValuePerShare?: number;
+  epsCurrentYear?: number;
+  twoHundredDayAverage?: number;
+  priceToBook?: number;
+  historicalDataPrice?: Array<{
+    date: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    adjustedClose: number;
+  }>;
+  dividendsData?: {
+    cashDividends?: Array<{
+      assetIssued: string;
+      paymentDate: string;
+      rate: number;
+      relatedTo: string;
+      approvedOn: string;
+      isinCode: string;
+      label: string;
+      lastDatePrior: string;
+      remarks: string;
+    }>;
+  };
 }
 
 export interface StockGlobalResponse {

@@ -23,6 +23,8 @@ interface PlanCardProps {
   loading: boolean;
   onSubscribe: () => void;
   isCurrentPlan: boolean;
+  onManagePlan?: () => void;
+  isManagingPlan?: boolean;
 }
 
 export const PlanCard: React.FC<PlanCardProps> = ({
@@ -31,6 +33,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   loading,
   onSubscribe,
   isCurrentPlan,
+  onManagePlan,
+  isManagingPlan,
 }) => {
   return (
     <Card
@@ -81,19 +85,27 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         </div>
       </CardContent>
       <CardFooter>
-        <Button
-          onClick={onSubscribe}
-          className="w-full"
-          variant={isCurrentPlan ? 'outline' : 'default'}
-          disabled={loading || isCurrentPlan}>
-          {loading
-            ? 'Processando...'
-            : isCurrentPlan
-              ? 'Plano Atual'
+        {isCurrentPlan ? (
+          <Button
+            onClick={onManagePlan}
+            className="w-full"
+            variant="outline"
+            disabled={isManagingPlan}>
+            {isManagingPlan ? 'Carregando Portal...' : 'Gerenciar Plano'}
+          </Button>
+        ) : (
+          <Button
+            onClick={onSubscribe}
+            className="w-full"
+            variant="default"
+            disabled={loading || isCurrentPlan}>
+            {loading
+              ? 'Processando...'
               : plan.comingSoon
                 ? 'Notifique-me'
                 : 'Assinar Agora'}
-        </Button>
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

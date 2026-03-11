@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useQuery} from '@tanstack/react-query';
 import {
@@ -13,7 +13,7 @@ import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Skeleton} from '@/components/ui/skeleton';
-import {Search, TrendingUp, Building, Coins, BarChart3} from 'lucide-react';
+import {Search, TrendingUp, Building, Coins, BarChart3, X} from 'lucide-react';
 import {formatCurrency} from '@/utils/formatters';
 import Stock from '@/services/stocks';
 import {StockAllNacionalResponse} from '@/types/stock';
@@ -30,63 +30,92 @@ interface Asset {
   type: string;
 }
 
-interface Fiis {
-  stock: string;
-  name: string;
-  close: number;
-  change: number;
-  volume: number;
-  market_cap: number | null;
-  logo: string;
-  sector: string;
-  type: string;
-}
-
 const AssetSearch = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<Asset[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const searchRef = useRef<HTMLDivElement>(null);
 
+  // Debounce search term before firing server-side query
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Full list (cached, used for the grid)
   const {data: allStocks, isLoading} = useQuery({
     queryKey: ['all-national-stocks'],
     queryFn: async (): Promise<StockAllNacionalResponse> => {
       const response = await Stock.getAllNacionalStocks();
       return Array.isArray(response) ? response[0] : response;
     },
+    staleTime: 10 * 60 * 1000,
   });
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) return;
+  // Server-side search — fires when user has typed ≥2 chars
+  const {data: searchResults} = useQuery({
+    queryKey: ['stock-search', debouncedSearch],
+    queryFn: async (): Promise<StockAllNacionalResponse> => {
+      const response = await Stock.getAllNacionalStocks(debouncedSearch);
+      return Array.isArray(response) ? response[0] : response;
+    },
+    enabled: debouncedSearch.length >= 2,
+    staleTime: 30 * 1000,
+  });
 
-    setIsSearching(true);
+  // Autocomplete: use server search results when available, fall back to local filter
+  const suggestions = (() => {
+    if (!searchTerm.trim()) return [];
+    const q = searchTerm.toLowerCase();
+    const source = searchResults?.stocks ?? allStocks?.stocks ?? [];
+    return source
+      .filter(
+        (s) =>
+          s.stock.toLowerCase().includes(q) ||
+          (s.name && s.name.toLowerCase().includes(q)),
+      )
+      .sort((a, b) => {
+        const aSymbol = a.stock.toLowerCase();
+        const bSymbol = b.stock.toLowerCase();
+        // Exact match first
+        if (aSymbol === q && bSymbol !== q) return -1;
+        if (bSymbol === q && aSymbol !== q) return 1;
+        // Symbol prefix match second
+        const aPrefix = aSymbol.startsWith(q);
+        const bPrefix = bSymbol.startsWith(q);
+        if (aPrefix && !bPrefix) return -1;
+        if (bPrefix && !aPrefix) return 1;
+        // Symbol contains match third
+        const aContains = aSymbol.includes(q);
+        const bContains = bSymbol.includes(q);
+        if (aContains && !bContains) return -1;
+        if (bContains && !aContains) return 1;
+        // Alphabetical by symbol last
+        return aSymbol.localeCompare(bSymbol);
+      })
+      .slice(0, 8);
+  })();
 
-    try {
-      const nationalResponse = await Stock.getNationalStock(searchTerm);
-
-      const results: Asset[] = nationalResponse.results.map((result) => ({
-        stock: result.symbol,
-        name: result.longName || result.shortName,
-        close: result.regularMarketPrice,
-        change: result.regularMarketChangePercent,
-        volume: result.regularMarketVolume,
-        market_cap: result.marketCap,
-        logo: result.logourl || '',
-        sector: 'N/A',
-        type: 'stock',
-      }));
-
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Error searching stocks:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleAssetClick = (symbol: string) => {
+    navigate(`/asset/${symbol}`);
+  };
+
+  const handleSuggestionClick = (symbol: string) => {
+    setSearchTerm(symbol);
+    setShowSuggestions(false);
     navigate(`/asset/${symbol}`);
   };
 
@@ -120,16 +149,21 @@ const AssetSearch = () => {
     }
   };
 
-  // Get filtered assets based on active tab
+  // Get filtered assets based on active tab (always filter by searchTerm if present)
   const getFilteredAssets = () => {
-    if (!allStocks) return [];
+    // When searching and we have server results, use those
+    const source = (searchTerm.trim() && searchResults) ? searchResults : allStocks;
+    if (!source) return [];
+
+    const stockList = source.stocks ?? [];
+    const indexList = source.indexes ?? [];
 
     let assets: Asset[] = [];
 
     if (activeTab === 'all' || activeTab === 'stocks' || activeTab === 'fiis') {
       assets = [
         ...assets,
-        ...allStocks.stocks.map((stock) => ({
+        ...stockList.map((stock) => ({
           stock: stock.stock,
           name: stock.name,
           close: stock.close,
@@ -143,28 +177,10 @@ const AssetSearch = () => {
       ];
     }
 
-    if (activeTab === 'all' || activeTab === 'fiis') {
-      const fiis: Fiis[] = allStocks.stocks
-        .filter((stock) => stock.type.toLowerCase() === 'fii')
-        .map((stock) => ({
-          stock: stock.stock,
-          name: stock.name,
-          close: stock.close,
-          change: stock.change,
-          volume: stock.volume,
-          market_cap: stock.market_cap,
-          logo: stock.logo,
-          sector: stock.sector,
-          type: stock.type,
-        }));
-
-      assets = [...assets, ...fiis];
-    }
-
     if (activeTab === 'all' || activeTab === 'indexes') {
       assets = [
         ...assets,
-        ...allStocks.indexes.map((index) => ({
+        ...indexList.map((index) => ({
           stock: index.stock,
           name: index.name,
           close: 0,
@@ -176,6 +192,23 @@ const AssetSearch = () => {
           type: 'index',
         })),
       ];
+    }
+
+    // Client-side filter (for when server results cover a wider set)
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      const filtered = assets.filter(
+        (a) =>
+          a.stock.toLowerCase().includes(q) ||
+          (a.name && a.name.toLowerCase().includes(q)),
+      );
+      return filtered.sort((a, b) => {
+        const aPrefix = a.stock.toLowerCase().startsWith(q);
+        const bPrefix = b.stock.toLowerCase().startsWith(q);
+        if (aPrefix && !bPrefix) return -1;
+        if (bPrefix && !aPrefix) return 1;
+        return a.stock.localeCompare(b.stock);
+      });
     }
 
     return assets;
@@ -264,64 +297,102 @@ const AssetSearch = () => {
           </p>
         </div>
 
-        <Card className="card-gradient mb-6">
-          <CardHeader>
-            <CardTitle>Pesquisar Ativo Específico</CardTitle>
-            <CardDescription>
-              Digite o código do ativo ou nome da empresa
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Ex: PETR4, Petrobras..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                />
-              </div>
-              <Button onClick={handleSearch} disabled={isSearching}>
-                <Search className="h-4 w-4 mr-2" />
-                {isSearching ? 'Buscando...' : 'Buscar'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {searchResults.length > 0 && (
-          <Card className="card-gradient mb-6">
+        {/* Search Card + dropdown wrapper — relative here so dropdown overlaps everything below */}
+        <div className="relative mb-6">
+          <Card className="card-gradient">
             <CardHeader>
-              <CardTitle>Resultados da Busca</CardTitle>
+              <CardTitle>Pesquisar Ativo</CardTitle>
               <CardDescription>
-                {searchResults.length} ativo(s) encontrado(s)
+                Digite o código ou nome do ativo — resultados aparecem ao digitar
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {searchResults.map((asset, index) => (
-                  <AssetCard key={`${asset.stock}-${index}`} asset={asset} />
-                ))}
+              <div ref={searchRef} className="relative">
+                <div className="flex gap-2 items-center">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="pl-9 pr-9"
+                      placeholder="Ex: PETR4, Petrobras, VALE3..."
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => searchTerm && setShowSuggestions(true)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setShowSuggestions(false);
+                      }}
+                    />
+                    {searchTerm && (
+                      <button
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          setSearchTerm('');
+                          setShowSuggestions(false);
+                        }}>
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
-        )}
 
-        {searchTerm && searchResults.length === 0 && !isSearching && (
-          <Card className="card-gradient mb-6">
-            <CardContent className="text-center py-8">
-              <p className="text-muted-foreground">
-                Nenhum ativo encontrado para "{searchTerm}"
-              </p>
-            </CardContent>
-          </Card>
-        )}
+          {/* Autocomplete dropdown — outside Card so it's not clipped by overflow:hidden */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 z-[9999] mt-1 bg-card border border-border rounded-lg shadow-2xl overflow-hidden">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s.stock}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/10 transition-colors text-left"
+                      onMouseDown={() => handleSuggestionClick(s.stock)}>
+                      {s.logo ? (
+                        <img
+                          src={s.logo}
+                          alt={s.name}
+                          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display =
+                              'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                          {getAssetIcon(s.type)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">{s.stock}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {s.name}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-medium">
+                          {formatCurrency(s.close)}
+                        </p>
+                        <p
+                          className={`text-xs ${s.change >= 0 ? 'text-success' : 'text-destructive'}`}>
+                          {s.change >= 0 ? '+' : ''}
+                          {s.change?.toFixed(2)}%
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+              </div>
+            )}
+          {/* ↑ end of relative mb-6 wrapper */}
+        </div>
 
         <Card className="card-gradient">
           <CardHeader>
             <CardTitle>Explorar Ativos</CardTitle>
             <CardDescription>
-              Navegue por todos os ativos disponíveis na B3
+              {searchTerm
+                ? `Filtrando por "${searchTerm}" — ${filteredAssets.length} resultado(s)`
+                : 'Navegue por todos os ativos disponíveis na B3'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -329,110 +400,47 @@ const AssetSearch = () => {
               value={activeTab}
               onValueChange={setActiveTab}
               className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="all">Todos</TabsTrigger>
                 <TabsTrigger value="stocks">Ações</TabsTrigger>
                 <TabsTrigger value="fiis">FIIs</TabsTrigger>
-                <TabsTrigger value="crypto">Cryptos</TabsTrigger>
                 <TabsTrigger value="indexes">Índices</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="all" className="mt-6">
-                {isLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Array.from({length: 9}).map((_, i) => (
-                      <Card key={i} className="card-gradient">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-3 mb-4">
-                            <Skeleton className="w-10 h-10 rounded-full" />
-                            <div>
-                              <Skeleton className="h-5 w-20 mb-1" />
-                              <Skeleton className="h-4 w-32" />
+              {['all', 'stocks', 'fiis', 'indexes'].map((tab) => (
+                <TabsContent key={tab} value={tab} className="mt-6">
+                  {isLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Array.from({length: 9}).map((_, i) => (
+                        <Card key={i} className="card-gradient">
+                          <CardContent className="p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <Skeleton className="w-10 h-10 rounded-full" />
+                              <div>
+                                <Skeleton className="h-5 w-20 mb-1" />
+                                <Skeleton className="h-4 w-32" />
+                              </div>
                             </div>
-                          </div>
-                          <Skeleton className="h-8 w-24 mb-2" />
-                          <Skeleton className="h-4 w-20" />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredAssets.slice(0, 50).map((asset) => (
-                      <AssetCard key={asset.stock} asset={asset} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="stocks" className="mt-6">
-                {isLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Array.from({length: 9}).map((_, i) => (
-                      <Card key={i} className="card-gradient">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-3 mb-4">
-                            <Skeleton className="w-10 h-10 rounded-full" />
-                            <div>
-                              <Skeleton className="h-5 w-20 mb-1" />
-                              <Skeleton className="h-4 w-32" />
-                            </div>
-                          </div>
-                          <Skeleton className="h-8 w-24 mb-2" />
-                          <Skeleton className="h-4 w-20" />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : allStocks ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {allStocks.stocks.slice(0, 50).map((stock) => (
-                      <AssetCard key={stock.stock} asset={stock} />
-                    ))}
-                  </div>
-                ) : null}
-              </TabsContent>
-
-              <TabsContent value="indexes" className="mt-6">
-                {isLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Array.from({length: 9}).map((_, i) => (
-                      <Card key={i} className="card-gradient">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-3 mb-4">
-                            <Skeleton className="w-10 h-10 rounded-full" />
-                            <div>
-                              <Skeleton className="h-5 w-20 mb-1" />
-                              <Skeleton className="h-4 w-32" />
-                            </div>
-                          </div>
-                          <Skeleton className="h-8 w-24 mb-2" />
-                          <Skeleton className="h-4 w-20" />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : allStocks ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {allStocks.indexes.map((index) => (
-                      <AssetCard
-                        key={index.stock}
-                        asset={{
-                          stock: index.stock,
-                          name: index.name,
-                          close: 0,
-                          change: 0,
-                          volume: 0,
-                          market_cap: null,
-                          logo: '',
-                          sector: 'Índice',
-                          type: 'index',
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </TabsContent>
+                            <Skeleton className="h-8 w-24 mb-2" />
+                            <Skeleton className="h-4 w-20" />
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredAssets.slice(0, 50).map((asset) => (
+                        <AssetCard key={asset.stock} asset={asset} />
+                      ))}
+                      {filteredAssets.length === 0 && (
+                        <div className="col-span-3 text-center py-8 text-muted-foreground">
+                          Nenhum ativo encontrado para "{searchTerm}"
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+              ))}
             </Tabs>
           </CardContent>
         </Card>

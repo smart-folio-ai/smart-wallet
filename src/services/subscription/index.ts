@@ -6,7 +6,7 @@ import {
   IUpdateSubscriptionFeature,
   SubscriptionInterface,
 } from '@/interface/subscription';
-import {subscriptionService} from '@/server/api/api';
+import {api, subscriptionService} from '@/server/api/api';
 
 class SubscriptionService implements SubscriptionInterface {
   async getPlans(): Promise<ISubscription[]> {
@@ -53,6 +53,17 @@ class SubscriptionService implements SubscriptionInterface {
       userId,
       successUrl,
       cancelUrl,
+    );
+    return response.data;
+  }
+
+  async createPortalSession(
+    userId: string,
+    returnUrl: string,
+  ): Promise<{url: string}> {
+    const response = await subscriptionService.createPortalSession(
+      userId,
+      returnUrl,
     );
     return response.data;
   }

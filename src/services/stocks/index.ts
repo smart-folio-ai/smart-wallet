@@ -7,8 +7,8 @@ import {
 } from '@/types/stock';
 
 export class Stock implements IStock {
-  async getAllNacionalStocks(): Promise<StockAllNacionalResponse> {
-    const response = await stockServices.getAllNationalStocks();
+  async getAllNacionalStocks(search = ''): Promise<StockAllNacionalResponse> {
+    const response = await stockServices.getAllNationalStocks(search);
     return response.data;
   }
 

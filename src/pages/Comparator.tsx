@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { GitCompare, Plus, X, TrendingUp, TrendingDown } from 'lucide-react';
 import { PremiumBlur } from '@/components/ui/premium-blur';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // Mock data para demonstração
 const mockAssetData = {
@@ -52,6 +53,7 @@ const mockAssetData = {
 export default function Comparator() {
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
+  const {hasComparator} = useSubscription();
 
   const addAsset = () => {
     if (inputValue.trim() && !selectedAssets.includes(inputValue.toUpperCase())) {
@@ -144,6 +146,7 @@ export default function Comparator() {
         {/* Tabela de comparação */}
         {selectedAssets.length > 0 && (
           <PremiumBlur
+            locked={!hasComparator}
             title="Comparador de Ativos - Premium"
             description="Acesse comparações detalhadas com mais de 20 indicadores financeiros"
           >

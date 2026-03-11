@@ -14,7 +14,7 @@ import AIInsights from './pages/AIInsights';
 import Subscription from './pages/Subscription';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
-import Portfolio from './pages/Portifolio';
+import Portfolio from './pages/Portfolio';
 import AssetDetail from './pages/AssetDetail';
 import AssetSearch from './pages/AssetSearch';
 import Planning from './pages/Planning';
@@ -26,8 +26,18 @@ import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancelled from './pages/SubscriptionCancelled';
 import AddAsset from './pages/AddAsset';
 import Comparator from './pages/Comparator';
+import TwoFactorVerify from './pages/TwoFactorVerify';
+import MyAssetDetail from './pages/MyAssetDetail';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -40,6 +50,7 @@ const App = () => (
           <Route path="/" element={<SignIn />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/2fa-verify" element={<TwoFactorVerify />} />
           <Route path="/signout" element={<SignOut />} />
           <Route
             path="/subscription-success"
@@ -79,6 +90,14 @@ const App = () => (
                             element={<Subscription />}
                           />
                           <Route path="/portfolio" element={<Portfolio />} />
+                          <Route
+                            path="/portfolio/asset/:assetId"
+                            element={<MyAssetDetail />}
+                          />
+                          <Route
+                            path="/portfolio/asset/symbol/:symbol"
+                            element={<MyAssetDetail />}
+                          />
                           <Route
                             path="/portfolio/:symbol"
                             element={<AssetDetail />}

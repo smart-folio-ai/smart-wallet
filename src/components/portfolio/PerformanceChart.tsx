@@ -25,29 +25,83 @@ interface PerformanceChartProps {
   loading: boolean;
   activeTab: string;
   assets: Asset[];
-  performanceData: Record<string, AssetPerformance[]>;
+  portfolioHistory: any[];
 }
 
 export const PerformanceChart = ({
   loading,
   activeTab,
   assets,
-  performanceData,
+  portfolioHistory,
 }: PerformanceChartProps) => {
   const [selectedPeriod, setSelectedPeriod] = useState('1M');
 
-  // Get performance data based on active tab
-  const getPerformanceData = () => {
-    switch (activeTab) {
-      case 'stock':
-        return performanceData.stocks;
-      case 'fii':
-        return performanceData.fiis;
-      case 'crypto':
-        return performanceData.crypto;
-      default:
-        return performanceData.stocks;
+  const getChartData = () => {
+    // If no portfolio history is available from the backend, show empty initially
+    let aggregatedData = portfolioHistory.map((item) => ({
+      date: item.date,
+      price: item.totalValue
+    }));
+
+    if (aggregatedData.length === 0) {
+      // 1. fallback to calculating from current assets value if no history exists yet
+      // This displays just today's value as a data point
+      const filteredAssets = assets.filter(
+        (asset) => activeTab === 'all' || asset.type === activeTab
+      );
+      const totalValue = filteredAssets.reduce((sum, asset) => sum + asset.value, 0);
+      const today = new Date().toISOString().split('T')[0];
+      aggregatedData = [{ date: today, price: totalValue }];
+    } else {
+       // Filter total value based on activeTab (history is usually for the whole portfolio, not per asset)
+       // Since the backend only records the total portfolio value per day,
+       // filtering history by 'stock' or 'crypto' would require recording history PER ASSET.
+       // For now, if activeTab !== 'all', the chart might just show the whole portfolio history or we can hide it.
+       // Assuming portfolioHistory already contains the total values. We'll just display it.
     }
+
+    // 3. Sort by date
+    aggregatedData = aggregatedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // 4. Filter by period
+    if (aggregatedData.length > 0) {
+      let daysToKeep = aggregatedData.length;
+      switch (selectedPeriod) {
+        case '1D':
+          daysToKeep = 2; // Requires 2 points minimum to draw a line
+          break;
+        case '1S':
+          daysToKeep = 7;
+          break;
+        case '1M':
+          daysToKeep = 30;
+          break;
+        case '3M':
+          daysToKeep = 90;
+          break;
+        case '6M':
+          daysToKeep = 180;
+          break;
+        case 'YTD':
+          const lastDate = new Date(aggregatedData[aggregatedData.length - 1].date);
+          const startOfYear = new Date(lastDate.getFullYear(), 0, 1);
+          daysToKeep = Math.max(2, Math.ceil((lastDate.getTime() - startOfYear.getTime()) / (1000 * 3600 * 24)));
+          break;
+        case '1A':
+          daysToKeep = 365;
+          break;
+        case 'MAX':
+        default:
+          daysToKeep = aggregatedData.length;
+          break;
+      }
+
+      if (daysToKeep < aggregatedData.length) {
+        aggregatedData = aggregatedData.slice(aggregatedData.length - daysToKeep);
+      }
+    }
+
+    return aggregatedData;
   };
 
   return (
@@ -81,21 +135,7 @@ export const PerformanceChart = ({
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={getPerformanceData().flatMap((data) =>
-                  data.period === selectedPeriod
-                    ? assets
-                        .filter(
-                          (asset) =>
-                            activeTab === 'all' || asset.type === activeTab
-                        )
-                        .flatMap((asset) => asset.history || [])
-                        .sort(
-                          (a, b) =>
-                            new Date(a.date).getTime() -
-                            new Date(b.date).getTime()
-                        )
-                    : []
-                )}
+                data={getChartData()}
                 margin={{top: 10, right: 10, left: 10, bottom: 10}}>
                 <defs>
                   <linearGradient

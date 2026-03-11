@@ -2,8 +2,8 @@ interface IAuthentication {
   authenticate(
     email: string,
     password: string,
-    keepConnected: boolean
-  ): Promise<boolean>;
+    keepConnected: boolean,
+  ): Promise<any>;
   register(data: ICreateUser): Promise<boolean>;
   logout(): Promise<boolean>;
 }

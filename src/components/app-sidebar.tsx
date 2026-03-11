@@ -25,6 +25,8 @@ import {
   Wallet,
   GitCompare,
   Plus,
+  UserCircle,
+  LogOut,
 } from 'lucide-react';
 import {Link} from 'react-router-dom';
 
@@ -171,7 +173,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link to="/signout">
-                <Users className="h-5 w-5" />
+                <LogOut className="h-5 w-5" />
                 <span>Sair</span>
               </Link>
             </SidebarMenuButton>

@@ -31,11 +31,12 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import {Asset} from '@/types/portfolio';
-import {mockAssets} from '@/utils/mockData';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
 import {PremiumBlur} from '@/components/ui/premium-blur';
+import {useQuery} from '@tanstack/react-query';
+import Stock from '@/services/stocks';
+import {useSubscription} from '@/hooks/useSubscription';
 
 interface AssetIndicators {
   valuation: {
@@ -138,26 +139,75 @@ const mockCompanyInfo: CompanyInfo = {
 export default function AssetDetail() {
   const {symbol} = useParams<{symbol: string}>();
   const navigate = useNavigate();
-  const [asset, setAsset] = useState<Asset | null>(null);
-  const [loading, setLoading] = useState(true);
+  const {hasAiInsights} = useSubscription();
 
-  useEffect(() => {
-    if (symbol) {
-      const foundAsset = mockAssets.find((a) => a.symbol === symbol);
-      setAsset(foundAsset || null);
-      setLoading(false);
-    }
-  }, [symbol]);
+  // Fetch real data from Brapi
+  const {data: stockData, isLoading} = useQuery({
+    queryKey: ['brapi-stock', symbol],
+    queryFn: async () => {
+      if (!symbol) return null;
+      const res = await Stock.getNationalStock(symbol);
+      return res?.results?.[0] ?? null;
+    },
+    enabled: !!symbol,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 
+  // Map Brapi response to local asset shape (cast to any to access extended fields)
+  const s = stockData as any;
+  const asset = s
+    ? {
+        symbol: s.symbol || symbol || '',
+        name: s.longName || s.shortName || symbol || '',
+        price: s.regularMarketPrice ?? 0,
+        change24h: s.regularMarketChangePercent ?? 0,
+        amount: 0,
+        value: 0,
+        allocation: 0,
+        type: 'stock' as const,
+        dividendYield: s.dividendYield ?? 0,
+        lastDividend: s.lastDividendValue ?? 0,
+        sector: s.sector ?? '',
+        aiRecommendation: undefined,
+        aiConfidence: undefined,
+        profitLoss: undefined,
+        profitLossPercentage: undefined,
+        history: s.historicalDataPrice
+          ? s.historicalDataPrice.map((d: any) => ({
+              date: new Date(d.date * 1000).toISOString(),
+              price: d.close,
+            }))
+          : [],
+        dividendHistory: s.dividendsData?.cashDividends
+          ? s.dividendsData.cashDividends.map((d: any) => ({
+              date: d.paymentDate,
+              value: d.rate,
+            }))
+          : [],
+        // extra fields for indicators
+        priceEarnings: s.priceEarnings,
+        priceToBook: s.priceToBook,
+        epsCurrentYear: s.epsCurrentYear,
+        twoHundredDayAverage: s.twoHundredDayAverage,
+        fiftyTwoWeekHigh: s.fiftyTwoWeekHigh,
+        fiftyTwoWeekLow: s.fiftyTwoWeekLow,
+        regularMarketVolume: s.regularMarketVolume,
+        marketCap: s.marketCap,
+        earningsPerShare: s.earningsPerShare,
+        bookValuePerShare: s.bookValuePerShare,
+      }
+    : null;
+
+  // Graham fair value
   const calculateGrahamValue = () => {
     if (!asset) return 0;
-    // Fórmula simplificada de Graham: √(22.5 × EPS × Book Value per Share)
-    const eps = 5.45; // Mock EPS
-    const bvps = 28.3; // Mock Book Value per Share
+    const eps = (asset as any).earningsPerShare || (asset as any).epsCurrentYear || 0;
+    const bvps = (asset as any).bookValuePerShare || 0;
+    if (eps <= 0 || bvps <= 0) return 0;
     return Math.sqrt(22.5 * eps * bvps);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -169,15 +219,15 @@ export default function AssetDetail() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <h1 className="text-2xl font-bold mb-4">Ativo não encontrado</h1>
-        <Button onClick={() => navigate('/portfolio')}>
-          Voltar ao Portfolio
+        <Button onClick={() => navigate('/asset-search')}>
+          Buscar Outro Ativo
         </Button>
       </div>
     );
   }
 
   const grahamValue = calculateGrahamValue();
-  const isUndervalued = asset.price < grahamValue;
+  const isUndervalued = grahamValue > 0 && asset.price < grahamValue;
 
   return (
     <div className="min-h-screen bg-background">
@@ -823,6 +873,7 @@ export default function AssetDetail() {
           {/* Nova aba IA Insights */}
           <TabsContent value="ai-insights">
             <PremiumBlur
+              locked={!hasAiInsights}
               title="IA Insights Premium"
               description="Análises avançadas geradas por inteligência artificial"
             >

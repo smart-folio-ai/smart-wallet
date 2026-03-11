@@ -4,9 +4,9 @@
 
 ### Link online project: [smart-folio-ai](https://smartfolioai.netlify.app)
 
-* User : teste@teste.com password: Testeadmin@123
+- User : teste@teste.com password: Testeadmin@123
 
-### SmartMoney is an innovative SaaS platform for managing portfolios of financial assets. Our aim is to provide intelligent analysis of your investments, helping you to make strategic decisions about buying and selling assets based on data and artificial intelligence.
+### Trackerr is an innovative SaaS platform for managing portfolios of financial assets. Our aim is to provide intelligent analysis of your investments, helping you to make strategic decisions about buying and selling assets based on data and artificial intelligence.
 
 ### Connect to B3 and Exchanges: Integration with APIs to automatically synchronize your portfolio.
 
@@ -34,7 +34,7 @@ Infrastructure: Docker
 
 There are several ways of editing your application.
 
-**Use your preferred IDE**
+** Use your preferred IDE **
 
 If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 

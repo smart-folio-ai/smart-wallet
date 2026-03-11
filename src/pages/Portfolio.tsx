@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {
@@ -9,8 +9,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
-import {Download, Share2} from 'lucide-react';
+import {Download, Share2, Upload, Loader2} from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
+import {useQueryClient} from '@tanstack/react-query';
 
 // Components
 import {PortfolioSummaryCards} from '@/components/portfolio/PortfolioSummaryCards';
@@ -19,23 +20,90 @@ import {AssetAllocationChart} from '@/components/portfolio/AssetAllocationChart'
 import {AssetsList} from '@/components/portfolio/AssetsList';
 import {AssetsListHeader} from '@/components/portfolio/AssetsListHeader';
 import {AssetDetailModal} from '@/components/portfolio/AssetDetailModal';
+import {CreatePortfolioDialog} from '@/components/portfolio/CreatePortfolioDialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // Types and Mock Data
 import {Asset, SortConfig} from '@/types/portfolio';
-import {mockAssets, performanceData} from '@/utils/mockData';
+import {performanceData} from '@/utils/mockData';
+import portfolioService from '@/services/portfolio';
+import {useQuery} from '@tanstack/react-query';
 
 const Portfolio = () => {
   const {toast} = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('all');
-  const [loading, setLoading] = useState(true);
-  const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isUploadingB3, setIsUploadingB3] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: '',
     direction: 'asc',
   });
+
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('all');
+
+  const {data: portfolios = []} = useQuery({
+    queryKey: ['portfolios'],
+    queryFn: async () => {
+      return await portfolioService.getPortfolios();
+    },
+  });
+
+  const {data: apiAssets = [], isLoading: loading} = useQuery({
+    queryKey: ['portfolioAssets'],
+    queryFn: async () => {
+      return await portfolioService.getAssets();
+    },
+  });
+
+  const {data: portfolioHistory = [], isLoading: historyLoading} = useQuery({
+    queryKey: ['portfolioHistory', selectedPortfolioId],
+    queryFn: async () => {
+      if (selectedPortfolioId === 'all') {
+        // If we want total history maybe we need another endpoint, but let's assume 'all' gets the summed up history or we fetch individual and sum.
+        // For now, if "all" we can just get history for each portfolio and sum them up, or if the API doesn't support 'all', just return empty.
+        // Let's call a summary endpoint if it exists, or handle it in chart.
+        // Since we only added /:id/history, let's fetch for the selected one.
+        return []; 
+      }
+      return await portfolioService.getPortfolioHistory(selectedPortfolioId);
+    },
+    enabled: selectedPortfolioId !== 'all',
+  });
+
+  const displayApiAssets =
+    selectedPortfolioId === 'all'
+      ? apiAssets
+      : apiAssets.filter((a: any) => a.portfolioId === selectedPortfolioId);
+
+  const totalApiValue = displayApiAssets.reduce(
+    (sum: number, asset: any) => sum + (asset.total || 0),
+    0,
+  );
+  const assets: Asset[] = displayApiAssets.map((a: any) => ({
+    _id: a.id || a._id,
+    symbol: a.symbol,
+    name: a.symbol,
+    price: a.price,
+    change24h: 0, // Placeholder
+    amount: a.quantity,
+    value: a.total,
+    allocation:
+      totalApiValue > 0
+        ? Number(((a.total / totalApiValue) * 100).toFixed(2))
+        : 0,
+    type: a.type,
+    dividendYield: 0,
+    lastDividend: 0,
+  }));
 
   // Filter and sort assets
   const filteredAssets = assets
@@ -81,7 +149,7 @@ const Portfolio = () => {
       acc[asset.type] += asset.value;
       return acc;
     },
-    {stock: 0, fii: 0, crypto: 0, other: 0}
+    {stock: 0, fii: 0, crypto: 0, other: 0},
   );
 
   // Prepare data for charts
@@ -115,36 +183,18 @@ const Portfolio = () => {
     setSortConfig({key, direction});
   };
 
-  // Load data
-  useEffect(() => {
-    // Simulating API call with mock data
-    setTimeout(() => {
-      setAssets(mockAssets);
-      setLoading(false);
-    }, 800);
-
-    // When API is ready:
-    // const fetchAssets = async () => {
-    //   try {
-    //     setLoading(true);
-    //     const response = await portfolioService.getAssets();
-    //     setAssets(response.data);
-    //   } catch (error) {
-    //     console.error("Failed to fetch assets", error);
-    //     toast({
-    //       title: "Erro",
-    //       description: "Falha ao carregar os ativos",
-    //       variant: "destructive",
-    //     });
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchAssets();
-  }, []);
+  // Removed useEffect with mock data
 
   const openAssetDetails = (asset: Asset) => {
-    setSelectedAsset(asset);
+    const id = asset._id || (asset as any).id;
+    if (id && id !== 'all') {
+      navigate(`/portfolio/asset/${id}`);
+    } else if (asset.symbol) {
+      // Fallback: navega pelo símbolo se não tiver _id
+      navigate(`/portfolio/asset/symbol/${asset.symbol}`);
+    } else {
+      setSelectedAsset(asset);
+    }
   };
 
   // Calculate additional metrics
@@ -160,16 +210,91 @@ const Portfolio = () => {
   const dividendYield =
     totalValue > 0 ? (totalDividends / totalValue) * 100 : 0;
 
+  const handleB3Import = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (selectedPortfolioId === 'all') {
+      toast({
+        title: 'Atenção',
+        description: 'Selecione uma carteira específica para importar os ativos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsUploadingB3(true);
+      await portfolioService.importB3Report(selectedPortfolioId, file);
+      toast({
+        title: 'Importação concluída',
+        description: 'Os ativos da B3 foram importados com sucesso.',
+      });
+      queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
+    } catch (error) {
+      toast({
+        title: 'Erro na importação',
+        description: 'Ocorreu um problema ao processar o arquivo B3.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploadingB3(false);
+      // reset file input
+      e.target.value = '';
+    }
+  };
+
   return (
-    <div className="container py-8 animate-fade-in">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Portfólio</h1>
+    <div className="container py-8 min-h-[calc(100vh-4rem)] animate-fade-in overflow-x-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold">Portfólio</h1>
+          <Select
+            value={selectedPortfolioId}
+            onValueChange={setSelectedPortfolioId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Selecione a Carteira" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Carteiras</SelectItem>
+              {portfolios.map((p: any) => (
+                <SelectItem key={p.id || p._id} value={p.id || p._id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
+          <CreatePortfolioDialog />
+          <div className="relative">
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              id="b3-upload"
+              onChange={handleB3Import}
+              disabled={isUploadingB3}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => document.getElementById('b3-upload')?.click()}
+              disabled={isUploadingB3}
+            >
+              {isUploadingB3 ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
+              Importar B3
+            </Button>
+          </div>
+          <Button variant="outline" size="sm" className="hidden sm:flex">
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="hidden sm:flex">
             <Share2 className="h-4 w-4 mr-2" />
             Compartilhar
           </Button>
@@ -187,16 +312,72 @@ const Portfolio = () => {
 
       {/* Performance Chart */}
       <PerformanceChart
-        loading={loading}
+        loading={loading || historyLoading}
         activeTab={activeTab}
         assets={assets}
-        performanceData={performanceData}
+        portfolioHistory={portfolioHistory}
       />
 
-      {/* Asset Allocation Chart */}
-      <AssetAllocationChart
-        assets={assets}
-      />
+      {/* Asset Allocation Chart & Top Assets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <Card className="card-gradient h-full">
+          <CardHeader>
+            <CardTitle>Alocação de Ativos</CardTitle>
+            <CardDescription>Distribuição por tipo de ativo</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AssetAllocationChart assets={assets} />
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col gap-4">
+          <h3 className="font-semibold text-lg">Principais Ativos</h3>
+          <div className="flex flex-col gap-4">
+            {assets
+              .sort((a, b) => b.value - a.value)
+              .slice(0, 3)
+              .map((asset) => {
+                const id = '_id' in asset ? (asset as any)._id : (asset as any).id;
+                return (
+                <Card
+                  key={id || asset.symbol}
+                  className="bg-card/50 border-white/5 hover:bg-card/80 transition-colors cursor-pointer"
+                  onClick={() => openAssetDetails(asset)}>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                        {asset.symbol.substring(0, 1)}
+                      </div>
+                      <div>
+                        <h4 className="font-bold">{asset.symbol}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {asset.name}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">
+                        R${' '}
+                        {asset.value.toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                        })}
+                      </p>
+                      <p className={`text-xs ${(asset.change24h || 0) >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>
+                        {(asset.change24h || 0) >= 0 ? '+' : ''}{(asset.change24h || 0).toFixed(2)}%
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+                );
+              })}
+            {assets.length === 0 && (
+              <div className="text-muted-foreground text-sm p-4">
+                Nenhum ativo encontrado.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Assets List */}
       <Card className="card-gradient">

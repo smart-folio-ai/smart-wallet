@@ -1,5 +1,10 @@
 import Stripe from 'stripe';
-import {stripPrivateApiKey} from '@/utils/env';
+import {
+  cancelUrl,
+  stripPrivateApiKey,
+  successUrl,
+  urlWebProduction,
+} from '@/utils/env';
 
 export const stripe = new Stripe(stripPrivateApiKey, {
   apiVersion: '2025-05-28.basil',
@@ -22,8 +27,8 @@ export default async function handler(req, res) {
       },
     ],
     mode: 'subscription',
-    success_url: 'https://seusite.com/sucesso',
-    cancel_url: 'https://seusite.com/cancelado',
+    success_url: `${urlWebProduction}${successUrl}`,
+    cancel_url: `${urlWebProduction}${cancelUrl}`,
     // (Opcional) customer, metadata, etc
   });
 

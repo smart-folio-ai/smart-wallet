@@ -7,7 +7,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-// import {portfolioService} from '@/server/api/api';
+import portfolioService from '@/services/portfolio';
+import {useQuery} from '@tanstack/react-query';
 import {useToast} from '@/hooks/use-toast';
 import {
   ArrowDown,
@@ -223,41 +224,74 @@ const DIVIDEND_COLORS = {
 
 const Dashboard = () => {
   const {toast} = useToast();
-  const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
 
-  useEffect(() => {
-    // Simulating API call with mock data
-    setTimeout(() => {
-      setSummary(mockSummary);
-      setAssets(mockAssets);
-      setLoading(false);
-    }, 1500);
+  const {data: apiAssets = [], isLoading: loading} = useQuery({
+    queryKey: ['dashboardAssets'],
+    queryFn: async () => {
+      return await portfolioService.getAssets();
+    },
+  });
 
-    // When real API is ready:
-    // const fetchDashboardData = async () => {
-    //   try {
-    //     setLoading(true);
-    //     const [summaryRes, assetsRes] = await Promise.all([
-    //       portfolioService.getSummary(),
-    //       portfolioService.getAssets()
-    //     ]);
-    //     setSummary(summaryRes.data);
-    //     setAssets(assetsRes.data);
-    //   } catch (error) {
-    //     console.error("Failed to fetch dashboard data", error);
-    //     toast({
-    //       title: "Erro",
-    //       description: "Falha ao carregar dados do dashboard",
-    //       variant: "destructive",
-    //     });
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchDashboardData();
-  }, []);
+  useEffect(() => {
+    if (loading) return;
+
+    // Calcular resumo a partir dos ativos reais
+    const totalValue = apiAssets.reduce(
+      (sum: number, asset: any) => sum + (asset.total || 0),
+      0,
+    );
+
+    const calculateAllocation = (type: string) => {
+      if (totalValue === 0) return 0;
+      const typeTotal = apiAssets
+        .filter((a: any) => a.type === type)
+        .reduce((sum: number, a: any) => sum + (a.total || 0), 0);
+      return Number(((typeTotal / totalValue) * 100).toFixed(2));
+    };
+
+    const newSummary: PortfolioSummary = {
+      totalValue,
+      change24h: 0, // Placeholder
+      changePercentage24h: 0, // Placeholder
+      totalDividends: 0, // Placeholder
+      distribution: {
+        stocks: calculateAllocation('stock'),
+        crypto: calculateAllocation('crypto'),
+        fiis: calculateAllocation('fii'),
+        other: calculateAllocation('other'),
+      },
+      dividendsByType: {stocks: 0, fiis: 0, other: 0},
+      history: Array.from({length: 30}, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (29 - i));
+        return {
+          date: date.toISOString().slice(0, 10),
+          value: totalValue,
+        };
+      }),
+      lastDividends: [],
+    };
+
+    const mappedAssets: Asset[] = apiAssets.map((a: any) => ({
+      id: a.id || a._id,
+      symbol: a.symbol,
+      name: a.symbol, // Backend currently doesn't provide names, fallback to symbol
+      price: a.price,
+      change24h: 0,
+      amount: a.quantity,
+      value: a.total,
+      allocation:
+        totalValue > 0 ? Number(((a.total / totalValue) * 100).toFixed(2)) : 0,
+      type: a.type,
+      dividendYield: 0,
+      lastDividend: 0,
+    }));
+
+    setSummary(newSummary);
+    setAssets(mappedAssets);
+  }, [apiAssets, loading]);
 
   const distributionData = summary
     ? [
@@ -284,7 +318,8 @@ const Dashboard = () => {
       ]
     : [];
 
-  const dividendsByTypeData = summary
+  const hasDividends = summary && summary.totalDividends > 0;
+  const dividendsByTypeData = hasDividends
     ? [
         {
           name: 'Ações',
@@ -301,8 +336,14 @@ const Dashboard = () => {
           value: summary.dividendsByType.other,
           color: DIVIDEND_COLORS.other,
         },
-      ]
-    : [];
+      ].filter((item) => item.value > 0)
+    : [
+        {
+          name: 'Sem dividendos',
+          value: 1,
+          color: 'hsl(var(--muted) / 0.5)',
+        },
+      ];
 
   return (
     <div className="container py-8 animate-fade-in">
@@ -519,20 +560,60 @@ const Dashboard = () => {
                           data={dividendsByTypeData}
                           cx="50%"
                           cy="50%"
-                          labelLine={false}
                           outerRadius={80}
                           dataKey="value"
                           nameKey="name"
-                          label={({name, percent}) =>
-                            `${name} ${(percent * 100).toFixed(0)}%`
+                          labelLine={
+                            hasDividends
+                              ? {
+                                  stroke: 'hsl(var(--foreground))',
+                                  strokeOpacity: 0.2,
+                                }
+                              : false
+                          }
+                          label={
+                            hasDividends
+                              ? (props: any) => {
+                                  const {
+                                    cx,
+                                    cy,
+                                    midAngle,
+                                    outerRadius,
+                                    name,
+                                    percent,
+                                  } = props;
+                                  const RADIAN = Math.PI / 180;
+                                  const radius = outerRadius + 15;
+                                  const x =
+                                    cx + radius * Math.cos(-midAngle * RADIAN);
+                                  const y =
+                                    cy + radius * Math.sin(-midAngle * RADIAN);
+                                  return (
+                                    <text
+                                      x={x}
+                                      y={y}
+                                      fill="hsl(var(--foreground))"
+                                      textAnchor={x > cx ? 'start' : 'end'}
+                                      dominantBaseline="central"
+                                      fontSize={12}>
+                                      {name} {(percent * 100).toFixed(0)}%
+                                    </text>
+                                  );
+                                }
+                              : false
                           }>
                           {dividendsByTypeData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.color}
+                              stroke="hsl(var(--background))"
+                              strokeWidth={2}
+                            />
                           ))}
                         </Pie>
                         <Tooltip
                           formatter={(value) => [
-                            formatCurrency(Number(value)),
+                            hasDividends ? formatCurrency(Number(value)) : '0',
                             'Valor',
                           ]}
                         />
@@ -566,7 +647,7 @@ const Dashboard = () => {
                         <TableRow key={`${dividend.symbol}-${dividend.date}`}>
                           <TableCell className="font-medium">
                             {new Date(dividend.date).toLocaleDateString(
-                              'pt-BR'
+                              'pt-BR',
                             )}
                           </TableCell>
                           <TableCell>{dividend.symbol}</TableCell>

@@ -6,11 +6,17 @@ class AuthenticationService implements IAuthentication {
   async authenticate(
     email: string,
     password: string,
-    keepConnected: boolean
-  ): Promise<boolean> {
+    keepConnected: boolean,
+  ): Promise<any> {
     try {
       const response = await authService.login(email, password, keepConnected);
       console.log('response', response);
+
+      if (response.data.requiresTwoFactor) {
+        sessionStorage.setItem('2fa_temp_token', response.data.tempToken);
+        return {success: true, requires2FA: true};
+      }
+
       if (response.data.accessToken) {
         localStorage.setItem('access_token', response.data.accessToken);
         localStorage.setItem('refresh_token', response.data.refreshToken);
@@ -18,10 +24,10 @@ class AuthenticationService implements IAuthentication {
 
         window.dispatchEvent(new CustomEvent('auth:login'));
       }
-      return true;
+      return {success: true};
     } catch (error) {
       console.error('Login failed', error);
-      return false;
+      return {success: false};
     }
   }
   async register(data: ICreateUser): Promise<boolean> {
@@ -43,7 +49,7 @@ class AuthenticationService implements IAuthentication {
             throw new Error('E-mail já cadastrado. Tente outro.');
           case 500:
             throw new Error(
-              'Erro interno do servidor. Tente novamente mais tarde.'
+              'Erro interno do servidor. Tente novamente mais tarde.',
             );
           default:
             throw new Error('Erro desconhecido. Tente novamente.');
