@@ -27,8 +27,17 @@ import {
   FileText,
   Loader2,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {api} from '@/server/api/api';
 import useAppToast from '@/hooks/use-app-toast';
+import {useNavigate} from 'react-router-dom';
 
 // Lista de provedores suportados
 const BROKERAGES = [
@@ -139,6 +148,8 @@ const SyncAccounts = () => {
   const [apiSecret, setApiSecret] = useState('');
   const [uploadingProvider, setUploadingProvider] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<Record<string, boolean>>({});
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const navigate = useNavigate();
 
   // Busca conexões existentes
   const {data: connections = [], isLoading} = useQuery<Connection[]>({
@@ -184,11 +195,25 @@ const SyncAccounts = () => {
   // Mutation: sincronizar
   const syncMutation = useMutation({
     mutationFn: (provider: string) => brokerSyncApi.sync(provider),
-    onSuccess: (_data, provider) => {
+    onSuccess: (res, provider) => {
       queryClient.invalidateQueries({queryKey: ['broker-connections']});
-      toast.info('Sincronizando...', `Dados de ${provider} sendo atualizados.`);
+      queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
+      queryClient.invalidateQueries({queryKey: ['portfolios']});
+      
+      const count = res.data?.syncedAssets ?? 0;
+      toast.success(
+        'Sincronização concluída', 
+        `${count} ativos de ${provider} foram atualizados na sua carteira.`
+      );
     },
-    onError: () => toast.error('Erro', 'Falha ao sincronizar.'),
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message;
+      if (msg === 'PLANO_UPGRADE_NECESSARIO') {
+        setShowUpgradeModal(true);
+      } else {
+        toast.error('Erro', 'Falha ao sincronizar.');
+      }
+    },
   });
 
   // Mutation: desconectar
@@ -477,8 +502,49 @@ const SyncAccounts = () => {
     </div>
   );
 
+  const UpgradePlanModal = () => (
+    <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Star className="h-5 w-5 text-primary fill-primary" />
+            Recurso Premium
+          </DialogTitle>
+          <DialogDescription>
+            A sincronização automática de contas é um recurso disponível apenas nos planos Premium. Atualize agora para centralizar todo o seu patrimônio automaticamente.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 py-4">
+          <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+            <h4 className="font-medium text-sm mb-1">Por que assinar?</h4>
+            <ul className="text-xs space-y-2 text-muted-foreground">
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-primary" /> Sincronização em tempo real com Binance e outras
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-primary" /> Insights avançados com Inteligência Artificial
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-primary" /> Suporte a notas de corretagem ilimitadas
+              </li>
+            </ul>
+          </div>
+        </div>
+        <DialogFooter className="flex sm:justify-between gap-2">
+          <Button variant="ghost" onClick={() => setShowUpgradeModal(false)}>
+            Agora não
+          </Button>
+          <Button onClick={() => navigate('/subscription')}>
+            Ver Planos
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <div className="container py-8 animate-fade-in">
+      <UpgradePlanModal />
       <h1 className="text-3xl font-bold mb-2">Sincronizar Contas</h1>
       <p className="text-muted-foreground mb-6">
         Conecte corretoras e exchanges para centralizar seu portfólio

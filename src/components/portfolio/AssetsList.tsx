@@ -1,10 +1,14 @@
 
+import { useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowUpDown, Building, Coins, TrendingUp } from "lucide-react";
 import { Asset, SortConfig } from "@/types/portfolio";
 import { formatCurrency } from "@/utils/formatters";
+import portfolioService from "@/services/portfolio";
+import { Input } from "@/components/ui/input";
 
 interface AssetsListProps {
   assets: Asset[];
@@ -21,6 +25,60 @@ export const AssetsList = ({
   requestSort, 
   sortConfig 
 }: AssetsListProps) => {
+  const queryClient = useQueryClient();
+  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
+  const [draftAvgPrice, setDraftAvgPrice] = useState<string>("");
+
+  const assetsById = useMemo(() => {
+    const map = new Map<string, Asset>();
+    for (const a of assets) {
+      const id = (a as any).id || (a as any)._id || a.symbol;
+      map.set(String(id), a);
+    }
+    return map;
+  }, [assets]);
+
+  const updateAvgPriceMutation = useMutation({
+    mutationFn: async (params: { assetId: string; avgPrice: number }) => {
+      const asset = assetsById.get(params.assetId);
+      const quantity = (asset as any)?.amount ?? (asset as any)?.quantity;
+      return portfolioService.updateAsset(params.assetId, {
+        avgPrice: params.avgPrice,
+        ...(typeof quantity === "number" ? { quantity } : {}),
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["portfolioAssets"] });
+      await queryClient.invalidateQueries({ queryKey: ["portfolio-assets-for-symbol"] });
+    },
+    onSettled: () => {
+      setEditingAssetId(null);
+      setDraftAvgPrice("");
+    },
+  });
+
+  const startEditAvgPrice = (asset: Asset) => {
+    const id = String((asset as any).id || (asset as any)._id || asset.symbol);
+    const currentAvg =
+      (asset as any).avgPrice ??
+      (asset as any).purchasePrice ??
+      0;
+    setEditingAssetId(id);
+    setDraftAvgPrice(String(currentAvg));
+  };
+
+  const commitAvgPrice = () => {
+    if (!editingAssetId) return;
+    const normalized = draftAvgPrice.replace(",", ".").trim();
+    const next = Number(normalized);
+    if (!Number.isFinite(next) || next <= 0) {
+      setEditingAssetId(null);
+      setDraftAvgPrice("");
+      return;
+    }
+    updateAvgPriceMutation.mutate({ assetId: editingAssetId, avgPrice: next });
+  };
+
   const getSortIcon = (field: keyof Asset) => {
     if (sortConfig.key !== field) return <ArrowUpDown className="h-4 w-4" />;
     return sortConfig.direction === 'asc' ? (
@@ -160,8 +218,46 @@ export const AssetsList = ({
                   <div className="font-medium">{asset.symbol}</div>
                   <div className="text-xs text-muted-foreground">{asset.name}</div>
                 </TableCell>
-                <TableCell>{formatCurrency(asset.price)}</TableCell>
-                <TableCell>{formatCurrency(asset.avgPrice || 0)}</TableCell>
+                <TableCell>
+                  {formatCurrency((asset as any).currentPrice ?? asset.price)}
+                </TableCell>
+                <TableCell
+                  className="select-none"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startEditAvgPrice(asset);
+                  }}
+                >
+                  {String((asset as any).id || (asset as any)._id || asset.symbol) === editingAssetId ? (
+                    <Input
+                      value={draftAvgPrice}
+                      onChange={(e) => setDraftAvgPrice(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") commitAvgPrice();
+                        if (e.key === "Escape") {
+                          setEditingAssetId(null);
+                          setDraftAvgPrice("");
+                        }
+                      }}
+                      onBlur={commitAvgPrice}
+                      disabled={updateAvgPriceMutation.isPending}
+                      className="h-8 w-28"
+                      inputMode="decimal"
+                      aria-label="Editar preço médio"
+                    />
+                  ) : (
+                    <span className="cursor-text">
+                      {formatCurrency(
+                        (asset as any).avgPrice ??
+                          (asset as any).purchasePrice ??
+                          (asset as any).price ??
+                          0
+                      )}
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <div className={`flex items-center ${asset.change24h >= 0 ? 'text-success' : 'text-destructive'}`}>
                     {asset.change24h >= 0 ? (
@@ -172,8 +268,14 @@ export const AssetsList = ({
                     {Math.abs(asset.change24h).toFixed(2)}%
                   </div>
                 </TableCell>
-                <TableCell>{asset.amount}</TableCell>
-                <TableCell className="text-right">{formatCurrency(asset.value)}</TableCell>
+                <TableCell>{(asset as any).amount ?? (asset as any).quantity ?? 0}</TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(
+                    (asset as any).value ??
+                      ((asset as any).currentPrice ?? asset.price) *
+                        ((asset as any).amount ?? (asset as any).quantity ?? 0)
+                  )}
+                </TableCell>
                 <TableCell>
                   {asset.aiRecommendation ? (
                     <Badge className={getRecommendationColor(asset.aiRecommendation)}>
