@@ -36,7 +36,6 @@ import portfolioService from '@/services/portfolio';
 const formSchema = z.object({
   name: z.string().min(3, 'Nome muito curto').max(100, 'Nome muito longo'),
   description: z.string().optional(),
-  cpf: z.string().min(14, 'O CPF deve estar no formato 000.000.000-00'),
   ownerType: z.enum(['self', 'spouse', 'child', 'other']),
   ownerName: z.string().optional(),
 });
@@ -53,27 +52,15 @@ export function CreatePortfolioDialog() {
     defaultValues: {
       name: '',
       description: '',
-      cpf: '',
       ownerType: 'self',
       ownerName: '',
     },
   });
 
-  const formatCPF = (value: string) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .replace(/(-\d{2})\d+?$/, '$1');
-  };
-
   const createPortfolioMutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      // API payload
       return portfolioService.createPortfolio({
         name: data.name,
-        cpf: data.cpf,
         ownerType: data.ownerType,
       });
     },
@@ -127,27 +114,6 @@ export function CreatePortfolioDialog() {
                   <FormLabel>Nome da Carteira</FormLabel>
                   <FormControl>
                     <Input placeholder="Ex: Minha Aposentadoria" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="cpf"
-              render={({field}) => (
-                <FormItem>
-                  <FormLabel>CPF do Titular</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="000.000.000-00"
-                      maxLength={14}
-                      {...field}
-                      onChange={(e) =>
-                        field.onChange(formatCPF(e.target.value))
-                      }
-                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

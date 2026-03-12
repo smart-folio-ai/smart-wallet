@@ -206,11 +206,7 @@ const SyncAccounts = () => {
 
     const isBrokerage = BROKERAGES.some((b) => b.id === selectedProvider);
     if (isBrokerage) {
-      if (!cpf.trim()) {
-        toast.error('CPF obrigatório', 'Preencha o CPF para conectar a B3.');
-        return;
-      }
-      connectMutation.mutate({provider: selectedProvider, cpf});
+      connectMutation.mutate({provider: selectedProvider, ...(cpf.trim() ? {cpf} : {})});
     } else {
       if (!apiKey.trim() || !apiSecret.trim()) {
         toast.error('Campos obrigatórios', 'Preencha a chave API e senha.');
@@ -381,7 +377,7 @@ const SyncAccounts = () => {
       {isBrokerage ? (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="cpf-connect">CPF cadastrado na B3</Label>
+            <Label htmlFor="cpf-connect">CPF (opcional – só para sincronização B3)</Label>
             <Input
               id="cpf-connect"
               placeholder="000.000.000-00"

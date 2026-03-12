@@ -29,7 +29,7 @@ class PortfolioService {
     return response.data;
   }
 
-  async createPortfolio(data: {name: string; cpf: string; ownerType: string}) {
+  async createPortfolio(data: {name: string; ownerType: string; cpf?: string}) {
     const response = await apiClient.post('/portfolio/create', data);
     return response.data;
   }
