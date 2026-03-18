@@ -3,6 +3,7 @@ export interface Asset {
   symbol: string;
   name: string;
   price: number;
+  currentPrice?: number;
   change24h: number;
   amount: number;
   value: number;

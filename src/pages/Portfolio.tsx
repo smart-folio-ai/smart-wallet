@@ -28,10 +28,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 // Types and Mock Data
 import {Asset, SortConfig} from '@/types/portfolio';
-import {performanceData} from '@/utils/mockData';
 import portfolioService from '@/services/portfolio';
 import {useQuery} from '@tanstack/react-query';
 
@@ -49,6 +49,7 @@ const Portfolio = () => {
   });
 
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const {data: portfolios = []} = useQuery({
     queryKey: ['portfolios'],
@@ -93,7 +94,8 @@ const Portfolio = () => {
     symbol: a.symbol,
     name: a.symbol,
     price: a.price,
-    change24h: 0, // Placeholder
+    currentPrice: a.currentPrice ?? undefined,
+    change24h: a.change24h ?? 0,
     amount: a.quantity,
     value: a.total,
     allocation:
@@ -101,8 +103,21 @@ const Portfolio = () => {
         ? Number(((a.total / totalApiValue) * 100).toFixed(2))
         : 0,
     type: a.type,
-    dividendYield: 0,
+    avgPrice: a.avgPrice ?? a.price,
+    purchasePrice: a.avgPrice ?? a.price,
+    profitLoss:
+      typeof (a.currentPrice ?? a.price) === 'number'
+        ? ((a.currentPrice ?? a.price) - (a.avgPrice ?? a.price)) * (a.quantity ?? 0)
+        : 0,
+    profitLossPercentage:
+      (a.avgPrice ?? a.price) > 0
+        ? (((a.currentPrice ?? a.price) - (a.avgPrice ?? a.price)) /
+            (a.avgPrice ?? a.price)) *
+          100
+        : 0,
+    dividendYield: a.indicators?.dividendYield ?? 0,
     lastDividend: 0,
+    dividendHistory: a.dividendHistory ?? undefined,
   }));
 
   // Filter and sort assets
@@ -146,7 +161,10 @@ const Portfolio = () => {
   // Calculate totals by type
   const totalsByType = assets.reduce(
     (acc, asset) => {
-      acc[asset.type] += asset.value;
+      const kind = ['stock', 'fii', 'crypto', 'other'].includes(asset.type)
+        ? asset.type
+        : 'other';
+      (acc as any)[kind] += asset.value;
       return acc;
     },
     {stock: 0, fii: 0, crypto: 0, other: 0},
@@ -256,6 +274,7 @@ const Portfolio = () => {
       await queryClient.invalidateQueries({queryKey: ['portfolios']});
       await queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
       setSelectedPortfolioId('all');
+      setDeleteDialogOpen(false);
     },
     onError: () => {
       toast({
@@ -263,30 +282,12 @@ const Portfolio = () => {
         description: 'Não foi possível remover a carteira selecionada.',
         variant: 'destructive',
       });
+      setDeleteDialogOpen(false);
     },
   });
-
-  const handleDeletePortfolio = () => {
-    if (!selectedPortfolioId || selectedPortfolioId === 'all') {
-      toast({
-        title: 'Selecione uma carteira',
-        description: 'Escolha uma carteira específica para remover.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const selectedName =
-      portfolios.find((p: any) => (p.id || p._id) === selectedPortfolioId)
-        ?.name ?? 'esta carteira';
-
-    const confirmed = window.confirm(
-      `Tem certeza que deseja remover ${selectedName}? Essa ação não pode ser desfeita.`
-    );
-    if (!confirmed) return;
-
-    deletePortfolioMutation.mutate(selectedPortfolioId);
-  };
+  const selectedPortfolioName =
+    portfolios.find((p: any) => (p.id || p._id) === selectedPortfolioId)?.name ??
+    'esta carteira';
 
   return (
     <div className="container py-8 min-h-[calc(100vh-4rem)] animate-fade-in overflow-x-hidden">
@@ -308,21 +309,45 @@ const Portfolio = () => {
               ))}
             </SelectContent>
           </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDeletePortfolio}
-            disabled={
-              selectedPortfolioId === 'all' || deletePortfolioMutation.isPending
+          <ConfirmDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            title="Remover carteira?"
+            description={
+              <>
+                Isso vai remover{' '}
+                <span className="font-medium">{selectedPortfolioName}</span> e
+                todos os ativos importados/manualmente adicionados nela. Essa
+                ação não pode ser desfeita.
+              </>
             }
-          >
-            {deletePortfolioMutation.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4 mr-2" />
-            )}
-            Remover carteira
-          </Button>
+            trigger={
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={
+                  selectedPortfolioId === 'all' ||
+                  deletePortfolioMutation.isPending
+                }>
+                {deletePortfolioMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Remover carteira
+              </Button>
+            }
+            confirmLabel="Remover"
+            cancelLabel="Cancelar"
+            confirmIcon={<Trash2 className="h-4 w-4 mr-2" />}
+            confirmVariant="destructive"
+            loading={deletePortfolioMutation.isPending}
+            disabled={selectedPortfolioId === 'all'}
+            onConfirm={() => {
+              if (!selectedPortfolioId || selectedPortfolioId === 'all') return;
+              deletePortfolioMutation.mutate(selectedPortfolioId);
+            }}
+          />
         </div>
         <div className="flex space-x-2">
           <CreatePortfolioDialog />
