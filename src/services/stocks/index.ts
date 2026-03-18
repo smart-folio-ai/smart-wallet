@@ -12,8 +12,16 @@ export class Stock implements IStock {
     return response.data;
   }
 
-  async getNationalStock(symbol: string): Promise<StockNacionalResponse> {
-    const response = await stockServices.getNationalStock(symbol);
+  async getNationalStock(
+    symbol: string,
+    options?: {
+      fundamental?: boolean;
+      dividends?: boolean;
+      range?: string;
+      interval?: string;
+    },
+  ): Promise<StockNacionalResponse> {
+    const response = await stockServices.getNationalStock(symbol, options);
     return response.data;
   }
 

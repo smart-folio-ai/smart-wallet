@@ -7,7 +7,7 @@ export interface Asset {
   amount: number;
   value: number;
   allocation: number;
-  type: 'stock' | 'crypto' | 'fii' | 'other';
+  type: 'stock' | 'crypto' | 'fii' | 'etf' | 'fund' | 'other';
   dividendYield?: number;
   lastDividend?: number;
   sector?: string;

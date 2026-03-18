@@ -201,11 +201,11 @@ export const AssetsList = ({
               >
                 <TableCell>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    asset.type === 'stock' ? 'bg-success/20' : 
+                    asset.type === 'stock' || asset.type === 'etf' ? 'bg-success/20' : 
                     asset.type === 'fii' ? 'bg-purple-500/20' : 
                     'bg-blue-500/20'
                   }`}>
-                    {asset.type === 'stock' ? (
+                    {asset.type === 'stock' || asset.type === 'etf' ? (
                       <TrendingUp className="h-4 w-4 text-success" />
                     ) : asset.type === 'fii' ? (
                       <Building className="h-4 w-4 text-purple-500" />

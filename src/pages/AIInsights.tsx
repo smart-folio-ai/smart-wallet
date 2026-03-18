@@ -1,655 +1,598 @@
-import {useEffect, useState} from 'react';
+import React, {useState, useEffect} from 'react';
+import {
+  Zap,
+  Target,
+  ShieldAlert,
+  TrendingUp,
+  RefreshCw,
+  ArrowUp,
+  ArrowRight,
+  TrendingDown,
+  Activity,
+  Shuffle,
+  Info,
+  ChevronRight,
+  Sparkles,
+  PieChart,
+} from 'lucide-react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import {Badge} from '@/components/ui/badge';
-import {
-  ArrowDown,
-  ArrowUp,
-  BadgeInfo,
-  Check,
-  Lock,
-  RefreshCw,
-  Star,
-  TrendingDown,
-  TrendingUp,
-  Zap,
-} from 'lucide-react';
-import {Skeleton} from '@/components/ui/skeleton';
 import {Progress} from '@/components/ui/progress';
-import aiAnalysisService, {
-  AiAnalysisResult,
-  StockScore,
-  FiiScore,
-  Forecast,
-} from '@/services/ai';
-import portfolioService from '@/services/portfolio';
-import useAppToast from '@/hooks/use-app-toast';
-import {jwtDecode} from 'jwt-decode';
-import {subscriptionService} from '@/server/api/api';
+import {Slider} from '@/components/ui/slider';
+import {toast} from 'sonner';
+import {aiAnalysisService, AiAnalysisResult} from '@/services/ai';
+import {portfolioService} from '@/server/api/api';
+import {formatCurrency, formatPercentage} from '@/utils/formatters';
+import {cn} from '@/lib/utils';
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(
-    value,
-  );
-
-const recommendationBadge: Record<
-  string,
-  'default' | 'secondary' | 'destructive'
-> = {
-  COMPRA: 'default',
-  HOLD: 'secondary',
-  VENDA: 'destructive',
-};
-
-const AIInsights = () => {
-  const toast = useAppToast();
-  const [loading, setLoading] = useState(false);
+const AIInsights: React.FC = () => {
+  const [loading, setLoading] = useState(true);
   const [analysisResult, setAnalysisResult] = useState<AiAnalysisResult | null>(
     null,
   );
-  const [isPremium, setIsPremium] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Verifica plano do usuário
+  // Estados para Simulação
+  const [monthlyInvest, setMonthlyInvest] = useState(1000);
+  const [years, setYears] = useState(10);
+  const [totalValue, setTotalValue] = useState(0);
+  const [simulation, setSimulation] = useState<any>(null);
+  const [simLoading, setSimLoading] = useState(false);
+
   useEffect(() => {
-    const checkPlan = async () => {
-      try {
-        const res = await subscriptionService.getCurrentPlan();
-        const planName: string = res.data?.planName || res.data?.name || '';
-        setIsPremium(
-          planName.toLowerCase().includes('premium') ||
-            planName.toLowerCase().includes('pro'),
-        );
-      } catch {
-        setIsPremium(false);
-      }
-    };
-    checkPlan();
+    fetchData();
   }, []);
 
-  const fetchAnalysis = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchData = async () => {
     try {
-      // Busca portfólios do usuário
-      const portfolios = await portfolioService.getPortfolios();
-      if (!portfolios || portfolios.length === 0) {
-        setError('Nenhum portfólio encontrado. Crie um portfólio primeiro.');
-        return;
-      }
+      setLoading(true);
+      setError(null);
 
-      const firstPortfolio = portfolios[0];
-      const fullPortfolio = await portfolioService.getPortfolio(
-        firstPortfolio.id || firstPortfolio._id,
-      );
+      const portfolioResponse = await portfolioService.getAssets();
+      // The API can return the array directly OR wrapped in { assets: [...] }
+      const rawData = portfolioResponse.data;
+      const assets: any[] = Array.isArray(rawData)
+        ? rawData
+        : Array.isArray(rawData?.assets)
+          ? rawData.assets
+          : [];
 
-      const token = localStorage.getItem('access_token');
-      const plan = isPremium ? 'premium' : 'free';
+      // Usa 'premium' por padrão para sempre acionar a análise com IA
+      const plan = (localStorage.getItem('user_plan') as any) || 'premium';
+      const tValue = assets.reduce((sum: number, a: any) => sum + (a.value || a.current_price * a.quantity || 0), 0);
+      setTotalValue(tValue);
 
       const payload = {
+        user_id: 'user_123',
         profile_plan: plan,
-        risk_profile: 'moderate',
         portfolio: {
-          id: fullPortfolio.id || fullPortfolio._id,
-          name: fullPortfolio.name,
-          cpf: fullPortfolio.cpf || '',
-          assets: (fullPortfolio.assets || []).map((asset: any) => ({
-            symbol: asset.symbol,
-            type: asset.type || 'stock',
-            quantity: asset.amount || asset.quantity || 0,
-            price: asset.purchasePrice || asset.price || 0,
-            current_price: asset.price || 0,
-            change_24h: asset.change24h || 0,
-            metrics: asset.metrics || undefined,
+          id: 'default',
+          name: 'Principal',
+          cpf: '',
+          assets: assets.map((a: any) => ({
+            symbol: a.symbol || a.ticker || '',
+            type: a.type || 'stock',
+            quantity: a.quantity || 0,
+            price: a.average_price || a.price || 0,
+            current_price: a.current_price || a.price || 0,
+            change_24h: a.change_24h || a.changePercent || 0,
+            metrics: a.metrics || {},
           })),
-          total_value: (fullPortfolio.assets || []).reduce(
-            (sum: number, a: any) => sum + (a.value || 0),
-            0,
-          ),
+          total_value: tValue,
           plan: plan,
         },
-        address: {city: 'Brasil', state: 'BR', country: 'Brazil'},
-        preferences: {language: 'pt-BR', theme: 'dark'},
+        risk_profile: 'moderate',
+        address: {},
+        preferences: {},
       };
 
       const result = await aiAnalysisService.analyze(payload as any);
       setAnalysisResult(result);
-      toast.success(
-        'Análise concluída!',
-        'Insights de IA carregados com sucesso.',
-      );
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
+        err?.response?.data?.detail ||
         err?.message ||
         'Falha ao obter análise de IA';
       setError(msg);
-      toast.error('Erro na análise', msg);
+      toast.error('Erro na análise', { description: msg });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchAnalysis();
-  }, [isPremium]);
+  const handleSimulate = async () => {
+    setSimLoading(true);
+    try {
+      const currentVal =
+        totalValue || (analysisResult as any)?.ai_analysis?.investment_score
+          ? (analysisResult?.ai_analysis as any).total_value
+          : 10000;
 
-  const stockEntries = analysisResult
-    ? Object.entries(analysisResult.stock_scores || {})
-    : [];
-  const fiiEntries = analysisResult
-    ? Object.entries(analysisResult.fii_scores || {})
-    : [];
-  const forecastEntries = analysisResult
-    ? Object.entries(analysisResult.forecasts || {})
-    : [];
+      const res = await aiAnalysisService.simulate({
+        monthly_investment: monthlyInvest,
+        years,
+        current_portfolio_value: currentVal || 10000,
+        expected_annual_return: 0.1,
+      });
+      setSimulation(res);
+    } catch (err) {
+      toast.error('Não foi possível calcular a projeção.');
+    } finally {
+      setSimLoading(false);
+    }
+  };
 
-  const claudeAnalysis = analysisResult?.claude_analysis;
-
-  return (
-    <div className="container py-8 animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Análise de IA</h1>
-          <p className="text-muted-foreground mt-1">
-            Insights inteligentes gerados pelo Trakker IA
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge
-            variant={isPremium ? 'default' : 'outline'}
-            className="px-3 py-1">
-            {isPremium ? (
-              <span className="flex items-center">
-                <Star className="h-4 w-4 mr-1 text-yellow-400" />
-                Premium
-              </span>
-            ) : (
-              <span className="flex items-center">Free</span>
-            )}
-          </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchAnalysis}
-            disabled={loading}>
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`}
-            />
-            {loading ? 'Analisando...' : 'Atualizar'}
-          </Button>
-        </div>
-      </div>
-
-      {/* Upgrade Banner */}
-      {!isPremium && (
-        <Card className="mb-8 bg-gradient-to-r from-primary/90 to-blue-600/90 text-white border-none overflow-hidden relative">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-              <div className="col-span-2">
-                <h2 className="text-xl font-bold mb-2 flex items-center">
-                  <Zap className="h-5 w-5 mr-2" />
-                  Desbloqueie o poder da análise de IA
-                </h2>
-                <p className="mb-4">
-                  Com o plano Premium você tem análise completa com IA (Claude),
-                  previsões técnicas e insights personalizados.
-                </p>
-                <div className="flex items-center space-x-4">
-                  <Check className="h-5 w-5" />
-                  <span>Análise com IA (Claude + Prophet)</span>
-                </div>
-                <div className="flex items-center space-x-4 mt-1">
-                  <Check className="h-5 w-5" />
-                  <span>Previsões de preço 30 dias</span>
-                </div>
-                <div className="flex items-center space-x-4 mt-1 mb-4">
-                  <Check className="h-5 w-5" />
-                  <span>Realocação de carteira automática</span>
-                </div>
-              </div>
-              <div className="flex justify-center md:justify-end">
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="font-medium"
-                  onClick={() =>
-                    toast.info(
-                      'Upgrade em breve!',
-                      'Recursos de assinatura serão liberados em breve.',
-                    )
-                  }>
-                  Upgrade para Premium
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-10 -mb-10 blur-xl" />
-        </Card>
-      )}
-
-      {/* Erro */}
-      {error && !loading && (
-        <Card className="mb-6 border-destructive/50 bg-destructive/5">
-          <CardContent className="p-4 flex items-center gap-3">
-            <BadgeInfo className="h-5 w-5 text-destructive" />
-            <p className="text-sm text-destructive">{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchAnalysis}
-              className="ml-auto">
-              Tentar novamente
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      <Tabs defaultValue="stocks" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="stocks">
-            Ações ({stockEntries.length})
-          </TabsTrigger>
-          <TabsTrigger value="fiis">FIIs ({fiiEntries.length})</TabsTrigger>
-          {isPremium && forecastEntries.length > 0 && (
-            <TabsTrigger value="forecasts">
-              Previsões ({forecastEntries.length})
-            </TabsTrigger>
-          )}
-          {isPremium && claudeAnalysis && (
-            <TabsTrigger value="claude">Análise IA</TabsTrigger>
-          )}
-        </TabsList>
-
-        {/* Tab Ações */}
-        <TabsContent value="stocks">
-          <Card className="card-gradient">
-            <CardHeader>
-              <CardTitle>Análise Fundamentalista — Ações</CardTitle>
-              <CardDescription>
-                Score baseado em ROE, CAGR, Dividendos, Governança e outros
-                critérios
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-28" />
-                  ))}
-                </div>
-              ) : stockEntries.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <BadgeInfo className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                  <p>Nenhuma ação no portfólio para analisar.</p>
-                  <p className="text-sm mt-1">
-                    Adicione ações ao seu portfólio para ver análises aqui.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {stockEntries.map(([symbol, score]) => (
-                    <AssetScoreCard
-                      key={symbol}
-                      symbol={symbol}
-                      score={score}
-                      isPremium={isPremium}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tab FIIs */}
-        <TabsContent value="fiis">
-          <Card className="card-gradient">
-            <CardHeader>
-              <CardTitle>Análise Fundamentalista — FIIs</CardTitle>
-              <CardDescription>
-                Score baseado em P/VP, Dividend Yield, Histórico e Concentração
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2].map((i) => (
-                    <Skeleton key={i} className="h-28" />
-                  ))}
-                </div>
-              ) : fiiEntries.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <BadgeInfo className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                  <p>Nenhum FII no portfólio para analisar.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {fiiEntries.map(([symbol, score]) => (
-                    <AssetScoreCard
-                      key={symbol}
-                      symbol={symbol}
-                      score={score}
-                      isPremium={isPremium}
-                      isFii
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tab Previsões (Premium) */}
-        {isPremium && forecastEntries.length > 0 && (
-          <TabsContent value="forecasts">
-            <Card className="card-gradient">
-              <CardHeader>
-                <CardTitle>Previsões Técnicas (30 dias)</CardTitle>
-                <CardDescription>
-                  Análise probabilística baseada no modelo Prophet
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="space-y-4">
-                    {[1, 2].map((i) => (
-                      <Skeleton key={i} className="h-24" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {forecastEntries.map(([symbol, forecast]) => (
-                      <ForecastCard
-                        key={symbol}
-                        symbol={symbol}
-                        forecast={forecast}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
-        {/* Tab Claude Analysis (Premium) */}
-        {isPremium && claudeAnalysis && (
-          <TabsContent value="claude">
-            <ClaudeAnalysisPanel analysis={claudeAnalysis} />
-          </TabsContent>
-        )}
-      </Tabs>
-
-      {/* Mensagem free plan */}
-      {analysisResult?.message && (
-        <Card className="mt-6 bg-muted/40">
-          <CardContent className="p-4 flex items-center gap-3">
-            <Lock className="h-5 w-5 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              {analysisResult.message}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-};
-
-/* ---- Componentes Internos ---- */
-
-interface AssetScoreCardProps {
-  symbol: string;
-  score: StockScore | FiiScore;
-  isPremium: boolean;
-  isFii?: boolean;
-}
-
-const AssetScoreCard = ({
-  symbol,
-  score,
-  isPremium,
-  isFii,
-}: AssetScoreCardProps) => {
-  const [expanded, setExpanded] = useState(false);
-  const scoreColor =
-    score.score >= 70
-      ? 'text-emerald-500'
-      : score.score >= 50
-        ? 'text-amber-500'
-        : 'text-rose-500';
-
-  return (
-    <Card className="bg-card/50">
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-lg">{symbol}</h3>
-              {isFii && (score as FiiScore).critical_rejection && (
-                <Badge variant="destructive" className="text-xs">
-                  P/VP {'>'} 1.5
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">{score.rating}</p>
-          </div>
-          <div className="text-right">
-            <Badge
-              variant={
-                recommendationBadge[score.recommendation] || 'secondary'
-              }>
-              {score.recommendation}
-            </Badge>
-            <div className={`text-2xl font-bold mt-1 ${scoreColor}`}>
-              {score.score.toFixed(0)}/100
-            </div>
-          </div>
-        </div>
-
-        <Progress value={score.score} className="h-2 mb-3" />
-
-        {/* Detalhes — mostrar apenas para premium ou os primeiros 3 */}
-        <div className="space-y-1">
-          {(isPremium ? score.details : score.details.slice(0, 3)).map(
-            (detail, i) => (
-              <p key={i} className="text-xs text-muted-foreground">
-                {detail}
-              </p>
-            ),
-          )}
-          {!isPremium && score.details.length > 3 && (
-            <div className="relative mt-2 p-2 bg-muted/30 rounded flex items-center gap-2">
-              <Lock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                +{score.details.length - 3} critérios disponíveis no plano
-                Premium
-              </span>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-interface ForecastCardProps {
-  symbol: string;
-  forecast: Forecast;
-}
-
-const ForecastCard = ({symbol, forecast}: ForecastCardProps) => {
-  const diff = forecast.forecast_30d - forecast.current;
-  const pct = ((diff / forecast.current) * 100).toFixed(2);
-  const isUp = forecast.trend === 'up';
-
-  return (
-    <Card className="bg-card/50">
-      <CardContent className="p-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="font-bold">{symbol}</h3>
-            <p className="text-sm text-muted-foreground">
-              Atual: {formatCurrency(forecast.current)}
-            </p>
-          </div>
-          <div className="text-right">
-            <div
-              className={`flex items-center gap-1 font-bold ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
-              {isUp ? (
-                <TrendingUp className="h-4 w-4" />
-              ) : (
-                <TrendingDown className="h-4 w-4" />
-              )}
-              {formatCurrency(forecast.forecast_30d)}
-            </div>
-            <p
-              className={`text-sm ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
-              {isUp ? '+' : ''}
-              {pct}% em 30 dias
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {formatCurrency(forecast.confidence_lower)} –{' '}
-              {formatCurrency(forecast.confidence_upper)}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-interface ClaudeAnalysisPanelProps {
-  analysis: any;
-}
-
-const ClaudeAnalysisPanel = ({analysis}: ClaudeAnalysisPanelProps) => {
-  const parsed =
-    typeof analysis === 'string'
-      ? (() => {
-          try {
-            return JSON.parse(analysis);
-          } catch {
-            return null;
-          }
-        })()
-      : analysis;
-
-  if (!parsed) {
+  if (loading)
     return (
-      <Card className="card-gradient">
-        <CardContent className="p-6">
-          <pre className="whitespace-pre-wrap text-sm">{String(analysis)}</pre>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <RefreshCw className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-muted-foreground animate-pulse font-medium">
+          Trakker IA está analisando seu patrimônio...
+        </p>
+      </div>
+    );
+
+  const aiData = analysisResult?.ai_analysis || analysisResult;
+  const score = aiData?.investment_score;
+  const isPremium = localStorage.getItem('user_plan') !== 'free';
+
+  if (error && !analysisResult) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <ShieldAlert className="h-12 w-12 text-rose-500" />
+        <h2 className="text-xl font-bold">Ops! Algo deu errado.</h2>
+        <p className="text-muted-foreground text-center max-w-md">{error}</p>
+        <Button onClick={fetchData} variant="outline" className="rounded-xl">
+          <RefreshCw className="mr-2 h-4 w-4" /> Tentar Novamente
+        </Button>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {parsed.portfolio_assessment && (
-        <Card className="card-gradient">
-          <CardHeader>
-            <CardTitle>Avaliação Geral da Carteira</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm leading-relaxed">
-              {parsed.portfolio_assessment}
+    <div className="container mx-auto py-8 space-y-10 selection:bg-primary/20">
+      {/* Header com Smart Feed */}
+      <header className="space-y-6">
+        <div className="flex justify-between items-end">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
+              Insights IA
+            </h1>
+            <p className="text-muted-foreground font-medium">
+              Visão estratégica e proibições de erro com inteligência
+              artificial.
             </p>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+          {!isPremium && <BadgePremium />}
+        </div>
 
-      {parsed.key_insights && parsed.key_insights.length > 0 && (
-        <Card className="card-gradient">
-          <CardHeader>
-            <CardTitle>Principais Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {parsed.key_insights.map((insight: any, i: number) => (
+        {/* Smart Feed (Spotify Style) */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(aiData?.smart_feed || []).length > 0 ? (
+            aiData?.smart_feed?.map((item, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 p-4 rounded-3xl bg-card border border-primary/5 hover:border-primary/20 transition-all group cursor-pointer overflow-hidden relative">
                 <div
-                  key={i}
-                  className="flex items-start gap-3 p-3 bg-card/50 rounded-lg">
-                  <Badge
-                    variant={
-                      insight.priority === 'high'
-                        ? 'destructive'
-                        : insight.priority === 'medium'
-                          ? 'secondary'
-                          : 'outline'
-                    }
-                    className="mt-0.5 shrink-0">
-                    {insight.priority}
-                  </Badge>
-                  <div>
-                    <span className="font-medium">{insight.symbol}: </span>
-                    <span className="text-sm text-muted-foreground">
-                      {insight.insight}
+                  className={cn(
+                    'h-12 w-12 rounded-2xl flex items-center justify-center shrink-0',
+                    item.impact === 'positive'
+                      ? 'bg-emerald-500/10 text-emerald-500'
+                      : 'bg-rose-500/10 text-rose-500',
+                  )}>
+                  {item.impact === 'positive' ? (
+                    <TrendingUp className="h-6 w-6" />
+                  ) : (
+                    <TrendingDown className="h-6 w-6" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-sm truncate">{item.title}</h4>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {item.content}
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0" />
+              </div>
+            ))
+          ) : (
+            <div className="md:col-span-3 p-4 rounded-3xl bg-card/50 border border-dashed border-primary/20 text-center text-sm text-muted-foreground">
+              Seu Feed Inteligente será gerado na próxima análise.
+            </div>
+          )}
+        </section>
+      </header>
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        {/* Lado Esquerdo: Score & Análise (8 colunas) */}
+        <div className="xl:col-span-8 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Investment Score Gauge */}
+            <Card className="rounded-[2.5rem] bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5">
+              <CardContent className="p-8 flex flex-col items-center justify-center text-center space-y-6">
+                <div className="relative">
+                  <svg className="h-48 w-48 -rotate-90">
+                    <circle
+                      cx="96"
+                      cy="96"
+                      r="88"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="12"
+                      className="text-muted/10"
+                    />
+                    <circle
+                      cx="96"
+                      cy="96"
+                      r="88"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="12"
+                      strokeDasharray={552.92}
+                      strokeDashoffset={
+                        552.92 * (1 - (score?.overall || 0) / 100)
+                      }
+                      className="text-primary transition-all duration-1000 ease-out"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-5xl font-black tracking-tighter">
+                      {score?.overall || '--'}
+                    </span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      Investment Score
                     </span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {parsed.recommendations && parsed.recommendations.length > 0 && (
-        <Card className="card-gradient">
-          <CardHeader>
-            <CardTitle>Recomendações</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {parsed.recommendations.map((rec: any, i: number) => (
-                <div key={i} className="p-3 bg-card/50 rounded-lg">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge
-                      variant={
-                        rec.action === 'SELL'
-                          ? 'destructive'
-                          : rec.action === 'BUY'
-                            ? 'default'
-                            : 'secondary'
-                      }>
-                      {rec.action}
-                    </Badge>
-                    <span className="font-medium">{rec.symbol}</span>
-                    <Badge variant="outline" className="ml-auto text-xs">
-                      {rec.urgency}
-                    </Badge>
-                  </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold">
+                    {score?.overall
+                      ? score.overall > 80
+                        ? 'Excelente'
+                        : 'Bom'
+                      : 'Calculando...'}
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    {rec.rationale}
+                    Sua pontuação baseada em fundamentos reais.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Assessment Text */}
+            <Card className="rounded-[2.5rem] bg-card border-none shadow-none flex flex-col justify-center">
+              <CardContent className="p-0">
+                <div className="p-6 bg-primary/5 rounded-3xl mb-4 border border-primary/10">
+                  <h4 className="flex items-center gap-2 text-sm font-bold mb-3">
+                    <Activity className="h-4 w-4 text-primary" /> Opinião
+                    Trakker
+                  </h4>
+                  <p className="text-sm leading-relaxed text-muted-foreground italic">
+                    "
+                    {aiData?.portfolio_assessment ||
+                      'Analisando seu portfólio para gerar recomendações personalizadas...'}
+                    "
+                  </p>
+                </div>
+                {score && (
+                  <div className="grid grid-cols-2 gap-4 px-2">
+                    <ScoreRow
+                      label="Diversificação"
+                      val={score.diversification}
+                    />
+                    <ScoreRow label="Consistência" val={score.consistency} />
+                    <ScoreRow label="Risco" val={score.risk} />
+                    <ScoreRow label="Volatilidade" val={score.volatility} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Auto Rebalancing & Allocation */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Shuffle className="h-5 w-5 text-primary" /> Auto Rebalanceamento
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="rounded-3xl border-primary/5 bg-card/40">
+                <CardContent className="p-6 space-y-4">
+                  <h4 className="text-sm font-bold text-muted-foreground uppercase">
+                    Proposta de Alocação Ideal
+                  </h4>
+                  <div className="space-y-4">
+                    {(aiData?.rebalancing?.ideal_allocation || []).map((item, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div className="flex justify-between text-xs font-bold">
+                          <span>{item.category}</span>
+                          <div className="space-x-2">
+                            <span className="text-muted-foreground line-through decoration-primary/30">
+                              {item.current.toFixed(1)}%
+                            </span>
+                            <span className="text-primary">
+                              {item.ideal.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 w-full bg-muted/20 rounded-full overflow-hidden flex">
+                          <div
+                            style={{width: `${item.current}%`}}
+                            className="bg-muted-foreground/30 h-full"
+                          />
+                          <div
+                            style={{
+                              width: `${Math.max(0, item.ideal - item.current)}%`,
+                            }}
+                            className="bg-primary h-full opacity-50"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <div className="space-y-4">
+                <div className="bg-primary/5 rounded-3xl p-6 border border-primary/10">
+                  <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" /> Movimentações
+                    Sugeridas
+                  </h4>
+                  <div className="space-y-2">
+                    {(aiData?.rebalancing?.top_moves || []).map((move, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 text-sm font-medium">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                        {move}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Radar Anti-Erro */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-rose-500" /> Radar Anti-Erro
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(aiData?.error_detection || []).map((err, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    'p-5 rounded-3xl border transition-all',
+                    err.severity === 'high'
+                      ? 'bg-rose-500/5 border-rose-500/20 shadow-lg shadow-rose-500/5'
+                      : 'bg-amber-500/5 border-amber-500/20',
+                  )}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div
+                      className={cn(
+                        'h-2 w-2 rounded-full',
+                        err.severity === 'high'
+                          ? 'bg-rose-500'
+                          : 'bg-amber-500',
+                      )}
+                    />
+                    <span className="text-[10px] font-black uppercase tracking-widest">
+                      {err.type}
+                    </span>
+                    {err.symbol && (
+                      <span className="ml-auto text-[10px] font-bold bg-muted px-2 py-0.5 rounded">
+                        {err.symbol}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs font-medium leading-relaxed">
+                    {err.message}
                   </p>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </section>
 
-      {parsed.risk_assessment && (
-        <Card className="card-gradient">
-          <CardHeader>
-            <CardTitle>Avaliação de Risco</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm leading-relaxed">{parsed.risk_assessment}</p>
-          </CardContent>
-        </Card>
-      )}
+          {/* Future Simulation UI */}
+          <Card className="rounded-[2.5rem] bg-card border-primary/5 overflow-hidden">
+            <CardHeader className="p-8 pb-0">
+              <CardTitle className="text-2xl font-black">
+                Simulador de Futuro
+              </CardTitle>
+              <CardDescription>
+                O que acontece se você investir regularmente?
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="space-y-8">
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-sm">
+                      <label className="font-bold">Aporte Mensal</label>
+                      <span className="font-bold font-mono text-primary">
+                        {formatCurrency(monthlyInvest)}
+                      </span>
+                    </div>
+                    <Slider
+                      value={[monthlyInvest]}
+                      onValueChange={(v) => setMonthlyInvest(v[0])}
+                      max={10000}
+                      step={100}
+                      className="py-4"
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-sm">
+                      <label className="font-bold">Prazo (Anos)</label>
+                      <span className="font-bold font-mono text-primary">
+                        {years} anos
+                      </span>
+                    </div>
+                    <Slider
+                      value={[years]}
+                      onValueChange={(v) => setYears(v[0])}
+                      max={35}
+                      step={1}
+                      className="py-4"
+                    />
+                  </div>
+                  <Button
+                    className="w-full h-12 rounded-2xl font-bold text-lg"
+                    onClick={handleSimulate}
+                    disabled={simLoading}>
+                    {simLoading ? (
+                      <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                    ) : (
+                      'Calcular Projeção IA'
+                    )}
+                  </Button>
+                </div>
+
+                <div className="bg-primary/5 rounded-[2rem] p-8 flex flex-col justify-center items-center text-center border border-primary/10 relative">
+                  {simulation ? (
+                    <div className="animate-in fade-in zoom-in duration-500 space-y-6">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] mb-3">
+                          Patrimônio Esperado
+                        </p>
+                        <h2 className="text-5xl font-black text-primary tracking-tighter">
+                          {formatCurrency(simulation.scenarios.neutral)}
+                        </h2>
+                      </div>
+                      <div className="grid grid-cols-2 gap-8 pt-6 border-t border-primary/10">
+                        <div>
+                          <span className="block text-[10px] text-muted-foreground uppercase font-bold mb-1">
+                            Pessimista
+                          </span>
+                          <span className="font-black text-rose-500 text-lg">
+                            {formatCurrency(simulation.scenarios.pessimistic)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-[10px] text-muted-foreground uppercase font-bold mb-1">
+                            Otimista
+                          </span>
+                          <span className="font-black text-emerald-500 text-lg">
+                            {formatCurrency(simulation.scenarios.optimistic)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <PieChart className="h-12 w-12 text-primary/20 mx-auto" />
+                      <p className="text-sm text-muted-foreground max-w-[200px]">
+                        Ajuste os aportes e simule o poder dos juros compostos.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Lado Direito (4 colunas) */}
+        <div className="xl:col-span-4 space-y-8">
+          {/* Radar de Oportunidades */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" /> Radar de Oportunidades
+            </h2>
+            <div className="space-y-3">
+              {(aiData?.opportunity_radar || []).map((opp, i) => (
+                <div
+                  key={i}
+                  className="group p-5 rounded-3xl bg-card border border-primary/5 hover:border-primary/30 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-primary/5">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <span className="block font-black text-xl group-hover:text-primary transition-colors">
+                        {opp.symbol}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+                        {opp.type}
+                      </span>
+                    </div>
+                    <div className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-2 py-1 rounded-full flex items-center">
+                      <ArrowUp className="h-3 w-3 mr-1" />{' '}
+                      {opp.upside.toFixed(1)}% UPSIDE
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed italic line-clamp-2">
+                    "{opp.rationale}"
+                  </p>
+                  <div className="flex justify-between items-center mt-5 pt-4 border-t border-primary/5">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Alvo:{' '}
+                      <span className="text-foreground">
+                        {formatCurrency(opp.target_price)}
+                      </span>
+                    </span>
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">
+                      <ArrowRight className="h-4 w-4 text-primary group-hover:text-white transition-colors" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {!isPremium && <UpgradeBanner />}
+        </div>
+      </div>
     </div>
   );
 };
+
+const ScoreRow = ({label, val}: {label: string; val: number}) => (
+  <div className="space-y-2">
+    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+      <span>{label}</span>
+      <span className="text-primary">{val}%</span>
+    </div>
+    <Progress
+      value={val}
+      className="h-1 bg-primary/5"
+      indicatorClassName="bg-gradient-to-r from-primary/50 to-primary"
+    />
+  </div>
+);
+
+const BadgePremium = () => (
+  <div className="bg-gradient-to-r from-amber-400 to-amber-600 text-[10px] font-black text-black px-3 py-1 rounded-full uppercase tracking-tighter flex items-center gap-1 shadow-lg shadow-amber-500/20 select-none cursor-default">
+    <Zap className="h-3 w-3 fill-black" /> Pro Account
+  </div>
+);
+
+const UpgradeBanner = () => (
+  <Card className="rounded-[2.5rem] bg-gradient-to-br from-indigo-600 to-blue-700 text-white border-none relative overflow-hidden shadow-2xl shadow-indigo-500/20">
+    <CardContent className="p-8 space-y-6 relative z-10">
+      <div className="h-12 w-12 rounded-2xl bg-white/20 flex items-center justify-center">
+        <Zap className="h-6 w-6 fill-white" />
+      </div>
+      <div className="space-y-2">
+        <h3 className="text-xl font-bold">Libere o Trakker Pro</h3>
+        <p className="text-sm text-indigo-100 leading-relaxed">
+          Tenha rebalanceamento automático real-time, acesso a robôs de
+          arbitragem e radar de oportunidades expandido.
+        </p>
+      </div>
+      <Button
+        variant="secondary"
+        className="w-full rounded-2xl font-bold shadow-xl">
+        Fazer Upgrade
+      </Button>
+    </CardContent>
+    <div className="absolute top-0 right-0 h-32 w-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 blur-3xl" />
+  </Card>
+);
 
 export default AIInsights;

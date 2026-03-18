@@ -21,6 +21,7 @@ import Planning from './pages/Planning';
 import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import SignOut from './pages/SignOut';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancelled from './pages/SubscriptionCancelled';
@@ -50,6 +51,7 @@ const App = () => (
           <Route path="/" element={<SignIn />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/2fa-verify" element={<TwoFactorVerify />} />
           <Route path="/signout" element={<SignOut />} />
           <Route

@@ -39,6 +39,7 @@ export const profileService = {
 
 export const aiService = {
   analyze: (payload: any) => apiClient.post('/ai/analyze', payload),
+  simulate: (payload: any) => apiClient.post('/ai/simulate', payload),
 };
 
 export const stockServices = {
@@ -46,8 +47,23 @@ export const stockServices = {
     apiClient.get(`/stocks/global/quote?symbol=${query}`),
   getAllNationalStocks: (search = '') =>
     apiClient.get(`/stocks/all/national${search ? `?search=${encodeURIComponent(search)}&limit=30` : '?limit=100'}`),
-  getNationalStock: (symbol: string) =>
-    apiClient.get(`/stocks/national/quote?symbol=${symbol}`),
+  getNationalStock: (
+    symbol: string,
+    options?: {
+      fundamental?: boolean;
+      dividends?: boolean;
+      range?: string;
+      interval?: string;
+    },
+  ) => {
+    const params = new URLSearchParams();
+    if (options?.fundamental) params.append('fundamental', 'true');
+    if (options?.dividends) params.append('dividends', 'true');
+    if (options?.range) params.append('range', options.range);
+    if (options?.interval) params.append('interval', options.interval);
+    const query = params.toString();
+    return apiClient.get(`/stocks/national/quote?symbol=${symbol}${query ? `&${query}` : ''}`);
+  },
 };
 
 export const portfolioService = {

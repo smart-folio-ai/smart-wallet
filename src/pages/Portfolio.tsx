@@ -9,9 +9,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
-import {Download, Share2, Upload, Loader2} from 'lucide-react';
+import {Download, Share2, Upload, Loader2, Trash2} from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
-import {useQueryClient} from '@tanstack/react-query';
+import {useQueryClient, useMutation} from '@tanstack/react-query';
 
 // Components
 import {PortfolioSummaryCards} from '@/components/portfolio/PortfolioSummaryCards';
@@ -244,6 +244,50 @@ const Portfolio = () => {
     }
   };
 
+  const deletePortfolioMutation = useMutation({
+    mutationFn: async (portfolioId: string) => {
+      return await portfolioService.deletePortfolio(portfolioId);
+    },
+    onSuccess: async () => {
+      toast({
+        title: 'Carteira removida',
+        description: 'A carteira foi removida com sucesso.',
+      });
+      await queryClient.invalidateQueries({queryKey: ['portfolios']});
+      await queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
+      setSelectedPortfolioId('all');
+    },
+    onError: () => {
+      toast({
+        title: 'Erro ao remover carteira',
+        description: 'Não foi possível remover a carteira selecionada.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleDeletePortfolio = () => {
+    if (!selectedPortfolioId || selectedPortfolioId === 'all') {
+      toast({
+        title: 'Selecione uma carteira',
+        description: 'Escolha uma carteira específica para remover.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const selectedName =
+      portfolios.find((p: any) => (p.id || p._id) === selectedPortfolioId)
+        ?.name ?? 'esta carteira';
+
+    const confirmed = window.confirm(
+      `Tem certeza que deseja remover ${selectedName}? Essa ação não pode ser desfeita.`
+    );
+    if (!confirmed) return;
+
+    deletePortfolioMutation.mutate(selectedPortfolioId);
+  };
+
   return (
     <div className="container py-8 min-h-[calc(100vh-4rem)] animate-fade-in overflow-x-hidden">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -264,6 +308,21 @@ const Portfolio = () => {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDeletePortfolio}
+            disabled={
+              selectedPortfolioId === 'all' || deletePortfolioMutation.isPending
+            }
+          >
+            {deletePortfolioMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-2" />
+            )}
+            Remover carteira
+          </Button>
         </div>
         <div className="flex space-x-2">
           <CreatePortfolioDialog />

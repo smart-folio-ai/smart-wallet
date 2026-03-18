@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {
   Card,
   CardContent,
@@ -9,7 +9,7 @@ import {
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import portfolioService from '@/services/portfolio';
 import {useQuery} from '@tanstack/react-query';
-import {useToast} from '@/hooks/use-toast';
+import {useNavigate} from 'react-router-dom';
 import {
   ArrowDown,
   ArrowUp,
@@ -44,6 +44,13 @@ import {
 } from '@/components/ui/table';
 import {formatCurrency} from '@/utils';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Asset {
   id: string;
@@ -54,9 +61,10 @@ interface Asset {
   amount: number;
   value: number;
   allocation: number;
-  type: 'stock' | 'crypto' | 'fii' | 'other';
+  type: 'stock' | 'crypto' | 'fii' | 'etf' | 'fund' | 'other';
   dividendYield?: number;
   lastDividend?: number;
+  dividendHistory?: {date: string; value: number}[];
 }
 
 interface PortfolioSummary {
@@ -87,128 +95,6 @@ interface PortfolioSummary {
   }[];
 }
 
-const mockSummary: PortfolioSummary = {
-  totalValue: 25430.75,
-  change24h: 452.3,
-  changePercentage24h: 1.81,
-  totalDividends: 1250.45,
-  distribution: {
-    stocks: 45,
-    crypto: 30,
-    fiis: 20,
-    other: 5,
-  },
-  dividendsByType: {
-    stocks: 420.3,
-    fiis: 780.15,
-    other: 50.0,
-  },
-  history: Array.from({length: 30}, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (29 - i));
-    return {
-      date: date.toISOString().slice(0, 10),
-      value: 24000 + Math.random() * 3000,
-    };
-  }),
-  lastDividends: [
-    {
-      date: '2023-11-15',
-      symbol: 'PETR4',
-      value: 120.5,
-      type: 'stock',
-    },
-    {
-      date: '2023-11-10',
-      symbol: 'HGLG11',
-      value: 182.75,
-      type: 'fii',
-    },
-    {
-      date: '2023-10-28',
-      symbol: 'ITSA4',
-      value: 87.2,
-      type: 'stock',
-    },
-    {
-      date: '2023-10-15',
-      symbol: 'XPLG11',
-      value: 152.6,
-      type: 'fii',
-    },
-    {
-      date: '2023-10-05',
-      symbol: 'BBAS3',
-      value: 95.7,
-      type: 'stock',
-    },
-  ],
-};
-
-const mockAssets: Asset[] = [
-  {
-    id: '1',
-    symbol: 'PETR4',
-    name: 'Petrobras',
-    price: 30.45,
-    change24h: 2.3,
-    amount: 100,
-    value: 3045.0,
-    allocation: 12,
-    type: 'stock',
-    dividendYield: 12.5,
-    lastDividend: 1.25,
-  },
-  {
-    id: '2',
-    symbol: 'VALE3',
-    name: 'Vale',
-    price: 65.7,
-    change24h: -1.2,
-    amount: 50,
-    value: 3285.0,
-    allocation: 13,
-    type: 'stock',
-    dividendYield: 8.7,
-    lastDividend: 0.85,
-  },
-  {
-    id: '3',
-    symbol: 'BTC',
-    name: 'Bitcoin',
-    price: 225000.0,
-    change24h: 4.5,
-    amount: 0.025,
-    value: 5625.0,
-    allocation: 22,
-    type: 'crypto',
-  },
-  {
-    id: '4',
-    symbol: 'HGLG11',
-    name: 'CSHG Logística',
-    price: 160.5,
-    change24h: 0.8,
-    amount: 30,
-    value: 4815.0,
-    allocation: 19,
-    type: 'fii',
-    dividendYield: 9.2,
-    lastDividend: 1.38,
-  },
-  {
-    id: '5',
-    symbol: 'ETH',
-    name: 'Ethereum',
-    price: 12500.0,
-    change24h: -2.1,
-    amount: 0.2,
-    value: 2500.0,
-    allocation: 10,
-    type: 'crypto',
-  },
-];
-
 const ALLOCATION_COLORS = {
   stocks: '#22c55e',
   crypto: '#3b82f6',
@@ -223,16 +109,53 @@ const DIVIDEND_COLORS = {
 };
 
 const Dashboard = () => {
-  const {toast} = useToast();
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
 
-  const {data: apiAssets = [], isLoading: loading} = useQuery({
-    queryKey: ['dashboardAssets'],
+  const handleAssetClick = (asset: Asset) => {
+    if (!asset.id) return;
+    navigate(`/portfolio/asset/${asset.id}`);
+  };
+
+  const {data: portfolios = []} = useQuery({
+    queryKey: ['portfolios'],
     queryFn: async () => {
-      return await portfolioService.getAssets();
+      return await portfolioService.getPortfolios();
     },
   });
+
+  useEffect(() => {
+    if (!selectedPortfolioId && portfolios.length > 0) {
+      setSelectedPortfolioId(portfolios[0].id || portfolios[0]._id);
+    }
+  }, [portfolios, selectedPortfolioId]);
+
+  const {data: portfolioPayload, isLoading: loading} = useQuery({
+    queryKey: ['dashboardPortfolio', selectedPortfolioId],
+    enabled: Boolean(selectedPortfolioId),
+    queryFn: async () => {
+      if (!selectedPortfolioId || selectedPortfolioId === 'all') {
+        return await portfolioService.getAssets();
+      }
+      return await portfolioService.getPortfolio(selectedPortfolioId);
+    },
+  });
+
+  const {data: portfolioHistory = []} = useQuery({
+    queryKey: ['dashboardHistory', selectedPortfolioId],
+    enabled: Boolean(selectedPortfolioId) && selectedPortfolioId !== 'all',
+    queryFn: async () => {
+      return await portfolioService.getPortfolioHistory(selectedPortfolioId);
+    },
+  });
+
+  const apiAssets = useMemo(() => {
+    if (!portfolioPayload) return [];
+    if (Array.isArray(portfolioPayload)) return portfolioPayload;
+    return portfolioPayload.assets ?? [];
+  }, [portfolioPayload]);
 
   useEffect(() => {
     if (loading) return;
@@ -243,55 +166,113 @@ const Dashboard = () => {
       0,
     );
 
+    const totalCost = apiAssets.reduce(
+      (sum: number, asset: any) => sum + ((asset.averagePrice || 0) * (asset.quantity || 0)),
+      0,
+    );
+
+    const profitLoss = totalValue - totalCost;
+    const profitLossPercentage = totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
+
     const calculateAllocation = (type: string) => {
       if (totalValue === 0) return 0;
       const typeTotal = apiAssets
-        .filter((a: any) => a.type === type)
+        .filter((a: any) => {
+          if (type === 'other') {
+            return !['stock', 'crypto', 'fii'].includes(a.type);
+          }
+          return a.type === type;
+        })
         .reduce((sum: number, a: any) => sum + (a.total || 0), 0);
       return Number(((typeTotal / totalValue) * 100).toFixed(2));
     };
 
+    const dividendEntries = apiAssets.flatMap((asset: any) => {
+      const history = asset.dividendHistory ?? [];
+      return history.map((entry: any) => ({
+        symbol: asset.symbol,
+        type: asset.type === 'fii' ? 'fii' : asset.type === 'stock' ? 'stock' : 'other',
+        date: entry.date,
+        value: (entry.value ?? 0) * (asset.quantity ?? 0),
+      }));
+    });
+
+    const totalDividends = dividendEntries.reduce(
+      (sum: number, entry: any) => sum + (entry.value || 0),
+      0,
+    );
+
+    const dividendsByType = {
+      stocks: dividendEntries
+        .filter((d: any) => d.type === 'stock')
+        .reduce((sum: number, d: any) => sum + (d.value || 0), 0),
+      fiis: dividendEntries
+        .filter((d: any) => d.type === 'fii')
+        .reduce((sum: number, d: any) => sum + (d.value || 0), 0),
+      other: dividendEntries
+        .filter((d: any) => d.type === 'other')
+        .reduce((sum: number, d: any) => sum + (d.value || 0), 0),
+    };
+
+    const historyData =
+      selectedPortfolioId !== 'all' && portfolioHistory.length > 0
+        ? portfolioHistory.map((item: any) => ({
+            date: new Date(item.date).toLocaleDateString('pt-BR'),
+            value: item.totalValue ?? 0,
+          }))
+        : Array.from({length: 30}, (_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (29 - i));
+            return {
+              date: date.toLocaleDateString('pt-BR'),
+              value: totalValue,
+            };
+          });
+
     const newSummary: PortfolioSummary = {
       totalValue,
-      change24h: 0, // Placeholder
-      changePercentage24h: 0, // Placeholder
-      totalDividends: 0, // Placeholder
+      change24h: profitLoss, // Using Total P&L as 24h change is not directly available
+      changePercentage24h: profitLossPercentage,
+      totalDividends,
       distribution: {
         stocks: calculateAllocation('stock'),
         crypto: calculateAllocation('crypto'),
         fiis: calculateAllocation('fii'),
         other: calculateAllocation('other'),
       },
-      dividendsByType: {stocks: 0, fiis: 0, other: 0},
-      history: Array.from({length: 30}, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - (29 - i));
-        return {
-          date: date.toISOString().slice(0, 10),
-          value: totalValue,
-        };
-      }),
-      lastDividends: [],
+      dividendsByType,
+      history: historyData,
+      lastDividends: dividendEntries
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 5),
     };
 
-    const mappedAssets: Asset[] = apiAssets.map((a: any) => ({
-      id: a.id || a._id,
-      symbol: a.symbol,
-      name: a.symbol, // Backend currently doesn't provide names, fallback to symbol
-      price: a.price,
-      change24h: 0,
-      amount: a.quantity,
-      value: a.total,
-      allocation:
-        totalValue > 0 ? Number(((a.total / totalValue) * 100).toFixed(2)) : 0,
-      type: a.type,
-      dividendYield: 0,
-      lastDividend: 0,
-    }));
+    const mappedAssets: Asset[] = apiAssets.map((a: any) => {
+      const cost = (a.averagePrice || 0) * (a.quantity || 0);
+      const val = a.total || 0;
+      const pnl = val - cost;
+      const pnlPerc = cost > 0 ? (pnl / cost) * 100 : 0;
+
+      return {
+        id: a.id || a._id,
+        symbol: a.symbol,
+        name: a.longName || a.symbol,
+        price: a.price,
+        change24h: pnlPerc, // Showing total asset P%L as change
+        amount: a.quantity,
+        value: val,
+        allocation:
+          totalValue > 0 ? Number(((val / totalValue) * 100).toFixed(2)) : 0,
+        type: a.type,
+        dividendYield: a.indicators?.dividendYield ?? 0,
+        lastDividend: 0,
+        dividendHistory: a.dividendHistory ?? [],
+      };
+    });
 
     setSummary(newSummary);
     setAssets(mappedAssets);
-  }, [apiAssets, loading]);
+  }, [apiAssets, loading, portfolioHistory, selectedPortfolioId]);
 
   const distributionData = summary
     ? [
@@ -347,7 +328,25 @@ const Dashboard = () => {
 
   return (
     <div className="container py-8 animate-fade-in">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <Select
+          value={selectedPortfolioId || ''}
+          onValueChange={setSelectedPortfolioId}
+        >
+          <SelectTrigger className="w-full sm:w-72">
+            <SelectValue placeholder="Selecione a carteira" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as Carteiras</SelectItem>
+            {portfolios.map((p: any) => (
+              <SelectItem key={p.id || p._id} value={p.id || p._id}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Portfolio Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -386,7 +385,7 @@ const Dashboard = () => {
                       {formatCurrency(Math.abs(summary?.change24h || 0))} (
                       {Math.abs(summary?.changePercentage24h || 0).toFixed(2)}%)
                     </span>
-                    <span className="ml-2 text-muted-foreground">24h</span>
+                    <span className="ml-2 text-muted-foreground">P&L Total</span>
                   </div>
                 </div>
 
@@ -700,7 +699,8 @@ const Dashboard = () => {
                   {assets.map((asset) => (
                     <div
                       key={asset.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer">
+                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer"
+                      onClick={() => handleAssetClick(asset)}>
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-4">
                           <Wallet className="h-5 w-5 text-primary" />
@@ -751,7 +751,8 @@ const Dashboard = () => {
                   .map((asset) => (
                     <div
                       key={asset.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer">
+                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer"
+                      onClick={() => handleAssetClick(asset)}>
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-4">
                           <Wallet className="h-5 w-5 text-primary" />
@@ -796,7 +797,8 @@ const Dashboard = () => {
                   .map((asset) => (
                     <div
                       key={asset.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer">
+                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer"
+                      onClick={() => handleAssetClick(asset)}>
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-4">
                           <Wallet className="h-5 w-5 text-primary" />
@@ -841,7 +843,8 @@ const Dashboard = () => {
                   .map((asset) => (
                     <div
                       key={asset.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer">
+                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer"
+                      onClick={() => handleAssetClick(asset)}>
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-4">
                           <Wallet className="h-5 w-5 text-primary" />

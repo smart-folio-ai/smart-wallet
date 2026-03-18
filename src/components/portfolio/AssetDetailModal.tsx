@@ -34,6 +34,7 @@ export const AssetDetailModal = ({ selectedAsset, setSelectedAsset }: AssetDetai
                 <Badge className="ml-2">
                   {selectedAsset.type === 'stock' ? 'Ação' : 
                    selectedAsset.type === 'fii' ? 'FII' : 
+                   selectedAsset.type === 'etf' ? 'ETF' :
                    selectedAsset.type === 'crypto' ? 'Cripto' : 'Outro'}
                 </Badge>
                 {selectedAsset.aiRecommendation && (

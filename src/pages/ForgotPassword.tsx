@@ -1,9 +1,11 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
+import apiClient from '@/server/api/api';
+import {useMutation} from '@tanstack/react-query';
 import * as z from 'zod';
-import {ArrowLeft, Mail} from 'lucide-react';
+import {ArrowLeft, Mail, Loader2} from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -42,15 +44,24 @@ export default function ForgotPassword() {
     },
   });
 
-  const onSubmit = (data: FormValues) => {
-    // In a real app, you would send a password reset email here
-    console.log('Form submitted:', data);
-
-    // For demonstration purposes, we'll simulate a successful submission
-    setTimeout(() => {
+  const { mutate: forgotPassword, isPending } = useMutation({
+    mutationFn: async (data: FormValues) => {
+      const response = await apiClient.post('/auth/forgot-password', data);
+      return response.data;
+    },
+    onSuccess: () => {
       setIsSubmitted(true);
       toast.success('Email de recuperação enviado com sucesso!');
-    }, 1000);
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || 'Erro ao enviar email de recuperação. Verifique sua conexão com o servidor.'
+      );
+    }
+  });
+
+  const onSubmit = (data: FormValues) => {
+    forgotPassword(data);
   };
 
   return (
@@ -224,9 +235,17 @@ export default function ForgotPassword() {
 
                     <Button
                       type="submit"
+                      disabled={isPending}
                       className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium"
                       size="lg">
-                      Enviar instruções
+                      {isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        'Enviar instruções'
+                      )}
                     </Button>
                   </form>
                 </Form>
