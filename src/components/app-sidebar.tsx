@@ -27,6 +27,7 @@ import {
   Plus,
   UserCircle,
   LogOut,
+  FileSpreadsheet,
 } from 'lucide-react';
 import {Link} from 'react-router-dom';
 
@@ -81,6 +82,14 @@ export function AppSidebar() {
                   <Link to="/transactions">
                     <Wallet className="h-5 w-5" />
                     <span>Transações</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/fiscal">
+                    <FileSpreadsheet className="h-5 w-5" />
+                    <span>Fiscal</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

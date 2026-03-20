@@ -29,6 +29,8 @@ import AddAsset from './pages/AddAsset';
 import Comparator from './pages/Comparator';
 import TwoFactorVerify from './pages/TwoFactorVerify';
 import MyAssetDetail from './pages/MyAssetDetail';
+import Fiscal from './pages/Fiscal';
+import Transactions from './pages/Transactions';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -109,6 +111,11 @@ const App = () => (
                             element={<AssetDetail />}
                           />
                           <Route path="/planning" element={<Planning />} />
+                          <Route
+                            path="/transactions"
+                            element={<Transactions />}
+                          />
+                          <Route path="/fiscal" element={<Fiscal />} />
                           <Route path="/settings" element={<Settings />} />
                           <Route
                             path="/subscription-success"

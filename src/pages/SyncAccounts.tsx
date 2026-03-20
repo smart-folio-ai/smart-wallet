@@ -136,6 +136,7 @@ const brokerSyncApi = {
   sync: (provider: string) => api.post(`/broker-sync/sync/${provider}`),
   disconnect: (provider: string) =>
     api.delete(`/broker-sync/disconnect/${provider}`),
+  getUploads: () => api.get('/broker-sync/uploads'),
 };
 
 const SyncAccounts = () => {
@@ -164,6 +165,19 @@ const SyncAccounts = () => {
     },
   });
 
+  const {data: uploads = []} = useQuery<any[]>({
+    queryKey: ['broker-uploads'],
+    queryFn: async () => {
+      try {
+        const res = await brokerSyncApi.getUploads();
+        return res.data || [];
+      } catch {
+        return [];
+      }
+    },
+    refetchInterval: 5000,
+  });
+
   const isConnected = (provider: string) =>
     connections.some(
       (c) => c.provider === provider && c.status === 'connected',
@@ -186,9 +200,11 @@ const SyncAccounts = () => {
       setApiKey('');
       setApiSecret('');
     },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.message || 'Erro ao conectar.';
-      toast.error('Erro', Array.isArray(msg) ? msg[0] : msg);
+    onError: () => {
+      toast.error(
+        'Falha na conexão',
+        'Não foi possível conectar essa conta agora. Revise os dados e tente novamente.',
+      );
     },
   });
 
@@ -273,6 +289,7 @@ const SyncAccounts = () => {
         `Nota de ${provider.toUpperCase()} recebida e em processamento.`,
       );
       queryClient.invalidateQueries({queryKey: ['broker-connections']});
+      queryClient.invalidateQueries({queryKey: ['broker-uploads']});
     } catch {
       toast.info(
         'Recebido',
@@ -576,6 +593,42 @@ const SyncAccounts = () => {
             </div>
           </Card>
         </div>
+      )}
+
+      {uploads.length > 0 && (
+        <Card className="card-gradient mb-6">
+          <CardHeader>
+            <CardTitle>Processamento assíncrono de arquivos</CardTitle>
+            <CardDescription>
+              Acompanhe o status de uploads como `nota_corretagem.pdf` e
+              `relatorio_b3.pdf`.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {uploads.slice(0, 5).map((u: any) => (
+              <div
+                key={u._id}
+                className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <p className="text-sm font-medium">{u.originalName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {u.provider} • {u.kind || 'brokerage_note'}
+                  </p>
+                </div>
+                <Badge
+                  variant={
+                    u.status === 'processed'
+                      ? 'default'
+                      : u.status === 'failed'
+                        ? 'destructive'
+                        : 'secondary'
+                  }>
+                  {u.status}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       )}
 
       <Card className="card-gradient mb-8">

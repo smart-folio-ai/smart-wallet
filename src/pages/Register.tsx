@@ -88,7 +88,7 @@ export default function Register() {
       navigate('/dashboard');
     } catch (error) {
       setLoading(false);
-      toast.error(error.message || 'Erro desconhecido. Tente novamente.');
+      toast.error('Não foi possível criar sua conta agora. Tente novamente.');
     }
   };
   return (

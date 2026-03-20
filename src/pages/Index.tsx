@@ -10,6 +10,7 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import portfolioService from '@/services/portfolio';
 import {useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
+import {fiscalService} from '@/server/api/api';
 import {
   ArrowDown,
   ArrowUp,
@@ -20,6 +21,16 @@ import {
 } from 'lucide-react';
 import {Progress} from '@/components/ui/progress';
 import {Skeleton} from '@/components/ui/skeleton';
+import {Button} from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   AreaChart,
   Bar,
@@ -95,6 +106,29 @@ interface PortfolioSummary {
   }[];
 }
 
+interface FiscalOptimizerOpportunity {
+  symbol: string;
+  category: 'stock' | 'fii' | 'crypto';
+  potentialGain: number;
+  estimatedTaxWithoutOffset: number;
+  estimatedTaxWithOffset: number;
+  taxSaved: number;
+  canZeroTax: boolean;
+  headline: string;
+}
+
+interface FiscalOptimizerResponse {
+  year: number;
+  accumulatedLosses: {
+    stock: number;
+    fii: number;
+    crypto: number;
+    total: number;
+  };
+  opportunities: FiscalOptimizerOpportunity[];
+  explanation: string;
+}
+
 const ALLOCATION_COLORS = {
   stocks: '#22c55e',
   crypto: '#3b82f6',
@@ -113,6 +147,7 @@ const Dashboard = () => {
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
+  const [openFiscalIntro, setOpenFiscalIntro] = useState(false);
 
   const handleAssetClick = (asset: Asset) => {
     if (!asset.id) return;
@@ -150,6 +185,20 @@ const Dashboard = () => {
       return await portfolioService.getPortfolioHistory(selectedPortfolioId);
     },
   });
+
+  const {data: optimizerData, isLoading: loadingOptimizer} =
+    useQuery<FiscalOptimizerResponse>({
+      queryKey: ['fiscal-optimizer-dashboard'],
+      queryFn: async () => (await fiscalService.getOptimizer()).data,
+    });
+
+  useEffect(() => {
+    const key = 'dashboard_fiscal_optimizer_intro_v1';
+    const hasSeen = localStorage.getItem(key) === '1';
+    if (!hasSeen) {
+      setOpenFiscalIntro(true);
+    }
+  }, []);
 
   const apiAssets = useMemo(() => {
     if (!portfolioPayload) return [];
@@ -347,6 +396,92 @@ const Dashboard = () => {
           </SelectContent>
         </Select>
       </div>
+
+      <AlertDialog
+        open={openFiscalIntro}
+        onOpenChange={(open) => {
+          setOpenFiscalIntro(open);
+          if (!open) {
+            localStorage.setItem('dashboard_fiscal_optimizer_intro_v1', '1');
+          }
+        }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Novo: Otimizador Fiscal</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-sm">
+              <p>
+                O sistema detecta oportunidades para reduzir imposto com
+                compensação de prejuízos (tax-loss harvesting).
+              </p>
+              <p>
+                Exemplo: se você tem prejuízo acumulado e vender um ativo com
+                lucro, esse prejuízo pode zerar ou reduzir o imposto da
+                operação.
+              </p>
+              <p>
+                Você verá essas oportunidades no card de Otimizador Fiscal
+                abaixo.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>Entendi</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Card className="mb-8 card-gradient">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle>Otimizador Fiscal</CardTitle>
+              <CardDescription>
+                Oportunidades para reduzir imposto com prejuízo acumulado
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate('/fiscal')}>
+              Abrir Fiscal
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {loadingOptimizer ? (
+            <Skeleton className="h-20 w-full" />
+          ) : (
+            <>
+              <p className="text-sm">
+                Prejuízo acumulado disponível:{' '}
+                <strong>
+                  {formatCurrency(optimizerData?.accumulatedLosses?.total || 0)}
+                </strong>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {optimizerData?.explanation}
+              </p>
+              {(optimizerData?.opportunities || []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Sem oportunidades claras no momento.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {optimizerData?.opportunities?.slice(0, 3).map((item) => (
+                    <div key={item.symbol} className="rounded border p-3 text-sm">
+                      <p className="font-medium">{item.headline}</p>
+                      <p className="text-muted-foreground">
+                        Imposto sem compensação:{' '}
+                        {formatCurrency(item.estimatedTaxWithoutOffset)} | com
+                        compensação:{' '}
+                        {formatCurrency(item.estimatedTaxWithOffset)} | economia:{' '}
+                        {formatCurrency(item.taxSaved)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Portfolio Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

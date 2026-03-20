@@ -50,10 +50,11 @@ export default function TwoFactorVerify() {
 
       toast.success('Autenticação concluída!', 'Bem-vindo ao Trackerr.');
       navigate('/dashboard', {replace: true});
-    } catch (error: any) {
-      const msg =
-        error?.response?.data?.message || 'Código inválido ou expirado.';
-      toast.error('Falha na verificação', msg);
+    } catch {
+      toast.error(
+        'Não foi possível validar o código',
+        'Confira os 6 dígitos do app autenticador e tente novamente.',
+      );
       setCode('');
       inputRef.current?.focus();
     } finally {

@@ -36,9 +36,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   BarChart,
   Bar,
   Legend,
@@ -166,61 +163,32 @@ export default function AssetDetail() {
   const isUndervalued = asset && grahamValue > asset.price;
 
   const GrahamGauge = ({ price, fairValue }: { price: number; fairValue: number }) => {
-    const data = [
-      { name: 'Caro', value: 30, color: '#f43f5e' },       // Red
-      { name: 'Passável', value: 30, color: '#fb923c' },   // Orange
-      { name: 'Preço Justo', value: 30, color: '#facc15' }, // Yellow
-      { name: 'Barato', value: 30, color: '#4ade80' },     // Green
-      { name: 'Muito Barato', value: 30, color: '#3b82f6' },// Blue
-    ];
-
-    // Map ratio to angle (180 to 0)
-    // ratio > 1.5 -> 180 (Red)
-    // ratio = 1 -> 90 (Yellow)
-    // ratio < 0.5 -> 0 (Blue)
-    const ratio = price / fairValue;
-    const angle = 180 - (Math.min(Math.max(ratio, 0.5), 1.5) - 0.5) * 180;
-    
-    // Needle calculation
-    const needleAngle = -angle; // 0 is top right, -180 is top left for Recharts Pie starting from 180
-    const RADIAN = Math.PI / 180;
-    const activeIndex = angle === 90 ? 2 : (angle > 120 ? 0 : (angle > 90? 1 : (angle > 60 ? 3 : 4)));
+    const safeFairValue = fairValue > 0 ? fairValue : price > 0 ? price : 1;
+    const ratio = Math.max(0.5, Math.min(1.5, price / safeFairValue));
+    const progress = (ratio - 0.5) / 1.0; // 0..1
+    const rotateDeg = -90 + progress * 180;
 
     return (
       <div className="relative flex flex-col items-center">
-        <div className="h-[120px] w-full mt-[-20px]">
-          <ResponsiveContainer width="100%" height="180">
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="70%"
-                startAngle={180}
-                endAngle={0}
-                innerRadius={60}
-                outerRadius={85}
-                dataKey="value"
-                stroke="none"
-              >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} opacity={0.8} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="relative h-[130px] w-full flex items-end justify-center">
+          <div
+            className="absolute bottom-0 h-[120px] w-[240px] rounded-t-full overflow-hidden"
+            style={{
+              background:
+                'conic-gradient(from 180deg at 50% 100%, #f43f5e 0deg 36deg, #fb923c 36deg 72deg, #facc15 72deg 108deg, #4ade80 108deg 144deg, #3b82f6 144deg 180deg)',
+            }}
+          >
+            <div className="absolute bottom-0 left-1/2 h-[88px] w-[176px] -translate-x-1/2 rounded-t-full bg-background" />
+          </div>
+          <div
+            className="absolute bottom-0 left-1/2 h-[90px] w-[3px] bg-slate-800 dark:bg-white origin-bottom rounded-full transition-transform duration-700"
+            style={{
+              transform: `translateX(-50%) rotate(${rotateDeg}deg)`,
+            }}
+          />
+          <div className="absolute bottom-[-6px] left-1/2 h-3 w-3 -translate-x-1/2 rounded-full bg-slate-800 dark:bg-white" />
         </div>
-        
-        {/* Needle with CSS */}
-        <div 
-          className="absolute h-14 w-[2px] bg-slate-800 dark:bg-white origin-bottom rounded-full transition-transform duration-1000"
-          style={{ 
-            bottom: '30%',
-            left: '50%',
-            transform: `translateX(-50%) rotate(${needleAngle + 90}deg)`
-          }}
-        />
-        <div className="absolute w-3 h-3 bg-slate-800 dark:bg-white rounded-full bottom-[28%] left-[50%] -translate-x-1/2" />
-        
+
         <div className="text-center mt-2 flex flex-col items-center gap-1">
           <Badge variant={isUndervalued ? "default" : "destructive"} className="text-[10px] font-black tracking-widest uppercase">
             {isUndervalued ? 'Ação Descontada' : 'Ação sobrevalorizada'}

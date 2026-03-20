@@ -94,14 +94,11 @@ const AIInsights: React.FC = () => {
 
       const result = await aiAnalysisService.analyze(payload as any);
       setAnalysisResult(result);
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.detail ||
-        err?.message ||
-        'Falha ao obter análise de IA';
-      setError(msg);
-      toast.error('Erro na análise', { description: msg });
+    } catch {
+      setError(
+        'Não foi possível carregar os insights agora. Tente novamente em alguns instantes.',
+      );
+      toast.error('Não foi possível analisar sua carteira no momento.');
     } finally {
       setLoading(false);
     }

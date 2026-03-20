@@ -290,11 +290,11 @@ export default function Settings() {
       );
       setIsEditing(false);
     },
-    onError: (error: any) => {
-      const msg =
-        error?.response?.data?.message || error?.message || 'Erro ao salvar';
-      const errMsg = Array.isArray(msg) ? msg[0] : msg;
-      toast.error('Erro ao salvar', errMsg);
+    onError: () => {
+      toast.error(
+        'Não foi possível salvar o perfil',
+        'Revise os dados informados e tente novamente.',
+      );
     },
   });
 
@@ -336,12 +336,10 @@ export default function Settings() {
         'Suas preferências foram atualizadas.',
       );
     },
-    onError: (error: any) => {
-      const msg =
-        error?.response?.data?.message || error?.message || 'Erro ao salvar';
+    onError: () => {
       toast.error(
-        'Erro ao salvar configurações',
-        Array.isArray(msg) ? msg[0] : msg,
+        'Não foi possível salvar as configurações',
+        'Tente novamente em alguns instantes.',
       );
     },
   });
@@ -373,12 +371,10 @@ export default function Settings() {
       });
       setShowPassword(false);
     },
-    onError: (error: any) => {
-      const msg =
-        error?.response?.data?.message || error?.message || 'Erro ao alterar a senha';
+    onError: () => {
       toast.error(
-        'Falha na alteração de senha',
-        Array.isArray(msg) ? msg[0] : msg,
+        'Não foi possível alterar a senha',
+        'Confirme sua senha atual e tente novamente.',
       );
     },
   });
