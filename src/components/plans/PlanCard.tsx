@@ -38,10 +38,17 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 }) => {
   return (
     <Card
-      className={`flex flex-col h-full border-2 ${
+      className={`relative overflow-hidden flex flex-col h-full border-2 ${
         plan.badge ? 'border-primary' : 'border-border'
       }`}>
-      <CardHeader>
+      {plan.comingSoon ? (
+        <div className="absolute top-3 right-3 z-20">
+          <Badge variant="secondary">Em breve</Badge>
+        </div>
+      ) : null}
+
+      <div className={plan.comingSoon ? 'pointer-events-none blur-[1.5px] opacity-75' : ''}>
+        <CardHeader>
         {plan.badge && (
           <Badge className="w-fit mb-2" variant="default">
             {plan.badge}
@@ -49,10 +56,10 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         )}
         <CardTitle className="text-2xl">{plan.name}</CardTitle>
         <CardDescription>{plan.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-grow">
+        </CardHeader>
+        <CardContent className="flex-grow">
         <div className="flex items-baseline mb-6">
-          {plan.price !== null ? (
+          {!plan.comingSoon && plan.price !== null ? (
             <>
               <span className="text-3xl font-bold">
                 R${' '}
@@ -83,7 +90,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             </div>
           ))}
         </div>
-      </CardContent>
+        </CardContent>
+      </div>
       <CardFooter>
         {isCurrentPlan ? (
           <Button
@@ -98,15 +106,18 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             onClick={onSubscribe}
             className="w-full"
             variant="default"
-            disabled={loading || isCurrentPlan}>
+            disabled={loading || isCurrentPlan || plan.comingSoon}>
             {loading
               ? 'Processando...'
               : plan.comingSoon
-                ? 'Notifique-me'
+                ? 'Em breve'
                 : 'Assinar Agora'}
           </Button>
         )}
       </CardFooter>
+      {plan.comingSoon ? (
+        <div className="absolute inset-0 bg-background/20 pointer-events-none" />
+      ) : null}
     </Card>
   );
 };

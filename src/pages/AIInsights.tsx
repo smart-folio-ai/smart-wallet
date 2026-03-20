@@ -30,8 +30,15 @@ import {aiAnalysisService, AiAnalysisResult} from '@/services/ai';
 import {portfolioService} from '@/server/api/api';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
 import {cn} from '@/lib/utils';
+import {useSubscription} from '@/hooks/useSubscription';
+import {
+  getAiPlanFromPlanName,
+  getOrCreateAiAnalysis,
+  isProOrHigherPlan,
+} from '@/services/ai/trakkerAi';
 
 const AIInsights: React.FC = () => {
+  const {planName, isSubscribed, isLoading: subLoading} = useSubscription();
   const [loading, setLoading] = useState(true);
   const [analysisResult, setAnalysisResult] = useState<AiAnalysisResult | null>(
     null,
@@ -45,11 +52,21 @@ const AIInsights: React.FC = () => {
   const [simulation, setSimulation] = useState<any>(null);
   const [simLoading, setSimLoading] = useState(false);
 
+  const hasProOrHigher = isProOrHigherPlan(planName, isSubscribed);
+  const aiPlan = getAiPlanFromPlanName(planName);
+
   useEffect(() => {
+    if (subLoading) return;
     fetchData();
-  }, []);
+  }, [subLoading, hasProOrHigher, aiPlan]);
 
   const fetchData = async () => {
+    if (!hasProOrHigher) {
+      setAnalysisResult(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -63,36 +80,13 @@ const AIInsights: React.FC = () => {
           ? rawData.assets
           : [];
 
-      // Usa 'premium' por padrão para sempre acionar a análise com IA
-      const plan = (localStorage.getItem('user_plan') as any) || 'premium';
       const tValue = assets.reduce((sum: number, a: any) => sum + (a.value || a.current_price * a.quantity || 0), 0);
       setTotalValue(tValue);
 
-      const payload = {
-        user_id: 'user_123',
-        profile_plan: plan,
-        portfolio: {
-          id: 'default',
-          name: 'Principal',
-          cpf: '',
-          assets: assets.map((a: any) => ({
-            symbol: a.symbol || a.ticker || '',
-            type: a.type || 'stock',
-            quantity: a.quantity || 0,
-            price: a.average_price || a.price || 0,
-            current_price: a.current_price || a.price || 0,
-            change_24h: a.change_24h || a.changePercent || 0,
-            metrics: a.metrics || {},
-          })),
-          total_value: tValue,
-          plan: plan,
-        },
-        risk_profile: 'moderate',
-        address: {},
-        preferences: {},
-      };
-
-      const result = await aiAnalysisService.analyze(payload as any);
+      const result = await getOrCreateAiAnalysis({
+        rawAssets: assets,
+        plan: aiPlan,
+      });
       setAnalysisResult(result);
     } catch {
       setError(
@@ -138,7 +132,7 @@ const AIInsights: React.FC = () => {
 
   const aiData = analysisResult?.ai_analysis || analysisResult;
   const score = aiData?.investment_score;
-  const isPremium = localStorage.getItem('user_plan') !== 'free';
+  const isPremium = hasProOrHigher;
 
   if (error && !analysisResult) {
     return (

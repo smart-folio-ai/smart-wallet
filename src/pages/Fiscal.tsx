@@ -10,6 +10,23 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {formatCurrency} from '@/utils/formatters';
 import useAppToast from '@/hooks/use-app-toast';
 
+interface FiscalOptimizerResponse {
+  accumulatedLosses?: {
+    stock?: number;
+    fii?: number;
+    crypto?: number;
+    total?: number;
+  };
+  opportunities?: Array<{
+    symbol: string;
+    headline?: string;
+    potentialGain?: number;
+    estimatedTaxWithoutOffset?: number;
+    estimatedTaxWithOffset?: number;
+    taxSaved?: number;
+  }>;
+}
+
 export default function Fiscal() {
   const toast = useAppToast();
   const [year, setYear] = useState<number | ''>('');
@@ -36,6 +53,14 @@ export default function Fiscal() {
     refetchInterval: 5000,
   });
 
+  const {data: optimizerData, isLoading: loadingOptimizer} =
+    useQuery<FiscalOptimizerResponse>({
+      queryKey: ['fiscal-optimizer', year],
+      queryFn: async () =>
+        (await fiscalService.getOptimizer(typeof year === 'number' ? year : undefined))
+          .data,
+    });
+
   const previewMutation = useMutation({
     mutationFn: async () =>
       (
@@ -51,6 +76,28 @@ export default function Fiscal() {
     () => (Array.isArray(uploads) ? uploads.slice(0, 6) : []),
     [uploads],
   );
+
+  const accumulatedLossTotal = optimizerData?.accumulatedLosses?.total || 0;
+  const previewData = previewMutation.data;
+  const stockSalesMonth = previewData?.stockSalesMonth || 0;
+  const stockExemptionLimit = previewData?.stockExemptionLimit || 20000;
+  const hasTaxExemptionByMonthlyLimit =
+    previewData?.category === 'stock' && stockSalesMonth <= stockExemptionLimit;
+  const hasZeroEstimatedTax = (previewData?.estimatedTax || 0) <= 0;
+  const canHighlightZeroTaxByLossOffset =
+    previewData?.category === 'stock' &&
+    (previewData?.profit || 0) > 0 &&
+    accumulatedLossTotal > 0 &&
+    !hasTaxExemptionByMonthlyLimit &&
+    (previewData?.estimatedTax || 0) <= 0;
+  const zeroTaxReason = hasZeroEstimatedTax
+    ? hasTaxExemptionByMonthlyLimit
+      ? `Imposto zerado por isenção de vendas mensais (até ${formatCurrency(stockExemptionLimit)} em ações).`
+      : canHighlightZeroTaxByLossOffset
+        ? 'Imposto zerado por compensação de prejuízo acumulado.'
+        : null
+    : null;
+  const firstOpportunity = optimizerData?.opportunities?.[0];
 
   const downloadReport = async (
     type: 'fiscal' | 'transactions' | 'assets',
@@ -202,6 +249,11 @@ export default function Fiscal() {
                     {formatCurrency(previewMutation.data.estimatedTax || 0)}
                   </strong>
                 </p>
+                {zeroTaxReason ? (
+                  <p className="text-sm text-emerald-600 font-medium">
+                    {zeroTaxReason}
+                  </p>
+                ) : null}
                 <p className="text-lg">
                   Impacto na carteira:{' '}
                   <strong className="text-primary">
@@ -227,6 +279,58 @@ export default function Fiscal() {
                   <p className="mt-2 text-muted-foreground">
                     {previewMutation.data.message}
                   </p>
+                ) : null}
+                <div className="mt-3 rounded-md border bg-background p-3 space-y-1">
+                  {loadingOptimizer ? (
+                    <Skeleton className="h-5 w-72" />
+                  ) : (
+                    <p>
+                      Você possui{' '}
+                      <strong>{formatCurrency(accumulatedLossTotal)}</strong>{' '}
+                      de prejuízo acumulado.
+                    </p>
+                  )}
+                  {canHighlightZeroTaxByLossOffset ? (
+                    <p>
+                      Se vender <strong>{previewData.symbol}</strong> agora, o
+                      imposto da operação será <strong>zero</strong>.
+                    </p>
+                  ) : null}
+                </div>
+                {firstOpportunity ? (
+                  <div className="mt-3 rounded-md border bg-background p-3 space-y-1">
+                    <p className="font-medium">
+                      O sistema analisa a carteira e sugere:
+                    </p>
+                    <p className="text-sm">
+                      <strong>Otimização fiscal possível:</strong>
+                    </p>
+                    <p className="text-sm">
+                      Vender ativo <strong>{firstOpportunity.symbol}</strong>.
+                    </p>
+                    {typeof firstOpportunity.potentialGain === 'number' &&
+                    firstOpportunity.potentialGain > 0 ? (
+                      <p className="text-sm">
+                        Realizar prejuízo de{' '}
+                        <strong>{formatCurrency(firstOpportunity.potentialGain)}</strong>.
+                      </p>
+                    ) : null}
+                    <p className="text-sm text-muted-foreground">
+                      Isso reduzirá o imposto futuro sobre operações com lucro.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Imposto sem compensação:{' '}
+                      {formatCurrency(firstOpportunity.estimatedTaxWithoutOffset || 0)}{' '}
+                      | com compensação:{' '}
+                      {formatCurrency(firstOpportunity.estimatedTaxWithOffset || 0)}{' '}
+                      | economia: {formatCurrency(firstOpportunity.taxSaved || 0)}
+                    </p>
+                    {firstOpportunity.headline ? (
+                      <p className="text-xs text-muted-foreground">
+                        {firstOpportunity.headline}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             )}

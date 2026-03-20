@@ -34,11 +34,19 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import {Asset, SortConfig} from '@/types/portfolio';
 import portfolioService from '@/services/portfolio';
 import {useQuery} from '@tanstack/react-query';
+import {useSubscription} from '@/hooks/useSubscription';
+import {
+  buildAiCacheSignature,
+  extractAssetRecommendationsFromAnalysis,
+  getAiPlanFromPlanName,
+  getOrCreateAiAnalysis,
+} from '@/services/ai/trakkerAi';
 
 const Portfolio = () => {
   const {toast} = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const {planName} = useSubscription();
   const [activeTab, setActiveTab] = useState('all');
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,6 +93,25 @@ const Portfolio = () => {
       ? apiAssets
       : apiAssets.filter((a: any) => a.portfolioId === selectedPortfolioId);
 
+  const aiPlan = getAiPlanFromPlanName(planName);
+  const aiSignature = buildAiCacheSignature(displayApiAssets);
+
+  const {data: portfolioAiAnalysis} = useQuery({
+    queryKey: ['portfolio-ai-analysis', aiPlan, aiSignature],
+    enabled: displayApiAssets.length > 0,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+    queryFn: async () =>
+      getOrCreateAiAnalysis({
+        rawAssets: displayApiAssets,
+        plan: aiPlan,
+      }),
+  });
+
+  const aiRecommendationsBySymbol = extractAssetRecommendationsFromAnalysis(
+    portfolioAiAnalysis,
+  );
+
   const totalApiValue = displayApiAssets.reduce(
     (sum: number, asset: any) => sum + (asset.total || 0),
     0,
@@ -103,6 +130,10 @@ const Portfolio = () => {
         ? Number(((a.total / totalApiValue) * 100).toFixed(2))
         : 0,
     type: a.type,
+    aiRecommendation:
+      aiRecommendationsBySymbol[String(a.symbol || '').toUpperCase()] ||
+      a.aiRecommendation ||
+      undefined,
     avgPrice: a.avgPrice ?? a.price,
     purchasePrice: a.avgPrice ?? a.price,
     profitLoss:
