@@ -11,6 +11,7 @@ import Index from './pages/Index';
 import Landing from './pages/Landing';
 import SyncAccounts from './pages/SyncAccounts';
 import AIInsights from './pages/AIInsights';
+import ChatInteligente from './pages/ChatInteligente';
 import Subscription from './pages/Subscription';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
@@ -83,6 +84,7 @@ const App = () => (
                             element={<SyncAccounts />}
                           />
                           <Route path="/ai-insights" element={<AIInsights />} />
+                          <Route path="/chat-inteligente" element={<ChatInteligente />} />
                           <Route
                             path="/asset-search"
                             element={<AssetSearch />}
