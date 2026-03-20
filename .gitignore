@@ -27,3 +27,12 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+.github/*
+!.github/
+!.github/workflows/
+!.github/workflows/*.yml
+
+# Playwright
+playwright-report/
+test-results/
