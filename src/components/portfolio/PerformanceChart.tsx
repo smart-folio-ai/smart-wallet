@@ -83,9 +83,19 @@ export const PerformanceChart = ({
           daysToKeep = 180;
           break;
         case 'YTD':
-          const lastDate = new Date(aggregatedData[aggregatedData.length - 1].date);
-          const startOfYear = new Date(lastDate.getFullYear(), 0, 1);
-          daysToKeep = Math.max(2, Math.ceil((lastDate.getTime() - startOfYear.getTime()) / (1000 * 3600 * 24)));
+          {
+            const lastDate = new Date(
+              aggregatedData[aggregatedData.length - 1].date
+            );
+            const startOfYear = new Date(lastDate.getFullYear(), 0, 1);
+            daysToKeep = Math.max(
+              2,
+              Math.ceil(
+                (lastDate.getTime() - startOfYear.getTime()) /
+                  (1000 * 3600 * 24)
+              )
+            );
+          }
           break;
         case '1A':
           daysToKeep = 365;
