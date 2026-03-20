@@ -99,7 +99,7 @@ export default function ResetPassword() {
       navigate('/');
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || 'Erro ao alterar a senha. Tente novamente.'
+        'Não foi possível redefinir sua senha agora. Verifique o código informado e tente novamente.',
       );
     } finally {
       setIsSubmitting(false);

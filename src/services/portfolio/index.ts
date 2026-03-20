@@ -29,6 +29,22 @@ class PortfolioService {
     return response.data;
   }
 
+  async importB3Transactions(portfolioId: string, file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post(
+      `/portfolio/${portfolioId}/import-b3-transactions`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
+    return response.data;
+  }
+
   async createPortfolio(data: {name: string; ownerType: string; cpf?: string}) {
     const response = await apiClient.post('/portfolio/create', data);
     return response.data;

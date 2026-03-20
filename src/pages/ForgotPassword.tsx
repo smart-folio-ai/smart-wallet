@@ -53,9 +53,9 @@ export default function ForgotPassword() {
       setIsSubmitted(true);
       toast.success('Email de recuperação enviado com sucesso!');
     },
-    onError: (error: any) => {
+    onError: () => {
       toast.error(
-        error.response?.data?.message || 'Erro ao enviar email de recuperação. Verifique sua conexão com o servidor.'
+        'Não conseguimos enviar o e-mail de recuperação agora. Tente novamente em instantes.',
       );
     }
   });

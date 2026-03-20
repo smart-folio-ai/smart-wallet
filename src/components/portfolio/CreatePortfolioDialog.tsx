@@ -73,12 +73,11 @@ export function CreatePortfolioDialog() {
       setOpen(false);
       form.reset();
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({
         title: 'Erro ao criar carteira',
         description:
-          error?.response?.data?.message ||
-          'Verifique os dados e tente novamente.',
+          'Não foi possível criar a carteira agora. Verifique os dados e tente novamente.',
         variant: 'destructive',
       });
     },

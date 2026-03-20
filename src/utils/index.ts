@@ -23,7 +23,7 @@ export const styleToast = () => ({
     color: '#fff',
   },
   info: {
-    background: 'linear-gradient(90deg, #FFC107 0%, #FF9800 100%)',
+    background: 'linear-gradient(90deg, #3B82F6 0%, #4F46E5 100%)',
     color: '#fff',
   },
 });

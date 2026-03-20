@@ -164,18 +164,10 @@ export default function AddAsset() {
       setSymbolSearch('');
       setDate(undefined);
     },
-    onError: (error: any) => {
-      const apiError = error?.response?.data?.message;
-      let errorMessage = 'Houve um erro ao adicionar o ativo.';
-      if (Array.isArray(apiError) && apiError.length > 0) {
-        errorMessage = apiError[0];
-      } else if (typeof apiError === 'string') {
-        errorMessage = apiError;
-      }
-
+    onError: () => {
       toast({
-        title: 'Erro de Validação',
-        description: errorMessage,
+        title: 'Não foi possível adicionar o ativo',
+        description: 'Revise as informações do ativo e tente novamente.',
         variant: 'destructive',
       });
     },

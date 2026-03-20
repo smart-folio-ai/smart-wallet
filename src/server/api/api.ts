@@ -153,6 +153,31 @@ export const brokerSyncService = {
   sync: (provider: string) => apiClient.post(`/broker-sync/sync/${provider}`),
   disconnect: (provider: string) =>
     apiClient.delete(`/broker-sync/disconnect/${provider}`),
+  getUploads: () => apiClient.get('/broker-sync/uploads'),
+  getUploadStatus: (uploadId: string) =>
+    apiClient.get(`/broker-sync/upload-note/${uploadId}/status`),
+};
+
+export const fiscalService = {
+  getSummary: (year?: number) =>
+    apiClient.get(`/fiscal/summary${year ? `?year=${year}` : ''}`),
+  getOptimizer: (year?: number) =>
+    apiClient.get(`/fiscal/optimizer${year ? `?year=${year}` : ''}`),
+  previewSale: (data: {
+    symbol: string;
+    quantity: number;
+    sellPrice: number;
+    portfolioId?: string;
+  }) => apiClient.post('/fiscal/sale-preview', data),
+  getReport: (params: {
+    type: 'fiscal' | 'transactions' | 'assets';
+    year?: number;
+    format?: 'json' | 'pdf';
+  }) =>
+    apiClient.get('/fiscal/report', {
+      params,
+      responseType: params.format === 'pdf' ? 'blob' : 'json',
+    }),
 };
 
 export {apiClient as api};
