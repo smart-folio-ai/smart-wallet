@@ -34,3 +34,6 @@ export const configUrlStripePaymentSuccessOrCancel = (url: string) => {
   }
   return `${urlWebProduction + url}`;
 };
+export const formatDate = (date: string | Date | number) => {
+  return new Intl.DateTimeFormat('pt-BR').format(new Date(date));
+};
