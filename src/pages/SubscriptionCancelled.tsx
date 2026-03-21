@@ -48,7 +48,7 @@ export default function SubscriptionCancelled() {
           <AppLogo size="lg" />
         </div>
 
-        <Card className="card-gradient border-0 shadow-lg overflow-hidden">
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 shadow-2xl shadow-primary/5 border-0 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-info/10 opacity-50 pointer-events-none" />
 
           <CardHeader className="relative text-center pb-4">

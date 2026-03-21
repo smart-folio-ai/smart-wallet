@@ -1,6 +1,6 @@
 export interface SubscriptionInterface {
   getPlans(): Promise<ISubscription[]>;
-  getCurrentPlan(): Promise<ICurrentUserSubscription>;
+  getCurrentPlan(): Promise<CurrentSubscriptionResponse>;
   upgradePlan(planId: string): Promise<IUpdateSubscription>;
   createCheckoutSession(
     planId: string,
