@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Check, Crown, ArrowRight, Download, Calendar} from 'lucide-react';
 import {
@@ -13,7 +13,7 @@ import {Badge} from '@/components/ui/badge';
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
 import {useQuery} from '@tanstack/react-query';
-import {ICurrentUserSubscription} from '@/interface/subscription';
+import {CurrentSubscriptionResponse} from '@/interface/subscription';
 import SubscriptionService from '@/services/subscription';
 
 interface SubscriptionDetails {
@@ -32,20 +32,23 @@ export default function SubscriptionSuccess() {
 
   const sessionId = searchParams.get('session_id');
 
-  const {data, isLoading} = useQuery<ICurrentUserSubscription>({
+  const {data, isLoading} = useQuery<CurrentSubscriptionResponse>({
     queryKey: ['current-subscription'],
     queryFn: SubscriptionService.getCurrentPlan,
   });
 
+  const plan = data?.plan || data?.subscription?.plan || null;
+  const currentSubscription = data?.subscription || null;
+
   const subscriptionDetails: SubscriptionDetails | null = data
     ? {
-        planName: data.subscription.name,
-        amount: data.subscription.price,
-        currency: data.subscription.currency,
-        interval: data.subscription.interval,
-        status: data.status,
-        nextBilling: data.currentPeriodEnd,
-        features: data.subscription.features,
+        planName: plan?.name || 'Plano',
+        amount: plan?.price || 0,
+        currency: plan?.currency || 'BRL',
+        interval: plan?.interval || 'month',
+        status: currentSubscription?.status || 'inactive',
+        nextBilling: currentSubscription?.currentPeriodEnd || '',
+        features: Array.isArray(plan?.features) ? plan.features : [],
       }
     : null;
 
@@ -57,6 +60,7 @@ export default function SubscriptionSuccess() {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('pt-BR', {
       year: 'numeric',
       month: 'long',

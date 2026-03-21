@@ -215,18 +215,23 @@ export default function Settings() {
       try {
         const res = await subscriptionService.getCurrentPlan();
         const data = res.data;
+        const plan = data?.plan || data?.subscription?.plan || null;
+        const currentSubscription = data?.subscription || data;
         return {
-          planId: data.planId || data._id || 'free',
-          planName: data.planName || data.name || 'Free',
-          status: data.status || 'active',
-          expiresAt: data.expiresAt || data.currentPeriodEnd,
-          features: data.features || [],
+          planId: plan?._id || data?.planId || data?._id || 'free',
+          planName: plan?.name || data?.planName || data?.name || 'Free',
+          status: currentSubscription?.status || 'inactive',
+          expiresAt:
+            currentSubscription?.currentPeriodEnd ||
+            data?.expiresAt ||
+            data?.currentPeriodEnd,
+          features: Array.isArray(plan?.features) ? plan.features : data?.features || [],
         };
       } catch {
         return {
           planId: 'free',
           planName: 'Free',
-          status: 'active',
+          status: 'inactive',
           features: [],
         };
       }
