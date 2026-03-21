@@ -14,6 +14,7 @@ import {fiscalService} from '@/server/api/api';
 import {
   ArrowDown,
   ArrowUp,
+  Brain,
   ChevronRight,
   CircleDollarSign,
   Star,
@@ -56,6 +57,15 @@ import {
 } from '@/components/ui/table';
 import {formatCurrency} from '@/utils';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
+import {PremiumBlur} from '@/components/ui/premium-blur';
+import {useSubscription} from '@/hooks/useSubscription';
+import {
+  buildAiCacheSignature,
+  deriveDashboardHighlights,
+  getAiPlanFromPlanName,
+  getOrCreateAiAnalysis,
+  isProOrHigherPlan,
+} from '@/services/ai/trakkerAi';
 import {
   Select,
   SelectContent,
@@ -145,6 +155,11 @@ const DIVIDEND_COLORS = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const {
+    planName,
+    isSubscribed,
+    isLoading: loadingSubscription,
+  } = useSubscription();
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
@@ -207,6 +222,34 @@ const Dashboard = () => {
     if (Array.isArray(portfolioPayload)) return portfolioPayload;
     return portfolioPayload.assets ?? [];
   }, [portfolioPayload]);
+
+  const hasProOrHigher = isProOrHigherPlan(planName, isSubscribed);
+  const aiPlan = getAiPlanFromPlanName(planName);
+  const aiSignature = useMemo(
+    () => buildAiCacheSignature(apiAssets),
+    [apiAssets],
+  );
+
+  const {data: dashboardAiAnalysis, isLoading: loadingDashboardAi} = useQuery({
+    queryKey: ['dashboard-ai-analysis', aiPlan, aiSignature],
+    enabled: hasProOrHigher && apiAssets.length > 0,
+    staleTime: 30 * 60 * 1000,
+    queryFn: async () =>
+      getOrCreateAiAnalysis({
+        rawAssets: apiAssets,
+        plan: aiPlan,
+      }),
+  });
+
+  const dashboardHighlights = useMemo(
+    () =>
+      deriveDashboardHighlights({
+        rawAssets: apiAssets,
+        summary,
+        analysis: dashboardAiAnalysis || null,
+      }).slice(0, 5),
+    [apiAssets, summary, dashboardAiAnalysis],
+  );
 
   useEffect(() => {
     if (loading) return;

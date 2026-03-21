@@ -90,13 +90,17 @@ export default function Subscriptions() {
     return rawPlans.map((plan) => {
       const planId = plan._id;
       const annualPrice = plan.price * 12 * 0.7;
+      const normalizedName = plan.name.toLowerCase().replace(/\s+/g, '');
+      const isGlobalInvestor =
+        normalizedName.includes('globalinvestor') ||
+        normalizedName.includes('investidorglobal');
 
       return {
         ...plan,
         id: planId,
         monthlyPrice: plan.price,
         annualPrice,
-        comingSoon: false,
+        comingSoon: isGlobalInvestor,
         badge: plan.name === 'Investidor Pro' ? 'Popular' : undefined,
         features: plan.features.map((name) => ({
           name,
@@ -110,6 +114,11 @@ export default function Subscriptions() {
     const plan = plans.find((p) => p._id === planId);
     if (!plan) {
       toast.error('Plano não encontrado');
+      return;
+    }
+
+    if (plan.comingSoon) {
+      toast.info('Plano GlobalInvestor em breve.');
       return;
     }
 

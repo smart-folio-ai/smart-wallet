@@ -28,6 +28,7 @@ import {
   UserCircle,
   LogOut,
   FileSpreadsheet,
+  MessageSquare,
 } from 'lucide-react';
 import {Link} from 'react-router-dom';
 
@@ -106,6 +107,14 @@ export function AppSidebar() {
                   <Link to="/ai-insights">
                     <Star className="h-5 w-5" />
                     <span>IA Insights</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/chat-inteligente">
+                    <MessageSquare className="h-5 w-5" />
+                    <span>Chat Inteligente</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

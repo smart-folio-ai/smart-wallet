@@ -130,6 +130,16 @@ export interface SimulationResponse {
   message: string;
 }
 
+export interface AiChatRequest {
+  question: string;
+  profile_plan?: 'free' | 'premium' | 'pro';
+  context?: Record<string, unknown>;
+}
+
+export interface AiChatResponse {
+  answer: string;
+}
+
 class AiAnalysisService {
   async analyze(payload: AiAnalysisPayload): Promise<AiAnalysisResult> {
     const response = await aiService.analyze(payload);
@@ -138,6 +148,11 @@ class AiAnalysisService {
 
   async simulate(payload: SimulationRequest): Promise<SimulationResponse> {
     const response = await aiService.simulate(payload);
+    return response.data;
+  }
+
+  async chat(payload: AiChatRequest): Promise<AiChatResponse> {
+    const response = await aiService.chat(payload);
     return response.data;
   }
 }

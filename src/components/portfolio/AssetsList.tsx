@@ -93,9 +93,9 @@ export const AssetsList = ({
     if (!recommendation) return '';
     
     switch(recommendation) {
-      case 'buy': return 'bg-success/20 text-success';
-      case 'sell': return 'bg-destructive/20 text-destructive';
-      case 'hold': return 'bg-yellow-500/20 text-yellow-500';
+      case 'buy': return 'h-7 px-3 rounded-full border-0 bg-emerald-900/35 text-emerald-400 font-semibold';
+      case 'sell': return 'h-7 px-3 rounded-full border-0 bg-rose-900/35 text-rose-400 font-semibold';
+      case 'hold': return 'h-7 px-3 rounded-full border-0 bg-amber-900/35 text-amber-400 font-semibold';
       default: return '';
     }
   };
