@@ -7,7 +7,6 @@ import Profile from '@/services/profile';
 import {PlanCard} from '@/components/plans/PlanCard';
 import {
   CurrentSubscriptionResponse,
-  ICurrentUserSubscription,
   ISubscription,
 } from '@/interface/subscription';
 import {Calendar, CircleDollarSign, Star} from 'lucide-react';
@@ -73,16 +72,12 @@ export default function Subscriptions() {
     return SubscriptionService.getCurrentPlan();
   };
 
-  const {data: currentSubscription} = useQuery<ICurrentUserSubscription>({
+  const {data: currentSubscription} = useQuery<CurrentSubscriptionResponse>({
     queryKey: ['current-subscription'],
     queryFn: fetchCurrentSubscription,
   });
 
-  const currentPlanId = 
-    currentSubscription?.plan?._id || 
-    (currentSubscription as any)?.planId || 
-    (currentSubscription as any)?.plan?._id || 
-    null;
+  const currentPlanId = currentSubscription?.plan?._id || null;
 
   const {data: rawPlans, isLoading} = useQuery<ISubscription[]>({
     queryKey: ['plans'],

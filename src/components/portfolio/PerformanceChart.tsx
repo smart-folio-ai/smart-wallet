@@ -39,28 +39,33 @@ export const PerformanceChart = ({
     // If no portfolio history is available from the backend, show empty initially
     let aggregatedData = portfolioHistory.map((item) => ({
       date: item.date,
-      price: item.totalValue
+      price: item.totalValue,
     }));
 
     if (aggregatedData.length === 0) {
       // 1. fallback to calculating from current assets value if no history exists yet
       // This displays just today's value as a data point
       const filteredAssets = assets.filter(
-        (asset) => activeTab === 'all' || asset.type === activeTab
+        (asset) => activeTab === 'all' || asset.type === activeTab,
       );
-      const totalValue = filteredAssets.reduce((sum, asset) => sum + asset.value, 0);
+      const totalValue = filteredAssets.reduce(
+        (sum, asset) => sum + asset.value,
+        0,
+      );
       const today = new Date().toISOString().split('T')[0];
-      aggregatedData = [{ date: today, price: totalValue }];
+      aggregatedData = [{date: today, price: totalValue}];
     } else {
-       // Filter total value based on activeTab (history is usually for the whole portfolio, not per asset)
-       // Since the backend only records the total portfolio value per day,
-       // filtering history by 'stock' or 'crypto' would require recording history PER ASSET.
-       // For now, if activeTab !== 'all', the chart might just show the whole portfolio history or we can hide it.
-       // Assuming portfolioHistory already contains the total values. We'll just display it.
+      // Filter total value based on activeTab (history is usually for the whole portfolio, not per asset)
+      // Since the backend only records the total portfolio value per day,
+      // filtering history by 'stock' or 'crypto' would require recording history PER ASSET.
+      // For now, if activeTab !== 'all', the chart might just show the whole portfolio history or we can hide it.
+      // Assuming portfolioHistory already contains the total values. We'll just display it.
     }
 
     // 3. Sort by date
-    aggregatedData = aggregatedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    aggregatedData = aggregatedData.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
 
     // 4. Filter by period
     if (aggregatedData.length > 0) {
@@ -95,15 +100,15 @@ export const PerformanceChart = ({
         case 'YTD':
           {
             const lastDate = new Date(
-              aggregatedData[aggregatedData.length - 1].date
+              aggregatedData[aggregatedData.length - 1].date,
             );
             const startOfYear = new Date(lastDate.getFullYear(), 0, 1);
             daysToKeep = Math.max(
               2,
               Math.ceil(
                 (lastDate.getTime() - startOfYear.getTime()) /
-                  (1000 * 3600 * 24)
-              )
+                  (1000 * 3600 * 24),
+              ),
             );
           }
           break;
@@ -114,7 +119,9 @@ export const PerformanceChart = ({
       }
 
       if (daysToKeep < aggregatedData.length) {
-        aggregatedData = aggregatedData.slice(aggregatedData.length - daysToKeep);
+        aggregatedData = aggregatedData.slice(
+          aggregatedData.length - daysToKeep,
+        );
       }
     }
 
@@ -122,32 +129,28 @@ export const PerformanceChart = ({
   };
 
   return (
-    <Card className="mb-8 overflow-hidden border-slate-800 bg-[#020f2a]">
+    <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <CardTitle className="text-slate-100">Desempenho</CardTitle>
-            <CardDescription className="text-slate-400">
-              Evolução do valor por período
-            </CardDescription>
+            <CardTitle>Cotação</CardTitle>
+            <CardDescription>Evolução do valor por período</CardDescription>
           </div>
-          <div className="flex space-x-1 rounded-xl bg-slate-700/40 p-1">
-            {['7D', '1MO', '3MO', '6MO', '1Y', '5Y', 'MAX'].map(
-              (period) => (
-                <Button
-                  key={period}
-                  variant={selectedPeriod === period ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setSelectedPeriod(period)}
-                  className={`h-7 rounded-lg px-3 text-[11px] font-semibold ${
-                    selectedPeriod === period
-                      ? 'bg-emerald-500 text-black hover:bg-emerald-400'
-                      : 'text-slate-200 hover:bg-slate-700/70 hover:text-white'
-                  }`}>
-                  {period}
-                </Button>
-              )
-            )}
+          <div className="flex space-x-1 bg-secondary/30 p-1 rounded-full">
+            {['1S', '1M', '3M', '6M', 'YTD', '1A', 'MAX'].map((period) => (
+              <Button
+                key={period}
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedPeriod(period)}
+                className={`text-xs h-8 rounded-full px-4 font-bold transition-all ${
+                  selectedPeriod === period
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}>
+                {period === '1S' ? '7D' : period}
+              </Button>
+            ))}
           </div>
         </div>
       </CardHeader>
@@ -159,7 +162,7 @@ export const PerformanceChart = ({
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={getChartData()}
-                margin={{top: 12, right: 10, left: 10, bottom: 0}}>
+                margin={{top: 10, right: 0, left: 0, bottom: 0}}>
                 <defs>
                   <linearGradient
                     id="colorPerformance"
@@ -167,44 +170,43 @@ export const PerformanceChart = ({
                     y1="0"
                     x2="0"
                     y2="1">
-                    <stop offset="5%" stopColor="#ff3b73" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#ff3b73" stopOpacity={0.02} />
+                    <stop
+                      offset="5%"
+                      stopColor={
+                        getChartData().length >= 2 &&
+                        getChartData()[getChartData().length - 1].price >=
+                          getChartData()[0].price
+                          ? '#10b981'
+                          : '#f43f5e'
+                      }
+                      stopOpacity={0.1}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={
+                        getChartData().length >= 2 &&
+                        getChartData()[getChartData().length - 1].price >=
+                          getChartData()[0].price
+                          ? '#10b981'
+                          : '#f43f5e'
+                      }
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
-                  strokeDasharray="3 5"
-                  stroke="rgba(148, 163, 184, 0.25)"
+                  strokeDasharray="3 3"
                   vertical={false}
+                  stroke="hsl(var(--muted-foreground)/0.15)"
                 />
-                <XAxis
-                  dataKey="date"
-                  tick={{fontSize: 11, fill: '#94a3b8'}}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={32}
-                  tickFormatter={(value) => {
-                    const date = new Date(value);
-                    return date.toLocaleDateString('pt-BR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: '2-digit',
-                    });
-                  }}
-                />
-                <YAxis
-                  tick={{fontSize: 11, fill: '#94a3b8'}}
-                  tickFormatter={(value) =>
-                    `R$${Number(value).toLocaleString('pt-BR', {
-                      maximumFractionDigits: 0,
-                    })}`
-                  }
-                  domain={['auto', 'auto']}
-                  axisLine={false}
-                  tickLine={false}
-                  width={70}
-                />
+                <XAxis dataKey="date" hide />
+                <YAxis hide domain={['auto', 'auto']} />
                 <Tooltip
-                  cursor={{stroke: 'rgba(226, 232, 240, 0.6)', strokeWidth: 1}}
+                  cursor={{
+                    stroke: 'hsl(var(--muted-foreground)/0.2)',
+                    strokeWidth: 1,
+                    strokeDasharray: '3 3',
+                  }}
                   content={
                     <CustomTooltip
                       formatter={(value) => [
@@ -225,17 +227,16 @@ export const PerformanceChart = ({
                 <Area
                   type="monotone"
                   dataKey="price"
-                  stroke="#ff3b73"
-                  strokeWidth={3}
+                  stroke={
+                    getChartData().length >= 2 &&
+                    getChartData()[getChartData().length - 1].price >=
+                      getChartData()[0].price
+                      ? '#10b981'
+                      : '#f43f5e'
+                  }
+                  strokeWidth={4}
                   fillOpacity={1}
-                  fill="url(#colorPerformance)"
-                  dot={false}
-                  activeDot={{
-                    r: 5,
-                    fill: '#ff3b73',
-                    stroke: '#ffffff',
-                    strokeWidth: 2,
-                  }}
+                  fill="none"
                 />
               </AreaChart>
             </ResponsiveContainer>

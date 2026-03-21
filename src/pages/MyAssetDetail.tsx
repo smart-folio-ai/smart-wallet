@@ -289,7 +289,7 @@ const MyAssetDetail = () => {
           {/* Overview */}
           <TabsContent value="overview">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="card-gradient">
+              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-lg">Posição na Carteira</CardTitle>
                   <CardDescription>Métricas pessoais do investidor</CardDescription>
@@ -311,7 +311,7 @@ const MyAssetDetail = () => {
                 </CardContent>
               </Card>
 
-              <Card className="card-gradient">
+              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-lg">Resultado</CardTitle>
                   <CardDescription>Performance do investimento</CardDescription>
@@ -369,7 +369,7 @@ const MyAssetDetail = () => {
 
           {/* Movements */}
           <TabsContent value="movements">
-            <Card className="card-gradient">
+            <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Receipt className="h-5 w-5" />
@@ -436,7 +436,7 @@ const MyAssetDetail = () => {
           {/* Charts */}
           <TabsContent value="charts">
             <div className="grid grid-cols-1 gap-6">
-              <Card className="card-gradient">
+              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-lg">Saldo Bruto vs Valor Investido</CardTitle>
                   <CardDescription>Evolução ao longo do tempo</CardDescription>
@@ -497,7 +497,7 @@ const MyAssetDetail = () => {
                 </CardContent>
               </Card>
 
-              <Card className="card-gradient">
+              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-lg">Evolução da Quantidade</CardTitle>
                   <CardDescription>
