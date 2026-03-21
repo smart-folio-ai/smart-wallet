@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Check, Crown, ArrowRight, Download, Calendar} from 'lucide-react';
 import {
@@ -13,7 +13,7 @@ import {Badge} from '@/components/ui/badge';
 import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
 import {useQuery} from '@tanstack/react-query';
-import {ICurrentUserSubscription} from '@/interface/subscription';
+import {CurrentSubscriptionResponse} from '@/interface/subscription';
 import SubscriptionService from '@/services/subscription';
 
 interface SubscriptionDetails {
@@ -32,20 +32,23 @@ export default function SubscriptionSuccess() {
 
   const sessionId = searchParams.get('session_id');
 
-  const {data, isLoading} = useQuery<ICurrentUserSubscription>({
+  const {data, isLoading} = useQuery<CurrentSubscriptionResponse>({
     queryKey: ['current-subscription'],
     queryFn: SubscriptionService.getCurrentPlan,
   });
 
-  const subscriptionDetails: SubscriptionDetails | null = data
+  const subscriptionData = data?.subscription;
+  const planData = data?.plan;
+
+  const subscriptionDetails: SubscriptionDetails | null = planData
     ? {
-        planName: data.subscription.name,
-        amount: data.subscription.price,
-        currency: data.subscription.currency,
-        interval: data.subscription.interval,
-        status: data.status,
-        nextBilling: data.currentPeriodEnd,
-        features: data.subscription.features,
+        planName: planData.name,
+        amount: planData.price,
+        currency: planData.currency,
+        interval: planData.interval,
+        status: subscriptionData?.status || 'inactive',
+        nextBilling: subscriptionData?.currentPeriodEnd || '',
+        features: planData.features || [],
       }
     : null;
 
@@ -57,6 +60,7 @@ export default function SubscriptionSuccess() {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('pt-BR', {
       year: 'numeric',
       month: 'long',
@@ -79,7 +83,7 @@ export default function SubscriptionSuccess() {
           <AppLogo size="lg" />
         </div>
 
-        <Card className="card-gradient border-0 shadow-lg overflow-hidden">
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 shadow-2xl shadow-primary/5 border-0 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-info/10 opacity-50 pointer-events-none" />
 
           <CardHeader className="relative text-center pb-4">

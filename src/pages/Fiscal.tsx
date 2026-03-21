@@ -34,11 +34,18 @@ export default function Fiscal() {
   const [quantity, setQuantity] = useState(100);
   const [sellPrice, setSellPrice] = useState(50);
 
-  const {data: summary, isLoading: loadingSummary, refetch} = useQuery({
+  const {
+    data: summary,
+    isLoading: loadingSummary,
+    refetch,
+  } = useQuery({
     queryKey: ['fiscal-summary', year],
     queryFn: async () =>
-      (await fiscalService.getSummary(typeof year === 'number' ? year : undefined))
-        .data,
+      (
+        await fiscalService.getSummary(
+          typeof year === 'number' ? year : undefined,
+        )
+      ).data,
   });
 
   useEffect(() => {
@@ -57,8 +64,11 @@ export default function Fiscal() {
     useQuery<FiscalOptimizerResponse>({
       queryKey: ['fiscal-optimizer', year],
       queryFn: async () =>
-        (await fiscalService.getOptimizer(typeof year === 'number' ? year : undefined))
-          .data,
+        (
+          await fiscalService.getOptimizer(
+            typeof year === 'number' ? year : undefined,
+          )
+        ).data,
     });
 
   const previewMutation = useMutation({
@@ -146,7 +156,7 @@ export default function Fiscal() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm">
           <CardHeader>
             <CardTitle className="text-sm">Lucro/Prejuízo Ações</CardTitle>
           </CardHeader>
@@ -158,7 +168,7 @@ export default function Fiscal() {
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm">
           <CardHeader>
             <CardTitle className="text-sm">Lucro/Prejuízo FIIs</CardTitle>
           </CardHeader>
@@ -170,7 +180,7 @@ export default function Fiscal() {
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm">
           <CardHeader>
             <CardTitle className="text-sm">Lucro/Prejuízo Cripto</CardTitle>
           </CardHeader>
@@ -182,7 +192,7 @@ export default function Fiscal() {
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm">
           <CardHeader>
             <CardTitle className="text-sm">Imposto Estimado</CardTitle>
           </CardHeader>
@@ -197,7 +207,7 @@ export default function Fiscal() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
           <CardHeader>
             <CardTitle>Simular Venda</CardTitle>
           </CardHeader>
@@ -257,7 +267,10 @@ export default function Fiscal() {
                 <p className="text-lg">
                   Impacto na carteira:{' '}
                   <strong className="text-primary">
-                    {(previewMutation.data.portfolioImpactPercent || 0).toFixed(2)}%
+                    {(previewMutation.data.portfolioImpactPercent || 0).toFixed(
+                      2,
+                    )}
+                    %
                   </strong>{' '}
                   {previewMutation.data.sector
                     ? `• setor ${previewMutation.data.sector}`
@@ -267,11 +280,15 @@ export default function Fiscal() {
                   <p className="text-muted-foreground">
                     Vendas no mês (ações):{' '}
                     <strong>
-                      {formatCurrency(previewMutation.data.stockSalesMonth || 0)}
+                      {formatCurrency(
+                        previewMutation.data.stockSalesMonth || 0,
+                      )}
                     </strong>{' '}
                     / limite de isenção{' '}
                     <strong>
-                      {formatCurrency(previewMutation.data.stockExemptionLimit || 20000)}
+                      {formatCurrency(
+                        previewMutation.data.stockExemptionLimit || 20000,
+                      )}
                     </strong>
                   </p>
                 )}
@@ -286,8 +303,8 @@ export default function Fiscal() {
                   ) : (
                     <p>
                       Você possui{' '}
-                      <strong>{formatCurrency(accumulatedLossTotal)}</strong>{' '}
-                      de prejuízo acumulado.
+                      <strong>{formatCurrency(accumulatedLossTotal)}</strong> de
+                      prejuízo acumulado.
                     </p>
                   )}
                   {canHighlightZeroTaxByLossOffset ? (
@@ -312,7 +329,10 @@ export default function Fiscal() {
                     firstOpportunity.potentialGain > 0 ? (
                       <p className="text-sm">
                         Realizar prejuízo de{' '}
-                        <strong>{formatCurrency(firstOpportunity.potentialGain)}</strong>.
+                        <strong>
+                          {formatCurrency(firstOpportunity.potentialGain)}
+                        </strong>
+                        .
                       </p>
                     ) : null}
                     <p className="text-sm text-muted-foreground">
@@ -320,10 +340,15 @@ export default function Fiscal() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Imposto sem compensação:{' '}
-                      {formatCurrency(firstOpportunity.estimatedTaxWithoutOffset || 0)}{' '}
+                      {formatCurrency(
+                        firstOpportunity.estimatedTaxWithoutOffset || 0,
+                      )}{' '}
                       | com compensação:{' '}
-                      {formatCurrency(firstOpportunity.estimatedTaxWithOffset || 0)}{' '}
-                      | economia: {formatCurrency(firstOpportunity.taxSaved || 0)}
+                      {formatCurrency(
+                        firstOpportunity.estimatedTaxWithOffset || 0,
+                      )}{' '}
+                      | economia:{' '}
+                      {formatCurrency(firstOpportunity.taxSaved || 0)}
                     </p>
                     {firstOpportunity.headline ? (
                       <p className="text-xs text-muted-foreground">
@@ -337,7 +362,7 @@ export default function Fiscal() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
           <CardHeader>
             <CardTitle>Status de Importações</CardTitle>
           </CardHeader>
@@ -382,7 +407,7 @@ export default function Fiscal() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader>
           <CardTitle>Guia Mastigado IR</CardTitle>
         </CardHeader>
@@ -393,7 +418,7 @@ export default function Fiscal() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader>
           <CardTitle>Relatórios em PDF</CardTitle>
         </CardHeader>
@@ -405,7 +430,9 @@ export default function Fiscal() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => downloadReport('transactions', 'Relatório de Transações')}>
+            onClick={() =>
+              downloadReport('transactions', 'Relatório de Transações')
+            }>
             Baixar Transações (PDF)
           </Button>
           <Button

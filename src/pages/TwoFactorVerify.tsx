@@ -82,7 +82,7 @@ export default function TwoFactorVerify() {
           </p>
         </div>
 
-        <Card className="card-gradient border-primary/20">
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 shadow-2xl shadow-primary/5 border-primary/20 overflow-hidden">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-base">Código de verificação</CardTitle>
             <CardDescription>

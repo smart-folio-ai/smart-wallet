@@ -1,6 +1,6 @@
 import {
   ICreateSubscription,
-  ICurrentUserSubscription,
+  CurrentSubscriptionResponse,
   ISubscription,
   IUpdateSubscription,
   IUpdateSubscriptionFeature,
@@ -19,7 +19,7 @@ class SubscriptionService implements SubscriptionInterface {
     return response.data;
   }
 
-  async getCurrentPlan(): Promise<ICurrentUserSubscription> {
+  async getCurrentPlan(): Promise<CurrentSubscriptionResponse> {
     const response = await subscriptionService.getCurrentPlan();
     return response.data;
   }

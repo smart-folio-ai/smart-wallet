@@ -162,6 +162,80 @@ export default function AssetDetail() {
   const upside = asset && grahamValue > 0 ? ((grahamValue / asset.price) - 1) * 100 : 0;
   const isUndervalued = asset && grahamValue > asset.price;
 
+  const currentYear = new Date().getFullYear();
+  const cashflowYears = [currentYear, currentYear - 1, currentYear - 2];
+
+  const getNumericValue = (source: any, keys: string[]): number | null => {
+    for (const key of keys) {
+      const value = key.split('.').reduce<any>((acc, part) => (acc ? acc[part] : undefined), source);
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+    }
+    return null;
+  };
+
+  const cashflowRows = [
+    {
+      label: 'CAIXA LÍQUIDO ATIVIDADES OPERACIONAIS',
+      values: {
+        [currentYear]: getNumericValue(s, ['operatingCashflow', 'financialData.operatingCashflow']),
+        [currentYear - 1]: null,
+        [currentYear - 2]: null,
+      },
+    },
+    {
+      label: 'CAIXA GERADO NAS OPERAÇÕES',
+      values: {
+        [currentYear]: getNumericValue(s, ['operatingCashflow', 'financialData.operatingCashflow']),
+        [currentYear - 1]: null,
+        [currentYear - 2]: null,
+      },
+    },
+    {
+      label: 'LUCRO LÍQUIDO',
+      values: {
+        [currentYear]: getNumericValue(s, ['netIncomeToCommon', 'financialData.netIncome']),
+        [currentYear - 1]: null,
+        [currentYear - 2]: null,
+      },
+    },
+    {
+      label: 'DEPRECIAÇÃO/AMORTIZAÇÃO',
+      values: {
+        [currentYear]: getNumericValue(s, ['depreciation', 'depreciationAndAmortization']),
+        [currentYear - 1]: null,
+        [currentYear - 2]: null,
+      },
+    },
+    {
+      label: 'CAIXA LÍQUIDO ATIVIDADES INVESTIMENTO',
+      values: {
+        [currentYear]: getNumericValue(s, ['investingCashflow', 'cashflowFromInvestment', 'capitalExpenditures']),
+        [currentYear - 1]: null,
+        [currentYear - 2]: null,
+      },
+    },
+    {
+      label: 'CAIXA LÍQUIDO ATIVIDADES FINANCIAMENTO',
+      values: {
+        [currentYear]: getNumericValue(s, ['financingCashflow', 'cashflowFromFinancing']),
+        [currentYear - 1]: null,
+        [currentYear - 2]: null,
+      },
+    },
+    {
+      label: 'FLUXO DE CAIXA LIVRE',
+      values: {
+        [currentYear]: getNumericValue(s, ['freeCashflow', 'financialData.freeCashflow']),
+        [currentYear - 1]: null,
+        [currentYear - 2]: null,
+      },
+    },
+  ];
+
+  const hasAnyCashflowData = cashflowRows.some((row) =>
+    cashflowYears.some((year) => row.values[year as keyof typeof row.values] !== null)
+  );
+
   const GrahamGauge = ({ price, fairValue }: { price: number; fairValue: number }) => {
     const safeFairValue = fairValue > 0 ? fairValue : price > 0 ? price : 1;
     const ratio = Math.max(0.5, Math.min(1.5, price / safeFairValue));
@@ -705,36 +779,42 @@ export default function AssetDetail() {
                <Card className="border-none shadow-sm bg-white dark:bg-card overflow-x-auto">
                  <CardHeader>
                     <CardTitle className="text-xl font-black uppercase tracking-wider text-primary">Demonstrativo de Fluxo de Caixa</CardTitle>
+                    <CardDescription>
+                      Dados reais do ano mais recente da API. Quando não houver histórico disponível, exibimos "—" em vez de R$ 0,00.
+                    </CardDescription>
                  </CardHeader>
                  <CardContent>
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="bg-muted/50">
                           <th className="text-left py-3 px-4 rounded-tl-xl font-black uppercase text-[10px] tracking-widest text-muted-foreground">Categoria</th>
-                          {[2024, 2023, 2022].map(y => (
+                          {cashflowYears.map((y) => (
                              <th key={y} className="text-right py-3 px-4 font-black text-[10px] tracking-widest text-muted-foreground">VALOR {y}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/20">
-                        {[
-                          'CAIXA LÍQUIDO ATIVIDADES OPERACIONAIS',
-                          'CAIXA GERADO NAS OPERAÇÕES',
-                          'LUCRO LÍQUIDO',
-                          'DEPRECIAÇÃO/AMORTIZAÇÃO',
-                          'CAIXA LÍQUIDO ATIVIDADES INVESTIMENTO',
-                          'CAIXA LÍQUIDO ATIVIDADES FINANCIAMENTO',
-                          'FLUXO DE CAIXA LIVRE'
-                        ].map((cat) => (
-                          <tr key={cat} className="hover:bg-muted/20 transition-colors">
-                            <td className="py-4 px-4 font-bold text-muted-foreground">{cat}</td>
-                            {[1, 2, 3].map(v => (
-                               <td key={v} className="py-4 px-4 text-right font-black">R$ 0,00</td>
-                            ))}
+                        {cashflowRows.map((row) => (
+                          <tr key={row.label} className="hover:bg-muted/20 transition-colors">
+                            <td className="py-4 px-4 font-bold text-muted-foreground">{row.label}</td>
+                            {cashflowYears.map((year) => {
+                              const value = row.values[year as keyof typeof row.values];
+                              return (
+                                <td key={year} className="py-4 px-4 text-right font-black">
+                                  {typeof value === 'number' ? formatCurrency(value) : '—'}
+                                </td>
+                              );
+                            })}
                           </tr>
                         ))}
                       </tbody>
                     </table>
+
+                    {!hasAnyCashflowData && (
+                      <p className="mt-4 text-xs text-muted-foreground">
+                        Ainda não recebemos dados de fluxo de caixa para este ativo nas fontes atuais (brapi/fallback).
+                      </p>
+                    )}
                  </CardContent>
                </Card>
             </TabsContent>

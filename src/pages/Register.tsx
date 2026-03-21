@@ -119,7 +119,7 @@ export default function Register() {
           <div className="max-w-lg text-center space-y-6">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 via-teal-500 to-green-600 blur-3xl opacity-50 animate-pulse" />
-              <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
+              <div className="relative bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
                 <svg
                   className="w-48 h-48 mx-auto"
                   viewBox="0 0 200 200"

@@ -218,7 +218,7 @@ const AssetSearch = () => {
 
   const AssetCard = ({asset}: {asset: Asset}) => (
     <Card
-      className="card-gradient hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-primary/50"
+      className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 overflow-hidden"
       onClick={() => handleAssetClick(asset.stock)}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
@@ -299,7 +299,7 @@ const AssetSearch = () => {
 
         {/* Search Card + dropdown wrapper — relative here so dropdown overlaps everything below */}
         <div className="relative mb-6">
-          <Card className="card-gradient">
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
             <CardHeader>
               <CardTitle>Pesquisar Ativo</CardTitle>
               <CardDescription>
@@ -386,7 +386,7 @@ const AssetSearch = () => {
           {/* ↑ end of relative mb-6 wrapper */}
         </div>
 
-        <Card className="card-gradient">
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
           <CardHeader>
             <CardTitle>Explorar Ativos</CardTitle>
             <CardDescription>
@@ -412,7 +412,7 @@ const AssetSearch = () => {
                   {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {Array.from({length: 9}).map((_, i) => (
-                        <Card key={i} className="card-gradient">
+                        <Card key={i} className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
                           <CardContent className="p-6">
                             <div className="flex items-center gap-3 mb-4">
                               <Skeleton className="w-10 h-10 rounded-full" />

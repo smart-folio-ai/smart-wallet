@@ -80,7 +80,13 @@ const AIInsights: React.FC = () => {
           ? rawData.assets
           : [];
 
-      const tValue = assets.reduce((sum: number, a: any) => sum + (a.value || a.current_price * a.quantity || 0), 0);
+      // Usa 'premium' por padrão para sempre acionar a análise com IA
+      const plan = (localStorage.getItem('user_plan') as any) || 'premium';
+      const tValue = assets.reduce(
+        (sum: number, a: any) =>
+          sum + (a.value || a.current_price * a.quantity || 0),
+        0,
+      );
       setTotalValue(tValue);
 
       const result = await getOrCreateAiAnalysis({
@@ -170,7 +176,7 @@ const AIInsights: React.FC = () => {
             aiData?.smart_feed?.map((item, i) => (
               <div
                 key={i}
-                className="flex items-center gap-4 p-4 rounded-3xl bg-card border border-primary/5 hover:border-primary/20 transition-all group cursor-pointer overflow-hidden relative">
+                className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-primary/5 hover:border-primary/20 transition-all group cursor-pointer overflow-hidden relative">
                 <div
                   className={cn(
                     'h-12 w-12 rounded-2xl flex items-center justify-center shrink-0',
@@ -194,7 +200,7 @@ const AIInsights: React.FC = () => {
               </div>
             ))
           ) : (
-            <div className="md:col-span-3 p-4 rounded-3xl bg-card/50 border border-dashed border-primary/20 text-center text-sm text-muted-foreground">
+            <div className="md:col-span-3 p-4 rounded-2xl bg-card/50 border border-dashed border-primary/20 text-center text-sm text-muted-foreground">
               Seu Feed Inteligente será gerado na próxima análise.
             </div>
           )}
@@ -206,7 +212,7 @@ const AIInsights: React.FC = () => {
         <div className="xl:col-span-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Investment Score Gauge */}
-            <Card className="rounded-[2.5rem] bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5">
+            <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5">
               <CardContent className="p-8 flex flex-col items-center justify-center text-center space-y-6">
                 <div className="relative">
                   <svg className="h-48 w-48 -rotate-90">
@@ -259,9 +265,9 @@ const AIInsights: React.FC = () => {
             </Card>
 
             {/* Assessment Text */}
-            <Card className="rounded-[2.5rem] bg-card border-none shadow-none flex flex-col justify-center">
+            <Card className="rounded-2xl bg-card border-none shadow-none flex flex-col justify-center">
               <CardContent className="p-0">
-                <div className="p-6 bg-primary/5 rounded-3xl mb-4 border border-primary/10">
+                <div className="p-6 bg-primary/5 rounded-2xl mb-4 border border-primary/10">
                   <h4 className="flex items-center gap-2 text-sm font-bold mb-3">
                     <Activity className="h-4 w-4 text-primary" /> Opinião
                     Trakker
@@ -294,44 +300,46 @@ const AIInsights: React.FC = () => {
               <Shuffle className="h-5 w-5 text-primary" /> Auto Rebalanceamento
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="rounded-3xl border-primary/5 bg-card/40">
+              <Card className="rounded-2xl border-primary/5 bg-card/40">
                 <CardContent className="p-6 space-y-4">
                   <h4 className="text-sm font-bold text-muted-foreground uppercase">
                     Proposta de Alocação Ideal
                   </h4>
                   <div className="space-y-4">
-                    {(aiData?.rebalancing?.ideal_allocation || []).map((item, i) => (
-                      <div key={i} className="space-y-1.5">
-                        <div className="flex justify-between text-xs font-bold">
-                          <span>{item.category}</span>
-                          <div className="space-x-2">
-                            <span className="text-muted-foreground line-through decoration-primary/30">
-                              {item.current.toFixed(1)}%
-                            </span>
-                            <span className="text-primary">
-                              {item.ideal.toFixed(1)}%
-                            </span>
+                    {(aiData?.rebalancing?.ideal_allocation || []).map(
+                      (item, i) => (
+                        <div key={i} className="space-y-1.5">
+                          <div className="flex justify-between text-xs font-bold">
+                            <span>{item.category}</span>
+                            <div className="space-x-2">
+                              <span className="text-muted-foreground line-through decoration-primary/30">
+                                {item.current.toFixed(1)}%
+                              </span>
+                              <span className="text-primary">
+                                {item.ideal.toFixed(1)}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="h-1.5 w-full bg-muted/20 rounded-full overflow-hidden flex">
+                            <div
+                              style={{width: `${item.current}%`}}
+                              className="bg-muted-foreground/30 h-full"
+                            />
+                            <div
+                              style={{
+                                width: `${Math.max(0, item.ideal - item.current)}%`,
+                              }}
+                              className="bg-primary h-full opacity-50"
+                            />
                           </div>
                         </div>
-                        <div className="h-1.5 w-full bg-muted/20 rounded-full overflow-hidden flex">
-                          <div
-                            style={{width: `${item.current}%`}}
-                            className="bg-muted-foreground/30 h-full"
-                          />
-                          <div
-                            style={{
-                              width: `${Math.max(0, item.ideal - item.current)}%`,
-                            }}
-                            className="bg-primary h-full opacity-50"
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      ),
+                    )}
                   </div>
                 </CardContent>
               </Card>
               <div className="space-y-4">
-                <div className="bg-primary/5 rounded-3xl p-6 border border-primary/10">
+                <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10">
                   <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-primary" /> Movimentações
                     Sugeridas
@@ -361,7 +369,7 @@ const AIInsights: React.FC = () => {
                 <div
                   key={i}
                   className={cn(
-                    'p-5 rounded-3xl border transition-all',
+                    'p-5 rounded-2xl border transition-all',
                     err.severity === 'high'
                       ? 'bg-rose-500/5 border-rose-500/20 shadow-lg shadow-rose-500/5'
                       : 'bg-amber-500/5 border-amber-500/20',
@@ -393,7 +401,7 @@ const AIInsights: React.FC = () => {
           </section>
 
           {/* Future Simulation UI */}
-          <Card className="rounded-[2.5rem] bg-card border-primary/5 overflow-hidden">
+          <Card className="rounded-2xl bg-card border-primary/5 overflow-hidden">
             <CardHeader className="p-8 pb-0">
               <CardTitle className="text-2xl font-black">
                 Simulador de Futuro
@@ -502,7 +510,7 @@ const AIInsights: React.FC = () => {
               {(aiData?.opportunity_radar || []).map((opp, i) => (
                 <div
                   key={i}
-                  className="group p-5 rounded-3xl bg-card border border-primary/5 hover:border-primary/30 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-primary/5">
+                  className="group p-5 rounded-2xl bg-card border border-primary/5 hover:border-primary/30 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-primary/5">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <span className="block font-black text-xl group-hover:text-primary transition-colors">
@@ -564,7 +572,7 @@ const BadgePremium = () => (
 );
 
 const UpgradeBanner = () => (
-  <Card className="rounded-[2.5rem] bg-gradient-to-br from-indigo-600 to-blue-700 text-white border-none relative overflow-hidden shadow-2xl shadow-indigo-500/20">
+  <Card className="rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white border-none relative overflow-hidden shadow-2xl shadow-indigo-500/20">
     <CardContent className="p-8 space-y-6 relative z-10">
       <div className="h-12 w-12 rounded-2xl bg-white/20 flex items-center justify-center">
         <Zap className="h-6 w-6 fill-white" />

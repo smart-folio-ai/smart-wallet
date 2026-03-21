@@ -20,7 +20,7 @@ export const PortfolioSummaryCards = ({
 }: PortfolioSummaryCardsProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <Card className="card-gradient">
+      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Valor Total</CardTitle>
         </CardHeader>
@@ -40,7 +40,7 @@ export const PortfolioSummaryCards = ({
         </CardContent>
       </Card>
 
-      <Card className="card-gradient">
+      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Rentabilidade</CardTitle>
         </CardHeader>
@@ -93,7 +93,7 @@ export const PortfolioSummaryCards = ({
         </CardContent>
       </Card>
 
-      <Card className="card-gradient">
+      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Dividendos</CardTitle>
         </CardHeader>

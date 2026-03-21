@@ -1,14 +1,23 @@
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {portfolioService} from '@/server/api/api';
-import {Card, CardContent, CardHeader, CardTitle, CardDescription} from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Skeleton} from '@/components/ui/skeleton';
 import {MessageSquare, Send} from 'lucide-react';
 import {useSubscription} from '@/hooks/useSubscription';
 import {PremiumBlur} from '@/components/ui/premium-blur';
-import {answerPortfolioQuestion, isProOrHigherPlan} from '@/services/ai/trakkerAi';
+import {
+  answerPortfolioQuestion,
+  isProOrHigherPlan,
+} from '@/services/ai/trakkerAi';
 
 type ChatMessage = {
   role: 'user' | 'assistant';
@@ -16,7 +25,11 @@ type ChatMessage = {
 };
 
 export default function ChatInteligente() {
-  const {planName, isSubscribed, isLoading: loadingSubscription} = useSubscription();
+  const {
+    planName,
+    isSubscribed,
+    isLoading: loadingSubscription,
+  } = useSubscription();
   const hasProOrHigher = isProOrHigherPlan(planName, isSubscribed);
   const [question, setQuestion] = useState('');
   const [sending, setSending] = useState(false);
@@ -132,7 +145,9 @@ export default function ChatInteligente() {
                 }}
                 placeholder="Pergunte qualquer coisa sobre sua carteira..."
               />
-              <Button onClick={sendQuestion} disabled={sending || !question.trim()}>
+              <Button
+                onClick={sendQuestion}
+                disabled={sending || !question.trim()}>
                 <Send className="h-4 w-4 mr-2" />
                 Enviar
               </Button>

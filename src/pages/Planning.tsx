@@ -89,7 +89,7 @@ const Planning = () => {
         </TabsList>
 
         <TabsContent value="retirement">
-          <Card>
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <PiggyBank className="h-5 w-5 text-primary" />
@@ -150,7 +150,7 @@ const Planning = () => {
         </TabsContent>
 
         <TabsContent value="investment">
-          <Card>
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
@@ -211,7 +211,7 @@ const Planning = () => {
         </TabsContent>
 
         <TabsContent value="compound">
-          <Card>
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <Calculator className="h-5 w-5 text-primary" />
