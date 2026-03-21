@@ -221,38 +221,8 @@ export default function Settings() {
     },
   });
 
-  // Query de assinatura — busca API real
-  const {data: subscription, isLoading: subLoading} = useQuery({
-    queryKey: ['current-subscription'],
-    queryFn: async (): Promise<Subscription> => {
-      try {
-        const res = await subscriptionService.getCurrentPlan();
-        const data = res.data;
-        const plan = data?.plan || data?.subscription?.plan || null;
-        const currentSubscription = data?.subscription || data;
-        return {
-          planId: plan?._id || data?.planId || data?._id || 'free',
-          planName: plan?.name || data?.planName || data?.name || 'Free',
-          status: currentSubscription?.status || 'inactive',
-          expiresAt:
-            currentSubscription?.currentPeriodEnd ||
-            data?.expiresAt ||
-            data?.currentPeriodEnd,
-          features: Array.isArray(plan?.features) ? plan.features : data?.features || [],
-        };
-      } catch {
-        return {
-          planId: 'free',
-          planName: 'Free',
-          status: 'inactive',
-          features: [],
-        };
-      }
-    },
-  });
 
-=======
->>>>>>> Stashed changes
+
   // Mutation para salvar dados do perfil (usuário + perfil estendido)
   const saveProfileMutation = useMutation({
     mutationFn: async (data: FormValues) => {

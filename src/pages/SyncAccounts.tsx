@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useCallback} from 'react';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {
   Card,
@@ -220,8 +220,10 @@ const SyncAccounts = () => {
     refetchInterval: 5000,
   });
 
-  const hasConnection = (provider: string) =>
-    connections.some((c) => c.provider === provider);
+  const hasConnection = useCallback(
+    (provider: string) => connections.some((c) => c.provider === provider),
+    [connections],
+  );
 
   const isConnected = (provider: string) =>
     connections.some(
@@ -235,7 +237,7 @@ const SyncAccounts = () => {
     if (selectedProvider && hasConnection(selectedProvider)) {
       setSelectedProvider(null);
     }
-  }, [selectedProvider, connections]);
+  }, [selectedProvider, hasConnection]);
 
   // Mutation: conectar
   const connectMutation = useMutation({
