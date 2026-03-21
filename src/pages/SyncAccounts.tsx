@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {
   Card,
@@ -128,6 +128,7 @@ interface Connection {
   status: 'connected' | 'disconnected' | 'error';
   lastSync?: string;
   hasCpf?: boolean;
+  lastError?: string | null;
 }
 
 const brokerSyncApi = {
@@ -151,6 +152,40 @@ const SyncAccounts = () => {
   const [uploadProgress, setUploadProgress] = useState<Record<string, boolean>>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const navigate = useNavigate();
+
+  const extractApiErrorMessage = (error: any): string => {
+    const message = error?.response?.data?.message;
+    if (Array.isArray(message)) {
+      return String(message[0] || 'Erro inesperado');
+    }
+    if (typeof message === 'string') {
+      return message;
+    }
+    return String(error?.message || 'Erro inesperado');
+  };
+
+  const normalizeSyncErrorMessage = (message: string): string => {
+    const msg = String(message || '');
+    if (msg.includes('PLANO_UPGRADE_NECESSARIO')) {
+      return 'Seu plano atual não permite sincronização automática. Faça upgrade para continuar.';
+    }
+    if (msg.includes('Limite de portfólios atingido')) {
+      return 'Não foi possível sincronizar porque sua conta atingiu o limite de carteiras do plano.';
+    }
+    if (msg.includes('Invalid API-key') || msg.includes('API-key format invalid')) {
+      return 'A chave API da Binance está inválida. Revise a API Key e tente novamente.';
+    }
+    if (msg.includes('Invalid signature')) {
+      return 'A Secret Key da Binance está inválida. Revise e tente novamente.';
+    }
+    if (msg.includes('IP') && msg.includes('whitelist')) {
+      return 'A chave da Binance está com restrição de IP. Ajuste o whitelist e tente novamente.';
+    }
+    if (msg.includes('timestamp')) {
+      return 'Falha de tempo na autenticação com a Binance. Aguarde alguns segundos e tente novamente.';
+    }
+    return msg;
+  };
 
   // Busca conexões existentes
   const {data: connections = [], isLoading} = useQuery<Connection[]>({
@@ -178,13 +213,20 @@ const SyncAccounts = () => {
     refetchInterval: 5000,
   });
 
+  const hasConnection = (provider: string) =>
+    connections.some((c) => c.provider === provider);
+
   const isConnected = (provider: string) =>
-    connections.some(
-      (c) => c.provider === provider && c.status === 'connected',
-    );
+    connections.some((c) => c.provider === provider && c.status === 'connected');
 
   const getConnection = (provider: string) =>
     connections.find((c) => c.provider === provider);
+
+  useEffect(() => {
+    if (selectedProvider && hasConnection(selectedProvider)) {
+      setSelectedProvider(null);
+    }
+  }, [selectedProvider, connections]);
 
   // Mutation: conectar
   const connectMutation = useMutation({
@@ -199,6 +241,31 @@ const SyncAccounts = () => {
       setCpf('');
       setApiKey('');
       setApiSecret('');
+      if (CRYPTO_EXCHANGES.some((exchange) => exchange.id === variables.provider)) {
+        brokerSyncApi
+          .sync(variables.provider)
+          .then((res) => {
+            queryClient.invalidateQueries({queryKey: ['broker-connections']});
+            queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
+            queryClient.invalidateQueries({queryKey: ['portfolios']});
+            const count = res.data?.syncedAssets ?? 0;
+            toast.success(
+              'Sincronização concluída',
+              `${count} ativos de ${variables.provider} foram atualizados na sua carteira.`,
+            );
+          })
+          .catch((error: any) => {
+            const msg = normalizeSyncErrorMessage(extractApiErrorMessage(error));
+            if (msg.includes('PLANO_UPGRADE_NECESSARIO')) {
+              setShowUpgradeModal(true);
+              return;
+            }
+            toast.error(
+              'Conectado, mas sem sincronizar',
+              msg,
+            );
+          });
+      }
     },
     onError: () => {
       toast.error(
@@ -223,11 +290,11 @@ const SyncAccounts = () => {
       );
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.message;
-      if (msg === 'PLANO_UPGRADE_NECESSARIO') {
+      const msg = normalizeSyncErrorMessage(extractApiErrorMessage(error));
+      if (msg.includes('PLANO_UPGRADE_NECESSARIO')) {
         setShowUpgradeModal(true);
       } else {
-        toast.error('Erro', 'Falha ao sincronizar.');
+        toast.error('Erro', msg);
       }
     },
   });
@@ -308,7 +375,7 @@ const SyncAccounts = () => {
     provider: (typeof BROKERAGES)[0] | (typeof CRYPTO_EXCHANGES)[0];
     type: 'brokerage' | 'crypto';
   }) => {
-    const connected = isConnected(provider.id);
+    const linked = hasConnection(provider.id);
     const conn = getConnection(provider.id);
     const syncing = syncMutation.isPending;
     const disconnecting = disconnectMutation.isPending;
@@ -316,13 +383,13 @@ const SyncAccounts = () => {
     return (
       <Card
         className={`overflow-hidden transition-all ${
-          !connected ? 'cursor-pointer' : ''
+          !linked ? 'cursor-pointer' : ''
         } ${
-          !connected && selectedProvider === provider.id
+          !linked && selectedProvider === provider.id
             ? 'ring-2 ring-primary'
             : 'hover:bg-card/70'
         }`}
-        onClick={() => !connected && setSelectedProvider(provider.id)}>
+        onClick={() => !linked && setSelectedProvider(provider.id)}>
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-xl">
@@ -331,22 +398,27 @@ const SyncAccounts = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-medium">{provider.name}</h3>
-                {connected && (
-                  <Badge variant="default" className="text-xs">
-                    Conectado
+                {linked && (
+                  <Badge
+                    variant={conn?.status === 'error' ? 'destructive' : 'default'}
+                    className="text-xs">
+                    {conn?.status === 'error' ? 'Erro de sync' : 'Conectado'}
                   </Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {connected && conn?.lastSync
+                {linked && conn?.lastSync
                   ? `Última sync: ${formatLastSync(conn.lastSync)}`
+                  : linked && conn?.status === 'error'
+                    ? conn?.lastError ||
+                      'Conexão salva, mas a última sincronização falhou.'
                   : provider.description}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1">
-            {connected ? (
+            {linked ? (
               <>
                 <Button
                   variant="ghost"
@@ -660,7 +732,8 @@ const SyncAccounts = () => {
                 </div>
               )}
               {selectedProvider &&
-                BROKERAGES.some((b) => b.id === selectedProvider) && (
+                BROKERAGES.some((b) => b.id === selectedProvider) &&
+                !hasConnection(selectedProvider) && (
                   <ConnectForm isBrokerage={true} />
                 )}
             </TabsContent>
@@ -680,7 +753,8 @@ const SyncAccounts = () => {
                 </div>
               )}
               {selectedProvider &&
-                CRYPTO_EXCHANGES.some((e) => e.id === selectedProvider) && (
+                CRYPTO_EXCHANGES.some((e) => e.id === selectedProvider) &&
+                !hasConnection(selectedProvider) && (
                   <ConnectForm isBrokerage={false} />
                 )}
             </TabsContent>

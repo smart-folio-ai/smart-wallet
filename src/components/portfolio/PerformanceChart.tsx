@@ -15,9 +15,8 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  TooltipProps,
 } from 'recharts';
-import {Asset, AssetPerformance} from '@/types/portfolio';
+import {Asset} from '@/types/portfolio';
 import {formatCurrency} from '@/utils/formatters';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
 
@@ -34,7 +33,7 @@ export const PerformanceChart = ({
   assets,
   portfolioHistory,
 }: PerformanceChartProps) => {
-  const [selectedPeriod, setSelectedPeriod] = useState('1M');
+  const [selectedPeriod, setSelectedPeriod] = useState('3MO');
 
   const getChartData = () => {
     // If no portfolio history is available from the backend, show empty initially
@@ -67,20 +66,31 @@ export const PerformanceChart = ({
     if (aggregatedData.length > 0) {
       let daysToKeep = aggregatedData.length;
       switch (selectedPeriod) {
-        case '1D':
-          daysToKeep = 2; // Requires 2 points minimum to draw a line
-          break;
-        case '1S':
+        case '7D':
           daysToKeep = 7;
           break;
-        case '1M':
+        case '1MO':
           daysToKeep = 30;
           break;
-        case '3M':
+        case '3MO':
           daysToKeep = 90;
           break;
-        case '6M':
+        case '6MO':
           daysToKeep = 180;
+          break;
+        case '1Y':
+          daysToKeep = 365;
+          break;
+        case '5Y':
+          daysToKeep = 365 * 5;
+          break;
+        case '1S':
+        case '1M':
+        case '3M':
+        case '6M':
+        case '1A':
+          // legacy values kept for compatibility
+          daysToKeep = 30;
           break;
         case 'YTD':
           {
@@ -97,9 +107,6 @@ export const PerformanceChart = ({
             );
           }
           break;
-        case '1A':
-          daysToKeep = 365;
-          break;
         case 'MAX':
         default:
           daysToKeep = aggregatedData.length;
@@ -115,22 +122,28 @@ export const PerformanceChart = ({
   };
 
   return (
-    <Card className="mb-8 card-gradient">
+    <Card className="mb-8 overflow-hidden border-slate-800 bg-[#020f2a]">
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>
-            <CardTitle>Desempenho</CardTitle>
-            <CardDescription>Evolução do valor por período</CardDescription>
+            <CardTitle className="text-slate-100">Desempenho</CardTitle>
+            <CardDescription className="text-slate-400">
+              Evolução do valor por período
+            </CardDescription>
           </div>
-          <div className="flex space-x-1">
-            {['1D', '1S', '1M', '3M', '6M', 'YTD', '1A', 'MAX'].map(
+          <div className="flex space-x-1 rounded-xl bg-slate-700/40 p-1">
+            {['7D', '1MO', '3MO', '6MO', '1Y', '5Y', 'MAX'].map(
               (period) => (
                 <Button
                   key={period}
-                  variant={selectedPeriod === period ? 'default' : 'outline'}
+                  variant={selectedPeriod === period ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setSelectedPeriod(period)}
-                  className="text-xs h-8">
+                  className={`h-7 rounded-lg px-3 text-[11px] font-semibold ${
+                    selectedPeriod === period
+                      ? 'bg-emerald-500 text-black hover:bg-emerald-400'
+                      : 'text-slate-200 hover:bg-slate-700/70 hover:text-white'
+                  }`}>
                   {period}
                 </Button>
               )
@@ -146,7 +159,7 @@ export const PerformanceChart = ({
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={getChartData()}
-                margin={{top: 10, right: 10, left: 10, bottom: 10}}>
+                margin={{top: 12, right: 10, left: 10, bottom: 0}}>
                 <defs>
                   <linearGradient
                     id="colorPerformance"
@@ -154,39 +167,54 @@ export const PerformanceChart = ({
                     y1="0"
                     x2="0"
                     y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#ff3b73" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#ff3b73" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid
+                  strokeDasharray="3 5"
+                  stroke="rgba(148, 163, 184, 0.25)"
+                  vertical={false}
+                />
                 <XAxis
                   dataKey="date"
-                  tick={{fontSize: 12}}
+                  tick={{fontSize: 11, fill: '#94a3b8'}}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={32}
                   tickFormatter={(value) => {
                     const date = new Date(value);
                     return date.toLocaleDateString('pt-BR', {
                       day: '2-digit',
                       month: '2-digit',
+                      year: '2-digit',
                     });
                   }}
                 />
                 <YAxis
-                  tick={{fontSize: 12}}
-                  tickFormatter={(value) => formatCurrency(value)}
+                  tick={{fontSize: 11, fill: '#94a3b8'}}
+                  tickFormatter={(value) =>
+                    `R$${Number(value).toLocaleString('pt-BR', {
+                      maximumFractionDigits: 0,
+                    })}`
+                  }
                   domain={['auto', 'auto']}
+                  axisLine={false}
+                  tickLine={false}
+                  width={70}
                 />
                 <Tooltip
+                  cursor={{stroke: 'rgba(226, 232, 240, 0.6)', strokeWidth: 1}}
                   content={
                     <CustomTooltip
                       formatter={(value) => [
                         formatCurrency(Number(value)),
-                        'Valor do Portfolio',
+                        'valor',
                       ]}
                       labelFormatter={(label) =>
                         new Date(label).toLocaleDateString('pt-BR', {
-                          weekday: 'short',
                           year: 'numeric',
-                          month: 'short',
+                          month: '2-digit',
                           day: 'numeric',
                         })
                       }
@@ -197,10 +225,17 @@ export const PerformanceChart = ({
                 <Area
                   type="monotone"
                   dataKey="price"
-                  stroke="#22c55e"
-                  strokeWidth={2}
+                  stroke="#ff3b73"
+                  strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#colorPerformance)"
+                  dot={false}
+                  activeDot={{
+                    r: 5,
+                    fill: '#ff3b73',
+                    stroke: '#ffffff',
+                    strokeWidth: 2,
+                  }}
                 />
               </AreaChart>
             </ResponsiveContainer>
