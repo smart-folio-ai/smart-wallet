@@ -104,7 +104,7 @@ export default function Comparator() {
         </div>
 
         {/* Seção para adicionar ativos */}
-        <Card className="mb-6">
+        <Card className="mb-6 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
           <CardHeader>
             <CardTitle>Adicionar Ativos para Comparação</CardTitle>
             <CardDescription>
@@ -150,7 +150,7 @@ export default function Comparator() {
             title="Comparador de Ativos - Premium"
             description="Acesse comparações detalhadas com mais de 20 indicadores financeiros"
           >
-            <Card>
+            <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
               <CardHeader>
                 <CardTitle>Comparação Detalhada</CardTitle>
                 <CardDescription>
@@ -273,7 +273,7 @@ export default function Comparator() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {comparisonData.map((asset) => (
-                    <Card key={asset.symbol} className="p-4">
+                    <Card key={asset.symbol} className="p-4 rounded-2xl bg-card/40 border-primary/5 shadow-sm">
                       <h3 className="font-bold text-lg mb-2">{asset.symbol}</h3>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
@@ -304,7 +304,7 @@ export default function Comparator() {
         )}
 
         {selectedAssets.length === 0 && (
-          <Card className="text-center py-12">
+          <Card className="text-center py-12 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
             <CardContent>
               <GitCompare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">Nenhum ativo selecionado</h3>

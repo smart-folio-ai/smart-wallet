@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import {ConfirmDialog} from '@/components/ConfirmDialog';
 
 // Types and Mock Data
 import {Asset, SortConfig} from '@/types/portfolio';
@@ -73,7 +73,7 @@ const Portfolio = () => {
         // For now, if "all" we can just get history for each portfolio and sum them up, or if the API doesn't support 'all', just return empty.
         // Let's call a summary endpoint if it exists, or handle it in chart.
         // Since we only added /:id/history, let's fetch for the selected one.
-        return []; 
+        return [];
       }
       return await portfolioService.getPortfolioHistory(selectedPortfolioId);
     },
@@ -107,7 +107,8 @@ const Portfolio = () => {
     purchasePrice: a.avgPrice ?? a.price,
     profitLoss:
       typeof (a.currentPrice ?? a.price) === 'number'
-        ? ((a.currentPrice ?? a.price) - (a.avgPrice ?? a.price)) * (a.quantity ?? 0)
+        ? ((a.currentPrice ?? a.price) - (a.avgPrice ?? a.price)) *
+          (a.quantity ?? 0)
         : 0,
     profitLossPercentage:
       (a.avgPrice ?? a.price) > 0
@@ -235,7 +236,8 @@ const Portfolio = () => {
     if (selectedPortfolioId === 'all') {
       toast({
         title: 'Atenção',
-        description: 'Selecione uma carteira específica para importar os ativos.',
+        description:
+          'Selecione uma carteira específica para importar os ativos.',
         variant: 'destructive',
       });
       return;
@@ -286,8 +288,8 @@ const Portfolio = () => {
     },
   });
   const selectedPortfolioName =
-    portfolios.find((p: any) => (p.id || p._id) === selectedPortfolioId)?.name ??
-    'esta carteira';
+    portfolios.find((p: any) => (p.id || p._id) === selectedPortfolioId)
+      ?.name ?? 'esta carteira';
 
   return (
     <div className="container py-8 min-h-[calc(100vh-4rem)] animate-fade-in overflow-x-hidden">
@@ -364,8 +366,7 @@ const Portfolio = () => {
               variant="outline"
               size="sm"
               onClick={() => document.getElementById('b3-upload')?.click()}
-              disabled={isUploadingB3}
-            >
+              disabled={isUploadingB3}>
               {isUploadingB3 ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
@@ -404,7 +405,7 @@ const Portfolio = () => {
 
       {/* Asset Allocation Chart & Top Assets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <Card className="card-gradient h-full">
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden h-full">
           <CardHeader>
             <CardTitle>Alocação de Ativos</CardTitle>
             <CardDescription>Distribuição por tipo de ativo</CardDescription>
@@ -421,37 +422,40 @@ const Portfolio = () => {
               .sort((a, b) => b.value - a.value)
               .slice(0, 3)
               .map((asset) => {
-                const id = '_id' in asset ? (asset as any)._id : (asset as any).id;
+                const id =
+                  '_id' in asset ? (asset as any)._id : (asset as any).id;
                 return (
-                <Card
-                  key={id || asset.symbol}
-                  className="bg-card/50 border-white/5 hover:bg-card/80 transition-colors cursor-pointer"
-                  onClick={() => openAssetDetails(asset)}>
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                        {asset.symbol.substring(0, 1)}
+                  <Card
+                    key={id || asset.symbol}
+                    className="bg-card/50 border-white/5 hover:bg-card/80 transition-colors cursor-pointer"
+                    onClick={() => openAssetDetails(asset)}>
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                          {asset.symbol.substring(0, 1)}
+                        </div>
+                        <div>
+                          <h4 className="font-bold">{asset.symbol}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            {asset.name}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold">{asset.symbol}</h4>
-                        <p className="text-xs text-muted-foreground">
-                          {asset.name}
+                      <div className="text-right">
+                        <p className="font-bold">
+                          R${' '}
+                          {asset.value.toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                          })}
+                        </p>
+                        <p
+                          className={`text-xs ${(asset.change24h || 0) >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>
+                          {(asset.change24h || 0) >= 0 ? '+' : ''}
+                          {(asset.change24h || 0).toFixed(2)}%
                         </p>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold">
-                        R${' '}
-                        {asset.value.toLocaleString('pt-BR', {
-                          minimumFractionDigits: 2,
-                        })}
-                      </p>
-                      <p className={`text-xs ${(asset.change24h || 0) >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>
-                        {(asset.change24h || 0) >= 0 ? '+' : ''}{(asset.change24h || 0).toFixed(2)}%
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
                 );
               })}
             {assets.length === 0 && (
@@ -464,7 +468,7 @@ const Portfolio = () => {
       </div>
 
       {/* Assets List */}
-      <Card className="card-gradient">
+      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>

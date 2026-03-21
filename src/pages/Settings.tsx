@@ -37,7 +37,7 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {z} from 'zod';
 import Profile from '@/services/profile';
 import Address from '@/services/address';
-import {api, profileService, subscriptionService} from '@/server/api/api';
+import {api, profileService} from '@/server/api/api';
 import {IUserProfileResponse, UserSettings} from '@/interface/users';
 import {AddressResponse} from '@/interface/address';
 import useAppToast from '@/hooks/use-app-toast';
@@ -132,6 +132,14 @@ export default function Settings() {
       theme: 'system',
     },
   });
+  const {
+    isLoading: subLoading,
+    displayPlanName,
+    planName,
+    status: subscriptionStatus,
+    currentPeriodEnd,
+    features: subscriptionFeatures,
+  } = useSubscription();
 
   // Busca o perfil estendido (phone, preferences, endereço via profile service)
   const fetchProfileUser = async () => {
@@ -167,12 +175,24 @@ export default function Settings() {
         if (myProfile?.preferences) {
           setSettings((prev) => ({
             ...prev,
-            notifications: {
-              email: myProfile.preferences.notifications ?? true,
-              push: prev.notifications.push,
-              marketAlerts: prev.notifications.marketAlerts,
-              portfolioUpdates: prev.notifications.portfolioUpdates,
-            },
+            notifications:
+              typeof myProfile.preferences.notifications === 'object' &&
+              myProfile.preferences.notifications !== null
+                ? {
+                    email: myProfile.preferences.notifications.email ?? true,
+                    push: myProfile.preferences.notifications.push ?? false,
+                    marketAlerts:
+                      myProfile.preferences.notifications.marketAlerts ?? true,
+                    portfolioUpdates:
+                      myProfile.preferences.notifications.portfolioUpdates ??
+                      true,
+                  }
+                : {
+                    email: myProfile.preferences.notifications !== false,
+                    push: prev.notifications.push,
+                    marketAlerts: prev.notifications.marketAlerts,
+                    portfolioUpdates: prev.notifications.portfolioUpdates,
+                  },
             security: {
               twoFactorEnabled: myProfile.preferences.twoFactorEnabled ?? false,
               sessionTimeout: prev.security.sessionTimeout,
@@ -210,36 +230,6 @@ export default function Settings() {
     },
   });
 
-  // Query de assinatura — busca API real
-  const {data: subscription, isLoading: subLoading} = useQuery({
-    queryKey: ['current-subscription'],
-    queryFn: async (): Promise<Subscription> => {
-      try {
-        const res = await subscriptionService.getCurrentPlan();
-        const data = res.data;
-        const plan = data?.plan || data?.subscription?.plan || null;
-        const currentSubscription = data?.subscription || data;
-        return {
-          planId: plan?._id || data?.planId || data?._id || 'free',
-          planName: plan?.name || data?.planName || data?.name || 'Free',
-          status: currentSubscription?.status || 'inactive',
-          expiresAt:
-            currentSubscription?.currentPeriodEnd ||
-            data?.expiresAt ||
-            data?.currentPeriodEnd,
-          features: Array.isArray(plan?.features) ? plan.features : data?.features || [],
-        };
-      } catch {
-        return {
-          planId: 'free',
-          planName: 'Free',
-          status: 'inactive',
-          features: [],
-        };
-      }
-    },
-  });
-
   // Mutation para salvar dados do perfil (usuário + perfil estendido)
   const saveProfileMutation = useMutation({
     mutationFn: async (data: FormValues) => {
@@ -261,7 +251,12 @@ export default function Settings() {
         preferences: {
           language: settings.preferences.language,
           theme: settings.preferences.theme,
-          notifications: settings.notifications.email,
+          notifications: {
+            email: settings.notifications.email,
+            push: settings.notifications.push,
+            marketAlerts: settings.notifications.marketAlerts,
+            portfolioUpdates: settings.notifications.portfolioUpdates,
+          },
           twoFactorEnabled: settings.security.twoFactorEnabled,
         },
       };
@@ -276,18 +271,22 @@ export default function Settings() {
         });
       }
 
-      // Atualiza ou cria Endereço Separadamente usando a camada de Api 
+      // Atualiza ou cria Endereço Separadamente usando a camada de Api
       // (ajustando para um POST ou PUT no /address associando ao user)
       const tokenLocal = localStorage.getItem('access_token');
-      await api.post('/address/create', { 
-         userId,
-         street: data.address.street,
-         number: data.address.number,
-         complement: data.address.complement,
-         city: data.address.city,
-         state: data.address.state,
-         zipCode: data.address.zipCode
-      }, { headers: { Authorization: `Bearer ${tokenLocal}` }});
+      await api.post(
+        '/address/create',
+        {
+          userId,
+          street: data.address.street,
+          number: data.address.number,
+          complement: data.address.complement,
+          city: data.address.city,
+          state: data.address.state,
+          zipCode: data.address.zipCode,
+        },
+        {headers: {Authorization: `Bearer ${tokenLocal}`}},
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ['user-profile']});
@@ -318,7 +317,12 @@ export default function Settings() {
           preferences: {
             language: settings.preferences.language,
             theme: settings.preferences.theme,
-            notifications: settings.notifications.email,
+            notifications: {
+              email: settings.notifications.email,
+              push: settings.notifications.push,
+              marketAlerts: settings.notifications.marketAlerts,
+              portfolioUpdates: settings.notifications.portfolioUpdates,
+            },
             twoFactorEnabled: settings.security.twoFactorEnabled,
             sessionTimeout: settings.security.sessionTimeout,
           },
@@ -330,7 +334,12 @@ export default function Settings() {
         preferences: {
           language: settings.preferences.language,
           theme: settings.preferences.theme,
-          notifications: settings.notifications.email,
+          notifications: {
+            email: settings.notifications.email,
+            push: settings.notifications.push,
+            marketAlerts: settings.notifications.marketAlerts,
+            portfolioUpdates: settings.notifications.portfolioUpdates,
+          },
           twoFactorEnabled: settings.security.twoFactorEnabled,
           sessionTimeout: settings.security.sessionTimeout,
         },
@@ -366,7 +375,7 @@ export default function Settings() {
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {headers: {Authorization: `Bearer ${token}`}},
       );
     },
     onSuccess: () => {
@@ -540,7 +549,7 @@ export default function Settings() {
 
         {/* ── Perfil ── */}
         <TabsContent value="profile" className="space-y-6">
-          <Card>
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -817,7 +826,7 @@ export default function Settings() {
 
         {/* ── Assinatura ── */}
         <TabsContent value="subscription" className="space-y-6">
-          <Card>
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <Crown className="h-5 w-5 text-primary" />
@@ -835,19 +844,23 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-semibold">
-                      {subscription?.planName || 'Free'}
+                      {displayPlanName ||
+                        (planName
+                          ? planName.replace(/\b\w/g, (c) => c.toUpperCase())
+                          : 'Free')}
                     </h3>
                     <p className="text-muted-foreground">
                       Status:{' '}
                       <Badge variant="default">
-                        {subscription?.status === 'active'
+                        {subscriptionStatus === 'active' ||
+                        subscriptionStatus === 'trialing'
                           ? 'Ativo'
                           : 'Inativo'}
                       </Badge>
                     </p>
-                    {subscription?.expiresAt && (
+                    {currentPeriodEnd && (
                       <p className="text-sm text-muted-foreground">
-                        Expira em: {formatDate(subscription.expiresAt)}
+                        Expira em: {formatDate(currentPeriodEnd)}
                       </p>
                     )}
                   </div>
@@ -857,11 +870,11 @@ export default function Settings() {
                 </div>
               )}
 
-              {subscription?.features && subscription.features.length > 0 && (
+              {subscriptionFeatures && subscriptionFeatures.length > 0 && (
                 <div className="border-t pt-4">
                   <h4 className="font-medium mb-2">Recursos inclusos:</h4>
                   <ul className="space-y-1">
-                    {subscription.features.map((feature, index) => (
+                    {subscriptionFeatures.map((feature, index) => (
                       <li key={index} className="flex items-center space-x-2">
                         <Check className="h-4 w-4 text-primary" />
                         <span className="text-sm">{feature}</span>
@@ -876,7 +889,7 @@ export default function Settings() {
 
         {/* ── Notificações ── */}
         <TabsContent value="notifications" className="space-y-6">
-          <Card>
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <Bell className="h-5 w-5" />
@@ -999,7 +1012,7 @@ export default function Settings() {
 
         {/* ── Segurança ── */}
         <TabsContent value="security" className="space-y-6">
-          <Card>
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <Shield className="h-5 w-5" />
@@ -1136,7 +1149,12 @@ export default function Settings() {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Senha atual"
                       value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          currentPassword: e.target.value,
+                        })
+                      }
                     />
                     <Button
                       variant="ghost"
@@ -1150,25 +1168,42 @@ export default function Settings() {
                       )}
                     </Button>
                   </div>
-                  <Input 
-                    type={showPassword ? 'text' : 'password'} 
-                    placeholder="Nova senha" 
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Nova senha"
                     value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        newPassword: e.target.value,
+                      })
+                    }
                   />
-                  <Input 
-                    type={showPassword ? 'text' : 'password'} 
-                    placeholder="Confirmar nova senha" 
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Confirmar nova senha"
                     value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        confirmPassword: e.target.value,
+                      })
+                    }
                   />
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => updatePasswordMutation.mutate()}
-                    disabled={updatePasswordMutation.isPending || !passwordData.currentPassword || !passwordData.newPassword}
-                  >
-                    {updatePasswordMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Alterar Senha'}
+                    disabled={
+                      updatePasswordMutation.isPending ||
+                      !passwordData.currentPassword ||
+                      !passwordData.newPassword
+                    }>
+                    {updatePasswordMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Alterar Senha'
+                    )}
                   </Button>
                 </div>
               </div>

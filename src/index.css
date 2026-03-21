@@ -51,7 +51,7 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
     --card: 222.2 84% 4.9%;
@@ -110,9 +110,7 @@
   @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg;
 }
 
-.card-gradient {
-  @apply bg-gradient-to-br from-card to-secondary/80 backdrop-blur-sm;
-}
+
 
 .success-gradient {
   @apply bg-gradient-to-r from-green-400 to-emerald-500;

@@ -37,18 +37,18 @@ export default function SubscriptionSuccess() {
     queryFn: SubscriptionService.getCurrentPlan,
   });
 
-  const plan = data?.plan || data?.subscription?.plan || null;
-  const currentSubscription = data?.subscription || null;
+  const subscriptionData = data?.subscription;
+  const planData = data?.plan;
 
-  const subscriptionDetails: SubscriptionDetails | null = data
+  const subscriptionDetails: SubscriptionDetails | null = planData
     ? {
-        planName: plan?.name || 'Plano',
-        amount: plan?.price || 0,
-        currency: plan?.currency || 'BRL',
-        interval: plan?.interval || 'month',
-        status: currentSubscription?.status || 'inactive',
-        nextBilling: currentSubscription?.currentPeriodEnd || '',
-        features: Array.isArray(plan?.features) ? plan.features : [],
+        planName: planData.name,
+        amount: planData.price,
+        currency: planData.currency,
+        interval: planData.interval,
+        status: subscriptionData?.status || 'inactive',
+        nextBilling: subscriptionData?.currentPeriodEnd || '',
+        features: planData.features || [],
       }
     : null;
 
@@ -83,7 +83,7 @@ export default function SubscriptionSuccess() {
           <AppLogo size="lg" />
         </div>
 
-        <Card className="card-gradient border-0 shadow-lg overflow-hidden">
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 shadow-2xl shadow-primary/5 border-0 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-info/10 opacity-50 pointer-events-none" />
 
           <CardHeader className="relative text-center pb-4">

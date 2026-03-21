@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useCallback} from 'react';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {
   Card,
@@ -148,8 +148,12 @@ const SyncAccounts = () => {
   const [cpf, setCpf] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
-  const [uploadingProvider, setUploadingProvider] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, boolean>>({});
+  const [uploadingProvider, setUploadingProvider] = useState<string | null>(
+    null,
+  );
+  const [uploadProgress, setUploadProgress] = useState<Record<string, boolean>>(
+    {},
+  );
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const navigate = useNavigate();
 
@@ -172,7 +176,10 @@ const SyncAccounts = () => {
     if (msg.includes('Limite de portfólios atingido')) {
       return 'Não foi possível sincronizar porque sua conta atingiu o limite de carteiras do plano.';
     }
-    if (msg.includes('Invalid API-key') || msg.includes('API-key format invalid')) {
+    if (
+      msg.includes('Invalid API-key') ||
+      msg.includes('API-key format invalid')
+    ) {
       return 'A chave API da Binance está inválida. Revise a API Key e tente novamente.';
     }
     if (msg.includes('Invalid signature')) {
@@ -213,11 +220,15 @@ const SyncAccounts = () => {
     refetchInterval: 5000,
   });
 
-  const hasConnection = (provider: string) =>
-    connections.some((c) => c.provider === provider);
+  const hasConnection = useCallback(
+    (provider: string) => connections.some((c) => c.provider === provider),
+    [connections],
+  );
 
   const isConnected = (provider: string) =>
-    connections.some((c) => c.provider === provider && c.status === 'connected');
+    connections.some(
+      (c) => c.provider === provider && c.status === 'connected',
+    );
 
   const getConnection = (provider: string) =>
     connections.find((c) => c.provider === provider);
@@ -226,7 +237,7 @@ const SyncAccounts = () => {
     if (selectedProvider && hasConnection(selectedProvider)) {
       setSelectedProvider(null);
     }
-  }, [selectedProvider, connections]);
+  }, [selectedProvider, hasConnection]);
 
   // Mutation: conectar
   const connectMutation = useMutation({
@@ -241,7 +252,9 @@ const SyncAccounts = () => {
       setCpf('');
       setApiKey('');
       setApiSecret('');
-      if (CRYPTO_EXCHANGES.some((exchange) => exchange.id === variables.provider)) {
+      if (
+        CRYPTO_EXCHANGES.some((exchange) => exchange.id === variables.provider)
+      ) {
         brokerSyncApi
           .sync(variables.provider)
           .then((res) => {
@@ -255,15 +268,14 @@ const SyncAccounts = () => {
             );
           })
           .catch((error: any) => {
-            const msg = normalizeSyncErrorMessage(extractApiErrorMessage(error));
+            const msg = normalizeSyncErrorMessage(
+              extractApiErrorMessage(error),
+            );
             if (msg.includes('PLANO_UPGRADE_NECESSARIO')) {
               setShowUpgradeModal(true);
               return;
             }
-            toast.error(
-              'Conectado, mas sem sincronizar',
-              msg,
-            );
+            toast.error('Conectado, mas sem sincronizar', msg);
           });
       }
     },
@@ -282,11 +294,11 @@ const SyncAccounts = () => {
       queryClient.invalidateQueries({queryKey: ['broker-connections']});
       queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
       queryClient.invalidateQueries({queryKey: ['portfolios']});
-      
+
       const count = res.data?.syncedAssets ?? 0;
       toast.success(
-        'Sincronização concluída', 
-        `${count} ativos de ${provider} foram atualizados na sua carteira.`
+        'Sincronização concluída',
+        `${count} ativos de ${provider} foram atualizados na sua carteira.`,
       );
     },
     onError: (error: any) => {
@@ -314,7 +326,10 @@ const SyncAccounts = () => {
 
     const isBrokerage = BROKERAGES.some((b) => b.id === selectedProvider);
     if (isBrokerage) {
-      connectMutation.mutate({provider: selectedProvider, ...(cpf.trim() ? {cpf} : {})});
+      connectMutation.mutate({
+        provider: selectedProvider,
+        ...(cpf.trim() ? {cpf} : {}),
+      });
     } else {
       if (!apiKey.trim() || !apiSecret.trim()) {
         toast.error('Campos obrigatórios', 'Preencha a chave API e senha.');
@@ -400,7 +415,9 @@ const SyncAccounts = () => {
                 <h3 className="font-medium">{provider.name}</h3>
                 {linked && (
                   <Badge
-                    variant={conn?.status === 'error' ? 'destructive' : 'default'}
+                    variant={
+                      conn?.status === 'error' ? 'destructive' : 'default'
+                    }
                     className="text-xs">
                     {conn?.status === 'error' ? 'Erro de sync' : 'Conectado'}
                   </Badge>
@@ -412,7 +429,7 @@ const SyncAccounts = () => {
                   : linked && conn?.status === 'error'
                     ? conn?.lastError ||
                       'Conexão salva, mas a última sincronização falhou.'
-                  : provider.description}
+                    : provider.description}
               </p>
             </div>
           </div>
@@ -450,7 +467,9 @@ const SyncAccounts = () => {
                       disabled={uploadProgress[provider.id]}
                       onClick={(e) => {
                         e.stopPropagation();
-                        document.getElementById(`upload-${provider.id}`)?.click();
+                        document
+                          .getElementById(`upload-${provider.id}`)
+                          ?.click();
                       }}>
                       {uploadProgress[provider.id] ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -491,7 +510,9 @@ const SyncAccounts = () => {
       {isBrokerage ? (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="cpf-connect">CPF (opcional – só para sincronização B3)</Label>
+            <Label htmlFor="cpf-connect">
+              CPF (opcional – só para sincronização B3)
+            </Label>
             <Input
               id="cpf-connect"
               placeholder="000.000.000-00"
@@ -501,48 +522,59 @@ const SyncAccounts = () => {
           </div>
 
           {/* Brokerage Note Upload */}
-          {selectedProvider && BROKERAGES.find(b => b.id === selectedProvider)?.supportsUpload && (
-            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-4 w-4 text-primary" />
-                <h4 className="font-medium text-sm">Upload de Nota de Corretagem</h4>
+          {selectedProvider &&
+            BROKERAGES.find((b) => b.id === selectedProvider)
+              ?.supportsUpload && (
+              <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <h4 className="font-medium text-sm">
+                    Upload de Nota de Corretagem
+                  </h4>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Faça upload direto da nota de corretagem (PDF, CSV ou XLSX). O
+                  sistema extrai automaticamente os ativos, quantidades, preços
+                  e datas.
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept=".pdf,.csv,.xlsx,.xls"
+                    id={`upload-form-${selectedProvider}`}
+                    className="hidden"
+                    onChange={(e) =>
+                      handleBrokerageUpload(selectedProvider!, e)
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    disabled={uploadProgress[selectedProvider]}
+                    onClick={() =>
+                      document
+                        .getElementById(`upload-form-${selectedProvider}`)
+                        ?.click()
+                    }>
+                    {uploadProgress[selectedProvider] ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4" />
+                    )}
+                    {uploadProgress[selectedProvider]
+                      ? 'Enviando...'
+                      : 'Selecionar Arquivo'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Aceita: nota_corretagem.pdf, extrato_corretora.csv,
+                  relatorio_b3.xlsx
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Faça upload direto da nota de corretagem (PDF, CSV ou XLSX). O sistema extrai automaticamente os ativos, quantidades, preços e datas.
-              </p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="file"
-                  accept=".pdf,.csv,.xlsx,.xls"
-                  id={`upload-form-${selectedProvider}`}
-                  className="hidden"
-                  onChange={(e) => handleBrokerageUpload(selectedProvider!, e)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  disabled={uploadProgress[selectedProvider]}
-                  onClick={() =>
-                    document.getElementById(`upload-form-${selectedProvider}`)?.click()
-                  }>
-                  {uploadProgress[selectedProvider] ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="mr-2 h-4 w-4" />
-                  )}
-                  {uploadProgress[selectedProvider]
-                    ? 'Enviando...'
-                    : 'Selecionar Arquivo'}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                <Info className="h-3 w-3" />
-                Aceita: nota_corretagem.pdf, extrato_corretora.csv, relatorio_b3.xlsx
-              </p>
-            </div>
-          )}
+            )}
         </div>
       ) : (
         <>
@@ -600,7 +632,9 @@ const SyncAccounts = () => {
             Recurso Premium
           </DialogTitle>
           <DialogDescription>
-            A sincronização automática de contas é um recurso disponível apenas nos planos Premium. Atualize agora para centralizar todo o seu patrimônio automaticamente.
+            A sincronização automática de contas é um recurso disponível apenas
+            nos planos Premium. Atualize agora para centralizar todo o seu
+            patrimônio automaticamente.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-4">
@@ -608,13 +642,16 @@ const SyncAccounts = () => {
             <h4 className="font-medium text-sm mb-1">Por que assinar?</h4>
             <ul className="text-xs space-y-2 text-muted-foreground">
               <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-primary" /> Sincronização em tempo real com Binance e outras
+                <Check className="h-3 w-3 text-primary" /> Sincronização em
+                tempo real com Binance e outras
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-primary" /> Insights avançados com Inteligência Artificial
+                <Check className="h-3 w-3 text-primary" /> Insights avançados
+                com Inteligência Artificial
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-primary" /> Suporte a notas de corretagem ilimitadas
+                <Check className="h-3 w-3 text-primary" /> Suporte a notas de
+                corretagem ilimitadas
               </li>
             </ul>
           </div>
@@ -623,9 +660,7 @@ const SyncAccounts = () => {
           <Button variant="ghost" onClick={() => setShowUpgradeModal(false)}>
             Agora não
           </Button>
-          <Button onClick={() => navigate('/subscription')}>
-            Ver Planos
-          </Button>
+          <Button onClick={() => navigate('/subscription')}>Ver Planos</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -642,7 +677,7 @@ const SyncAccounts = () => {
       {/* Status das conexões */}
       {connections.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <Card className="card-gradient p-4 flex items-center gap-3">
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
               <Check className="h-5 w-5 text-success" />
             </div>
@@ -651,7 +686,7 @@ const SyncAccounts = () => {
               <p className="text-xs text-muted-foreground">Contas conectadas</p>
             </div>
           </Card>
-          <Card className="card-gradient p-4 flex items-center gap-3">
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <Clock className="h-5 w-5 text-primary" />
             </div>
@@ -668,7 +703,7 @@ const SyncAccounts = () => {
       )}
 
       {uploads.length > 0 && (
-        <Card className="card-gradient mb-6">
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden mb-6">
           <CardHeader>
             <CardTitle>Processamento assíncrono de arquivos</CardTitle>
             <CardDescription>
@@ -703,7 +738,7 @@ const SyncAccounts = () => {
         </Card>
       )}
 
-      <Card className="card-gradient mb-8">
+      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden mb-8">
         <CardHeader>
           <CardTitle>Adicione suas contas</CardTitle>
           <CardDescription>
@@ -762,7 +797,7 @@ const SyncAccounts = () => {
         </CardContent>
       </Card>
 
-      <Card className="card-gradient">
+      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader>
           <CardTitle>Sobre a integração</CardTitle>
         </CardHeader>

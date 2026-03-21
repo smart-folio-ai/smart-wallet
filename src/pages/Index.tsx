@@ -44,6 +44,7 @@ import {
   PieChart,
   Pie,
   Legend,
+  CartesianGrid,
 } from 'recharts';
 import {
   Table,
@@ -148,6 +149,7 @@ const Dashboard = () => {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
   const [openFiscalIntro, setOpenFiscalIntro] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState('1M');
 
   const handleAssetClick = (asset: Asset) => {
     if (!asset.id) return;
@@ -216,12 +218,14 @@ const Dashboard = () => {
     );
 
     const totalCost = apiAssets.reduce(
-      (sum: number, asset: any) => sum + ((asset.averagePrice || 0) * (asset.quantity || 0)),
+      (sum: number, asset: any) =>
+        sum + (asset.averagePrice || 0) * (asset.quantity || 0),
       0,
     );
 
     const profitLoss = totalValue - totalCost;
-    const profitLossPercentage = totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
+    const profitLossPercentage =
+      totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
 
     const calculateAllocation = (type: string) => {
       if (totalValue === 0) return 0;
@@ -240,7 +244,12 @@ const Dashboard = () => {
       const history = asset.dividendHistory ?? [];
       return history.map((entry: any) => ({
         symbol: asset.symbol,
-        type: asset.type === 'fii' ? 'fii' : asset.type === 'stock' ? 'stock' : 'other',
+        type:
+          asset.type === 'fii'
+            ? 'fii'
+            : asset.type === 'stock'
+              ? 'stock'
+              : 'other',
         date: entry.date,
         value: (entry.value ?? 0) * (asset.quantity ?? 0),
       }));
@@ -292,7 +301,10 @@ const Dashboard = () => {
       dividendsByType,
       history: historyData,
       lastDividends: dividendEntries
-        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime(),
+        )
         .slice(0, 5),
     };
 
@@ -381,8 +393,7 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <Select
           value={selectedPortfolioId || ''}
-          onValueChange={setSelectedPortfolioId}
-        >
+          onValueChange={setSelectedPortfolioId}>
           <SelectTrigger className="w-full sm:w-72">
             <SelectValue placeholder="Selecione a carteira" />
           </SelectTrigger>
@@ -430,7 +441,7 @@ const Dashboard = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card className="mb-8 card-gradient">
+      <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -439,7 +450,10 @@ const Dashboard = () => {
                 Oportunidades para reduzir imposto com prejuízo acumulado
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/fiscal')}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/fiscal')}>
               Abrir Fiscal
             </Button>
           </div>
@@ -465,14 +479,16 @@ const Dashboard = () => {
               ) : (
                 <div className="space-y-2">
                   {optimizerData?.opportunities?.slice(0, 3).map((item) => (
-                    <div key={item.symbol} className="rounded border p-3 text-sm">
+                    <div
+                      key={item.symbol}
+                      className="rounded border p-3 text-sm">
                       <p className="font-medium">{item.headline}</p>
                       <p className="text-muted-foreground">
                         Imposto sem compensação:{' '}
                         {formatCurrency(item.estimatedTaxWithoutOffset)} | com
                         compensação:{' '}
-                        {formatCurrency(item.estimatedTaxWithOffset)} | economia:{' '}
-                        {formatCurrency(item.taxSaved)}
+                        {formatCurrency(item.estimatedTaxWithOffset)} |
+                        economia: {formatCurrency(item.taxSaved)}
                       </p>
                     </div>
                   ))}
@@ -483,14 +499,93 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
+      <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                Trakker IA Hoje
+              </CardTitle>
+              <CardDescription>
+                Alertas e oportunidades personalizados com base na sua carteira
+              </CardDescription>
+            </div>
+            {!hasProOrHigher && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/subscription')}>
+                Upgrade PRO
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loadingSubscription ? (
+            <Skeleton className="h-24 w-full" />
+          ) : (
+            <PremiumBlur
+              locked={!hasProOrHigher}
+              title="Insights exclusivos para PRO+"
+              description="Faça upgrade para liberar alertas diários da Trakker IA com base nos seus dados reais.">
+              {loadingDashboardAi ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : dashboardHighlights.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Ainda estamos preparando seus insights do dia. Sincronize seus
+                  dados e tente novamente.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {dashboardHighlights.map((item, idx) => (
+                    <div
+                      key={`${item.title}-${idx}`}
+                      className="rounded border p-3">
+                      <p className="font-medium text-sm">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </PremiumBlur>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Portfolio Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="col-span-2 card-gradient">
-          <CardHeader className="pb-2">
-            <CardTitle>Resumo da Carteira</CardTitle>
-            <CardDescription>
-              Visão geral dos seus investimentos
-            </CardDescription>
+        <Card className="col-span-2 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <CardTitle>Cotação</CardTitle>
+                <CardDescription>
+                  Visão geral dos seus investimentos
+                </CardDescription>
+              </div>
+              <div className="flex space-x-1 bg-secondary/30 p-1 rounded-full">
+                {['7D', '1M', '3M', '6M', '1A', '5A'].map((period) => (
+                  <Button
+                    key={period}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedPeriod(period)}
+                    className={`text-xs h-8 rounded-full px-4 font-bold transition-all ${
+                      selectedPeriod === period
+                        ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                    }`}>
+                    {period}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -505,102 +600,134 @@ const Dashboard = () => {
                   <h3 className="text-4xl font-bold mb-2 text-primary animate-value">
                     {formatCurrency(summary?.totalValue || 0)}
                   </h3>
-                  <div className="flex items-center">
-                    {(summary?.change24h || 0) >= 0 ? (
-                      <ArrowUp className="h-5 w-5 text-success" />
-                    ) : (
-                      <ArrowDown className="h-5 w-5 text-destructive" />
-                    )}
-                    <span
-                      className={`ml-1 ${
-                        (summary?.change24h || 0) >= 0
-                          ? 'text-success'
-                          : 'text-destructive'
-                      }`}>
-                      {formatCurrency(Math.abs(summary?.change24h || 0))} (
-                      {Math.abs(summary?.changePercentage24h || 0).toFixed(2)}%)
-                    </span>
-                    <span className="ml-2 text-muted-foreground">P&L Total</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`p-3 rounded-2xl ${
+                          (summary?.change24h || 0) >= 0
+                            ? 'bg-emerald-500/10'
+                            : 'bg-rose-500/10'
+                        }`}>
+                        {(summary?.change24h || 0) >= 0 ? (
+                          <ArrowUp className="h-6 w-6 text-emerald-500" />
+                        ) : (
+                          <ArrowDown className="h-6 w-6 text-rose-500" />
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">
+                          P&L Total
+                        </span>
+                        <span
+                          className={`font-black text-2xl tracking-tight ${
+                            (summary?.change24h || 0) >= 0
+                              ? 'text-emerald-500'
+                              : 'text-rose-500'
+                          }`}>
+                          {(summary?.change24h || 0) >= 0 ? '+' : ''}
+                          {formatCurrency(Math.abs(summary?.change24h || 0))}
+                          <span className="text-sm font-bold ml-2 opacity-80">
+                            ({(summary?.change24h || 0) >= 0 ? '+' : ''}
+                            {Math.abs(
+                              summary?.changePercentage24h || 0,
+                            ).toFixed(2)}
+                            %)
+                          </span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 <div className="h-48 mt-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={summary?.history}
-                      margin={{top: 5, right: 5, left: 5, bottom: 5}}>
-                      <defs>
-                        <linearGradient
-                          id="colorValue"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1">
-                          <stop
-                            offset="5%"
-                            stopColor="#22c55e"
-                            stopOpacity={0.8}
+                  {(() => {
+                    const chartData = summary?.history || [];
+                    const isPositive =
+                      chartData.length >= 2 &&
+                      chartData[chartData.length - 1].value >=
+                        chartData[0].value;
+                    const strokeColor = isPositive ? '#10b981' : '#f43f5e';
+
+                    return (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                          data={chartData}
+                          margin={{top: 5, right: 0, left: 0, bottom: 0}}>
+                          <defs>
+                            <linearGradient
+                              id="colorValueDB"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1">
+                              <stop
+                                offset="5%"
+                                stopColor={strokeColor}
+                                stopOpacity={0.1}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor={strokeColor}
+                                stopOpacity={0}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            vertical={false}
+                            stroke="hsl(var(--muted-foreground)/0.15)"
                           />
-                          <stop
-                            offset="95%"
-                            stopColor="#22c55e"
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <XAxis
-                        dataKey="date"
-                        tick={{fontSize: 12}}
-                        tickFormatter={(value) => value.slice(5)}
-                      />
-                      <YAxis
-                        tick={{fontSize: 12}}
-                        tickFormatter={(value) =>
-                          `R$${(value / 1000).toFixed(1)}k`
-                        }
-                      />
-                      <Tooltip
-                        formatter={(value) => [
-                          formatCurrency(Number(value)),
-                          'Valor',
-                        ]}
-                        labelFormatter={(label) =>
-                          new Date(label).toLocaleDateString('pt-BR')
-                        }
-                        content={
-                          <CustomTooltip
+                          <XAxis dataKey="date" hide />
+                          <YAxis hide domain={['auto', 'auto']} />
+                          <Tooltip
+                            cursor={{
+                              stroke: 'hsl(var(--muted-foreground)/0.2)',
+                              strokeWidth: 1,
+                              strokeDasharray: '3 3',
+                            }}
                             formatter={(value) => [
                               formatCurrency(Number(value)),
-                              'Valor da Carteira',
+                              'Valor',
                             ]}
                             labelFormatter={(label) =>
-                              new Date(label).toLocaleDateString('pt-BR', {
-                                weekday: 'short',
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                              })
+                              new Date(label).toLocaleDateString('pt-BR')
+                            }
+                            content={
+                              <CustomTooltip
+                                formatter={(value) => [
+                                  formatCurrency(Number(value)),
+                                  'Valor da Carteira',
+                                ]}
+                                labelFormatter={(label) =>
+                                  new Date(label).toLocaleDateString('pt-BR', {
+                                    weekday: 'short',
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })
+                                }
+                              />
                             }
                           />
-                        }
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#22c55e"
-                        strokeWidth={2}
-                        fillOpacity={1}
-                        fill="url(#colorValue)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                          <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke={strokeColor}
+                            strokeWidth={4}
+                            fillOpacity={1}
+                            fill="none"
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    );
+                  })()}
                 </div>
               </>
             )}
           </CardContent>
         </Card>
 
-        <Card className="card-gradient">
+        <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle>Alocação</CardTitle>
             <CardDescription>Distribuição dos seus ativos</CardDescription>
@@ -659,7 +786,7 @@ const Dashboard = () => {
       </div>
 
       {/* Dividends Card */}
-      <Card className="mb-8 card-gradient">
+      <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Dividendos</CardTitle>
           <CardDescription>Resumo dos dividendos recebidos</CardDescription>
@@ -677,8 +804,10 @@ const Dashboard = () => {
                 <>
                   <div className="mb-6">
                     <div className="flex items-center gap-3 mb-2">
-                      <CircleDollarSign className="h-6 w-6 text-green-500" />
-                      <h3 className="text-2xl font-bold text-primary">
+                      <div className="p-3 bg-emerald-500/10 rounded-2xl">
+                        <CircleDollarSign className="h-6 w-6 text-emerald-500" />
+                      </div>
+                      <h3 className="text-3xl font-black text-primary">
                         {formatCurrency(summary?.totalDividends || 0)}
                       </h3>
                     </div>
@@ -809,7 +938,7 @@ const Dashboard = () => {
       </Card>
 
       {/* Assets */}
-      <Card className="mb-8 card-gradient">
+      <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Ativos</CardTitle>
           <CardDescription>Seus principais investimentos</CardDescription>
@@ -1022,7 +1151,7 @@ const Dashboard = () => {
       </Card>
 
       {/* Insights Preview */}
-      <Card className="card-gradient">
+      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div>
