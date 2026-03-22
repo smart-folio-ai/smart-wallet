@@ -224,9 +224,9 @@ export default function SubscriptionSuccess() {
               <p className="text-sm text-muted-foreground">
                 Precisa de ajuda? Entre em contato conosco em{' '}
                 <a
-                  href="mailto:suporte@trakker.com"
+                  href="mailto:suporte@trackerr.com"
                   className="text-primary hover:underline">
-                  suporte@trakker.com
+                  suporte@trackerr.com
                 </a>
               </p>
             </div>

@@ -74,7 +74,7 @@ export default function ForgotPassword() {
             <div className="w-10 h-10 bg-white/10 backdrop-blur-lg rounded-lg flex items-center justify-center">
               <AppLogo size="sm" />
             </div>
-            <span className="text-white text-xl font-bold">Trakker</span>
+            <span className="text-white text-xl font-bold">Trackerr</span>
           </div>
         </div>
 
@@ -297,11 +297,11 @@ export default function ForgotPassword() {
               </div>
 
               <p className="text-xs text-center text-muted-foreground">
-                Copyright © 2025 Trakker, LLC.{' '}
+                Copyright © 2025 Trackerr, LLC.{' '}
                 <a href="#" className="text-primary hover:underline">
-                  Trakker™
+                  Trackerr™
                 </a>{' '}
-                é uma marca registrada da Trakker, LLC.
+                é uma marca registrada da Trackerr, LLC.
               </p>
             </CardFooter>
           </Card>

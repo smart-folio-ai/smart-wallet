@@ -150,7 +150,7 @@ export default function ResetPassword() {
           <div className="w-10 h-10 bg-white/10 backdrop-blur-lg rounded-lg flex items-center justify-center">
             <AppLogo size="sm" />
           </div>
-          <span className="text-white text-xl font-bold">Trakker</span>
+          <span className="text-white text-xl font-bold">Trackerr</span>
         </div>
 
         <div className="relative z-10 flex flex-col items-center justify-center w-full p-16 text-white text-center">

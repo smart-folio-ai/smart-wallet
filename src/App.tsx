@@ -1,10 +1,12 @@
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {BrowserRouter, Routes, Route} from 'react-router-dom';
+import {BrowserRouter, Routes, Route, useLocation} from 'react-router-dom';
+import {useEffect} from 'react';
 import {Toaster} from '@/components/ui/toaster';
 import {Toaster as Sonner} from '@/components/ui/sonner';
 import {TooltipProvider} from '@/components/ui/tooltip';
-import {SidebarProvider, SidebarTrigger} from '@/components/ui/sidebar';
-import {AppSidebar} from '@/components/app-sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
+import { AppTopbar } from '@/components/layout/AppTopbar';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 import Index from './pages/Index';
@@ -32,6 +34,23 @@ import TwoFactorVerify from './pages/TwoFactorVerify';
 import MyAssetDetail from './pages/MyAssetDetail';
 import Fiscal from './pages/Fiscal';
 import Transactions from './pages/Transactions';
+import Dividends from './pages/Dividends';
+import DividendDetail from './pages/DividendDetail';
+
+
+const ScrollToTopOnRouteChange = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    const main = document.querySelector('main[data-app-main="true"]');
+    if (main instanceof HTMLElement) {
+      main.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  }, [pathname]);
+
+  return null;
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +68,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTopOnRouteChange />
         <Routes>
           <Route path="/landing" element={<Landing />} />
           <Route path="/" element={<SignIn />} />
@@ -70,14 +90,13 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <SidebarProvider>
-                  <div className="min-h-screen flex w-full">
+                  <div className="relative flex min-h-screen w-full bg-background">
                     <AppSidebar />
-                    <div className="flex-1 flex flex-col">
-                      <div className="flex items-center p-4 border-b lg:hidden">
-                        <SidebarTrigger />
-                      </div>
-                      <main className="flex-1 overflow-auto">
-                        <Routes>
+                    <SidebarInset className="bg-background">
+                      <AppTopbar />
+                      <main className="flex-1 px-3 py-4 md:px-6 md:py-6" data-app-main="true">
+                        <div className="mx-auto w-full max-w-[1600px]">
+                          <Routes>
                           <Route path="/dashboard" element={<Index />} />
                           <Route
                             path="/sync-accounts"
@@ -117,6 +136,11 @@ const App = () => (
                             path="/transactions"
                             element={<Transactions />}
                           />
+                          <Route path="/dividends" element={<Dividends />} />
+                          <Route
+                            path="/dividends/:symbol"
+                            element={<DividendDetail />}
+                          />
                           <Route path="/fiscal" element={<Fiscal />} />
                           <Route path="/settings" element={<Settings />} />
                           <Route
@@ -129,9 +153,10 @@ const App = () => (
                           />
                           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                           <Route path="*" element={<NotFound />} />
-                        </Routes>
+                          </Routes>
+                        </div>
                       </main>
-                    </div>
+                    </SidebarInset>
                   </div>
                 </SidebarProvider>
               </ProtectedRoute>

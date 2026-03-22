@@ -131,7 +131,7 @@ const AIInsights: React.FC = () => {
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <RefreshCw className="h-10 w-10 animate-spin text-primary" />
         <p className="text-muted-foreground animate-pulse font-medium">
-          Trakker IA está analisando seu patrimônio...
+          Trackerr IA está analisando seu patrimônio...
         </p>
       </div>
     );
@@ -270,7 +270,7 @@ const AIInsights: React.FC = () => {
                 <div className="p-6 bg-primary/5 rounded-2xl mb-4 border border-primary/10">
                   <h4 className="flex items-center gap-2 text-sm font-bold mb-3">
                     <Activity className="h-4 w-4 text-primary" /> Opinião
-                    Trakker
+                    Trackerr
                   </h4>
                   <p className="text-sm leading-relaxed text-muted-foreground italic">
                     "
@@ -578,7 +578,7 @@ const UpgradeBanner = () => (
         <Zap className="h-6 w-6 fill-white" />
       </div>
       <div className="space-y-2">
-        <h3 className="text-xl font-bold">Libere o Trakker Pro</h3>
+        <h3 className="text-xl font-bold">Libere o Trackerr Pro</h3>
         <p className="text-sm text-indigo-100 leading-relaxed">
           Tenha rebalanceamento automático real-time, acesso a robôs de
           arbitragem e radar de oportunidades expandido.

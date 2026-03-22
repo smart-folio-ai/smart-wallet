@@ -236,24 +236,101 @@ export default function AssetDetail() {
     cashflowYears.some((year) => row.values[year as keyof typeof row.values] !== null)
   );
 
-  const GrahamGauge = ({ price, fairValue }: { price: number; fairValue: number }) => {
-    const safeFairValue = fairValue > 0 ? fairValue : price > 0 ? price : 1;
-    const ratio = Math.max(0.5, Math.min(1.5, price / safeFairValue));
-    const progress = (ratio - 0.5) / 1.0; // 0..1
+  const GrahamGauge = ({price, fairValue}: {price: number; fairValue: number}) => {
+    const computedUpside =
+      fairValue > 0 && price > 0 ? ((fairValue / price) - 1) * 100 : 0;
+    const clampedUpside = Math.max(-60, Math.min(100, computedUpside));
+    const progress = (clampedUpside + 60) / 160; // 0..1
     const rotateDeg = -90 + progress * 180;
+    const cx = 120;
+    const cy = 120;
+    const radius = 88;
+
+    const arcPath = (startDeg: number, endDeg: number) => {
+      const toRad = (deg: number) => (deg * Math.PI) / 180;
+      const startX = cx + radius * Math.cos(toRad(startDeg));
+      const startY = cy - radius * Math.sin(toRad(startDeg));
+      const endX = cx + radius * Math.cos(toRad(endDeg));
+      const endY = cy - radius * Math.sin(toRad(endDeg));
+      return `M ${startX} ${startY} A ${radius} ${radius} 0 0 0 ${endX} ${endY}`;
+    };
+
+    const segmentLabels = [
+      {label: 'Sobre', color: '#f43f5e', angle: 157.5},
+      {label: 'Atencao', color: '#facc15', angle: 112.5},
+      {label: 'Neutra', color: '#3b82f6', angle: 67.5},
+      {label: 'Oportun.', color: '#22c55e', angle: 22.5},
+    ];
+
+    const labelPoint = (angle: number) => {
+      const r = 98;
+      const rad = (angle * Math.PI) / 180;
+      return {
+        x: cx + r * Math.cos(rad),
+        y: cy - r * Math.sin(rad),
+      };
+    };
 
     return (
       <div className="relative flex flex-col items-center">
-        <div className="relative h-[130px] w-full flex items-end justify-center">
-          <div
-            className="absolute bottom-0 h-[120px] w-[240px] rounded-t-full overflow-hidden"
-            style={{
-              background:
-                'conic-gradient(from 180deg at 50% 100%, #f43f5e 0deg 36deg, #fb923c 36deg 72deg, #facc15 72deg 108deg, #4ade80 108deg 144deg, #3b82f6 144deg 180deg)',
-            }}
-          >
-            <div className="absolute bottom-0 left-1/2 h-[88px] w-[176px] -translate-x-1/2 rounded-t-full bg-background" />
-          </div>
+        <div className="relative h-[112px] w-full flex items-end justify-center sm:h-[130px]">
+          <svg
+            viewBox="0 0 240 130"
+            className="absolute bottom-0 h-[104px] w-[200px] overflow-visible sm:h-[120px] sm:w-[240px]">
+            <path
+              d={arcPath(180, 0)}
+              stroke="hsl(var(--muted) / 0.2)"
+              strokeWidth="26"
+              fill="none"
+              strokeLinecap="butt"
+            />
+            <path
+              d={arcPath(180, 135)}
+              stroke="#f43f5e"
+              strokeWidth="26"
+              fill="none"
+              strokeLinecap="butt"
+            />
+            <path
+              d={arcPath(135, 90)}
+              stroke="#facc15"
+              strokeWidth="26"
+              fill="none"
+              strokeLinecap="butt"
+            />
+            <path
+              d={arcPath(90, 45)}
+              stroke="#3b82f6"
+              strokeWidth="26"
+              fill="none"
+              strokeLinecap="butt"
+            />
+            <path
+              d={arcPath(45, 0)}
+              stroke="#22c55e"
+              strokeWidth="26"
+              fill="none"
+              strokeLinecap="butt"
+            />
+            {segmentLabels.map((item) => {
+              const point = labelPoint(item.angle);
+              return (
+                <text
+                  key={item.label}
+                  x={point.x}
+                  y={point.y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill={item.color}
+                  fontSize="7.5"
+                  className="sm:[font-size:8.5px]"
+                  fontWeight="800"
+                  letterSpacing="0.2">
+                  {item.label}
+                </text>
+              );
+            })}
+          </svg>
           <div
             className="absolute bottom-0 left-1/2 h-[90px] w-[3px] bg-slate-800 dark:bg-white origin-bottom rounded-full transition-transform duration-700"
             style={{
@@ -271,6 +348,29 @@ export default function AssetDetail() {
             <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-70">Upside Potencial</span>
             <span className={`text-xl font-black ${upside >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
               {upside >= 0 ? '+' : ''}{upside.toFixed(2)}%
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-3 grid w-full max-w-[320px] grid-cols-2 gap-2 text-center">
+          <div className="rounded-md border border-rose-500/30 bg-rose-500/10 px-2 py-1.5">
+            <span className="whitespace-nowrap text-[9px] font-bold text-rose-400 sm:text-[10px]">
+              Sobrevalorizada
+            </span>
+          </div>
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5">
+            <span className="whitespace-nowrap text-[9px] font-bold text-amber-400 sm:text-[10px]">
+              Atenção
+            </span>
+          </div>
+          <div className="rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-1.5">
+            <span className="whitespace-nowrap text-[9px] font-bold text-blue-400 sm:text-[10px]">
+              Neutra
+            </span>
+          </div>
+          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5">
+            <span className="whitespace-nowrap text-[9px] font-bold text-emerald-400 sm:text-[10px]">
+              Oportunidade
             </span>
           </div>
         </div>
@@ -450,13 +550,13 @@ export default function AssetDetail() {
               ))}
             </div>
 
-            {/* Trakker Opinion - AI Section */}
+            {/* Trackerr Opinion - AI Section */}
             <Card className="border-none shadow-lg bg-gradient-to-br from-indigo-600/10 to-primary/5 relative overflow-hidden ring-1 ring-primary/20">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Zap className="h-5 w-5 text-primary fill-primary" />
-                    <CardTitle className="text-xl font-black">Opinião Trakker IA</CardTitle>
+                    <CardTitle className="text-xl font-black">Opinião Trackerr IA</CardTitle>
                   </div>
                   <Badge className="bg-primary hover:bg-primary text-[10px] font-bold uppercase tracking-widest">Premium</Badge>
                 </div>
@@ -566,14 +666,14 @@ export default function AssetDetail() {
                           </div>
                         ) : (
                           <div className="space-y-6">
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4">
+                            <div className="flex flex-col items-center justify-between gap-4 px-1 sm:px-4 md:flex-row md:gap-6">
                               <div className="text-center md:text-left">
                                 <p className="text-[10px] font-bold text-muted-foreground mb-1 uppercase tracking-tighter">Valor Intrínseco</p>
-                                <p className="text-4xl font-black text-primary">{formatCurrency(grahamValue)}</p>
+                                <p className="text-3xl font-black text-primary sm:text-4xl">{formatCurrency(grahamValue)}</p>
                               </div>
                               <div className="text-center md:text-right">
                                 <p className="text-[10px] font-bold text-muted-foreground mb-1 uppercase tracking-tighter">Preço Atual</p>
-                                <p className="text-2xl font-black">{formatCurrency(asset.price)}</p>
+                                <p className="text-xl font-black sm:text-2xl">{formatCurrency(asset.price)}</p>
                               </div>
                             </div>
                             
