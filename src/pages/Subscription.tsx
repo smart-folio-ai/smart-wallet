@@ -167,13 +167,13 @@ export default function Subscriptions() {
 
   return (
     <>
-      <div className="container py-10">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <h1 className="text-4xl font-bold tracking-tight mb-3">
+      <div className="container py-12 font-sans selection:bg-primary/20">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <h1 className="text-4xl md:text-5xl font-heading font-bold tracking-tight text-foreground">
             Invista melhor com o Trackerr
           </h1>
-          <p className="text-xl text-muted-foreground mb-8">
-            Escolha o plano ideal para suas necessidades de investimento
+          <p className="text-lg md:text-xl text-muted-foreground pb-4 max-w-2xl mx-auto leading-relaxed">
+            Escolha o plano ideal para suas necessidades de investimento e destrave o poder da Inteligência Artificial.
           </p>
 
           <SeletorPrice
@@ -184,8 +184,8 @@ export default function Subscriptions() {
             badgeName="Economize 30%"
           />
         </div>
-        <div className="container py-10">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="container px-0 md:px-4 pb-12">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {isLoading ? (
               <div>Carregando planos...</div>
             ) : (
@@ -206,39 +206,40 @@ export default function Subscriptions() {
           </div>
         </div>
         {/* Seção de informações adicionais */}
-        <div className="mt-16 grid md:grid-cols-3 gap-8">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <CircleDollarSign className="h-6 w-6 text-primary" />
+        <div className="mt-20 grid md:grid-cols-3 gap-8 pb-10 max-w-5xl mx-auto">
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-card border border-border/50 shadow-sm transition-all hover:shadow-md">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+              <CircleDollarSign className="h-7 w-7 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">
+            <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
               Cancelamento a qualquer momento
             </h3>
-            <p className="text-muted-foreground">
-              Você pode cancelar sua assinatura quando quiser, sem custos
-              adicionais.
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Você pode cancelar sua assinatura quando quiser, de forma simples e sem custos adicionais.
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Star className="h-6 w-6 text-primary" />
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-card border border-border/50 shadow-sm transition-all hover:shadow-md">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+              <Star className="h-7 w-7 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Satisfação garantida</h3>
-            <p className="text-muted-foreground">
-              Devolução do valor integral em até 7 dias se não estiver
-              satisfeito.
+            <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
+              Satisfação garantida
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Devolução do valor integral em até 7 dias da compra caso você não se adapte.
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Calendar className="h-6 w-6 text-primary" />
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-card border border-border/50 shadow-sm transition-all hover:shadow-md">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+              <Calendar className="h-7 w-7 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Suporte dedicado</h3>
-            <p className="text-muted-foreground">
-              Nosso time de especialistas está pronto para ajudar você em sua
-              jornada.
+            <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
+              Suporte dedicado
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Nossa equipe técnica e de especialistas está sempre pronta para ajudar.
             </p>
           </div>
         </div>

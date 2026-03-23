@@ -70,31 +70,29 @@ export default function SubscriptionSuccess() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-info/40 via-primary/30 to-secondary/50">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-info/40 via-primary/30 to-secondary/50 flex items-center justify-center p-4">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
       <div className="w-full max-w-2xl">
         <div className="mb-8 flex justify-center">
           <AppLogo size="lg" />
         </div>
 
-        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 shadow-2xl shadow-primary/5 border-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-info/10 opacity-50 pointer-events-none" />
-
-          <CardHeader className="relative text-center pb-4">
-            <div className="w-16 h-16 bg-success rounded-full flex items-center justify-center mx-auto mb-4">
-              <Check className="h-8 w-8 text-white" />
+        <Card className="rounded-2xl bg-card border border-border/60 shadow-2xl shadow-primary/5 overflow-hidden">
+          <CardHeader className="relative text-center pb-6 pt-8">
+            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="h-8 w-8 text-emerald-500" />
             </div>
-            <CardTitle className="text-3xl font-bold text-success mb-2">
+            <CardTitle className="text-3xl font-bold font-heading text-emerald-500 mb-2">
               Assinatura Confirmada!
             </CardTitle>
-            <CardDescription className="text-lg">
-              Bem-vindo ao {subscriptionDetails?.planName}
+            <CardDescription className="text-lg text-muted-foreground">
+              Bem-vindo ao <span className="font-medium text-foreground">{subscriptionDetails?.planName}</span>
             </CardDescription>
           </CardHeader>
 
@@ -105,7 +103,7 @@ export default function SubscriptionSuccess() {
                 <div className="flex items-center space-x-3">
                   <Crown className="h-6 w-6 text-primary" />
                   <div>
-                    <h3 className="text-xl font-semibold">
+                    <h3 className="text-xl font-heading font-semibold text-foreground">
                       {subscriptionDetails?.planName}
                     </h3>
                     <p className="text-muted-foreground">
@@ -116,7 +114,7 @@ export default function SubscriptionSuccess() {
                     </p>
                   </div>
                 </div>
-                <Badge variant="default" className="bg-success/20 text-success">
+                <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-600 font-medium border-0 hover:bg-emerald-500/20">
                   {subscriptionDetails?.status === 'active'
                     ? 'Ativo'
                     : 'Pendente'}
@@ -145,17 +143,17 @@ export default function SubscriptionSuccess() {
             </div>
 
             {/* Recursos inclusos */}
-            <div className="bg-card/50 rounded-lg p-6">
-              <h4 className="text-lg font-semibold mb-4">
+            <div className="bg-card/50 border border-border/50 rounded-xl p-6">
+              <h4 className="text-lg font-heading font-semibold mb-4 text-foreground">
                 Recursos inclusos na sua assinatura:
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {subscriptionDetails?.features.map((feature, index) => (
                   <div key={index} className="flex items-center space-x-3">
-                    <div className="w-5 h-5 bg-success rounded-full flex items-center justify-center flex-shrink-0">
-                      <Check className="h-3 w-3 text-white" />
+                    <div className="w-5 h-5 bg-emerald-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Check className="h-3 w-3 text-emerald-500" />
                     </div>
-                    <span className="text-sm">{feature}</span>
+                    <span className="text-sm text-muted-foreground">{feature}</span>
                   </div>
                 ))}
               </div>
@@ -193,10 +191,10 @@ export default function SubscriptionSuccess() {
             </div>
 
             {/* Ações */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button
                 onClick={() => navigate('/dashboard')}
-                className="flex-1 success-gradient border-0"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground border-0 h-12"
                 size="lg">
                 <ArrowRight className="h-4 w-4 mr-2" />
                 Ir para Dashboard
@@ -204,6 +202,7 @@ export default function SubscriptionSuccess() {
               <Button
                 variant="outline"
                 onClick={() => navigate('/sync-accounts')}
+                className="h-12"
                 size="lg">
                 Conectar Contas
               </Button>
