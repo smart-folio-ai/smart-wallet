@@ -5,15 +5,7 @@ import {useForm} from 'react-hook-form';
 import apiClient from '@/server/api/api';
 import {useMutation} from '@tanstack/react-query';
 import * as z from 'zod';
-import {ArrowLeft, Mail, Loader2} from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import {ArrowLeft, Loader2, TrendingUp, Mail, CheckCircle2} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -24,7 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
 
 const formSchema = z.object({
@@ -44,7 +35,7 @@ export default function ForgotPassword() {
     },
   });
 
-  const { mutate: forgotPassword, isPending } = useMutation({
+  const {mutate: forgotPassword, isPending} = useMutation({
     mutationFn: async (data: FormValues) => {
       const response = await apiClient.post('/auth/forgot-password', data);
       return response.data;
@@ -55,9 +46,9 @@ export default function ForgotPassword() {
     },
     onError: () => {
       toast.error(
-        'Não conseguimos enviar o e-mail de recuperação agora. Tente novamente em instantes.',
+        'Não conseguimos enviar o e-mail de recuperação agora. Tente novamente.',
       );
-    }
+    },
   });
 
   const onSubmit = (data: FormValues) => {
@@ -65,246 +56,310 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-amber-600 via-orange-700 to-red-900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20" />
+    <div
+      id="forgot-password-page"
+      className="min-h-screen flex"
+      style={{backgroundColor: '#0b1326', fontFamily: 'Inter, sans-serif'}}>
+      {/* Painel esquerdo */}
+      <div
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
+        style={{backgroundColor: '#060d20'}}>
+        <div
+          className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(38,101,253,0.08) 0%, transparent 70%)',
+          }}
+        />
 
-        <div className="absolute top-10 left-10 right-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/10 backdrop-blur-lg rounded-lg flex items-center justify-center">
-              <AppLogo size="sm" />
-            </div>
-            <span className="text-white text-xl font-bold">Trakker</span>
+        {/* Logo */}
+        <div className="flex items-center gap-3 relative z-10">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center"
+            style={{backgroundColor: '#2665fd'}}>
+            <TrendingUp className="w-5 h-5 text-white" />
           </div>
+          <span
+            className="text-xl font-bold tracking-tight"
+            style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}>
+            Trackerr
+          </span>
         </div>
 
-        <div className="absolute top-20 right-20 w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full opacity-60 blur-2xl animate-pulse" />
-        <div
-          className="absolute top-40 left-40 w-32 h-32 bg-gradient-to-br from-orange-400 to-red-500 rounded-full opacity-60 blur-2xl animate-pulse"
-          style={{animationDelay: '1s'}}
-        />
-        <div
-          className="absolute bottom-40 right-40 w-28 h-28 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full opacity-60 blur-2xl animate-pulse"
-          style={{animationDelay: '2s'}}
-        />
+        {/* Conteúdo central */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center">
+          <div className="mb-6 inline-flex">
+            <span
+              className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full"
+              style={{
+                color: '#b5c4ff',
+                backgroundColor: 'rgba(38,101,253,0.12)',
+                fontFamily: 'Inter, sans-serif',
+                letterSpacing: '0.12em',
+              }}>
+              Recuperação de Acesso
+            </span>
+          </div>
+          <h1
+            className="font-bold leading-tight mb-5"
+            style={{
+              color: '#dbe2fd',
+              fontSize: '2.75rem',
+              fontFamily: 'Manrope, sans-serif',
+              letterSpacing: '-0.02em',
+            }}>
+            Recupere seu acesso de forma rápida e segura.
+          </h1>
+          <p
+            className="leading-relaxed"
+            style={{
+              color: 'rgba(195,197,216,0.75)',
+              fontSize: '1rem',
+              lineHeight: '1.7',
+            }}>
+            Acontece com os melhores. Informe seu e-mail cadastrado e enviaremos
+            as instruções de recuperação em instantes.
+          </p>
 
-        <div className="relative z-10 flex flex-col items-center justify-center w-full p-16 text-white">
-          <div className="max-w-lg text-center space-y-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-orange-500 to-red-600 blur-3xl opacity-50 animate-pulse" />
-              <div className="relative bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-                <svg
-                  className="w-48 h-48 mx-auto"
-                  viewBox="0 0 200 200"
-                  fill="none">
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="70"
-                    stroke="white"
-                    strokeWidth="4"
-                    opacity="0.3"
-                  />
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="55"
-                    stroke="white"
-                    strokeWidth="3"
-                    opacity="0.4"
-                  />
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="40"
-                    stroke="white"
-                    strokeWidth="2"
-                    opacity="0.5"
-                  />
-                  <path
-                    d="M 100 30 L 100 70"
-                    stroke="white"
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                    opacity="0.8"
-                  />
-                  <path
-                    d="M 100 100 L 100 130"
-                    stroke="white"
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                    opacity="0.8"
-                  />
-                  <circle cx="100" cy="100" r="12" fill="white" opacity="0.9" />
-                  <path
-                    d="M 50 100 A 50 50 0 0 1 100 50"
-                    stroke="url(#lock-gradient)"
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    fill="none"
-                  />
-                  <path
-                    d="M 85 85 L 100 100 L 125 75"
-                    stroke="#F59E0B"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                    opacity="0.8"
-                  />
-                  <defs>
-                    <linearGradient
-                      id="lock-gradient"
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="100%">
-                      <stop offset="0%" stopColor="#FBBF24" />
-                      <stop offset="100%" stopColor="#F59E0B" />
-                    </linearGradient>
-                  </defs>
-                </svg>
+          {/* Steps */}
+          <div className="mt-10 space-y-4">
+            {[
+              {
+                step: '01',
+                title: 'Informe seu e-mail',
+                desc: 'Digite o e-mail vinculado à sua conta',
+              },
+              {
+                step: '02',
+                title: 'Verifique sua caixa de entrada',
+                desc: 'Enviaremos um link de recuperação seguro',
+              },
+              {
+                step: '03',
+                title: 'Redefina sua senha',
+                desc: 'Crie uma nova senha e acesse o terminal',
+              },
+            ].map((item) => (
+              <div
+                key={item.step}
+                className="flex items-start gap-4 rounded-xl p-4"
+                style={{backgroundColor: '#131b2e'}}>
+                <span
+                  className="text-xs font-bold tabular-nums mt-0.5"
+                  style={{
+                    color: '#2665fd',
+                    fontFamily: 'Manrope, sans-serif',
+                    minWidth: '1.5rem',
+                  }}>
+                  {item.step}
+                </span>
+                <div>
+                  <div
+                    className="font-semibold text-sm mb-0.5"
+                    style={{
+                      color: '#dbe2fd',
+                      fontFamily: 'Manrope, sans-serif',
+                    }}>
+                    {item.title}
+                  </div>
+                  <div
+                    className="text-xs"
+                    style={{color: 'rgba(195,197,216,0.6)'}}>
+                    {item.desc}
+                  </div>
+                </div>
               </div>
-            </div>
-            <h1 className="text-4xl font-bold leading-tight">
-              Não se preocupe, estamos aqui para ajudar
-            </h1>
-            <p className="text-lg text-amber-100">
-              Recupere o acesso à sua conta de forma rápida e segura. Enviaremos
-              instruções para o seu e-mail.
-            </p>
+            ))}
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-red-900/50 to-transparent" />
+        <p
+          className="text-xs relative z-10"
+          style={{color: 'rgba(195,197,216,0.4)'}}>
+          © 2025 Trackerr. Plataforma de análise de investimentos.
+        </p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+      {/* Painel direito */}
+      <div
+        className="flex-1 flex items-center justify-center p-8"
+        style={{backgroundColor: '#0b1326'}}>
         <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden flex justify-center">
-            <AppLogo size="lg" />
+          {/* Logo mobile */}
+          <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center"
+              style={{backgroundColor: '#2665fd'}}>
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <span
+              className="text-xl font-bold"
+              style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}>
+              Trackerr
+            </span>
           </div>
 
-          <Card className="w-full border shadow-xl">
-            <CardHeader>
-              <div className="flex items-center gap-2 mb-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate('/')}>
-                  <ArrowLeft className="h-5 w-5" />
-                  <span className="sr-only">Voltar</span>
-                </Button>
+          {/* Botão Voltar */}
+          <button
+            id="forgot-password-back"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 mb-8 text-sm transition-colors"
+            style={{color: 'rgba(195,197,216,0.6)'}}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#b5c4ff')}
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = 'rgba(195,197,216,0.6)')
+            }>
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para o login
+          </button>
+
+          {!isSubmitted ? (
+            <>
+              {/* Cabeçalho */}
+              <div className="mb-8">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                  style={{backgroundColor: 'rgba(38,101,253,0.12)'}}>
+                  <Mail className="h-6 w-6" style={{color: '#2665fd'}} />
+                </div>
+                <h2
+                  className="font-bold mb-2"
+                  style={{
+                    color: '#dbe2fd',
+                    fontSize: '1.875rem',
+                    fontFamily: 'Manrope, sans-serif',
+                    letterSpacing: '-0.02em',
+                  }}>
+                  Esqueceu sua senha?
+                </h2>
+                <p style={{color: 'rgba(195,197,216,0.6)', fontSize: '0.9rem'}}>
+                  Informe seu e-mail e enviaremos as instruções para a
+                  recuperação.
+                </p>
               </div>
-              <CardTitle className="text-3xl font-bold">
-                Recuperar senha
-              </CardTitle>
-              <CardDescription>
-                {!isSubmitted
-                  ? 'Digite seu e-mail para receber instruções de recuperação de senha'
-                  : 'Verifique seu email para instruções de recuperação de senha'}
-              </CardDescription>
-            </CardHeader>
 
-            <CardContent className="space-y-4">
-              {!isSubmitted ? (
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({field}) => (
-                        <FormItem>
-                          <FormLabel>E-mail</FormLabel>
-                          <div className="relative">
-                            <FormControl>
-                              <Input
-                                placeholder="seu@email.com"
-                                {...field}
-                                className="pl-10"
-                              />
-                            </FormControl>
-                            <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <Button
-                      type="submit"
-                      disabled={isPending}
-                      className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium"
-                      size="lg">
-                      {isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Enviando...
-                        </>
-                      ) : (
-                        'Enviar instruções'
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              ) : (
-                <div className="space-y-4">
-                  <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <svg
-                        className="w-6 h-6 mt-0.5 flex-shrink-0"
-                        fill="currentColor"
-                        viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <div>
-                        <p className="font-medium mb-1">
-                          Email enviado com sucesso!
-                        </p>
-                        <p className="text-sm">
-                          Um email foi enviado para{' '}
-                          <strong>{form.getValues().email}</strong> com
-                          instruções para recuperar sua senha.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              {/* Formulário */}
+              <Form {...form}>
+                <form
+                  id="forgot-password-form"
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-5">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({field}) => (
+                      <FormItem>
+                        <FormLabel
+                          className="uppercase tracking-widest text-xs"
+                          style={{
+                            color: 'rgba(195,197,216,0.7)',
+                            letterSpacing: '0.1em',
+                          }}>
+                          E-mail
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            id="forgot-password-email"
+                            placeholder="seu@email.com"
+                            {...field}
+                            className="h-12 border-0 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd]"
+                            style={{
+                              backgroundColor: '#2d3449',
+                              color: '#dbe2fd',
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <Button
-                    variant="outline"
-                    className="w-full"
-                    size="lg"
-                    onClick={() => setIsSubmitted(false)}>
-                    Tentar outro email
+                    id="forgot-password-submit"
+                    type="submit"
+                    disabled={isPending}
+                    className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+                      color: '#f9f7ff',
+                    }}>
+                    {isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      'Enviar Instruções'
+                    )}
                   </Button>
+                </form>
+              </Form>
+            </>
+          ) : (
+            <div id="forgot-password-success">
+              {/* Estado de sucesso */}
+              <div className="mb-8">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                  style={{backgroundColor: 'rgba(38,101,253,0.12)'}}>
+                  <CheckCircle2
+                    className="h-6 w-6"
+                    style={{color: '#b5c4ff'}}
+                  />
                 </div>
-              )}
-            </CardContent>
-
-            <CardFooter className="flex flex-col space-y-4 pt-0">
-              <div className="text-center">
-                <button
-                  onClick={() => navigate('/')}
-                  className="text-sm text-muted-foreground hover:text-primary">
-                  Voltar para o login
-                </button>
+                <h2
+                  className="font-bold mb-2"
+                  style={{
+                    color: '#dbe2fd',
+                    fontSize: '1.875rem',
+                    fontFamily: 'Manrope, sans-serif',
+                    letterSpacing: '-0.02em',
+                  }}>
+                  Email enviado!
+                </h2>
+                <p
+                  style={{
+                    color: 'rgba(195,197,216,0.6)',
+                    fontSize: '0.9rem',
+                    lineHeight: '1.6',
+                  }}>
+                  Enviamos as instruções de recuperação para{' '}
+                  <span style={{color: '#b5c4ff', fontWeight: 600}}>
+                    {form.getValues().email}
+                  </span>
+                  . Verifique sua caixa de entrada e a pasta de spam.
+                </p>
               </div>
 
-              <p className="text-xs text-center text-muted-foreground">
-                Copyright © 2025 Trakker, LLC.{' '}
-                <a href="#" className="text-primary hover:underline">
-                  Trakker™
-                </a>{' '}
-                é uma marca registrada da Trakker, LLC.
-              </p>
-            </CardFooter>
-          </Card>
+              <div
+                className="rounded-xl p-4 mb-6"
+                style={{backgroundColor: '#131b2e'}}>
+                <p className="text-sm" style={{color: 'rgba(195,197,216,0.7)'}}>
+                  O link de recuperação expira em{' '}
+                  <strong style={{color: '#b5c4ff'}}>30 minutos</strong>. Caso
+                  não receba o e-mail, tente novamente.
+                </p>
+              </div>
+
+              <Button
+                id="forgot-password-retry"
+                variant="outline"
+                className="w-full h-12 font-semibold text-sm border-0 transition-all duration-200"
+                style={{
+                  backgroundColor: '#2d3449',
+                  color: '#dbe2fd',
+                }}
+                onClick={() => setIsSubmitted(false)}>
+                Tentar outro e-mail
+              </Button>
+            </div>
+          )}
+
+          <p
+            className="text-xs text-center mt-8"
+            style={{color: 'rgba(195,197,216,0.3)'}}>
+            Copyright © 2025 Trackerr. Todos os direitos reservados.
+          </p>
         </div>
       </div>
     </div>

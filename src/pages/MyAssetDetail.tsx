@@ -170,7 +170,23 @@ const MyAssetDetail = () => {
       ? 'FII'
       : asset.type === 'crypto'
       ? 'Cripto'
+      : asset.type === 'fund'
+      ? 'Renda Fixa'
       : 'Outro';
+
+  const displaySymbol = (() => {
+    const rawName = String((asset as any).name || '').trim();
+    if (!rawName) return asset.symbol;
+    const short = rawName.split('-')[0]?.trim();
+    return short || rawName || asset.symbol;
+  })();
+
+  const secondaryName = (() => {
+    const rawName = String((asset as any).name || '').trim();
+    if (!rawName) return '';
+    if (rawName === displaySymbol) return '';
+    return rawName;
+  })();
 
   return (
     <div className="min-h-screen bg-background">
@@ -188,11 +204,13 @@ const MyAssetDetail = () => {
           <div className="flex items-center gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-3xl font-bold">{asset.symbol}</h1>
+                <h1 className="text-3xl font-bold">{displaySymbol}</h1>
                 <Badge variant="secondary">{typeLabel}</Badge>
               </div>
-              {asset.name && (
-                <p className="text-muted-foreground">{asset.name}</p>
+              {secondaryName ? (
+                <p className="text-muted-foreground">{secondaryName}</p>
+              ) : (
+                <p className="text-muted-foreground">{asset.symbol}</p>
               )}
             </div>
           </div>

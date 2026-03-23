@@ -30,7 +30,7 @@ export default function Landing() {
         <div className="container mx-auto px-4 py-4">
           <nav className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src={trakkerLogo} alt="Trakker" className="h-12" />
+              <img src={trakkerLogo} alt="Trackerr" className="h-12" />
             </div>
             <div className="hidden md:flex items-center gap-6">
               <button onClick={() => scrollToSection("inicio")} className="text-foreground/80 hover:text-foreground transition-colors">
@@ -119,7 +119,7 @@ export default function Landing() {
         <div className="text-center mb-16 animate-fade-in">
           <h2 className="text-3xl font-bold mb-4">Inovação em Gestão de Investimentos</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Trakker combina tecnologia de ponta com análise financeira avançada
+            Trackerr combina tecnologia de ponta com análise financeira avançada
             para oferecer uma experiência única de gestão de portfólio.
           </p>
         </div>
@@ -337,7 +337,7 @@ export default function Landing() {
               Pronto para Revolucionar seus Investimentos?
             </h2>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Junte-se a milhares de investidores que já utilizam Trakker
+              Junte-se a milhares de investidores que já utilizam Trackerr
               para maximizar seus retornos.
             </p>
             <Link to="/register">
@@ -354,9 +354,9 @@ export default function Landing() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <img src={trakkerLogo} alt="Trakker" className="h-8" />
+              <img src={trakkerLogo} alt="Trackerr" className="h-8" />
               <span className="text-sm text-muted-foreground">
-                © 2025 Trakker. Todos os direitos reservados.
+                © 2025 Trackerr. Todos os direitos reservados.
               </span>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">

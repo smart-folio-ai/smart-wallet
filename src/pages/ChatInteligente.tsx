@@ -95,7 +95,7 @@ export default function ChatInteligente() {
           Chat Inteligente
         </h1>
         <p className="text-muted-foreground">
-          Converse com a Trakker IA usando os dados reais da sua carteira.
+          Converse com a Trackerr IA usando os dados reais da sua carteira.
         </p>
       </div>
 

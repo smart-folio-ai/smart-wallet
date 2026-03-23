@@ -4,15 +4,7 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
 import apiClient from '@/server/api/api';
-import {ArrowLeft, Lock, ShieldCheck} from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import {Eye, EyeOff, ArrowLeft, TrendingUp, ShieldCheck, Loader2, KeyRound, CheckCircle2, AlertCircle} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -23,13 +15,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {AppLogo} from '@/components/AppLogo';
-import {toast} from 'sonner';
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
-} from "@/components/ui/input-otp";
+} from '@/components/ui/input-otp';
+import {toast} from 'sonner';
 
 const formSchema = z
   .object({
@@ -44,15 +35,88 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>;
 
+// ─── Estado: Validando token ────────────────────────────────────────────────
+
+function LoadingState() {
+  return (
+    <div
+      id="reset-password-loading"
+      className="min-h-screen flex items-center justify-center"
+      style={{backgroundColor: '#0b1326'}}
+    >
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="w-10 h-10 animate-spin" style={{color: '#2665fd'}} />
+        <p className="text-sm" style={{color: 'rgba(195,197,216,0.6)'}}>
+          Validando link de recuperação...
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Estado: Token inválido ──────────────────────────────────────────────────
+
+function InvalidTokenState({onRetry}: {onRetry: () => void}) {
+  return (
+    <div
+      id="reset-password-invalid"
+      className="min-h-screen flex items-center justify-center p-8"
+      style={{backgroundColor: '#0b1326'}}
+    >
+      <div className="w-full max-w-md text-center">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+          style={{backgroundColor: 'rgba(201,70,0,0.12)'}}
+        >
+          <AlertCircle className="w-8 h-8" style={{color: '#ffb59a'}} />
+        </div>
+        <h2
+          className="font-bold mb-3"
+          style={{
+            color: '#dbe2fd',
+            fontSize: '1.75rem',
+            fontFamily: 'Manrope, sans-serif',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          Link inválido ou expirado
+        </h2>
+        <p
+          className="mb-8 leading-relaxed"
+          style={{color: 'rgba(195,197,216,0.6)', fontSize: '0.9rem'}}
+        >
+          O link para redefinição de senha não é válido ou já expirou. Por favor, solicite um novo link de recuperação.
+        </p>
+        <Button
+          id="reset-password-request-new"
+          onClick={onRetry}
+          className="w-full h-12 font-semibold text-sm"
+          style={{
+            background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+            color: '#f9f7ff',
+          }}
+        >
+          Solicitar novo link
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Componente principal ────────────────────────────────────────────────────
+
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const navigate = useNavigate();
-  
+
   const [isValidating, setIsValidating] = useState(true);
   const [isValidToken, setIsValidToken] = useState(false);
   const [requiresMfa, setRequiresMfa] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -65,7 +129,7 @@ export default function ResetPassword() {
         const response = await apiClient.get(`/auth/reset-password/${token}`);
         setIsValidToken(true);
         setRequiresMfa(response.data.twoFactorEnabled);
-      } catch (error) {
+      } catch {
         setIsValidToken(false);
       } finally {
         setIsValidating(false);
@@ -86,7 +150,7 @@ export default function ResetPassword() {
 
   const onSubmit = async (data: FormValues) => {
     if (!token) return;
-    
+
     setIsSubmitting(true);
     try {
       await apiClient.post('/auth/reset-password', {
@@ -94,105 +158,231 @@ export default function ResetPassword() {
         newPassword: data.password,
         code: data.code,
       });
-      
-      toast.success('Senha alterada com sucesso! Faça login para continuar.');
-      navigate('/');
-    } catch (error: any) {
+
+      setIsSuccess(true);
+      toast.success('Senha alterada com sucesso!');
+    } catch {
       toast.error(
-        'Não foi possível redefinir sua senha agora. Verifique o código informado e tente novamente.',
+        'Não foi possível redefinir sua senha. Verifique o código informado e tente novamente.',
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isValidating) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-      </div>
-    );
-  }
-
-  if (!token || !isValidToken) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-md text-center space-y-6">
-          <div className="mx-auto flex justify-center">
-            <AppLogo size="lg" />
-          </div>
-          <Card className="border shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-red-600">Link Inválido ou Expirado</CardTitle>
-              <CardDescription>
-                O link para redefinição de senha não é válido ou já expirou. 
-                Por favor, solicite a recuperação de senha novamente.
-              </CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button className="w-full" onClick={() => navigate('/forgot-password')}>
-                Solicitar novo link
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  if (isValidating) return <LoadingState />;
+  if (!token || !isValidToken) return <InvalidTokenState onRetry={() => navigate('/forgot-password')} />;
 
   return (
-    <div className="min-h-screen flex">
-      {/* Decorative Side */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-amber-600 via-orange-700 to-red-900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20" />
-        
-        <div className="absolute top-10 left-10 right-10 flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/10 backdrop-blur-lg rounded-lg flex items-center justify-center">
-            <AppLogo size="sm" />
+    <div
+      id="reset-password-page"
+      className="min-h-screen flex"
+      style={{backgroundColor: '#0b1326', fontFamily: 'Inter, sans-serif'}}
+    >
+      {/* Painel esquerdo */}
+      <div
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
+        style={{backgroundColor: '#060d20'}}
+      >
+        <div
+          className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(38,101,253,0.08) 0%, transparent 70%)',
+          }}
+        />
+
+        {/* Logo */}
+        <div className="flex items-center gap-3 relative z-10">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center"
+            style={{backgroundColor: '#2665fd'}}
+          >
+            <TrendingUp className="w-5 h-5 text-white" />
           </div>
-          <span className="text-white text-xl font-bold">Trakker</span>
+          <span
+            className="text-xl font-bold tracking-tight"
+            style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}
+          >
+            Trackerr
+          </span>
         </div>
 
-        <div className="relative z-10 flex flex-col items-center justify-center w-full p-16 text-white text-center">
-          <div className="bg-white/10 backdrop-blur-lg rounded-full p-6 mb-8 border border-white/20">
-            <ShieldCheck className="w-16 h-16" />
+        {/* Conteúdo central */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center">
+          <div className="mb-6 inline-flex">
+            <span
+              className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full"
+              style={{
+                color: '#b5c4ff',
+                backgroundColor: 'rgba(38,101,253,0.12)',
+                fontFamily: 'Inter, sans-serif',
+                letterSpacing: '0.12em',
+              }}
+            >
+              Redefinição de Senha
+            </span>
           </div>
-          <h1 className="text-4xl font-bold leading-tight mb-4">
-            Quase lá!
+          <h1
+            className="font-bold leading-tight mb-5"
+            style={{
+              color: '#dbe2fd',
+              fontSize: '2.75rem',
+              fontFamily: 'Manrope, sans-serif',
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Quase lá. Crie uma nova senha segura.
           </h1>
-          <p className="text-lg text-amber-100 max-w-md">
-            Crie uma nova senha forte e exclusiva para proteger sua conta.
+          <p
+            className="leading-relaxed"
+            style={{color: 'rgba(195,197,216,0.75)', fontSize: '1rem', lineHeight: '1.7'}}
+          >
+            Escolha uma senha forte e exclusiva para proteger o acesso ao seu terminal financeiro.
           </p>
+
+          {/* Dicas de segurança */}
+          <div className="mt-10 space-y-3">
+            {[
+              'Mínimo de 8 caracteres',
+              'Use letras maiúsculas, minúsculas e números',
+              'Evite senhas reutilizadas de outros serviços',
+            ].map((tip) => (
+              <div
+                key={tip}
+                className="flex items-center gap-3 rounded-xl p-4"
+                style={{backgroundColor: '#131b2e'}}
+              >
+                <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{color: '#2665fd'}} />
+                <span className="text-sm" style={{color: 'rgba(195,197,216,0.7)'}}>
+                  {tip}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
+
+        <p className="text-xs relative z-10" style={{color: 'rgba(195,197,216,0.4)'}}>
+          © 2025 Trackerr. Plataforma de análise de investimentos.
+        </p>
       </div>
 
-      {/* Form Side */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+      {/* Painel direito */}
+      <div
+        className="flex-1 flex items-center justify-center p-8"
+        style={{backgroundColor: '#0b1326'}}
+      >
         <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden flex justify-center">
-            <AppLogo size="lg" />
+          {/* Logo mobile */}
+          <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center"
+              style={{backgroundColor: '#2665fd'}}
+            >
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <span
+              className="text-xl font-bold"
+              style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}
+            >
+              Trackerr
+            </span>
           </div>
 
-          <Card className="w-full border shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-3xl font-bold">Nova Senha</CardTitle>
-              <CardDescription>
-                Digite sua nova senha abaixo.
-                {requiresMfa && " Você também precisará informar seu código de Autenticação em Duas Etapas (2FA)."}
-              </CardDescription>
-            </CardHeader>
+          {/* Botão voltar */}
+          <button
+            id="reset-password-back"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 mb-8 text-sm transition-colors"
+            style={{color: 'rgba(195,197,216,0.6)'}}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#b5c4ff')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(195,197,216,0.6)')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para o login
+          </button>
 
-            <CardContent>
+          {isSuccess ? (
+            /* ── Estado de sucesso ── */
+            <div id="reset-password-success">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                style={{backgroundColor: 'rgba(38,101,253,0.12)'}}
+              >
+                <CheckCircle2 className="h-6 w-6" style={{color: '#b5c4ff'}} />
+              </div>
+              <h2
+                className="font-bold mb-2"
+                style={{
+                  color: '#dbe2fd',
+                  fontSize: '1.875rem',
+                  fontFamily: 'Manrope, sans-serif',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                Senha redefinida!
+              </h2>
+              <p
+                className="mb-8"
+                style={{color: 'rgba(195,197,216,0.6)', fontSize: '0.9rem', lineHeight: '1.6'}}
+              >
+                Sua senha foi alterada com sucesso. Você já pode acessar o terminal com suas novas credenciais.
+              </p>
+              <Button
+                id="reset-password-goto-login"
+                onClick={() => navigate('/')}
+                className="w-full h-12 font-semibold text-sm"
+                style={{
+                  background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+                  color: '#f9f7ff',
+                }}
+              >
+                Ir para o Login
+              </Button>
+            </div>
+          ) : (
+            /* ── Formulário ── */
+            <>
+              <div className="mb-8">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                  style={{backgroundColor: 'rgba(38,101,253,0.12)'}}
+                >
+                  <KeyRound className="h-6 w-6" style={{color: '#2665fd'}} />
+                </div>
+                <h2
+                  className="font-bold mb-2"
+                  style={{
+                    color: '#dbe2fd',
+                    fontSize: '1.875rem',
+                    fontFamily: 'Manrope, sans-serif',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  Nova senha
+                </h2>
+                <p style={{color: 'rgba(195,197,216,0.6)', fontSize: '0.9rem'}}>
+                  Digite sua nova senha abaixo.
+                  {requiresMfa && ' Você também precisará informar seu código de Autenticação em Duas Etapas (2FA).'}
+                </p>
+              </div>
+
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  
+                <form
+                  id="reset-password-form"
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-5"
+                >
+                  {/* Campo 2FA (condicional) */}
                   {requiresMfa && (
                     <FormField
                       control={form.control}
                       name="code"
                       render={({field}) => (
-                        <FormItem className="mb-6 flex flex-col items-center">
-                          <FormLabel className="w-full text-left font-semibold">
+                        <FormItem>
+                          <FormLabel
+                            className="uppercase tracking-widest text-xs"
+                            style={{color: 'rgba(195,197,216,0.7)', letterSpacing: '0.1em'}}
+                          >
                             Código de Autenticação (2FA)
                           </FormLabel>
                           <FormControl>
@@ -202,7 +392,11 @@ export default function ResetPassword() {
                                   <InputOTPSlot
                                     key={index}
                                     index={index}
-                                    className="w-12 h-14 text-lg border-2 border-muted-foreground/20 rounded-md bg-background focus-visible:ring-primary focus-visible:border-primary transition-all duration-200"
+                                    className="w-11 h-13 text-base border-0 rounded-lg focus-visible:ring-1 focus-visible:ring-[#2665fd]"
+                                    style={{
+                                      backgroundColor: '#2d3449',
+                                      color: '#dbe2fd',
+                                    }}
                                   />
                                 ))}
                               </InputOTPGroup>
@@ -214,44 +408,84 @@ export default function ResetPassword() {
                     />
                   )}
 
+                  {/* Nova senha */}
                   <FormField
                     control={form.control}
                     name="password"
                     render={({field}) => (
                       <FormItem>
-                        <FormLabel>Nova senha</FormLabel>
+                        <FormLabel
+                          className="uppercase tracking-widest text-xs"
+                          style={{color: 'rgba(195,197,216,0.7)', letterSpacing: '0.1em'}}
+                        >
+                          Nova Senha
+                        </FormLabel>
                         <div className="relative">
                           <FormControl>
                             <Input
-                              type="password"
-                              placeholder="********"
+                              id="reset-password-new"
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder="••••••••"
                               {...field}
-                              className="pl-10"
+                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd]"
+                              style={{backgroundColor: '#2d3449', color: '#dbe2fd'}}
                             />
                           </FormControl>
-                          <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
+                            style={{color: 'rgba(195,197,216,0.6)'}}
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            <span className="sr-only">
+                              {showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                            </span>
+                          </Button>
                         </div>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
+                  {/* Confirmar senha */}
                   <FormField
                     control={form.control}
                     name="confirmPassword"
                     render={({field}) => (
                       <FormItem>
-                        <FormLabel>Confirme a nova senha</FormLabel>
+                        <FormLabel
+                          className="uppercase tracking-widest text-xs"
+                          style={{color: 'rgba(195,197,216,0.7)', letterSpacing: '0.1em'}}
+                        >
+                          Confirmar Nova Senha
+                        </FormLabel>
                         <div className="relative">
                           <FormControl>
                             <Input
-                              type="password"
-                              placeholder="********"
+                              id="reset-password-confirm"
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              placeholder="••••••••"
                               {...field}
-                              className="pl-10"
+                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd]"
+                              style={{backgroundColor: '#2d3449', color: '#dbe2fd'}}
                             />
                           </FormControl>
-                          <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
+                            style={{color: 'rgba(195,197,216,0.6)'}}
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            <span className="sr-only">
+                              {showConfirmPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                            </span>
+                          </Button>
                         </div>
                         <FormMessage />
                       </FormItem>
@@ -259,24 +493,35 @@ export default function ResetPassword() {
                   />
 
                   <Button
+                    id="reset-password-submit"
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium mt-6"
-                    size="lg">
-                    {isSubmitting ? 'Alterando senha...' : 'Salvar Nova Senha'}
+                    className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+                      color: '#f9f7ff',
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      'Salvar Nova Senha'
+                    )}
                   </Button>
                 </form>
               </Form>
-            </CardContent>
+            </>
+          )}
 
-            <CardFooter className="flex justify-center pt-2 pb-6">
-              <button
-                onClick={() => navigate('/')}
-                className="text-sm text-muted-foreground hover:text-primary">
-                Voltar para o login
-              </button>
-            </CardFooter>
-          </Card>
+          <p
+            className="text-xs text-center mt-8"
+            style={{color: 'rgba(195,197,216,0.3)'}}
+          >
+            Copyright © 2025 Trackerr. Todos os direitos reservados.
+          </p>
         </div>
       </div>
     </div>

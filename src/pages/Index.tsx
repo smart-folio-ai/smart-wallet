@@ -23,15 +23,7 @@ import {
 import {Progress} from '@/components/ui/progress';
 import {Skeleton} from '@/components/ui/skeleton';
 import {Button} from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import {FeatureTourModal} from '@/components/ui/feature-tour-modal';
 import {
   AreaChart,
   Bar,
@@ -140,6 +132,26 @@ interface FiscalOptimizerResponse {
   explanation: string;
 }
 
+const parseHistoryDate = (value: unknown): Date | null => {
+  if (!value) return null;
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const formatHistoryDate = (value: unknown): string => {
+  const parsed = parseHistoryDate(value);
+  return parsed
+    ? parsed.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : '-';
+};
+
+const getAveragePrice = (asset: any): number =>
+  Number(asset?.averagePrice ?? asset?.average_price ?? 0);
+
 const ALLOCATION_COLORS = {
   stocks: '#22c55e',
   crypto: '#3b82f6',
@@ -154,6 +166,7 @@ const DIVIDEND_COLORS = {
 };
 
 const Dashboard = () => {
+  const ASSET_PREVIEW_LIMIT = 5;
   const navigate = useNavigate();
   const {
     planName,
@@ -163,8 +176,18 @@ const Dashboard = () => {
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
-  const [openFiscalIntro, setOpenFiscalIntro] = useState(false);
+  const [openFeatureTour, setOpenFeatureTour] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('1M');
+  const [showAllHighlights, setShowAllHighlights] = useState(false);
+  const [showAllAssetsByTab, setShowAllAssetsByTab] = useState<
+    Record<'all' | 'stocks' | 'crypto' | 'fii', boolean>
+  >({
+    all: false,
+    stocks: false,
+    crypto: false,
+    fii: false,
+  });
+  const featureTourStorageKey = 'dashboard_feature_tour_seen_v1';
 
   const handleAssetClick = (asset: Asset) => {
     if (!asset.id) return;
@@ -210,10 +233,9 @@ const Dashboard = () => {
     });
 
   useEffect(() => {
-    const key = 'dashboard_fiscal_optimizer_intro_v1';
-    const hasSeen = localStorage.getItem(key) === '1';
+    const hasSeen = localStorage.getItem(featureTourStorageKey) === '1';
     if (!hasSeen) {
-      setOpenFiscalIntro(true);
+      setOpenFeatureTour(true);
     }
   }, []);
 
@@ -250,6 +272,9 @@ const Dashboard = () => {
       }).slice(0, 5),
     [apiAssets, summary, dashboardAiAnalysis],
   );
+  const visibleDashboardHighlights = showAllHighlights
+    ? dashboardHighlights
+    : dashboardHighlights.slice(0, 3);
 
   useEffect(() => {
     if (loading) return;
@@ -262,7 +287,7 @@ const Dashboard = () => {
 
     const totalCost = apiAssets.reduce(
       (sum: number, asset: any) =>
-        sum + (asset.averagePrice || 0) * (asset.quantity || 0),
+        sum + getAveragePrice(asset) * Number(asset.quantity || 0),
       0,
     );
 
@@ -318,14 +343,14 @@ const Dashboard = () => {
     const historyData =
       selectedPortfolioId !== 'all' && portfolioHistory.length > 0
         ? portfolioHistory.map((item: any) => ({
-            date: new Date(item.date).toLocaleDateString('pt-BR'),
+            date: item.date,
             value: item.totalValue ?? 0,
           }))
         : Array.from({length: 30}, (_, i) => {
             const date = new Date();
             date.setDate(date.getDate() - (29 - i));
             return {
-              date: date.toLocaleDateString('pt-BR'),
+              date: date.toISOString(),
               value: totalValue,
             };
           });
@@ -352,7 +377,7 @@ const Dashboard = () => {
     };
 
     const mappedAssets: Asset[] = apiAssets.map((a: any) => {
-      const cost = (a.averagePrice || 0) * (a.quantity || 0);
+      const cost = getAveragePrice(a) * Number(a.quantity || 0);
       const val = a.total || 0;
       const pnl = val - cost;
       const pnlPerc = cost > 0 ? (pnl / cost) * 100 : 0;
@@ -360,7 +385,7 @@ const Dashboard = () => {
       return {
         id: a.id || a._id,
         symbol: a.symbol,
-        name: a.longName || a.symbol,
+        name: a.name || a.longName || a.symbol,
         price: a.price,
         change24h: pnlPerc, // Showing total asset P%L as change
         amount: a.quantity,
@@ -383,27 +408,45 @@ const Dashboard = () => {
         {
           name: 'Ações',
           value: summary.distribution.stocks,
+          amount: (summary.totalValue * summary.distribution.stocks) / 100,
           color: ALLOCATION_COLORS.stocks,
         },
         {
           name: 'Cripto',
           value: summary.distribution.crypto,
+          amount: (summary.totalValue * summary.distribution.crypto) / 100,
           color: ALLOCATION_COLORS.crypto,
         },
         {
           name: 'FIIs',
           value: summary.distribution.fiis,
+          amount: (summary.totalValue * summary.distribution.fiis) / 100,
           color: ALLOCATION_COLORS.fiis,
         },
         {
           name: 'Outros',
           value: summary.distribution.other,
+          amount: (summary.totalValue * summary.distribution.other) / 100,
           color: ALLOCATION_COLORS.other,
         },
       ]
     : [];
 
+  const allocationChartData = [...distributionData]
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+
   const hasDividends = summary && summary.totalDividends > 0;
+  const assetsByTab = useMemo(
+    () => ({
+      all: assets,
+      stocks: assets.filter((asset) => asset.type === 'stock'),
+      crypto: assets.filter((asset) => asset.type === 'crypto'),
+      fii: assets.filter((asset) => asset.type === 'fii'),
+    }),
+    [assets],
+  );
+
   const dividendsByTypeData = hasDividends
     ? [
         {
@@ -430,6 +473,81 @@ const Dashboard = () => {
         },
       ];
 
+  const renderAssetRows = (
+    tab: 'all' | 'stocks' | 'crypto' | 'fii',
+    emptyMessage: string,
+  ) => {
+    const tabAssets = assetsByTab[tab];
+    const showAll = showAllAssetsByTab[tab];
+    const visibleAssets = showAll ? tabAssets : tabAssets.slice(0, ASSET_PREVIEW_LIMIT);
+
+    if (tabAssets.length === 0) {
+      return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
+    }
+
+    return (
+      <div className="space-y-3">
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-card/30">
+          {visibleAssets.map((asset) => (
+            <div
+              key={`${tab}-${asset.id}`}
+              className="flex cursor-pointer items-center gap-3 border-b border-white/10 px-4 py-3 transition-colors hover:bg-card/60 last:border-b-0"
+              onClick={() => handleAssetClick(asset)}>
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                  <Wallet className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="truncate font-medium">{asset.symbol}</h4>
+                  <p className="truncate text-sm text-muted-foreground">{asset.name}</p>
+                </div>
+              </div>
+              <div className="mx-2 hidden flex-1 lg:block">
+                <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                  <span>Alocação</span>
+                  <span>{asset.allocation}%</span>
+                </div>
+                <Progress value={asset.allocation} className="h-2" />
+              </div>
+              <div className="ml-auto text-right">
+                <p className="font-medium">{formatCurrency(asset.value)}</p>
+                <p
+                  className={`text-sm ${
+                    asset.change24h >= 0 ? 'text-success' : 'text-destructive'
+                  }`}>
+                  {asset.change24h >= 0 ? '+' : ''}
+                  {asset.change24h.toFixed(2)}%
+                </p>
+                {asset.dividendYield ? (
+                  <p className="text-xs text-muted-foreground">
+                    Dividend: {asset.dividendYield.toFixed(2)}%
+                  </p>
+                ) : null}
+              </div>
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+            </div>
+          ))}
+        </div>
+        {tabAssets.length > ASSET_PREVIEW_LIMIT ? (
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs font-semibold text-primary hover:text-primary"
+              onClick={() =>
+                setShowAllAssetsByTab((prev) => ({
+                  ...prev,
+                  [tab]: !prev[tab],
+                }))
+              }>
+              {showAll ? 'Ver menos' : 'Ver mais...'}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <div className="container py-8 animate-fade-in">
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
@@ -451,44 +569,59 @@ const Dashboard = () => {
         </Select>
       </div>
 
-      <AlertDialog
-        open={openFiscalIntro}
-        onOpenChange={(open) => {
-          setOpenFiscalIntro(open);
-          if (!open) {
-            localStorage.setItem('dashboard_fiscal_optimizer_intro_v1', '1');
-          }
-        }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Novo: Otimizador Fiscal</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2 text-sm">
-              <p>
-                O sistema detecta oportunidades para reduzir imposto com
-                compensação de prejuízos (tax-loss harvesting).
-              </p>
-              <p>
-                Exemplo: se você tem prejuízo acumulado e vender um ativo com
-                lucro, esse prejuízo pode zerar ou reduzir o imposto da
-                operação.
-              </p>
-              <p>
-                Você verá essas oportunidades no card de Otimizador Fiscal
-                abaixo.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction>Entendi</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <FeatureTourModal
+        open={openFeatureTour}
+        onOpenChange={setOpenFeatureTour}
+        heading="Conheca as novidades"
+        subheading="Recursos que melhoram suas decisoes"
+        items={[
+          {
+            title: 'Investment Score',
+            description:
+              'Uma nota de 0-100 baseada em diversificacao, risco e consistencia, visivel na pagina de Insights.',
+          },
+          {
+            title: 'Simulador de Futuro',
+            description:
+              'Agora voce pode simular aportes mensais e ver projecoes em cenarios otimistas, neutros e pessimistas.',
+          },
+          {
+            title: 'Radar Anti-Erro',
+            description:
+              'A IA detecta erros de concentracao de setor e correlacao, emitindo alertas preventivos.',
+          },
+          {
+            title: 'Radar de Oportunidades',
+            description:
+              'Uma lista premium de ativos com potencial de valorizacao baseada na analise da IA.',
+          },
+          {
+            title: 'Opiniao Trackerr IA',
+            description:
+              'Integrada na pagina de detalhes de cada ativo para entregar um resumo estrategico rapido.',
+          },
+        ]}
+        onExit={() => {
+          localStorage.setItem(featureTourStorageKey, '1');
+          setOpenFeatureTour(false);
+          navigate('/portfolio');
+        }}
+        onSkip={() => {
+          localStorage.setItem(featureTourStorageKey, '1');
+          setOpenFeatureTour(false);
+        }}
+        onStartTutorial={() => {
+          localStorage.setItem(featureTourStorageKey, '1');
+          setOpenFeatureTour(false);
+          navigate('/ai-insights');
+        }}
+      />
 
-      <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+      <Card className="mb-8 overflow-hidden rounded-2xl border border-emerald-300/40 bg-gradient-to-r from-emerald-50 via-white to-cyan-50 dark:border-emerald-400/20 dark:from-emerald-950/40 dark:via-slate-950 dark:to-cyan-950/20">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <CardTitle>Otimizador Fiscal</CardTitle>
+              <CardTitle className="text-emerald-700 dark:text-emerald-300">Otimizador Fiscal</CardTitle>
               <CardDescription>
                 Oportunidades para reduzir imposto com prejuízo acumulado
               </CardDescription>
@@ -524,7 +657,7 @@ const Dashboard = () => {
                   {optimizerData?.opportunities?.slice(0, 3).map((item) => (
                     <div
                       key={item.symbol}
-                      className="rounded border p-3 text-sm">
+                      className="rounded-lg border border-border/40 bg-background/30 p-3 text-sm">
                       <p className="font-medium">{item.headline}</p>
                       <p className="text-muted-foreground">
                         Imposto sem compensação:{' '}
@@ -542,13 +675,13 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+      <Card className="mb-8 overflow-hidden rounded-2xl border border-sky-300/40 bg-gradient-to-r from-sky-50 via-white to-indigo-50 dark:border-sky-400/20 dark:from-blue-950/40 dark:via-slate-950 dark:to-indigo-950/30">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-sky-700 dark:text-sky-300">
                 <Brain className="h-5 w-5 text-primary" />
-                Trakker IA Hoje
+                Trackerr IA Hoje
               </CardTitle>
               <CardDescription>
                 Alertas e oportunidades personalizados com base na sua carteira
@@ -571,7 +704,7 @@ const Dashboard = () => {
             <PremiumBlur
               locked={!hasProOrHigher}
               title="Insights exclusivos para PRO+"
-              description="Faça upgrade para liberar alertas diários da Trakker IA com base nos seus dados reais.">
+              description="Faça upgrade para liberar alertas diários da Trackerr IA com base nos seus dados reais.">
               {loadingDashboardAi ? (
                 <div className="space-y-2">
                   <Skeleton className="h-16 w-full" />
@@ -583,17 +716,28 @@ const Dashboard = () => {
                   dados e tente novamente.
                 </p>
               ) : (
-                <div className="space-y-2">
-                  {dashboardHighlights.map((item, idx) => (
+                <div className="rounded-lg border border-border/40 bg-white/70 px-2 dark:bg-background/20">
+                  {visibleDashboardHighlights.map((item, idx) => (
                     <div
                       key={`${item.title}-${idx}`}
-                      className="rounded border p-3">
-                      <p className="font-medium text-sm">{item.title}</p>
+                      className="border-b border-white/10 p-3 last:border-b-0">
+                      <p className="font-semibold text-sm">{item.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {item.content}
                       </p>
                     </div>
                   ))}
+                  {dashboardHighlights.length > 3 && (
+                    <div className="flex justify-end border-t border-white/10 px-3 py-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-xs font-semibold text-primary hover:text-primary"
+                        onClick={() => setShowAllHighlights((prev) => !prev)}>
+                        {showAllHighlights ? 'Ver menos' : 'Ver mais...'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </PremiumBlur>
@@ -732,23 +876,24 @@ const Dashboard = () => {
                               formatCurrency(Number(value)),
                               'Valor',
                             ]}
-                            labelFormatter={(label) =>
-                              new Date(label).toLocaleDateString('pt-BR')
-                            }
+                            labelFormatter={(label) => formatHistoryDate(label)}
                             content={
                               <CustomTooltip
                                 formatter={(value) => [
                                   formatCurrency(Number(value)),
                                   'Valor da Carteira',
                                 ]}
-                                labelFormatter={(label) =>
-                                  new Date(label).toLocaleDateString('pt-BR', {
-                                    weekday: 'short',
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                  })
-                                }
+                                labelFormatter={(label) => {
+                                  const parsed = parseHistoryDate(label);
+                                  return parsed
+                                    ? parsed.toLocaleDateString('pt-BR', {
+                                        weekday: 'short',
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                      })
+                                    : '-';
+                                }}
                               />
                             }
                           />
@@ -786,20 +931,56 @@ const Dashboard = () => {
               <>
                 <div className="h-48 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={distributionData} layout="vertical">
-                      <XAxis type="number" hide />
+                    <BarChart
+                      data={allocationChartData}
+                      layout="vertical"
+                      margin={{top: 8, right: 10, left: 10, bottom: 8}}>
+                      <XAxis
+                        type="number"
+                        domain={[0, 100]}
+                        tickFormatter={(value) => `${value}%`}
+                        tick={{fontSize: 11, fill: 'hsl(var(--muted-foreground))'}}
+                        axisLine={false}
+                        tickLine={false}
+                      />
                       <YAxis
                         dataKey="name"
                         type="category"
                         scale="band"
-                        width={80}
-                        tick={{fontSize: 14}}
+                        width={72}
+                        tick={{fontSize: 12, fill: 'hsl(var(--foreground))'}}
+                        axisLine={false}
+                        tickLine={false}
                       />
                       <Tooltip
-                        formatter={(value) => [`${value}%`, 'Alocação']}
+                        cursor={false}
+                        shared={false}
+                        content={({active, payload}) => {
+                          if (!active || !payload?.length) return null;
+                          const item: any = payload[0].payload;
+                          return (
+                            <div className="rounded-xl border border-border/60 bg-background/95 p-3 shadow-xl backdrop-blur">
+                              <p className="mb-1 text-sm font-semibold">{item.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Alocação: <span className="font-semibold text-foreground">{item.value.toFixed(2)}%</span>
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Valor: <span className="font-semibold text-foreground">{formatCurrency(item.amount || 0)}</span>
+                              </p>
+                            </div>
+                          );
+                        }}
                       />
-                      <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={30}>
-                        {distributionData.map((entry, index) => (
+                      <Bar
+                        dataKey="value"
+                        radius={[6, 6, 6, 6]}
+                        barSize={18}
+                        activeBar={{
+                          stroke: 'hsl(var(--foreground) / 0.35)',
+                          strokeWidth: 1,
+                          fillOpacity: 0.95,
+                        }}>
+                        {allocationChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Bar>
@@ -950,7 +1131,16 @@ const Dashboard = () => {
                     </TableHeader>
                     <TableBody>
                       {summary?.lastDividends.map((dividend) => (
-                        <TableRow key={`${dividend.symbol}-${dividend.date}`}>
+                        <TableRow
+                          key={`${dividend.symbol}-${dividend.date}`}
+                          className="cursor-pointer"
+                          onClick={() =>
+                            navigate(
+                              `/dividends/${dividend.symbol}?portfolioId=${
+                                selectedPortfolioId || 'all'
+                              }`,
+                            )
+                          }>
                           <TableCell className="font-medium">
                             {new Date(dividend.date).toLocaleDateString(
                               'pt-BR',
@@ -968,12 +1158,16 @@ const Dashboard = () => {
               )}
 
               <div className="flex justify-end mt-4">
-                <a
-                  href="/dividends"
-                  className="text-primary hover:underline flex items-center text-sm">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary hover:text-primary"
+                  onClick={() =>
+                    navigate(`/dividends?portfolioId=${selectedPortfolioId || 'all'}`)
+                  }>
                   <span className="mr-1">Ver histórico completo</span>
                   <ChevronRight className="h-4 w-4" />
-                </a>
+                </Button>
               </div>
             </div>
           </div>
@@ -1002,192 +1196,17 @@ const Dashboard = () => {
                   ))}
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {assets.map((asset) => (
-                    <div
-                      key={asset.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer"
-                      onClick={() => handleAssetClick(asset)}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-4">
-                          <Wallet className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{asset.symbol}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {asset.name}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex-1 mx-10">
-                        <div className="flex justify-between mb-1 text-sm">
-                          <span>Alocação</span>
-                          <span>{asset.allocation}%</span>
-                        </div>
-                        <Progress value={asset.allocation} className="h-2" />
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          {formatCurrency(asset.value)}
-                        </p>
-                        <p
-                          className={`text-sm ${
-                            asset.change24h >= 0
-                              ? 'text-success'
-                              : 'text-destructive'
-                          }`}>
-                          {asset.change24h >= 0 ? '+' : ''}
-                          {asset.change24h.toFixed(2)}%
-                        </p>
-                        {asset.dividendYield && (
-                          <p className="text-xs text-muted-foreground">
-                            Dividend: {asset.dividendYield.toFixed(2)}%
-                          </p>
-                        )}
-                      </div>
-                      <ChevronRight className="ml-2 h-5 w-5 text-muted-foreground" />
-                    </div>
-                  ))}
-                </div>
+                renderAssetRows('all', 'Nenhum ativo encontrado.')
               )}
             </TabsContent>
             <TabsContent value="stocks">
-              <div className="space-y-4">
-                {assets
-                  .filter((asset) => asset.type === 'stock')
-                  .map((asset) => (
-                    <div
-                      key={asset.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer"
-                      onClick={() => handleAssetClick(asset)}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-4">
-                          <Wallet className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{asset.symbol}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {asset.name}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex-1 mx-10">
-                        <div className="flex justify-between mb-1 text-sm">
-                          <span>Alocação</span>
-                          <span>{asset.allocation}%</span>
-                        </div>
-                        <Progress value={asset.allocation} className="h-2" />
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          {formatCurrency(asset.value)}
-                        </p>
-                        <p
-                          className={`text-sm ${
-                            asset.change24h >= 0
-                              ? 'text-success'
-                              : 'text-destructive'
-                          }`}>
-                          {asset.change24h >= 0 ? '+' : ''}
-                          {asset.change24h.toFixed(2)}%
-                        </p>
-                      </div>
-                      <ChevronRight className="ml-2 h-5 w-5 text-muted-foreground" />
-                    </div>
-                  ))}
-              </div>
+              {renderAssetRows('stocks', 'Nenhuma ação encontrada.')}
             </TabsContent>
             <TabsContent value="crypto">
-              <div className="space-y-4">
-                {assets
-                  .filter((asset) => asset.type === 'crypto')
-                  .map((asset) => (
-                    <div
-                      key={asset.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer"
-                      onClick={() => handleAssetClick(asset)}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-4">
-                          <Wallet className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{asset.symbol}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {asset.name}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex-1 mx-10">
-                        <div className="flex justify-between mb-1 text-sm">
-                          <span>Alocação</span>
-                          <span>{asset.allocation}%</span>
-                        </div>
-                        <Progress value={asset.allocation} className="h-2" />
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          {formatCurrency(asset.value)}
-                        </p>
-                        <p
-                          className={`text-sm ${
-                            asset.change24h >= 0
-                              ? 'text-success'
-                              : 'text-destructive'
-                          }`}>
-                          {asset.change24h >= 0 ? '+' : ''}
-                          {asset.change24h.toFixed(2)}%
-                        </p>
-                      </div>
-                      <ChevronRight className="ml-2 h-5 w-5 text-muted-foreground" />
-                    </div>
-                  ))}
-              </div>
+              {renderAssetRows('crypto', 'Nenhum criptoativo encontrado.')}
             </TabsContent>
             <TabsContent value="fii">
-              <div className="space-y-4">
-                {assets
-                  .filter((asset) => asset.type === 'fii')
-                  .map((asset) => (
-                    <div
-                      key={asset.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card/70 transition-colors cursor-pointer"
-                      onClick={() => handleAssetClick(asset)}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-4">
-                          <Wallet className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{asset.symbol}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {asset.name}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex-1 mx-10">
-                        <div className="flex justify-between mb-1 text-sm">
-                          <span>Alocação</span>
-                          <span>{asset.allocation}%</span>
-                        </div>
-                        <Progress value={asset.allocation} className="h-2" />
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          {formatCurrency(asset.value)}
-                        </p>
-                        <p
-                          className={`text-sm ${
-                            asset.change24h >= 0
-                              ? 'text-success'
-                              : 'text-destructive'
-                          }`}>
-                          {asset.change24h >= 0 ? '+' : ''}
-                          {asset.change24h.toFixed(2)}%
-                        </p>
-                      </div>
-                      <ChevronRight className="ml-2 h-5 w-5 text-muted-foreground" />
-                    </div>
-                  ))}
-              </div>
+              {renderAssetRows('fii', 'Nenhum FII encontrado.')}
             </TabsContent>
           </Tabs>
         </CardContent>
