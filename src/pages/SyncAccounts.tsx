@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
+import {Textarea} from '@/components/ui/textarea';
 import {Label} from '@/components/ui/label';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Badge} from '@/components/ui/badge';
@@ -164,6 +165,7 @@ const SyncAccounts = () => {
   const [cpf, setCpf] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
+  const [apiPassphrase, setApiPassphrase] = useState('');
   const [uploadingProvider, setUploadingProvider] = useState<string | null>(
     null,
   );
@@ -226,6 +228,9 @@ const SyncAccounts = () => {
     }
     if (msg.includes('Invalid signature')) {
       return 'A Secret Key da Binance está inválida. Revise e tente novamente.';
+    }
+    if (msg.includes('Unsupported key format')) {
+      return 'A chave da Coinbase está em formato inválido. Use a Private Key completa em PEM (BEGIN/END) e informe passphrase se necessário.';
     }
     if (msg.includes('IP') && msg.includes('whitelist')) {
       return 'A chave da Binance está com restrição de IP. Ajuste o whitelist e tente novamente.';
@@ -294,6 +299,7 @@ const SyncAccounts = () => {
       setCpf('');
       setApiKey('');
       setApiSecret('');
+      setApiPassphrase('');
       if (
         CRYPTO_EXCHANGES.some((exchange) => exchange.id === variables.provider)
       ) {
@@ -311,6 +317,7 @@ const SyncAccounts = () => {
             openSyncSuccessModal(variables.provider, count);
           })
           .catch((error: any) => {
+            queryClient.invalidateQueries({queryKey: ['broker-connections']});
             const msg = normalizeSyncErrorMessage(
               extractApiErrorMessage(error),
             );
@@ -379,7 +386,14 @@ const SyncAccounts = () => {
         toast.error('Campos obrigatórios', 'Preencha a chave API e senha.');
         return;
       }
-      connectMutation.mutate({provider: selectedProvider, apiKey, apiSecret});
+      connectMutation.mutate({
+        provider: selectedProvider,
+        apiKey,
+        apiSecret,
+        ...(selectedProvider === 'coinbase' && apiPassphrase.trim()
+          ? {apiPassphrase}
+          : {}),
+      });
     }
   };
 
@@ -633,14 +647,33 @@ const SyncAccounts = () => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="api-secret">Senha API</Label>
-            <Input
+            <Textarea
               id="api-secret"
-              type="password"
-              placeholder="Sua senha API"
+              placeholder={
+                selectedProvider === 'coinbase'
+                  ? 'Cole a Private Key da Coinbase (formato PEM)'
+                  : 'Sua senha API'
+              }
               value={apiSecret}
               onChange={(e) => setApiSecret(e.target.value)}
+              className="min-h-[100px]"
             />
           </div>
+          {selectedProvider === 'coinbase' && (
+            <div className="space-y-2">
+              <Label htmlFor="api-passphrase">Passphrase (se exigida)</Label>
+              <Input
+                id="api-passphrase"
+                placeholder="Passphrase da API Coinbase"
+                value={apiPassphrase}
+                onChange={(e) => setApiPassphrase(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Para Coinbase, use API Key + Private Key PEM (BEGIN/END). Em
+                algumas chaves, a passphrase também é obrigatória.
+              </p>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground flex items-start gap-1">
             <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
             Use apenas chaves com permissão de leitura. Nunca compartilhe
