@@ -1,26 +1,25 @@
-
-import React from "react";
-import trakkerLogo from "@/assets/trakker-logo.png";
+import React from 'react';
 
 interface AppLogoProps {
-  size?: "sm" | "md" | "lg";
-  variant?: "full" | "icon";
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'full' | 'icon';
 }
 
-export function AppLogo({ size = "md", variant = "full" }: AppLogoProps) {
+export function AppLogo({size = 'md', variant = 'full'}: AppLogoProps) {
   const sizeClasses = {
-    sm: "h-10",
-    md: "h-14",
-    lg: "h-16",
+    sm: 'text-xl',
+    md: 'text-2xl',
+    lg: 'text-3xl',
   };
 
   return (
-    <div className={`flex items-center ${variant === 'icon' ? '' : 'space-x-2'}`}>
-      <img 
-        src={trakkerLogo} 
-        alt="Trakker" 
-        className={sizeClasses[size]}
-      />
+    <div
+      className={`flex items-center ${variant === 'icon' ? '' : 'space-x-2'}`}>
+      <span
+        className={`font-share-tech ${sizeClasses[size]} font-semibold tracking-[0.04em] text-sidebar-foreground`}
+        aria-label="Trackerr">
+        Trackerr
+      </span>
     </div>
   );
 }

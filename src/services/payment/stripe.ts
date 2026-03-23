@@ -9,7 +9,7 @@ import {
 export const stripe = new Stripe(stripPrivateApiKey, {
   apiVersion: '2025-05-28.basil',
   appInfo: {
-    name: 'Trakker',
+    name: 'Trackerr',
     version: '1.0.0',
   },
 });

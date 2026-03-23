@@ -3,15 +3,7 @@ import {useNavigate, useLocation} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-import {Eye, EyeOff, LogIn, User} from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import {Eye, EyeOff, ArrowRight, TrendingUp} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -23,7 +15,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import {Checkbox} from '@/components/ui/checkbox';
-import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
 import AuthenticationService from '../services/authentication';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
@@ -42,7 +33,6 @@ export default function SignIn() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Pega a página de onde o usuário veio (se foi redirecionado)
   const from = location.state?.from?.pathname || '/dashboard';
 
   const form = useForm<FormValues>({
@@ -84,248 +74,303 @@ export default function SignIn() {
   return (
     <>
       <WalletLoadingScreen isLoading={loading} loadingText="Entrando..." />
-      <div className="min-h-screen flex">
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20" />
+      <div
+        id="signin-page"
+        className="min-h-screen flex"
+        style={{backgroundColor: '#0b1326', fontFamily: 'Inter, sans-serif'}}
+      >
+        {/* Painel esquerdo - editorial */}
+        <div
+          className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
+          style={{backgroundColor: '#060d20'}}
+        >
+          {/* Glow ambiental */}
+          <div
+            className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle, rgba(38,101,253,0.08) 0%, transparent 70%)',
+            }}
+          />
+          <div
+            className="absolute bottom-0 right-0 w-80 h-80 rounded-full pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle, rgba(38,101,253,0.05) 0%, transparent 70%)',
+            }}
+          />
 
-          <div className="absolute top-10 left-10 right-10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/10 backdrop-blur-lg rounded-lg flex items-center justify-center">
-                <AppLogo size="sm" />
-              </div>
-              <span className="text-white text-xl font-bold">Trakker</span>
+          {/* Logo */}
+          <div className="flex items-center gap-3 relative z-10">
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center"
+              style={{backgroundColor: '#2665fd'}}
+            >
+              <TrendingUp className="w-5 h-5 text-white" />
             </div>
+            <span
+              className="text-xl font-bold tracking-tight"
+              style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}
+            >
+              Trackerr
+            </span>
           </div>
 
-          <div className="absolute top-20 right-20 w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full opacity-60 blur-2xl animate-pulse" />
-          <div
-            className="absolute top-40 left-40 w-32 h-32 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full opacity-60 blur-2xl animate-pulse"
-            style={{animationDelay: '1s'}}
-          />
-          <div
-            className="absolute bottom-40 right-40 w-28 h-28 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full opacity-60 blur-2xl animate-pulse"
-            style={{animationDelay: '2s'}}
-          />
+          {/* Conteúdo central */}
+          <div className="relative z-10 flex-1 flex flex-col justify-center">
+            <div className="mb-6 inline-flex">
+              <span
+                className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full"
+                style={{
+                  color: '#b5c4ff',
+                  backgroundColor: 'rgba(38,101,253,0.12)',
+                  fontFamily: 'Inter, sans-serif',
+                  letterSpacing: '0.12em',
+                }}
+              >
+                Terminal Financeiro
+              </span>
+            </div>
+            <h1
+              className="font-bold leading-tight mb-5"
+              style={{
+                color: '#dbe2fd',
+                fontSize: '2.75rem',
+                fontFamily: 'Manrope, sans-serif',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Precisão institucional para o seu patrimônio.
+            </h1>
+            <p
+              className="leading-relaxed"
+              style={{color: 'rgba(195,197,216,0.75)', fontSize: '1rem', lineHeight: '1.7'}}
+            >
+              Acompanhe seu portfólio com análises em tempo real, insights inteligentes e uma interface construída para quem leva investimentos a sério.
+            </p>
 
-          <div className="relative z-10 flex flex-col items-center justify-center w-full p-16 text-white">
-            <div className="max-w-lg text-center space-y-6">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 blur-3xl opacity-50 animate-pulse" />
-                <div className="relative bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-                  <svg
-                    className="w-48 h-48 mx-auto"
-                    viewBox="0 0 200 200"
-                    fill="none">
-                    <circle
-                      cx="100"
-                      cy="140"
-                      r="50"
-                      fill="white"
-                      opacity="0.9"
-                    />
-                    <circle
-                      cx="80"
-                      cy="140"
-                      r="35"
-                      fill="white"
-                      opacity="0.7"
-                    />
-                    <circle
-                      cx="130"
-                      cy="140"
-                      r="30"
-                      fill="white"
-                      opacity="0.6"
-                    />
-                    <path
-                      d="M 100 60 L 70 100 L 100 140 L 130 100 Z"
-                      fill="url(#rocket-gradient)"
-                    />
-                    <rect
-                      x="95"
-                      y="100"
-                      width="10"
-                      height="40"
-                      fill="white"
-                      opacity="0.8"
-                    />
-                    <circle cx="100" cy="50" r="12" fill="#3B82F6" />
-                    <circle cx="100" cy="50" r="8" fill="white" />
-                    <defs>
-                      <linearGradient
-                        id="rocket-gradient"
-                        x1="0%"
-                        y1="0%"
-                        x2="0%"
-                        y2="100%">
-                        <stop offset="0%" stopColor="#FBBF24" />
-                        <stop offset="50%" stopColor="#F59E0B" />
-                        <stop offset="100%" stopColor="#EF4444" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
+            {/* Métricas */}
+            <div className="mt-10 grid grid-cols-3 gap-4">
+              {[
+                {value: 'R$ 2.4B', label: 'Patrimônio monitorado'},
+                {value: '12k+', label: 'Investidores ativos'},
+                {value: '99.9%', label: 'Uptime do sistema'},
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-xl p-4"
+                  style={{backgroundColor: '#131b2e'}}
+                >
+                  <div
+                    className="font-bold text-lg mb-1"
+                    style={{color: '#b5c4ff', fontFamily: 'Manrope, sans-serif'}}
+                  >
+                    {item.value}
+                  </div>
+                  <div className="text-xs" style={{color: 'rgba(195,197,216,0.6)'}}>
+                    {item.label}
+                  </div>
                 </div>
-              </div>
-              <h1 className="text-4xl font-bold leading-tight">
-                Gerencie seus investimentos de forma inteligente
-              </h1>
-              <p className="text-lg text-blue-100">
-                Acompanhe seu portfólio, analise tendências e tome decisões
-                informadas com insights em tempo real.
-              </p>
+              ))}
             </div>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-blue-900/50 to-transparent" />
+          {/* Rodapé */}
+          <p className="text-xs relative z-10" style={{color: 'rgba(195,197,216,0.4)'}}>
+            © 2025 Trackerr. Plataforma de análise de investimentos.
+          </p>
         </div>
 
-        <div className="flex-1 flex items-center justify-center p-8 bg-background">
+        {/* Painel direito - formulário */}
+        <div
+          className="flex-1 flex items-center justify-center p-8"
+          style={{backgroundColor: '#0b1326'}}
+        >
           <div className="w-full max-w-md">
-            <div className="mb-8 lg:hidden flex justify-center">
-              <AppLogo size="lg" />
+            {/* Logo mobile */}
+            <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center"
+                style={{backgroundColor: '#2665fd'}}
+              >
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <span
+                className="text-xl font-bold"
+                style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}
+              >
+                Trackerr
+              </span>
             </div>
 
-            <Card className="w-full border shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-3xl font-bold">Login</CardTitle>
-                <CardDescription>
-                  Não tem uma conta?{' '}
-                  <button
-                    onClick={() => navigate('/register')}
-                    className="text-primary hover:underline font-medium">
-                    Criar conta agora
-                  </button>
-                </CardDescription>
-              </CardHeader>
+            {/* Cabeçalho do form */}
+            <div className="mb-8">
+              <h2
+                className="font-bold mb-2"
+                style={{
+                  color: '#dbe2fd',
+                  fontSize: '1.875rem',
+                  fontFamily: 'Manrope, sans-serif',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                Entrar no Terminal
+              </h2>
+              <p style={{color: 'rgba(195,197,216,0.6)', fontSize: '0.9rem'}}>
+                Não tem uma conta?{' '}
+                <button
+                  id="signin-goto-register"
+                  onClick={() => navigate('/register')}
+                  className="font-medium transition-colors"
+                  style={{color: '#b5c4ff'}}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#2665fd')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#b5c4ff')}
+                >
+                  Criar conta agora
+                </button>
+              </p>
+            </div>
 
-              <CardContent className="space-y-4">
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({field}) => (
-                        <FormItem>
-                          <FormLabel>E-mail</FormLabel>
-                          <div className="relative">
-                            <FormControl>
-                              <Input
-                                placeholder="seu@email.com"
-                                {...field}
-                                className="pl-10"
-                              />
-                            </FormControl>
-                            <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+            {/* Formulário */}
+            <Form {...form}>
+              <form
+                id="signin-form"
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-5"
+              >
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel
+                        className="uppercase tracking-widest text-xs"
+                        style={{color: 'rgba(195,197,216,0.7)', letterSpacing: '0.1em'}}
+                      >
+                        E-mail
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          id="signin-email"
+                          placeholder="seu@email.com"
+                          {...field}
+                          className="h-12 border-0 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd]"
+                          style={{
+                            backgroundColor: '#2d3449',
+                            color: '#dbe2fd',
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({field}) => (
-                        <FormItem>
-                          <FormLabel>Senha</FormLabel>
-                          <div className="relative">
-                            <FormControl>
-                              <Input
-                                type={showPassword ? 'text' : 'password'}
-                                placeholder="••••••••"
-                                {...field}
-                                className="pl-10"
-                              />
-                            </FormControl>
-                            <LogIn className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="absolute right-1 top-1 h-8 w-8"
-                              onClick={() => setShowPassword(!showPassword)}>
-                              {showPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                              <span className="sr-only">
-                                {showPassword
-                                  ? 'Esconder senha'
-                                  : 'Mostrar senha'}
-                              </span>
-                            </Button>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({field}) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel
+                          className="uppercase tracking-widest text-xs"
+                          style={{color: 'rgba(195,197,216,0.7)', letterSpacing: '0.1em'}}
+                        >
+                          Senha
+                        </FormLabel>
+                        <a
+                          href="/forgot-password"
+                          className="text-xs transition-colors"
+                          style={{color: '#b5c4ff'}}
+                        >
+                          Esqueceu a senha?
+                        </a>
+                      </div>
+                      <div className="relative">
+                        <FormControl>
+                          <Input
+                            id="signin-password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            {...field}
+                            className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd]"
+                            style={{
+                              backgroundColor: '#2d3449',
+                              color: '#dbe2fd',
+                            }}
+                          />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
+                          style={{color: 'rgba(195,197,216,0.6)'}}
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                          <span className="sr-only">
+                            {showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                          </span>
+                        </Button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="keepConnect"
-                      render={({field}) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              className="data-[state=checked]:bg-primary"
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel className="font-normal text-sm">
-                              Manter conectado
-                            </FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
+                <FormField
+                  control={form.control}
+                  name="keepConnect"
+                  render={({field}) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          id="signin-keep-connected"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="border-[#434655] data-[state=checked]:bg-[#2665fd] data-[state=checked]:border-[#2665fd]"
+                        />
+                      </FormControl>
+                      <FormLabel
+                        className="font-normal text-sm cursor-pointer"
+                        style={{color: 'rgba(195,197,216,0.7)'}}
+                      >
+                        Manter conectado
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
 
-                    <Button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium"
-                      size="lg"
-                      disabled={loading}>
-                      {loading ? 'Entrando...' : 'Log In'}
-                    </Button>
-                  </form>
-                </Form>
+                <Button
+                  id="signin-submit"
+                  type="submit"
+                  className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200"
+                  style={{
+                    background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+                    color: '#f9f7ff',
+                  }}
+                  disabled={loading}
+                >
+                  {loading ? 'Entrando...' : (
+                    <>
+                      Entrar
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
 
-                <div className="text-center">
-                  <a
-                    href="/forgot-password"
-                    className="text-sm text-orange-600 hover:text-orange-700 hover:underline font-medium">
-                    Esqueceu sua senha?
-                  </a>
-                </div>
-              </CardContent>
-
-              <CardFooter className="flex flex-col space-y-4 pt-0">
-                <p className="text-xs text-center text-muted-foreground">
-                  Copyright © 2025 Trakker, LLC.{' '}
-                  <a href="#" className="text-primary hover:underline">
-                    Trakker™
-                  </a>{' '}
-                  é uma marca registrada da Trakker, LLC.
-                </p>
-                <div className="flex justify-center gap-4 text-xs">
-                  <a
-                    href="#"
-                    className="text-muted-foreground hover:text-primary">
-                    Termos de Serviço
-                  </a>
-                  <span className="text-muted-foreground">|</span>
-                  <a
-                    href="#"
-                    className="text-muted-foreground hover:text-primary">
-                    Política de Privacidade
-                  </a>
-                </div>
-              </CardFooter>
-            </Card>
+            {/* Rodapé */}
+            <p
+              className="text-xs text-center mt-8"
+              style={{color: 'rgba(195,197,216,0.3)'}}
+            >
+              Copyright © 2025 Trackerr. Todos os direitos reservados.
+            </p>
           </div>
         </div>
       </div>

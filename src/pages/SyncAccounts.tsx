@@ -26,6 +26,15 @@ import {
   Upload,
   FileText,
   Loader2,
+  Landmark,
+  Briefcase,
+  TrendingUp,
+  Diamond,
+  PiggyBank,
+  Hexagon,
+  Bitcoin,
+  Coins,
+  CircleHelp,
 } from 'lucide-react';
 import {
   Dialog,
@@ -44,7 +53,7 @@ const BROKERAGES = [
   {
     id: 'b3',
     name: 'B3',
-    emoji: '🇧🇷',
+    icon: <Landmark className="h-5 w-5 text-primary" />,
     description: 'Relatório consolidado B3',
     type: 'brokerage',
     supportsUpload: true,
@@ -52,7 +61,7 @@ const BROKERAGES = [
   {
     id: 'btg',
     name: 'BTG Pactual',
-    emoji: '🏦',
+    icon: <Briefcase className="h-5 w-5 text-blue-500" />,
     description: 'Nota de corretagem BTG',
     type: 'brokerage',
     supportsUpload: true,
@@ -60,7 +69,7 @@ const BROKERAGES = [
   {
     id: 'xp',
     name: 'XP Investimentos',
-    emoji: '📈',
+    icon: <TrendingUp className="h-5 w-5 text-yellow-500" />,
     description: 'Nota de corretagem XP',
     type: 'brokerage',
     supportsUpload: true,
@@ -68,7 +77,7 @@ const BROKERAGES = [
   {
     id: 'clear',
     name: 'Clear',
-    emoji: '🔷',
+    icon: <Diamond className="h-5 w-5 text-blue-400" />,
     description: 'Nota de corretagem Clear',
     type: 'brokerage',
     supportsUpload: true,
@@ -76,7 +85,7 @@ const BROKERAGES = [
   {
     id: 'rico',
     name: 'Rico',
-    emoji: '💚',
+    icon: <PiggyBank className="h-5 w-5 text-orange-500" />,
     description: 'Nota de corretagem Rico',
     type: 'brokerage',
     supportsUpload: true,
@@ -84,7 +93,7 @@ const BROKERAGES = [
   {
     id: 'nuinvest',
     name: 'NuInvest',
-    emoji: '🟣',
+    icon: <Hexagon className="h-5 w-5 text-purple-500" />,
     description: 'Nota de corretagem NuInvest',
     type: 'brokerage',
     supportsUpload: true,
@@ -95,28 +104,28 @@ const CRYPTO_EXCHANGES = [
   {
     id: 'binance',
     name: 'Binance',
-    emoji: '🟡',
+    icon: <Bitcoin className="h-5 w-5 text-yellow-500" />,
     description: 'A maior exchange do mundo',
     type: 'crypto',
   },
   {
     id: 'coinbase',
     name: 'Coinbase',
-    emoji: '🔵',
+    icon: <Coins className="h-5 w-5 text-blue-500" />,
     description: 'Exchange americana premium',
     type: 'crypto',
   },
   {
     id: 'mercadobitcoin',
     name: 'Mercado Bitcoin',
-    emoji: '🟠',
+    icon: <CircleDollarSign className="h-5 w-5 text-orange-500" />,
     description: 'Maior do Brasil',
     type: 'crypto',
   },
   {
     id: 'bitso',
     name: 'Bitso',
-    emoji: '🟤',
+    icon: <Wallet className="h-5 w-5 text-green-600" />,
     description: 'Exchange Latino-americana',
     type: 'crypto',
   },
@@ -130,6 +139,13 @@ interface Connection {
   hasCpf?: boolean;
   lastError?: string | null;
 }
+
+type SyncSuccessState = {
+  open: boolean;
+  providerId: string;
+  providerName: string;
+  syncedAssets: number;
+};
 
 const brokerSyncApi = {
   getConnections: () => api.get<Connection[]>('/broker-sync/connections'),
@@ -155,7 +171,33 @@ const SyncAccounts = () => {
     {},
   );
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showBrokerageNoteHelp, setShowBrokerageNoteHelp] = useState(false);
+  const [syncSuccess, setSyncSuccess] = useState<SyncSuccessState>({
+    open: false,
+    providerId: '',
+    providerName: '',
+    syncedAssets: 0,
+  });
   const navigate = useNavigate();
+
+  const providerNameById = useCallback((providerId: string) => {
+    const found = [...BROKERAGES, ...CRYPTO_EXCHANGES].find(
+      (provider) => provider.id === providerId,
+    );
+    return found?.name || providerId;
+  }, []);
+
+  const openSyncSuccessModal = useCallback(
+    (providerId: string, syncedAssets: number) => {
+      setSyncSuccess({
+        open: true,
+        providerId,
+        providerName: providerNameById(providerId),
+        syncedAssets,
+      });
+    },
+    [providerNameById],
+  );
 
   const extractApiErrorMessage = (error: any): string => {
     const message = error?.response?.data?.message;
@@ -266,6 +308,7 @@ const SyncAccounts = () => {
               'Sincronização concluída',
               `${count} ativos de ${variables.provider} foram atualizados na sua carteira.`,
             );
+            openSyncSuccessModal(variables.provider, count);
           })
           .catch((error: any) => {
             const msg = normalizeSyncErrorMessage(
@@ -300,6 +343,7 @@ const SyncAccounts = () => {
         'Sincronização concluída',
         `${count} ativos de ${provider} foram atualizados na sua carteira.`,
       );
+      openSyncSuccessModal(provider, count);
     },
     onError: (error: any) => {
       const msg = normalizeSyncErrorMessage(extractApiErrorMessage(error));
@@ -397,18 +441,18 @@ const SyncAccounts = () => {
 
     return (
       <Card
-        className={`overflow-hidden transition-all ${
+        className={`overflow-hidden transition-all duration-300 border bg-card border-border/50 ${
           !linked ? 'cursor-pointer' : ''
         } ${
           !linked && selectedProvider === provider.id
-            ? 'ring-2 ring-primary'
-            : 'hover:bg-card/70'
+            ? 'ring-2 ring-primary border-transparent'
+            : 'hover:border-primary/40'
         }`}
         onClick={() => !linked && setSelectedProvider(provider.id)}>
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-xl">
-              {provider.emoji}
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              {provider.icon}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -666,181 +710,331 @@ const SyncAccounts = () => {
     </Dialog>
   );
 
-  return (
-    <div className="container py-8 animate-fade-in">
-      <UpgradePlanModal />
-      <h1 className="text-3xl font-bold mb-2">Sincronizar Contas</h1>
-      <p className="text-muted-foreground mb-6">
-        Conecte corretoras e exchanges para centralizar seu portfólio
-      </p>
-
-      {/* Status das conexões */}
-      {connections.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
-              <Check className="h-5 w-5 text-success" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{connections.length}</p>
-              <p className="text-xs text-muted-foreground">Contas conectadas</p>
-            </div>
-          </Card>
-          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">Última sincronização</p>
-              <p className="text-xs text-muted-foreground">
-                {connections[0]?.lastSync
-                  ? formatLastSync(connections[0].lastSync)
-                  : 'Nunca'}
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {uploads.length > 0 && (
-        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden mb-6">
-          <CardHeader>
-            <CardTitle>Processamento assíncrono de arquivos</CardTitle>
-            <CardDescription>
-              Acompanhe o status de uploads como `nota_corretagem.pdf` e
-              `relatorio_b3.pdf`.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {uploads.slice(0, 5).map((u: any) => (
-              <div
-                key={u._id}
-                className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <p className="text-sm font-medium">{u.originalName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {u.provider} • {u.kind || 'brokerage_note'}
-                  </p>
-                </div>
-                <Badge
-                  variant={
-                    u.status === 'processed'
-                      ? 'default'
-                      : u.status === 'failed'
-                        ? 'destructive'
-                        : 'secondary'
-                  }>
-                  {u.status}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden mb-8">
-        <CardHeader>
-          <CardTitle>Adicione suas contas</CardTitle>
-          <CardDescription>
-            Conecte corretoras e exchanges para analisar seus investimentos
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-6">
-              <TabsTrigger value="brokerages">Corretoras</TabsTrigger>
-              <TabsTrigger value="crypto">Exchanges Cripto</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="brokerages">
-              {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[1, 2].map((i) => (
-                    <Skeleton key={i} className="h-20" />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  {BROKERAGES.map((b) => (
-                    <ProviderCard key={b.id} provider={b} type="brokerage" />
-                  ))}
-                </div>
-              )}
-              {selectedProvider &&
-                BROKERAGES.some((b) => b.id === selectedProvider) &&
-                !hasConnection(selectedProvider) && (
-                  <ConnectForm isBrokerage={true} />
-                )}
-            </TabsContent>
-
-            <TabsContent value="crypto">
-              {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <Skeleton key={i} className="h-20" />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  {CRYPTO_EXCHANGES.map((e) => (
-                    <ProviderCard key={e.id} provider={e} type="crypto" />
-                  ))}
-                </div>
-              )}
-              {selectedProvider &&
-                CRYPTO_EXCHANGES.some((e) => e.id === selectedProvider) &&
-                !hasConnection(selectedProvider) && (
-                  <ConnectForm isBrokerage={false} />
-                )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-        <CardHeader>
-          <CardTitle>Sobre a integração</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-3">
-                <Wallet className="h-6 w-6" />
-              </div>
-              <h3 className="font-medium mb-2">Visualização Unificada</h3>
-              <p className="text-sm text-muted-foreground">
-                Reúna todos os seus investimentos em um único lugar.
-              </p>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-info/20 flex items-center justify-center text-info mb-3">
-                <CircleDollarSign className="h-6 w-6" />
-              </div>
-              <h3 className="font-medium mb-2">Dados Atualizados</h3>
-              <p className="text-sm text-muted-foreground">
-                Sincronize e mantenha valores e preços em tempo real.
-              </p>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center text-success mb-3">
-                <Star className="h-6 w-6" />
-              </div>
-              <h3 className="font-medium mb-2">Análise Inteligente</h3>
-              <p className="text-sm text-muted-foreground">
-                Nossa IA analisa sua carteira e fornece insights personalizados.
-              </p>
-            </div>
+  const BrokerageNoteHelpModal = () => (
+    <Dialog
+      open={showBrokerageNoteHelp}
+      onOpenChange={setShowBrokerageNoteHelp}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Por que subir nota de corretagem?</DialogTitle>
+          <DialogDescription>
+            A nota de corretagem melhora a precisão da sua carteira e dos
+            cálculos fiscais.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 text-sm text-muted-foreground">
+          <p>
+            Quando você envia a nota, o sistema consegue identificar operações
+            reais de compra e venda com mais detalhe do que uma sincronização
+            simples de saldo.
+          </p>
+          <div className="space-y-2">
+            <p className="font-medium text-foreground">
+              O que melhora na prática:
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Preço médio correto por ativo e por movimentação.</li>
+              <li>
+                Quantidade atualizada com base em compras, vendas e ajustes.
+              </li>
+              <li>
+                Base fiscal mais confiável para apuração de IR e compensação de
+                prejuízo.
+              </li>
+              <li>
+                Histórico auditável das operações por data, ativo e corretora.
+              </li>
+              <li>
+                Menos risco de divergência entre carteira real e carteira no
+                app.
+              </li>
+            </ul>
           </div>
-          <div className="mt-6 p-4 bg-card/30 rounded-lg">
-            <h3 className="font-medium mb-2">🔒 Segurança em primeiro lugar</h3>
-            <p className="text-sm text-muted-foreground">
-              Usamos apenas permissões de leitura. Suas credenciais são
-              criptografadas com AES-256 e nunca são compartilhadas com
-              terceiros.
+          <div className="rounded-lg border border-border/60 p-3 bg-card/40">
+            <p className="font-medium text-foreground mb-1">
+              Segurança e uso dos dados
+            </p>
+            <p>
+              O arquivo é usado para extrair informações de movimentação (ativo,
+              quantidade, preço e data) e atualizar sua carteira. Não é
+              necessário compartilhar senha da corretora para esse processo.
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => setShowBrokerageNoteHelp(false)}>
+            Entendi
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const SyncSuccessModal = () => (
+    <Dialog
+      open={syncSuccess.open}
+      onOpenChange={(open) => setSyncSuccess((prev) => ({...prev, open}))}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Sincronização bem-sucedida</DialogTitle>
+          <DialogDescription>
+            {syncSuccess.providerName} sincronizado com sucesso.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="rounded-lg border border-border/60 bg-card/40 p-4 space-y-2">
+          <p className="text-sm text-foreground">
+            {syncSuccess.syncedAssets} ativo(s) foram atualizados para a
+            carteira{' '}
+            <span className="font-semibold">{syncSuccess.providerName}</span>.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Você já pode ver seus ativos em{' '}
+            <span className="font-semibold">Portfólio</span>, selecionando a
+            carteira da {syncSuccess.providerName}.
+          </p>
+        </div>
+        <DialogFooter className="flex gap-2 sm:justify-end">
+          <Button
+            variant="outline"
+            onClick={() => setSyncSuccess((prev) => ({...prev, open: false}))}>
+            Fechar
+          </Button>
+          <Button
+            onClick={() => {
+              setSyncSuccess((prev) => ({...prev, open: false}));
+              navigate('/portfolio');
+            }}>
+            Ver no Portfólio
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  return (
+    <div className="min-h-screen p-2 md:p-6 relative overflow-hidden font-sans bg-transparent text-foreground">
+      {/* Background Glows (se adaptam ao tema claro ou escuro) */}
+      <div className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-40 bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-primary/10 to-transparent" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-30 bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-primary/5 to-transparent" />
+
+      <div className="relative z-10 max-w-5xl mx-auto space-y-8">
+        <UpgradePlanModal />
+        <BrokerageNoteHelpModal />
+        <SyncSuccessModal />
+
+        <div className="flex flex-col mb-8">
+          <h1 className="text-3xl md:text-4xl font-heading font-bold tracking-tight mb-2">
+            Sincronizar Contas
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Conecte corretoras e exchanges para centralizar seu portfólio de
+            forma rápida e segura.
+          </p>
+        </div>
+
+        {/* Status das conexões */}
+        {connections.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <Card className="rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5 overflow-hidden p-6 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Check className="h-5 w-5 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-3xl font-bold font-heading text-foreground">
+                  {connections.length}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Contas conectadas
+                </p>
+              </div>
+            </Card>
+            <Card className="rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5 overflow-hidden p-6 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Clock className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-base font-medium font-heading text-foreground">
+                  Última sincronização
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {connections[0]?.lastSync
+                    ? formatLastSync(connections[0].lastSync)
+                    : 'Nunca'}
+                </p>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {uploads.length > 0 && (
+          <Card className="rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5 overflow-hidden mb-8">
+            <CardHeader className="border-b border-border/40">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="font-heading tracking-tight text-foreground">
+                    Processamento assíncrono de arquivos
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Acompanhe o status de uploads como `nota_corretagem.pdf` e
+                    `relatorio_b3.xlsx`.
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Entender nota de corretagem"
+                  title="Por que subir nota de corretagem?"
+                  onClick={() => setShowBrokerageNoteHelp(true)}
+                  className="shrink-0 rounded-full border border-border/60">
+                  <CircleHelp className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {uploads.slice(0, 5).map((u: any) => (
+                <div
+                  key={u._id}
+                  className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <p className="text-sm font-medium">{u.originalName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {u.provider} • {u.kind || 'brokerage_note'}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={
+                      u.status === 'processed'
+                        ? 'default'
+                        : u.status === 'failed'
+                          ? 'destructive'
+                          : 'secondary'
+                    }>
+                    {u.status}
+                  </Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5 overflow-hidden mb-8">
+          <CardHeader className="border-b border-border/40 mb-6 pb-6 pt-8">
+            <CardTitle className="text-2xl font-heading tracking-tight text-foreground">
+              Adicione suas contas
+            </CardTitle>
+            <CardDescription className="text-base text-muted-foreground">
+              Conecte corretoras e exchanges para analisar seus investimentos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-2 mb-8 h-14 p-1.5 rounded-full bg-card border shadow-sm items-center">
+                <TabsTrigger
+                  value="brokerages"
+                  className="flex items-center justify-center gap-2 text-sm font-medium rounded-full h-full transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md font-heading">
+                  Corretoras
+                </TabsTrigger>
+                <TabsTrigger
+                  value="crypto"
+                  className="flex items-center justify-center gap-2 text-sm font-medium rounded-full h-full transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md font-heading">
+                  Exchanges Cripto
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="brokerages">
+                {isLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[1, 2].map((i) => (
+                      <Skeleton key={i} className="h-20" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {BROKERAGES.map((b) => (
+                      <ProviderCard key={b.id} provider={b} type="brokerage" />
+                    ))}
+                  </div>
+                )}
+                {selectedProvider &&
+                  BROKERAGES.some((b) => b.id === selectedProvider) &&
+                  !hasConnection(selectedProvider) && (
+                    <ConnectForm isBrokerage={true} />
+                  )}
+              </TabsContent>
+
+              <TabsContent value="crypto">
+                {isLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <Skeleton key={i} className="h-20" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {CRYPTO_EXCHANGES.map((e) => (
+                      <ProviderCard key={e.id} provider={e} type="crypto" />
+                    ))}
+                  </div>
+                )}
+                {selectedProvider &&
+                  CRYPTO_EXCHANGES.some((e) => e.id === selectedProvider) &&
+                  !hasConnection(selectedProvider) && (
+                    <ConnectForm isBrokerage={false} />
+                  )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+          <CardHeader>
+            <CardTitle>Sobre a integração</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-3">
+                  <Wallet className="h-6 w-6" />
+                </div>
+                <h3 className="font-medium mb-2">Visualização Unificada</h3>
+                <p className="text-sm text-muted-foreground">
+                  Reúna todos os seus investimentos em um único lugar.
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-info/20 flex items-center justify-center text-info mb-3">
+                  <CircleDollarSign className="h-6 w-6" />
+                </div>
+                <h3 className="font-medium mb-2">Dados Atualizados</h3>
+                <p className="text-sm text-muted-foreground">
+                  Sincronize e mantenha valores e preços em tempo real.
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center text-success mb-3">
+                  <Star className="h-6 w-6" />
+                </div>
+                <h3 className="font-medium mb-2">Análise Inteligente</h3>
+                <p className="text-sm text-muted-foreground">
+                  Nossa IA analisa sua carteira e fornece insights
+                  personalizados.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 p-4 bg-card/30 rounded-lg">
+              <h3 className="font-medium mb-2">
+                🔒 Segurança em primeiro lugar
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Usamos apenas permissões de leitura. Suas credenciais são
+                criptografadas com AES-256 e nunca são compartilhadas com
+                terceiros.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

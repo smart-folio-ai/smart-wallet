@@ -118,7 +118,7 @@ const Portfolio = () => {
   const assets: Asset[] = displayApiAssets.map((a: any) => ({
     _id: a.id || a._id,
     symbol: a.symbol,
-    name: a.symbol,
+    name: a.name || a.symbol,
     price: a.price,
     currentPrice: a.currentPrice ?? undefined,
     change24h: a.change24h ?? 0,
