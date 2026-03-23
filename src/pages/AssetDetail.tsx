@@ -164,6 +164,24 @@ export default function AssetDetail() {
 
   const currentYear = new Date().getFullYear();
   const cashflowYears = [currentYear, currentYear - 1, currentYear - 2];
+  const financialHistoryData = Array.isArray(s?.financialHistory)
+    ? [...s.financialHistory]
+        .filter((row: any) => typeof row?.year === 'number')
+        .sort((a: any, b: any) => a.year - b.year)
+        .map((row: any) => ({
+          year: row.year,
+          revenue: Number(row.revenue || 0),
+          profit: Number(row.netIncome || 0),
+          totalAssets: Number(row.totalAssets || 0),
+          shareholdersEquity: Number(row.shareholdersEquity || 0),
+        }))
+    : [];
+  const cashflowHistoryByYear = new Map<number, any>(
+    (Array.isArray(s?.cashflowHistory) ? s.cashflowHistory : []).map((row: any) => [
+      Number(row?.year),
+      row,
+    ]),
+  );
 
   const getNumericValue = (source: any, keys: string[]): number | null => {
     for (const key of keys) {
@@ -177,57 +195,103 @@ export default function AssetDetail() {
     {
       label: 'CAIXA LÍQUIDO ATIVIDADES OPERACIONAIS',
       values: {
-        [currentYear]: getNumericValue(s, ['operatingCashflow', 'financialData.operatingCashflow']),
-        [currentYear - 1]: null,
-        [currentYear - 2]: null,
+        [currentYear]:
+          getNumericValue(cashflowHistoryByYear.get(currentYear), [
+            'operatingCashflow',
+          ]) ??
+          getNumericValue(s, ['operatingCashflow', 'financialData.operatingCashflow']),
+        [currentYear - 1]: getNumericValue(cashflowHistoryByYear.get(currentYear - 1), [
+          'operatingCashflow',
+        ]),
+        [currentYear - 2]: getNumericValue(cashflowHistoryByYear.get(currentYear - 2), [
+          'operatingCashflow',
+        ]),
       },
     },
     {
       label: 'CAIXA GERADO NAS OPERAÇÕES',
       values: {
-        [currentYear]: getNumericValue(s, ['operatingCashflow', 'financialData.operatingCashflow']),
-        [currentYear - 1]: null,
-        [currentYear - 2]: null,
+        [currentYear]:
+          getNumericValue(cashflowHistoryByYear.get(currentYear), [
+            'operatingCashflow',
+          ]) ??
+          getNumericValue(s, ['operatingCashflow', 'financialData.operatingCashflow']),
+        [currentYear - 1]: getNumericValue(cashflowHistoryByYear.get(currentYear - 1), [
+          'operatingCashflow',
+        ]),
+        [currentYear - 2]: getNumericValue(cashflowHistoryByYear.get(currentYear - 2), [
+          'operatingCashflow',
+        ]),
       },
     },
     {
       label: 'LUCRO LÍQUIDO',
       values: {
-        [currentYear]: getNumericValue(s, ['netIncomeToCommon', 'financialData.netIncome']),
-        [currentYear - 1]: null,
-        [currentYear - 2]: null,
+        [currentYear]:
+          getNumericValue(cashflowHistoryByYear.get(currentYear), ['netIncome']) ??
+          getNumericValue(s, ['netIncomeToCommon', 'financialData.netIncome']),
+        [currentYear - 1]: getNumericValue(cashflowHistoryByYear.get(currentYear - 1), [
+          'netIncome',
+        ]),
+        [currentYear - 2]: getNumericValue(cashflowHistoryByYear.get(currentYear - 2), [
+          'netIncome',
+        ]),
       },
     },
     {
       label: 'DEPRECIAÇÃO/AMORTIZAÇÃO',
       values: {
-        [currentYear]: getNumericValue(s, ['depreciation', 'depreciationAndAmortization']),
-        [currentYear - 1]: null,
-        [currentYear - 2]: null,
+        [currentYear]:
+          getNumericValue(cashflowHistoryByYear.get(currentYear), ['depreciation']) ??
+          getNumericValue(s, ['depreciation', 'depreciationAndAmortization']),
+        [currentYear - 1]: getNumericValue(cashflowHistoryByYear.get(currentYear - 1), [
+          'depreciation',
+        ]),
+        [currentYear - 2]: getNumericValue(cashflowHistoryByYear.get(currentYear - 2), [
+          'depreciation',
+        ]),
       },
     },
     {
       label: 'CAIXA LÍQUIDO ATIVIDADES INVESTIMENTO',
       values: {
-        [currentYear]: getNumericValue(s, ['investingCashflow', 'cashflowFromInvestment', 'capitalExpenditures']),
-        [currentYear - 1]: null,
-        [currentYear - 2]: null,
+        [currentYear]:
+          getNumericValue(cashflowHistoryByYear.get(currentYear), ['investingCashflow']) ??
+          getNumericValue(s, ['investingCashflow', 'cashflowFromInvestment', 'capitalExpenditures']),
+        [currentYear - 1]: getNumericValue(cashflowHistoryByYear.get(currentYear - 1), [
+          'investingCashflow',
+        ]),
+        [currentYear - 2]: getNumericValue(cashflowHistoryByYear.get(currentYear - 2), [
+          'investingCashflow',
+        ]),
       },
     },
     {
       label: 'CAIXA LÍQUIDO ATIVIDADES FINANCIAMENTO',
       values: {
-        [currentYear]: getNumericValue(s, ['financingCashflow', 'cashflowFromFinancing']),
-        [currentYear - 1]: null,
-        [currentYear - 2]: null,
+        [currentYear]:
+          getNumericValue(cashflowHistoryByYear.get(currentYear), ['financingCashflow']) ??
+          getNumericValue(s, ['financingCashflow', 'cashflowFromFinancing']),
+        [currentYear - 1]: getNumericValue(cashflowHistoryByYear.get(currentYear - 1), [
+          'financingCashflow',
+        ]),
+        [currentYear - 2]: getNumericValue(cashflowHistoryByYear.get(currentYear - 2), [
+          'financingCashflow',
+        ]),
       },
     },
     {
       label: 'FLUXO DE CAIXA LIVRE',
       values: {
-        [currentYear]: getNumericValue(s, ['freeCashflow', 'financialData.freeCashflow']),
-        [currentYear - 1]: null,
-        [currentYear - 2]: null,
+        [currentYear]:
+          getNumericValue(cashflowHistoryByYear.get(currentYear), ['freeCashflow']) ??
+          getNumericValue(s, ['freeCashflow', 'financialData.freeCashflow']),
+        [currentYear - 1]: getNumericValue(cashflowHistoryByYear.get(currentYear - 1), [
+          'freeCashflow',
+        ]),
+        [currentYear - 2]: getNumericValue(cashflowHistoryByYear.get(currentYear - 2), [
+          'freeCashflow',
+        ]),
       },
     },
   ];
@@ -800,18 +864,16 @@ export default function AssetDetail() {
                  <CardContent className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
-                        data={[
-                          { year: 2021, revenue: 85, profit: 17 },
-                          { year: 2022, revenue: 140, profit: 29 },
-                          { year: 2023, revenue: 180, profit: 33 },
-                          { year: 2024, revenue: 210, profit: 30 },
-                          { year: 2025, revenue: 250, profit: 20 },
-                        ]}
+                        data={financialHistoryData}
                         margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                         <XAxis dataKey="year" axisLine={false} tickLine={false} />
-                        <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `R$ ${v}B`} />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(v) => formatCurrency(Number(v))}
+                        />
                         <Tooltip 
                           cursor={{fill: 'transparent'}}
                           content={({ active, payload, label }) => {
@@ -823,7 +885,7 @@ export default function AssetDetail() {
                                     <div key={i} className="flex items-center gap-2 text-sm font-bold">
                                       <div className="w-2 h-2 rounded-full" style={{backgroundColor: p.color}} />
                                       <span className="text-muted-foreground">{p.name}:</span>
-                                      <span>{formatCurrency(p.value * 1e9)}</span>
+                                      <span>{formatCurrency(Number(p.value || 0))}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -858,19 +920,57 @@ export default function AssetDetail() {
                         </tr>
                       </thead>
                       <tbody>
-                        {[2024, 2023, 2022, 2021].map((year) => (
-                          <tr key={year} className="border-b border-border/20 hover:bg-muted/30 transition-colors">
-                            <td className="py-4 px-2 font-black">{year}</td>
-                            <td className="py-4 px-2 text-right font-medium">{(Math.random() * 10 + 2).toFixed(2)}</td>
-                            <td className="py-4 px-2 text-right font-medium">{(Math.random() * 2 + 0.5).toFixed(2)}</td>
-                            <td className="py-4 px-2 text-right font-medium">R$ {(Math.random() * 50 + 20).toFixed(2)}</td>
-                            <td className="py-4 px-2 text-right font-medium text-emerald-500">{(Math.random() * 20 + 5).toFixed(2)}%</td>
-                            <td className="py-4 px-2 text-right font-medium text-emerald-500">{(Math.random() * 25 + 10).toFixed(2)}%</td>
-                            <td className="py-4 px-2 text-right font-medium text-blue-500">{(Math.random() * 10 + 2).toFixed(2)}%</td>
-                          </tr>
-                        ))}
+                        {financialHistoryData
+                          .slice()
+                          .reverse()
+                          .map((row: any) => {
+                            const year = Number(row.year || 0);
+                            const revenue = Number(row.revenue || 0);
+                            const profit = Number(row.profit || 0);
+                            const totalAssets = Number(row.totalAssets || 0);
+                            const equity = Number(row.shareholdersEquity || 0);
+                            const roe = equity > 0 ? (profit / equity) * 100 : 0;
+                            const netMargin = revenue > 0 ? (profit / revenue) * 100 : 0;
+                            return (
+                              <tr key={year} className="border-b border-border/20 hover:bg-muted/30 transition-colors">
+                                <td className="py-4 px-2 font-black">{year || '-'}</td>
+                                <td className="py-4 px-2 text-right font-medium">
+                                  {asset.price > 0 && profit > 0
+                                    ? ((asset.price * (Number(s?.sharesOutstanding || 0) || 1)) / profit).toFixed(2)
+                                    : '—'}
+                                </td>
+                                <td className="py-4 px-2 text-right font-medium">
+                                  {equity > 0 && asset.price > 0
+                                    ? (
+                                        asset.price /
+                                        (equity / (Number(s?.sharesOutstanding || 0) || 1))
+                                      ).toFixed(2)
+                                    : '—'}
+                                </td>
+                                <td className="py-4 px-2 text-right font-medium">
+                                  {equity > 0 && Number(s?.sharesOutstanding || 0) > 0
+                                    ? formatCurrency(equity / Number(s?.sharesOutstanding || 1))
+                                    : '—'}
+                                </td>
+                                <td className="py-4 px-2 text-right font-medium text-emerald-500">
+                                  {Number.isFinite(netMargin) ? `${netMargin.toFixed(2)}%` : '—'}
+                                </td>
+                                <td className="py-4 px-2 text-right font-medium text-emerald-500">
+                                  {Number.isFinite(roe) ? `${roe.toFixed(2)}%` : '—'}
+                                </td>
+                                <td className="py-4 px-2 text-right font-medium text-blue-500">
+                                  {asset.dividendYield ? `${asset.dividendYield.toFixed(2)}%` : '—'}
+                                </td>
+                              </tr>
+                            );
+                          })}
                       </tbody>
                     </table>
+                    {financialHistoryData.length === 0 && (
+                      <p className="mt-4 text-xs text-muted-foreground">
+                        Ainda não recebemos histórico financeiro para este ativo nas fontes atuais.
+                      </p>
+                    )}
                  </CardContent>
                </Card>
             </TabsContent>

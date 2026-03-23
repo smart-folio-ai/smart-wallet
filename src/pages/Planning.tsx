@@ -10,7 +10,7 @@ import {Calculator, PiggyBank, TrendingUp, ArrowRight} from 'lucide-react';
 
 function ResultCard({children}: {children: React.ReactNode}) {
   return (
-    <div className="rounded-xl p-5 mt-1 bg-secondary border-l-[3px] border-l-primary">
+    <div className="rounded-xl p-5 mt-1 bg-primary/5 border-l-[3px] border-l-primary/60">
       {children}
     </div>
   );
@@ -52,10 +52,10 @@ function FieldGroup({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="h-11 text-sm bg-background pr-12"
+          className="h-11 text-sm bg-background border-input focus-visible:ring-1 focus-visible:ring-primary pr-12 transition-all"
         />
         {suffix && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none font-medium">
             {suffix}
           </span>
         )}
@@ -113,69 +113,70 @@ const Planning = () => {
   };
 
   return (
-    <div className="space-y-8 font-sans">
-      {/* Cabeçalho da página */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary/10">
-              <Calculator className="h-5 w-5 text-primary" />
+    <div className="min-h-screen p-2 md:p-6 relative overflow-hidden font-sans bg-transparent text-foreground">
+      {/* Background Glows (se adaptam ao tema claro ou escuro) */}
+      <div className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-40 bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-primary/10 to-transparent" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-30 bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-primary/5 to-transparent" />
+
+      <div className="relative z-10 max-w-5xl mx-auto space-y-8">
+        {/* Cabeçalho da página */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary shadow-lg shadow-primary/20">
+                <Calculator className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <h1 className="font-bold text-3xl md:text-4xl tracking-tight font-heading">
+                Planejamento Financeiro
+              </h1>
             </div>
-            <h1 className="font-bold text-3xl font-heading tracking-tight text-foreground">
-              Planejamento Financeiro
-            </h1>
+            <p className="text-sm md:text-base ml-0 md:ml-14 text-muted-foreground">
+              Calculadoras de precisão institucional para simular seu amanhã
+            </p>
           </div>
-          <p className="text-sm ml-12 text-muted-foreground">
-            Calculadoras para simular e planejar seu futuro financeiro
-          </p>
+
+          <span className="text-xs font-medium uppercase tracking-widest px-4 py-2 rounded-full w-fit bg-primary/10 text-primary border border-primary/20">
+            Terminal de Simulação
+          </span>
         </div>
 
-        {/* Badge informativo */}
-        <span
-          className="text-xs font-medium uppercase tracking-widest px-3 py-1.5 rounded-full hidden sm:inline-flex bg-primary/10 text-primary"
-          style={{letterSpacing: '0.1em'}}
-        >
-          Simulador
-        </span>
-      </div>
+        {/* Tabs */}
+        <Tabs defaultValue="retirement" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 p-1.5 rounded-2xl bg-card border shadow-sm">
+            {[
+              {value: 'retirement', label: 'Aposentadoria', icon: <PiggyBank className="h-4 w-4" />},
+              {value: 'investment', label: 'Inv. Mensal', icon: <TrendingUp className="h-4 w-4" />},
+              {value: 'compound', label: 'Juros Compostos', icon: <Calculator className="h-4 w-4" />},
+            ].map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="flex items-center gap-2 text-sm font-medium rounded-xl transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-2.5 font-heading"
+              >
+                {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-      {/* Tabs */}
-      <Tabs defaultValue="retirement" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 p-1 rounded-xl bg-muted/50">
-          {[
-            {value: 'retirement', label: 'Aposentadoria', icon: <PiggyBank className="h-3.5 w-3.5" />},
-            {value: 'investment', label: 'Inv. Mensal', icon: <TrendingUp className="h-3.5 w-3.5" />},
-            {value: 'compound', label: 'Juros Compostos', icon: <Calculator className="h-3.5 w-3.5" />},
-          ].map((tab) => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              className="flex items-center gap-1.5 text-xs font-medium rounded-lg transition-all"
-            >
-              {tab.icon}
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {/* ── Aposentadoria ──────────────────────────────────────────────── */}
-        <TabsContent value="retirement">
-          <div className="rounded-2xl p-6 space-y-6 bg-card border shadow-sm">
-            {/* Header do card */}
-            <div className="flex items-center gap-3 pb-4 border-b">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
-                <PiggyBank className="h-4 w-4 text-primary" />
+          {/* ── Aposentadoria ──────────────────────────────────────────────── */}
+          <TabsContent value="retirement">
+            <div className="rounded-2xl p-6 md:p-8 space-y-8 bg-card border border-border/50 shadow-xl shadow-primary/5 relative overflow-hidden group">
+              {/* Header do card */}
+              <div className="flex items-center gap-4 pb-6 border-b border-border/40">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary shadow-inner">
+                  <PiggyBank className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-lg md:text-xl font-heading text-foreground">
+                    Calculadora de Independência Financeira
+                  </h2>
+                  <p className="text-sm mt-1 text-muted-foreground">
+                    Descubra o patrimônio necessário para aposentadoria baseado na regra dos 25x (Safe Withdrawal Rate de 4%)
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-semibold text-base font-heading text-foreground">
-                  Calculadora de Aposentadoria
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Descubra quanto acumular baseado na regra dos 25x (4% de retirada anual)
-                </p>
-              </div>
-            </div>
 
             {/* Inputs */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -207,7 +208,7 @@ const Planning = () => {
 
             <Button
               onClick={calculateRetirement}
-              className="w-full h-11 font-semibold text-sm gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-300 shadow-md shadow-primary/20 hover:scale-[1.01]"
             >
               Calcular
               <ArrowRight className="h-4 w-4" />
@@ -229,25 +230,25 @@ const Planning = () => {
                 </p>
               </ResultCard>
             )}
-          </div>
-        </TabsContent>
-
-        {/* ── Investimento Mensal ─────────────────────────────────────────── */}
-        <TabsContent value="investment">
-          <div className="rounded-2xl p-6 space-y-6 bg-card border shadow-sm">
-            <div className="flex items-center gap-3 pb-4 border-b">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
-                <TrendingUp className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-base font-heading text-foreground">
-                  Calculadora de Investimento Mensal
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Descubra quantos anos levará para atingir sua meta (assumindo 10% a.a.)
-                </p>
-              </div>
             </div>
+          </TabsContent>
+
+          {/* ── Investimento Mensal ─────────────────────────────────────────── */}
+          <TabsContent value="investment">
+            <div className="rounded-2xl p-6 md:p-8 space-y-8 bg-card border border-border/50 shadow-xl shadow-primary/5 relative overflow-hidden">
+              <div className="flex items-center gap-4 pb-6 border-b border-border/40">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary shadow-inner">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-lg md:text-xl font-heading text-foreground">
+                    Acelerador de Metas
+                  </h2>
+                  <p className="text-sm mt-1 text-muted-foreground">
+                    Simule o tempo exato para alcançar seu alvo patrimonial (estimado a 10% a.a.)
+                  </p>
+                </div>
+              </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FieldGroup
@@ -278,7 +279,7 @@ const Planning = () => {
 
             <Button
               onClick={calculateMonthlyInvestment}
-              className="w-full h-11 font-semibold text-sm gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-300 shadow-md shadow-primary/20 hover:scale-[1.01]"
             >
               Calcular
               <ArrowRight className="h-4 w-4" />
@@ -300,25 +301,25 @@ const Planning = () => {
                 </p>
               </ResultCard>
             )}
-          </div>
-        </TabsContent>
-
-        {/* ── Juros Compostos ─────────────────────────────────────────────── */}
-        <TabsContent value="compound">
-          <div className="rounded-2xl p-6 space-y-6 bg-card border shadow-sm">
-            <div className="flex items-center gap-3 pb-4 border-b">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
-                <Calculator className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-base font-heading text-foreground">
-                  Calculadora de Juros Compostos
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Veja como seus investimentos crescerão ao longo do tempo
-                </p>
-              </div>
             </div>
+          </TabsContent>
+
+          {/* ── Juros Compostos ─────────────────────────────────────────────── */}
+          <TabsContent value="compound">
+            <div className="rounded-2xl p-6 md:p-8 space-y-8 bg-card border border-border/50 shadow-xl shadow-primary/5 relative overflow-hidden">
+              <div className="flex items-center gap-4 pb-6 border-b border-border/40">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary shadow-inner">
+                  <Calculator className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-lg md:text-xl font-heading text-foreground">
+                    Poder dos Juros Compostos
+                  </h2>
+                  <p className="text-sm mt-1 text-muted-foreground">
+                    A 8ª maravilha do mundo trabalhando a favor do seu capital no longo prazo
+                  </p>
+                </div>
+              </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FieldGroup
@@ -358,7 +359,7 @@ const Planning = () => {
 
             <Button
               onClick={calculateCompoundInterest}
-              className="w-full h-11 font-semibold text-sm gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-300 shadow-md shadow-primary/20 hover:scale-[1.01]"
             >
               Calcular
               <ArrowRight className="h-4 w-4" />
@@ -409,9 +410,10 @@ const Planning = () => {
                 </ResultCard>
               );
             })()}
-          </div>
-        </TabsContent>
+            </div>
+          </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 };
