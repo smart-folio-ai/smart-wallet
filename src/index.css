@@ -15,11 +15,11 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
+    --primary: 222 98% 57%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
 
     --muted: 220 14.3% 95.9%;
     --muted-foreground: 220 8.9% 46.1%;
@@ -32,7 +32,7 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 142.1 76.2% 36.3%;
+    --ring: 222 98% 57%;
 
     --radius: 0.5rem;
 
@@ -62,10 +62,10 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 142.1 70.6% 45.3%;
-    --primary-foreground: 144.9 80.4% 10%;
+    --primary: 222 98% 57%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 222.2 47% 11%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
@@ -79,7 +79,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 142.1 76.2% 36.3%;
+    --ring: 222 98% 57%;
 
     --sidebar-background: 223 36% 12%;
     --sidebar-foreground: 210 40% 96%;
@@ -104,11 +104,8 @@
   }
 
   body {
-    font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Inter', 'Manrope', 'Segoe UI', Arial, sans-serif;
     @apply bg-background text-foreground antialiased;
-    background-image:
-      radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.08), transparent 38%),
-      radial-gradient(circle at 100% 100%, hsl(var(--chart-2) / 0.08), transparent 30%);
   }
 
   h1,
