@@ -91,18 +91,18 @@ export default function Register() {
     <div
       id="register-page"
       className="min-h-screen flex"
-      style={{fontFamily: 'Inter, sans-serif'}}
+      style={{fontFamily: 'var(--font-body)'}}
     >
       {/* Painel esquerdo - editorial */}
       <div
         className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-        style={{backgroundColor: '#060d20'}}
+        style={{backgroundColor: 'var(--auth-panel)'}}
       >
         {/* Glow ambiental */}
         <div
           className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
           style={{
-            background: 'radial-gradient(circle, rgba(38,101,253,0.07) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, var(--auth-highlight-mid) 0%, transparent 70%)',
           }}
         />
 
@@ -110,13 +110,13 @@ export default function Register() {
         <div className="flex items-center gap-3 relative z-10">
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center"
-            style={{backgroundColor: '#2665fd'}}
+            style={{backgroundColor: 'var(--auth-brand)'}}
           >
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <span
             className="text-xl font-bold tracking-tight"
-            style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}
+            style={{color: 'var(--auth-text-main)', fontFamily: 'var(--font-heading)'}}
           >
             Trackerr
           </span>
@@ -128,9 +128,9 @@ export default function Register() {
             <span
               className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full"
               style={{
-                color: '#b5c4ff',
-                backgroundColor: 'rgba(38,101,253,0.12)',
-                fontFamily: 'Inter, sans-serif',
+                color: 'var(--auth-text-accent)',
+                backgroundColor: 'var(--auth-highlight)',
+                fontFamily: 'var(--font-body)',
                 letterSpacing: '0.12em',
               }}
             >
@@ -140,9 +140,9 @@ export default function Register() {
           <h1
             className="font-bold leading-tight mb-5"
             style={{
-              color: '#dbe2fd',
+              color: 'var(--auth-text-main)',
               fontSize: '2.75rem',
-              fontFamily: 'Manrope, sans-serif',
+              fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
             }}
           >
@@ -150,7 +150,7 @@ export default function Register() {
           </h1>
           <p
             className="leading-relaxed"
-            style={{color: 'rgba(195,197,216,0.75)', fontSize: '1rem', lineHeight: '1.7'}}
+            style={{color: 'var(--auth-text-body)', fontSize: '1rem', lineHeight: '1.7'}}
           >
             Crie sua conta em menos de 2 minutos. Acesso imediato ao terminal completo, análises em tempo real e inteligência artificial para impulsionar seus resultados.
           </p>
@@ -165,19 +165,25 @@ export default function Register() {
               <div
                 key={index}
                 className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-[#1a253d]"
-                style={{backgroundColor: '#131b2e'}}
+                style={{backgroundColor: 'var(--auth-surface)'}}
               >
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#2665fd]/10 text-[#2665fd]">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{
+                    backgroundColor: 'var(--auth-brand-soft-10)',
+                    color: 'var(--auth-brand)',
+                  }}
+                >
                   {item.icon}
                 </div>
                 <div>
                   <div
                     className="font-semibold text-sm mb-0.5"
-                    style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}
+                    style={{color: 'var(--auth-text-main)', fontFamily: 'var(--font-heading)'}}
                   >
                     {item.title}
                   </div>
-                  <div className="text-xs" style={{color: 'rgba(195,197,216,0.6)'}}>
+                  <div className="text-xs" style={{color: 'var(--auth-text-muted)'}}>
                     {item.desc}
                   </div>
                 </div>
@@ -187,7 +193,7 @@ export default function Register() {
         </div>
 
         {/* Rodapé */}
-        <p className="text-xs relative z-10" style={{color: 'rgba(195,197,216,0.4)'}}>
+        <p className="text-xs relative z-10" style={{color: 'var(--auth-text-soft)'}}>
           © 2025 Trackerr. Plataforma de análise de investimentos.
         </p>
       </div>
@@ -202,13 +208,13 @@ export default function Register() {
           <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{backgroundColor: '#2665fd'}}
+              style={{backgroundColor: 'var(--auth-brand)'}}
             >
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <span
               className="text-xl font-bold"
-              style={{color: '#060d20', fontFamily: 'Manrope, sans-serif'}}
+              style={{color: 'var(--auth-panel)', fontFamily: 'var(--font-heading)'}}
             >
               Trackerr
             </span>
@@ -219,21 +225,21 @@ export default function Register() {
             <h2
               className="font-bold mb-2"
               style={{
-                color: '#060d20',
+                color: 'var(--auth-panel)',
                 fontSize: '1.875rem',
-                fontFamily: 'Manrope, sans-serif',
+                fontFamily: 'var(--font-heading)',
                 letterSpacing: '-0.02em',
               }}
             >
               Criar conta
             </h2>
-            <p style={{color: '#64748b', fontSize: '0.9rem'}}>
+            <p style={{color: 'var(--auth-text-secondary)', fontSize: '0.9rem'}}>
               Já possui uma conta?{' '}
               <button
                 id="register-goto-signin"
                 onClick={() => navigate('/')}
                 className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline"
-                style={{color: '#2665fd'}}
+                style={{color: 'var(--auth-brand)'}}
               >
                 Faça login
               </button>
@@ -255,7 +261,7 @@ export default function Register() {
                     <FormItem>
                       <FormLabel
                         className="uppercase tracking-widest text-xs font-bold"
-                        style={{color: '#64748b', letterSpacing: '0.1em'}}
+                        style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}
                       >
                         Nome
                       </FormLabel>
@@ -264,8 +270,8 @@ export default function Register() {
                           id="register-firstname"
                           placeholder="João"
                           {...field}
-                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
-                          style={{color: '#060d20'}}
+                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
+                          style={{color: 'var(--auth-panel)'}}
                         />
                       </FormControl>
                       <FormMessage />
@@ -279,7 +285,7 @@ export default function Register() {
                     <FormItem>
                       <FormLabel
                         className="uppercase tracking-widest text-xs font-bold"
-                        style={{color: '#64748b', letterSpacing: '0.1em'}}
+                        style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}
                       >
                         Sobrenome
                       </FormLabel>
@@ -288,8 +294,8 @@ export default function Register() {
                           id="register-lastname"
                           placeholder="Silva"
                           {...field}
-                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
-                          style={{color: '#060d20'}}
+                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
+                          style={{color: 'var(--auth-panel)'}}
                         />
                       </FormControl>
                       <FormMessage />
@@ -305,7 +311,7 @@ export default function Register() {
                   <FormItem>
                     <FormLabel
                       className="uppercase tracking-widest text-xs font-bold"
-                      style={{color: '#64748b', letterSpacing: '0.1em'}}
+                      style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}
                     >
                       E-mail
                     </FormLabel>
@@ -314,8 +320,8 @@ export default function Register() {
                         id="register-email"
                         placeholder="seu@email.com"
                         {...field}
-                        className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
-                        style={{color: '#060d20'}}
+                        className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
+                        style={{color: 'var(--auth-panel)'}}
                       />
                     </FormControl>
                     <FormMessage />
@@ -330,7 +336,7 @@ export default function Register() {
                   <FormItem>
                     <FormLabel
                       className="uppercase tracking-widest text-xs font-bold"
-                      style={{color: '#64748b', letterSpacing: '0.1em'}}
+                      style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}
                     >
                       Senha
                     </FormLabel>
@@ -341,8 +347,8 @@ export default function Register() {
                           type={showPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           {...field}
-                          className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
-                          style={{color: '#060d20'}}
+                          className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
+                          style={{color: 'var(--auth-panel)'}}
                         />
                       </FormControl>
                       <Button
@@ -371,7 +377,7 @@ export default function Register() {
                   <FormItem>
                     <FormLabel
                       className="uppercase tracking-widest text-xs font-bold"
-                      style={{color: '#64748b', letterSpacing: '0.1em'}}
+                      style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}
                     >
                       Confirmar Senha
                     </FormLabel>
@@ -382,8 +388,8 @@ export default function Register() {
                           type={showConfirmPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           {...field}
-                          className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
-                          style={{color: '#060d20'}}
+                          className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
+                          style={{color: 'var(--auth-panel)'}}
                         />
                       </FormControl>
                       <Button
@@ -415,7 +421,7 @@ export default function Register() {
                         id="register-accept-terms"
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        className="mt-0.5 border-slate-300 data-[state=checked]:bg-[#2665fd] data-[state=checked]:border-[#2665fd]"
+                        className="mt-0.5 border-slate-300 data-[state=checked]:bg-[var(--auth-brand)] data-[state=checked]:border-[var(--auth-brand)]"
                         required
                       />
                     </FormControl>
@@ -424,11 +430,11 @@ export default function Register() {
                       style={{color: '#475569'}}
                     >
                       Eu li e concordo com os{' '}
-                      <a href="#" className="font-semibold text-[#2665fd] hover:underline underline-offset-4 decoration-primary/30 transition-colors">
+                      <a href="#" className="font-semibold text-[var(--auth-brand)] hover:underline underline-offset-4 decoration-primary/30 transition-colors">
                         Termos de Uso
                       </a>{' '}
                       e{' '}
-                      <a href="#" className="font-semibold text-[#2665fd] hover:underline underline-offset-4 decoration-primary/30 transition-colors">
+                      <a href="#" className="font-semibold text-[var(--auth-brand)] hover:underline underline-offset-4 decoration-primary/30 transition-colors">
                         Política de Privacidade
                       </a>
                     </FormLabel>
@@ -445,7 +451,7 @@ export default function Register() {
                 type="submit"
                 className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20"
                 style={{
-                  background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+                  background: 'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                   color: '#f9f7ff',
                 }}
                 disabled={loading}

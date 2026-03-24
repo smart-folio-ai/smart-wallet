@@ -10,8 +10,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { AppLogo } from '@/components/AppLogo';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import {AppLogo} from '@/components/AppLogo';
+import {ThemeToggle} from '@/components/ThemeToggle';
 import {
   BarChart3,
   Calculator,
@@ -29,7 +29,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import {NavLink} from 'react-router-dom';
 
 type NavItem = {
   to: string;
@@ -46,27 +46,27 @@ const sections: NavSection[] = [
   {
     label: 'Visão Geral',
     items: [
-      { to: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-      { to: '/portfolio', label: 'Portfólio', icon: Layers },
-      { to: '/planning', label: 'Planejamento', icon: Calculator },
-      { to: '/comparator', label: 'Comparador', icon: GitCompare },
-      { to: '/transactions', label: 'Transações', icon: Wallet },
-      { to: '/fiscal', label: 'Fiscal', icon: FileSpreadsheet },
+      {to: '/dashboard', label: 'Dashboard', icon: BarChart3},
+      {to: '/planning', label: 'Planejamento', icon: Calculator},
+      {to: '/comparator', label: 'Comparador', icon: GitCompare},
+      {to: '/transactions', label: 'Transações', icon: Wallet},
+      {to: '/fiscal', label: 'Fiscal', icon: FileSpreadsheet},
     ],
   },
   {
     label: 'Análise',
     items: [
-      { to: '/ai-insights', label: 'IA Insights', icon: Star },
-      { to: '/chat-inteligente', label: 'Chat Inteligente', icon: MessageSquare },
-      { to: '/asset-search', label: 'Buscar Ativos', icon: Search },
+      {to: '/ai-insights', label: 'IA Insights', icon: Star},
+      {to: '/chat-inteligente', label: 'Chat Inteligente', icon: MessageSquare},
+      {to: '/asset-search', label: 'Buscar Ativos', icon: Search},
     ],
   },
   {
     label: 'Carteira',
     items: [
-      { to: '/add-asset', label: 'Adicionar Ativo', icon: Plus },
-      { to: '/dividends', label: 'Dividendos', icon: Wallet },
+      {to: '/portfolio', label: 'Portfólio', icon: Layers},
+      {to: '/add-asset', label: 'Adicionar Ativo', icon: Plus},
+      {to: '/dividends', label: 'Dividendos', icon: Wallet},
     ],
   },
   {
@@ -82,27 +82,26 @@ const sections: NavSection[] = [
 ];
 
 const footerItems: NavItem[] = [
-  { to: '/settings', label: 'Configurações', icon: Settings },
-  { to: '/subscription', label: 'Assinatura', icon: Users },
-  { to: '/signout', label: 'Sair', icon: LogOut },
+  {to: '/settings', label: 'Configurações', icon: Settings},
+  {to: '/subscription', label: 'Assinatura', icon: Users},
+  {to: '/signout', label: 'Sair', icon: LogOut},
 ];
 
-function SidebarLink({ to, label, icon: Icon }: NavItem) {
+function SidebarLink({to, label, icon: Icon}: NavItem) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
         <NavLink
           to={to}
           end={to === '/dashboard'}
-          className={({ isActive }) =>
+          className={({isActive}) =>
             [
               'group flex items-center gap-2 rounded-lg px-2 py-2 text-[13px] font-medium transition-all',
               isActive
                 ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_hsl(var(--sidebar-border))]'
                 : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground',
             ].join(' ')
-          }
-        >
+          }>
           <Icon className="h-4 w-4 shrink-0 text-current" />
           <span>{label}</span>
         </NavLink>
