@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {useNavigate, useLocation} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
@@ -27,9 +27,60 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const TypingEffect = ({text, speed = 100}: {text: string; speed?: number}) => {
+  const [displayedText, setDisplayedText] = useState('');
+  useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      setDisplayedText(text.substring(0, i + 1));
+      i++;
+      if (i >= text.length) clearInterval(timer);
+    }, speed);
+    return () => clearInterval(timer);
+  }, [text, speed]);
+  return <>{displayedText}</>;
+};
+
+const CountUp = ({
+  end,
+  decimals = 0,
+  duration = 110000,
+  prefix = '',
+  suffix = '',
+}: {
+  end: number;
+  decimals?: number;
+  duration?: number;
+  prefix?: string;
+  suffix?: string;
+}) => {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      setCount(progress * end);
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      }
+    };
+    window.requestAnimationFrame(step);
+  }, [end, duration]);
+
+  return (
+    <>
+      {prefix}
+      {count.toFixed(decimals)}
+      {suffix}
+    </>
+  );
+};
+
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [authenticating, setAuthenticating] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -45,17 +96,18 @@ export default function SignIn() {
   });
 
   const onSubmit = async (data: FormValues) => {
-    setLoading(true);
+    setAuthenticating(true);
     const response = await AuthenticationService.authenticate(
       data.email,
       data.password,
       data.keepConnect,
     );
+
     if (!response || !response.success) {
       toast.error(
         'Erro ao realizar login. Verifique suas credenciais e tente novamente.',
       );
-      setLoading(false);
+      setAuthenticating(false);
       return;
     }
 
@@ -65,36 +117,43 @@ export default function SignIn() {
       return;
     }
 
+    setAuthenticating(false);
+    setIsSyncing(true);
+
     setTimeout(() => {
       toast.success('Login realizado com sucesso!');
+      setIsSyncing(false);
       navigate(from, {replace: true});
-    }, 1000);
+    }, 2000);
   };
 
   return (
     <>
-      <WalletLoadingScreen isLoading={loading} loadingText="Entrando..." />
+      <WalletLoadingScreen
+        isLoading={isSyncing}
+        loadingText="Sincronizando sua carteira..."
+      />
       <div
         id="signin-page"
         className="min-h-screen flex"
-        style={{backgroundColor: '#0b1326', fontFamily: 'Inter, sans-serif'}}
-      >
+        style={{fontFamily: 'Inter, sans-serif'}}>
         {/* Painel esquerdo - editorial */}
         <div
           className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-          style={{backgroundColor: '#060d20'}}
-        >
+          style={{backgroundColor: '#060d20'}}>
           {/* Glow ambiental */}
           <div
             className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
             style={{
-              background: 'radial-gradient(circle, rgba(38,101,253,0.08) 0%, transparent 70%)',
+              background:
+                'radial-gradient(circle, rgba(38,101,253,0.08) 0%, transparent 70%)',
             }}
           />
           <div
             className="absolute bottom-0 right-0 w-80 h-80 rounded-full pointer-events-none"
             style={{
-              background: 'radial-gradient(circle, rgba(38,101,253,0.05) 0%, transparent 70%)',
+              background:
+                'radial-gradient(circle, rgba(38,101,253,0.05) 0%, transparent 70%)',
             }}
           />
 
@@ -102,14 +161,12 @@ export default function SignIn() {
           <div className="flex items-center gap-3 relative z-10">
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{backgroundColor: '#2665fd'}}
-            >
+              style={{backgroundColor: '#2665fd'}}>
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <span
               className="text-xl font-bold tracking-tight"
-              style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}
-            >
+              style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}>
               Trackerr
             </span>
           </div>
@@ -124,8 +181,7 @@ export default function SignIn() {
                   backgroundColor: 'rgba(38,101,253,0.12)',
                   fontFamily: 'Inter, sans-serif',
                   letterSpacing: '0.12em',
-                }}
-              >
+                }}>
                 Terminal Financeiro
               </span>
             </div>
@@ -136,36 +192,55 @@ export default function SignIn() {
                 fontSize: '2.75rem',
                 fontFamily: 'Manrope, sans-serif',
                 letterSpacing: '-0.02em',
-              }}
-            >
-              Precisão institucional para o seu patrimônio.
+                minHeight: '2.5em',
+              }}>
+              <TypingEffect text="Precisão institucional para o seu patrimônio." />
             </h1>
             <p
               className="leading-relaxed"
-              style={{color: 'rgba(195,197,216,0.75)', fontSize: '1rem', lineHeight: '1.7'}}
-            >
-              Acompanhe seu portfólio com análises em tempo real, insights inteligentes e uma interface construída para quem leva investimentos a sério.
+              style={{
+                color: 'rgba(195,197,216,0.75)',
+                fontSize: '1rem',
+                lineHeight: '1.7',
+              }}>
+              Acompanhe seu portfólio com análises em tempo real, insights
+              inteligentes e uma interface construída para quem leva
+              investimentos a sério.
             </p>
 
             {/* Métricas */}
             <div className="mt-10 grid grid-cols-3 gap-4">
               {[
-                {value: 'R$ 2.4B', label: 'Patrimônio monitorado'},
-                {value: '12k+', label: 'Investidores ativos'},
-                {value: '99.9%', label: 'Uptime do sistema'},
-              ].map((item) => (
+                {
+                  value: (
+                    <CountUp end={2.4} decimals={1} prefix="R$ " suffix="M" />
+                  ),
+                  label: 'Patrimônio monitorado',
+                },
+                {
+                  value: <CountUp end={2} decimals={1} suffix="k+" />,
+                  label: 'Investidores ativos',
+                },
+                {
+                  value: '99.9%',
+                  label: 'Uptime do sistema',
+                },
+              ].map((item, index) => (
                 <div
-                  key={item.label}
+                  key={index}
                   className="rounded-xl p-4"
-                  style={{backgroundColor: '#131b2e'}}
-                >
+                  style={{backgroundColor: '#131b2e'}}>
                   <div
                     className="font-bold text-lg mb-1"
-                    style={{color: '#b5c4ff', fontFamily: 'Manrope, sans-serif'}}
-                  >
+                    style={{
+                      color: '#b5c4ff',
+                      fontFamily: 'Manrope, sans-serif',
+                    }}>
                     {item.value}
                   </div>
-                  <div className="text-xs" style={{color: 'rgba(195,197,216,0.6)'}}>
+                  <div
+                    className="text-xs"
+                    style={{color: 'rgba(195,197,216,0.6)'}}>
                     {item.label}
                   </div>
                 </div>
@@ -174,7 +249,9 @@ export default function SignIn() {
           </div>
 
           {/* Rodapé */}
-          <p className="text-xs relative z-10" style={{color: 'rgba(195,197,216,0.4)'}}>
+          <p
+            className="text-xs relative z-10"
+            style={{color: 'rgba(195,197,216,0.4)'}}>
             © 2025 Trackerr. Plataforma de análise de investimentos.
           </p>
         </div>
@@ -182,21 +259,18 @@ export default function SignIn() {
         {/* Painel direito - formulário */}
         <div
           className="flex-1 flex items-center justify-center p-8"
-          style={{backgroundColor: '#0b1326'}}
-        >
+          style={{backgroundColor: '#ffffff'}}>
           <div className="w-full max-w-md">
             {/* Logo mobile */}
             <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
               <div
                 className="w-9 h-9 rounded-lg flex items-center justify-center"
-                style={{backgroundColor: '#2665fd'}}
-              >
+                style={{backgroundColor: '#2665fd'}}>
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <span
                 className="text-xl font-bold"
-                style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}
-              >
+                style={{color: '#060d20', fontFamily: 'Manrope, sans-serif'}}>
                 Trackerr
               </span>
             </div>
@@ -206,24 +280,20 @@ export default function SignIn() {
               <h2
                 className="font-bold mb-2"
                 style={{
-                  color: '#dbe2fd',
+                  color: '#060d20',
                   fontSize: '1.875rem',
                   fontFamily: 'Manrope, sans-serif',
                   letterSpacing: '-0.02em',
-                }}
-              >
+                }}>
                 Entrar no Terminal
               </h2>
-              <p style={{color: 'rgba(195,197,216,0.6)', fontSize: '0.9rem'}}>
+              <p style={{color: '#64748b', fontSize: '0.9rem'}}>
                 Não tem uma conta?{' '}
                 <button
                   id="signin-goto-register"
                   onClick={() => navigate('/register')}
-                  className="font-medium transition-colors"
-                  style={{color: '#b5c4ff'}}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#2665fd')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = '#b5c4ff')}
-                >
+                  className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline"
+                  style={{color: '#2665fd'}}>
                   Criar conta agora
                 </button>
               </p>
@@ -234,17 +304,15 @@ export default function SignIn() {
               <form
                 id="signin-form"
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-5"
-              >
+                className="space-y-5">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({field}) => (
                     <FormItem>
                       <FormLabel
-                        className="uppercase tracking-widest text-xs"
-                        style={{color: 'rgba(195,197,216,0.7)', letterSpacing: '0.1em'}}
-                      >
+                        className="uppercase tracking-widest text-xs font-bold"
+                        style={{color: '#64748b', letterSpacing: '0.1em'}}>
                         E-mail
                       </FormLabel>
                       <FormControl>
@@ -252,11 +320,8 @@ export default function SignIn() {
                           id="signin-email"
                           placeholder="seu@email.com"
                           {...field}
-                          className="h-12 border-0 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd]"
-                          style={{
-                            backgroundColor: '#2d3449',
-                            color: '#dbe2fd',
-                          }}
+                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
+                          style={{color: '#060d20'}}
                         />
                       </FormControl>
                       <FormMessage />
@@ -271,16 +336,14 @@ export default function SignIn() {
                     <FormItem>
                       <div className="flex items-center justify-between">
                         <FormLabel
-                          className="uppercase tracking-widest text-xs"
-                          style={{color: 'rgba(195,197,216,0.7)', letterSpacing: '0.1em'}}
-                        >
+                          className="uppercase tracking-widest text-xs font-bold"
+                          style={{color: '#64748b', letterSpacing: '0.1em'}}>
                           Senha
                         </FormLabel>
                         <a
                           href="/forgot-password"
-                          className="text-xs transition-colors"
-                          style={{color: '#b5c4ff'}}
-                        >
+                          className="text-xs font-medium transition-colors hover:text-primary"
+                          style={{color: '#2665fd'}}>
                           Esqueceu a senha?
                         </a>
                       </div>
@@ -291,11 +354,8 @@ export default function SignIn() {
                             type={showPassword ? 'text' : 'password'}
                             placeholder="••••••••"
                             {...field}
-                            className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd]"
-                            style={{
-                              backgroundColor: '#2d3449',
-                              color: '#dbe2fd',
-                            }}
+                            className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
+                            style={{color: '#060d20'}}
                           />
                         </FormControl>
                         <Button
@@ -303,9 +363,8 @@ export default function SignIn() {
                           variant="ghost"
                           size="icon"
                           className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
-                          style={{color: 'rgba(195,197,216,0.6)'}}
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
+                          style={{color: '#94a3b8'}}
+                          onClick={() => setShowPassword(!showPassword)}>
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />
                           ) : (
@@ -331,13 +390,12 @@ export default function SignIn() {
                           id="signin-keep-connected"
                           checked={field.value}
                           onCheckedChange={field.onChange}
-                          className="border-[#434655] data-[state=checked]:bg-[#2665fd] data-[state=checked]:border-[#2665fd]"
+                          className="border-slate-300 data-[state=checked]:bg-[#2665fd] data-[state=checked]:border-[#2665fd]"
                         />
                       </FormControl>
                       <FormLabel
-                        className="font-normal text-sm cursor-pointer"
-                        style={{color: 'rgba(195,197,216,0.7)'}}
-                      >
+                        className="font-medium text-sm cursor-pointer"
+                        style={{color: '#475569'}}>
                         Manter conectado
                       </FormLabel>
                     </FormItem>
@@ -347,16 +405,17 @@ export default function SignIn() {
                 <Button
                   id="signin-submit"
                   type="submit"
-                  className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200"
+                  className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20"
                   style={{
                     background: 'linear-gradient(135deg, #2665fd, #0050e1)',
                     color: '#f9f7ff',
                   }}
-                  disabled={loading}
-                >
-                  {loading ? 'Entrando...' : (
+                  disabled={authenticating || isSyncing}>
+                  {authenticating ? (
+                    'Verificando...'
+                  ) : (
                     <>
-                      Entrar
+                      Entrar no Terminal
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
@@ -364,11 +423,8 @@ export default function SignIn() {
               </form>
             </Form>
 
-            {/* Rodapé */}
-            <p
-              className="text-xs text-center mt-8"
-              style={{color: 'rgba(195,197,216,0.3)'}}
-            >
+            {/* Rodapé externo */}
+            <p className="text-xs text-center mt-8" style={{color: '#94a3b8'}}>
               Copyright © 2025 Trackerr. Todos os direitos reservados.
             </p>
           </div>
