@@ -27,15 +27,15 @@ export const CustomTooltip = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        'bg-background/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg px-4 py-3 text-sm font-medium text-foreground min-w-[120px]',
-        'before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-background/95',
+        'relative min-w-[170px] rounded-2xl border border-white/10 bg-slate-900/88 px-4 py-3 text-sm font-medium text-slate-100 shadow-2xl backdrop-blur-xl',
+        'before:absolute before:left-1/2 before:top-full before:-translate-x-1/2 before:border-[7px] before:border-transparent before:border-t-slate-900/85',
         className
       )}
       style={{
-        filter: 'drop-shadow(0 4px 6px rgb(0 0 0 / 0.1))',
+        boxShadow: '0 14px 28px rgba(2, 6, 23, 0.45)',
       }}>
       {label && (
-        <p className="font-semibold text-base mb-2 text-foreground border-b border-border/30 pb-2">
+        <p className="mb-2 border-b border-white/10 pb-2 text-base font-semibold text-white">
           {labelFormatter ? labelFormatter(label) : label}
         </p>
       )}
@@ -51,14 +51,14 @@ export const CustomTooltip = React.forwardRef<
               className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <div
-                  className="w-3 h-3 rounded-full border border-white/20"
+                  className="h-2.5 w-2.5 rounded-full border border-white/20"
                   style={{backgroundColor: entry.color}}
                 />
-                <span className="text-muted-foreground text-xs">
+                <span className="text-xs text-slate-300">
                   {formattedName}
                 </span>
               </div>
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-white">
                 {formattedValue}
               </span>
             </div>

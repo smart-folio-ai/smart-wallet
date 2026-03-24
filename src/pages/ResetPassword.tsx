@@ -43,11 +43,11 @@ function LoadingState() {
       id="reset-password-loading"
       data-testid="reset-password-loading"
       className="min-h-screen flex items-center justify-center"
-      style={{backgroundColor: '#0b1326'}}
+      style={{backgroundColor: 'var(--auth-bg)'}}
     >
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="w-10 h-10 animate-spin" style={{color: '#2665fd'}} />
-        <p className="text-sm" style={{color: 'rgba(195,197,216,0.6)'}}>
+        <Loader2 className="w-10 h-10 animate-spin" style={{color: 'var(--auth-brand)'}} />
+        <p className="text-sm" style={{color: 'var(--auth-text-muted)'}}>
           Validando link de recuperação...
         </p>
       </div>
@@ -63,21 +63,21 @@ function InvalidTokenState({onRetry}: {onRetry: () => void}) {
       id="reset-password-invalid"
       data-testid="reset-password-invalid"
       className="min-h-screen flex items-center justify-center p-8"
-      style={{backgroundColor: '#0b1326'}}
+      style={{backgroundColor: 'var(--auth-bg)'}}
     >
       <div className="w-full max-w-md text-center">
         <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-          style={{backgroundColor: 'rgba(201,70,0,0.12)'}}
+          style={{backgroundColor: 'var(--auth-danger-soft)'}}
         >
           <AlertCircle className="w-8 h-8" style={{color: '#ffb59a'}} />
         </div>
         <h2
           className="font-bold mb-3"
           style={{
-            color: '#dbe2fd',
+            color: 'var(--auth-text-main)',
             fontSize: '1.75rem',
-            fontFamily: 'Manrope, sans-serif',
+            fontFamily: 'var(--font-heading)',
             letterSpacing: '-0.02em',
           }}
         >
@@ -85,7 +85,7 @@ function InvalidTokenState({onRetry}: {onRetry: () => void}) {
         </h2>
         <p
           className="mb-8 leading-relaxed"
-          style={{color: 'rgba(195,197,216,0.6)', fontSize: '0.9rem'}}
+          style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem'}}
         >
           O link para redefinição de senha não é válido ou já expirou. Por favor, solicite um novo link de recuperação.
         </p>
@@ -94,7 +94,7 @@ function InvalidTokenState({onRetry}: {onRetry: () => void}) {
           onClick={onRetry}
           className="w-full h-12 font-semibold text-sm"
           style={{
-            background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+            background: 'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
             color: '#f9f7ff',
           }}
         >
@@ -179,17 +179,17 @@ export default function ResetPassword() {
     <div
       id="reset-password-page"
       className="min-h-screen flex"
-      style={{backgroundColor: '#0b1326', fontFamily: 'Inter, sans-serif'}}
+      style={{backgroundColor: 'var(--auth-bg)', fontFamily: 'var(--font-body)'}}
     >
       {/* Painel esquerdo */}
       <div
         className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-        style={{backgroundColor: '#060d20'}}
+        style={{backgroundColor: 'var(--auth-panel)'}}
       >
         <div
           className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
           style={{
-            background: 'radial-gradient(circle, rgba(38,101,253,0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, var(--auth-highlight-soft) 0%, transparent 70%)',
           }}
         />
 
@@ -197,13 +197,13 @@ export default function ResetPassword() {
         <div className="flex items-center gap-3 relative z-10">
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center"
-            style={{backgroundColor: '#2665fd'}}
+            style={{backgroundColor: 'var(--auth-brand)'}}
           >
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <span
             className="text-xl font-bold tracking-tight"
-            style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}
+            style={{color: 'var(--auth-text-main)', fontFamily: 'var(--font-heading)'}}
           >
             Trackerr
           </span>
@@ -215,9 +215,9 @@ export default function ResetPassword() {
             <span
               className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full"
               style={{
-                color: '#b5c4ff',
-                backgroundColor: 'rgba(38,101,253,0.12)',
-                fontFamily: 'Inter, sans-serif',
+                color: 'var(--auth-text-accent)',
+                backgroundColor: 'var(--auth-highlight)',
+                fontFamily: 'var(--font-body)',
                 letterSpacing: '0.12em',
               }}
             >
@@ -227,9 +227,9 @@ export default function ResetPassword() {
           <h1
             className="font-bold leading-tight mb-5"
             style={{
-              color: '#dbe2fd',
+              color: 'var(--auth-text-main)',
               fontSize: '2.75rem',
-              fontFamily: 'Manrope, sans-serif',
+              fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
             }}
           >
@@ -237,7 +237,7 @@ export default function ResetPassword() {
           </h1>
           <p
             className="leading-relaxed"
-            style={{color: 'rgba(195,197,216,0.75)', fontSize: '1rem', lineHeight: '1.7'}}
+            style={{color: 'var(--auth-text-body)', fontSize: '1rem', lineHeight: '1.7'}}
           >
             Escolha uma senha forte e exclusiva para proteger o acesso ao seu terminal financeiro.
           </p>
@@ -252,10 +252,10 @@ export default function ResetPassword() {
               <div
                 key={tip}
                 className="flex items-center gap-3 rounded-xl p-4"
-                style={{backgroundColor: '#131b2e'}}
+                style={{backgroundColor: 'var(--auth-surface)'}}
               >
-                <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{color: '#2665fd'}} />
-                <span className="text-sm" style={{color: 'rgba(195,197,216,0.7)'}}>
+                <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{color: 'var(--auth-brand)'}} />
+                <span className="text-sm" style={{color: 'var(--auth-text-body-strong)'}}>
                   {tip}
                 </span>
               </div>
@@ -263,7 +263,7 @@ export default function ResetPassword() {
           </div>
         </div>
 
-        <p className="text-xs relative z-10" style={{color: 'rgba(195,197,216,0.4)'}}>
+        <p className="text-xs relative z-10" style={{color: 'var(--auth-text-soft)'}}>
           © 2025 Trackerr. Plataforma de análise de investimentos.
         </p>
       </div>
@@ -271,20 +271,20 @@ export default function ResetPassword() {
       {/* Painel direito */}
       <div
         className="flex-1 flex items-center justify-center p-8"
-        style={{backgroundColor: '#0b1326'}}
+        style={{backgroundColor: 'var(--auth-bg)'}}
       >
         <div className="w-full max-w-md">
           {/* Logo mobile */}
           <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{backgroundColor: '#2665fd'}}
+              style={{backgroundColor: 'var(--auth-brand)'}}
             >
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <span
               className="text-xl font-bold"
-              style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}
+              style={{color: 'var(--auth-text-main)', fontFamily: 'var(--font-heading)'}}
             >
               Trackerr
             </span>
@@ -295,9 +295,9 @@ export default function ResetPassword() {
             id="reset-password-back"
             onClick={() => navigate('/')}
             className="flex items-center gap-2 mb-8 text-sm transition-colors"
-            style={{color: 'rgba(195,197,216,0.6)'}}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#b5c4ff')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(195,197,216,0.6)')}
+            style={{color: 'var(--auth-text-muted)'}}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--auth-text-accent)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--auth-text-muted)')}
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar para o login
@@ -308,16 +308,16 @@ export default function ResetPassword() {
             <div id="reset-password-success" data-testid="reset-password-success">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{backgroundColor: 'rgba(38,101,253,0.12)'}}
+                style={{backgroundColor: 'var(--auth-highlight)'}}
               >
-                <CheckCircle2 className="h-6 w-6" style={{color: '#b5c4ff'}} />
+                <CheckCircle2 className="h-6 w-6" style={{color: 'var(--auth-text-accent)'}} />
               </div>
               <h2
                 className="font-bold mb-2"
                 style={{
-                  color: '#dbe2fd',
+                  color: 'var(--auth-text-main)',
                   fontSize: '1.875rem',
-                  fontFamily: 'Manrope, sans-serif',
+                  fontFamily: 'var(--font-heading)',
                   letterSpacing: '-0.02em',
                 }}
               >
@@ -325,7 +325,7 @@ export default function ResetPassword() {
               </h2>
               <p
                 className="mb-8"
-                style={{color: 'rgba(195,197,216,0.6)', fontSize: '0.9rem', lineHeight: '1.6'}}
+                style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem', lineHeight: '1.6'}}
               >
                 Sua senha foi alterada com sucesso. Você já pode acessar o terminal com suas novas credenciais.
               </p>
@@ -334,7 +334,7 @@ export default function ResetPassword() {
                 onClick={() => navigate('/')}
                 className="w-full h-12 font-semibold text-sm"
                 style={{
-                  background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+                  background: 'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                   color: '#f9f7ff',
                 }}
               >
@@ -347,22 +347,22 @@ export default function ResetPassword() {
               <div className="mb-8">
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{backgroundColor: 'rgba(38,101,253,0.12)'}}
+                  style={{backgroundColor: 'var(--auth-highlight)'}}
                 >
-                  <KeyRound className="h-6 w-6" style={{color: '#2665fd'}} />
+                  <KeyRound className="h-6 w-6" style={{color: 'var(--auth-brand)'}} />
                 </div>
                 <h2
                   className="font-bold mb-2"
                   style={{
-                    color: '#dbe2fd',
+                    color: 'var(--auth-text-main)',
                     fontSize: '1.875rem',
-                    fontFamily: 'Manrope, sans-serif',
+                    fontFamily: 'var(--font-heading)',
                     letterSpacing: '-0.02em',
                   }}
                 >
                   Nova senha
                 </h2>
-                <p style={{color: 'rgba(195,197,216,0.6)', fontSize: '0.9rem'}}>
+                <p style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem'}}>
                   Digite sua nova senha abaixo.
                   {requiresMfa && ' Você também precisará informar seu código de Autenticação em Duas Etapas (2FA).'}
                 </p>
@@ -383,7 +383,7 @@ export default function ResetPassword() {
                         <FormItem>
                           <FormLabel
                             className="uppercase tracking-widest text-xs"
-                            style={{color: 'rgba(195,197,216,0.7)', letterSpacing: '0.1em'}}
+                            style={{color: 'var(--auth-text-body-strong)', letterSpacing: '0.1em'}}
                           >
                             Código de Autenticação (2FA)
                           </FormLabel>
@@ -394,10 +394,10 @@ export default function ResetPassword() {
                                   <InputOTPSlot
                                     key={index}
                                     index={index}
-                                    className="w-11 h-13 text-base border-0 rounded-lg focus-visible:ring-1 focus-visible:ring-[#2665fd]"
+                                    className="w-11 h-13 text-base border-0 rounded-lg focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)]"
                                     style={{
-                                      backgroundColor: '#2d3449',
-                                      color: '#dbe2fd',
+                                      backgroundColor: 'var(--auth-input)',
+                                      color: 'var(--auth-text-main)',
                                     }}
                                   />
                                 ))}
@@ -418,7 +418,7 @@ export default function ResetPassword() {
                       <FormItem>
                         <FormLabel
                           className="uppercase tracking-widest text-xs"
-                          style={{color: 'rgba(195,197,216,0.7)', letterSpacing: '0.1em'}}
+                          style={{color: 'var(--auth-text-body-strong)', letterSpacing: '0.1em'}}
                         >
                           Nova Senha
                         </FormLabel>
@@ -429,8 +429,8 @@ export default function ResetPassword() {
                               type={showPassword ? 'text' : 'password'}
                               placeholder="••••••••"
                               {...field}
-                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd]"
-                              style={{backgroundColor: '#2d3449', color: '#dbe2fd'}}
+                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)]"
+                              style={{backgroundColor: 'var(--auth-input)', color: 'var(--auth-text-main)'}}
                             />
                           </FormControl>
                           <Button
@@ -438,7 +438,7 @@ export default function ResetPassword() {
                             variant="ghost"
                             size="icon"
                             className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
-                            style={{color: 'rgba(195,197,216,0.6)'}}
+                            style={{color: 'var(--auth-text-muted)'}}
                             onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -460,7 +460,7 @@ export default function ResetPassword() {
                       <FormItem>
                         <FormLabel
                           className="uppercase tracking-widest text-xs"
-                          style={{color: 'rgba(195,197,216,0.7)', letterSpacing: '0.1em'}}
+                          style={{color: 'var(--auth-text-body-strong)', letterSpacing: '0.1em'}}
                         >
                           Confirmar Nova Senha
                         </FormLabel>
@@ -471,8 +471,8 @@ export default function ResetPassword() {
                               type={showConfirmPassword ? 'text' : 'password'}
                               placeholder="••••••••"
                               {...field}
-                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd]"
-                              style={{backgroundColor: '#2d3449', color: '#dbe2fd'}}
+                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)]"
+                              style={{backgroundColor: 'var(--auth-input)', color: 'var(--auth-text-main)'}}
                             />
                           </FormControl>
                           <Button
@@ -480,7 +480,7 @@ export default function ResetPassword() {
                             variant="ghost"
                             size="icon"
                             className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
-                            style={{color: 'rgba(195,197,216,0.6)'}}
+                            style={{color: 'var(--auth-text-muted)'}}
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                           >
                             {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -500,7 +500,7 @@ export default function ResetPassword() {
                     disabled={isSubmitting}
                     className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200"
                     style={{
-                      background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+                      background: 'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                       color: '#f9f7ff',
                     }}
                   >
