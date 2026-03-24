@@ -1,6 +1,6 @@
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import SignIn from './SignIn';
@@ -9,6 +9,8 @@ import SignIn from './SignIn';
 vi.mock('../services/authentication', () => ({
   default: {
     authenticate: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
   },
 }));
 
@@ -21,7 +23,7 @@ const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
-    ...actual,
+    ...actual as any,
     useNavigate: () => mockNavigate,
     useLocation: () => ({state: null, pathname: '/'}),
   };
@@ -50,12 +52,12 @@ describe('SignIn', () => {
     expect(screen.getByText(/Entrar no Terminal/i)).toBeDefined();
     expect(screen.getByLabelText(/E-mail/i)).toBeDefined();
     expect(screen.getByLabelText(/Senha/i)).toBeDefined();
-    expect(screen.getByRole('button', {name: /Entrar/i})).toBeDefined();
+    expect(screen.getByRole('button', {name: /Entrar no Terminal/i})).toBeDefined();
   });
 
   it('deve exibir erros de validação ao submeter o formulário vazio', async () => {
     renderSignIn();
-    const submitBtn = screen.getByRole('button', {name: /Entrar/i});
+    const submitBtn = screen.getByRole('button', {name: /Entrar no Terminal/i});
     await userEvent.click(submitBtn);
     await waitFor(() => {
       expect(screen.getByText(/Digite um email válido/i)).toBeDefined();
@@ -85,7 +87,7 @@ describe('SignIn', () => {
 
     await userEvent.type(screen.getByLabelText(/E-mail/i), 'test@email.com');
     await userEvent.type(screen.getByLabelText(/Senha/i), 'senha123');
-    await userEvent.click(screen.getByRole('button', {name: /Entrar/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Entrar no Terminal/i}));
 
     await waitFor(() => {
       expect(AuthenticationService.authenticate).toHaveBeenCalledWith(
@@ -106,14 +108,14 @@ describe('SignIn', () => {
 
     await userEvent.type(screen.getByLabelText(/E-mail/i), 'test@email.com');
     await userEvent.type(screen.getByLabelText(/Senha/i), 'senha123');
-    await userEvent.click(screen.getByRole('button', {name: /Entrar/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Entrar no Terminal/i}));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/2fa-verify', {replace: true});
     });
   });
 
-  it('deve mostrar erro quando as credenciais forem inválidas', async () => {
+  it('deve mostrar erro quando as credenciais forem inválidas e não mostrar o loading da carteira', async () => {
     vi.mocked(AuthenticationService.authenticate).mockResolvedValueOnce({
       success: false,
       requires2FA: false,
@@ -123,10 +125,32 @@ describe('SignIn', () => {
 
     await userEvent.type(screen.getByLabelText(/E-mail/i), 'wrong@email.com');
     await userEvent.type(screen.getByLabelText(/Senha/i), 'senhaerrada');
-    await userEvent.click(screen.getByRole('button', {name: /Entrar/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Entrar no Terminal/i}));
 
     await waitFor(() => {
       expect(AuthenticationService.authenticate).toHaveBeenCalled();
+      // O loading da carteira NÃO deve aparecer em caso de erro
+      expect(screen.queryByTestId('loading-screen')).toBeNull();
+      // O botão deve voltar ao estado normal ou mostrar o erro
+      expect(screen.getByRole('button', {name: /Entrar no Terminal/i})).toBeDefined();
+    });
+  });
+
+  it('deve mostrar o loading da carteira APÓS o sucesso da autenticação', async () => {
+    vi.mocked(AuthenticationService.authenticate).mockResolvedValueOnce({
+      success: true,
+      requires2FA: false,
+    } as never);
+
+    renderSignIn();
+
+    await userEvent.type(screen.getByLabelText(/E-mail/i), 'test@email.com');
+    await userEvent.type(screen.getByLabelText(/Senha/i), 'senha123');
+    await userEvent.click(screen.getByRole('button', {name: /Entrar no Terminal/i}));
+
+    await waitFor(() => {
+      // O loading deve aparecer agora que a autenticação foi bem sucedida
+      expect(screen.getByTestId('loading-screen')).toBeDefined();
     });
   });
 

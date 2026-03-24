@@ -5,7 +5,14 @@ import {useForm} from 'react-hook-form';
 import apiClient from '@/server/api/api';
 import {useMutation} from '@tanstack/react-query';
 import * as z from 'zod';
-import {ArrowLeft, Loader2, TrendingUp, Mail, CheckCircle2} from 'lucide-react';
+import {
+  ArrowLeft,
+  Loader2,
+  TrendingUp,
+  Mail,
+  CheckCircle2,
+  ArrowRight,
+} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -59,11 +66,12 @@ export default function ForgotPassword() {
     <div
       id="forgot-password-page"
       className="min-h-screen flex"
-      style={{backgroundColor: '#0b1326', fontFamily: 'Inter, sans-serif'}}>
-      {/* Painel esquerdo */}
+      style={{fontFamily: 'Inter, sans-serif'}}>
+      {/* Painel esquerdo - editorial */}
       <div
         className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
         style={{backgroundColor: '#060d20'}}>
+        {/* Glow ambiental */}
         <div
           className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
           style={{
@@ -108,7 +116,7 @@ export default function ForgotPassword() {
               fontFamily: 'Manrope, sans-serif',
               letterSpacing: '-0.02em',
             }}>
-            Recupere seu acesso de forma rápida e segura.
+            Recupere seu acesso com segurança.
           </h1>
           <p
             className="leading-relaxed"
@@ -118,39 +126,36 @@ export default function ForgotPassword() {
               lineHeight: '1.7',
             }}>
             Acontece com os melhores. Informe seu e-mail cadastrado e enviaremos
-            as instruções de recuperação em instantes.
+            as instruções de recuperação em instantes para que você volte ao
+            terminal.
           </p>
 
-          {/* Steps */}
+          {/* Passos */}
           <div className="mt-10 space-y-4">
             {[
               {
                 step: '01',
-                title: 'Informe seu e-mail',
-                desc: 'Digite o e-mail vinculado à sua conta',
+                title: 'Identificação',
+                desc: 'Informe seu e-mail de acesso',
               },
               {
                 step: '02',
-                title: 'Verifique sua caixa de entrada',
-                desc: 'Enviaremos um link de recuperação seguro',
+                title: 'Verificação',
+                desc: 'Enviaremos um link seguro para você',
               },
               {
                 step: '03',
-                title: 'Redefina sua senha',
-                desc: 'Crie uma nova senha e acesse o terminal',
+                title: 'Redefinição',
+                desc: 'Escolha uma nova senha forte',
               },
             ].map((item) => (
               <div
                 key={item.step}
-                className="flex items-start gap-4 rounded-xl p-4"
+                className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-[#1a253d]"
                 style={{backgroundColor: '#131b2e'}}>
                 <span
-                  className="text-xs font-bold tabular-nums mt-0.5"
-                  style={{
-                    color: '#2665fd',
-                    fontFamily: 'Manrope, sans-serif',
-                    minWidth: '1.5rem',
-                  }}>
+                  className="text-xs font-bold mt-0.5"
+                  style={{color: '#2665fd', fontFamily: 'Manrope, sans-serif'}}>
                   {item.step}
                 </span>
                 <div>
@@ -173,17 +178,18 @@ export default function ForgotPassword() {
           </div>
         </div>
 
+        {/* Rodapé */}
         <p
           className="text-xs relative z-10"
           style={{color: 'rgba(195,197,216,0.4)'}}>
-          © 2025 Trackerr. Plataforma de análise de investimentos.
+          © 2025 Trackerr. Terminal de inteligência financeira.
         </p>
       </div>
 
-      {/* Painel direito */}
+      {/* Painel direito - formulário (BRANCO) */}
       <div
         className="flex-1 flex items-center justify-center p-8"
-        style={{backgroundColor: '#0b1326'}}>
+        style={{backgroundColor: '#ffffff'}}>
         <div className="w-full max-w-md">
           {/* Logo mobile */}
           <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
@@ -194,47 +200,43 @@ export default function ForgotPassword() {
             </div>
             <span
               className="text-xl font-bold"
-              style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}>
+              style={{color: '#060d20', fontFamily: 'Manrope, sans-serif'}}>
               Trackerr
             </span>
           </div>
 
-          {/* Botão Voltar */}
-          <button
-            id="forgot-password-back"
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 mb-8 text-sm transition-colors"
-            style={{color: 'rgba(195,197,216,0.6)'}}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#b5c4ff')}
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = 'rgba(195,197,216,0.6)')
-            }>
-            <ArrowLeft className="h-4 w-4" />
-            Voltar para o login
-          </button>
-
           {!isSubmitted ? (
             <>
-              {/* Cabeçalho */}
+              {/* Botão Voltar */}
+              <button
+                id="forgot-password-back"
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2 mb-8 text-sm font-medium transition-colors hover:text-[#2665fd]"
+                style={{color: '#64748b'}}>
+                <ArrowLeft className="h-4 w-4" />
+                Voltar para o login
+              </button>
+
+              {/* Cabeçalho do form */}
               <div className="mb-8">
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{backgroundColor: 'rgba(38,101,253,0.12)'}}>
+                  style={{backgroundColor: 'rgba(38,101,253,0.08)'}}>
                   <Mail className="h-6 w-6" style={{color: '#2665fd'}} />
                 </div>
                 <h2
                   className="font-bold mb-2"
                   style={{
-                    color: '#dbe2fd',
+                    color: '#060d20',
                     fontSize: '1.875rem',
                     fontFamily: 'Manrope, sans-serif',
                     letterSpacing: '-0.02em',
                   }}>
-                  Esqueceu sua senha?
+                  Esqueceu a senha?
                 </h2>
-                <p style={{color: 'rgba(195,197,216,0.6)', fontSize: '0.9rem'}}>
-                  Informe seu e-mail e enviaremos as instruções para a
-                  recuperação.
+                <p style={{color: '#64748b', fontSize: '0.9rem'}}>
+                  Não se preocupe, vamos te ajudar a recuperar o acesso ao seu
+                  terminal financeiro.
                 </p>
               </div>
 
@@ -250,23 +252,17 @@ export default function ForgotPassword() {
                     render={({field}) => (
                       <FormItem>
                         <FormLabel
-                          className="uppercase tracking-widest text-xs"
-                          style={{
-                            color: 'rgba(195,197,216,0.7)',
-                            letterSpacing: '0.1em',
-                          }}>
-                          E-mail
+                          className="uppercase tracking-widest text-xs font-bold"
+                          style={{color: '#64748b', letterSpacing: '0.1em'}}>
+                          E-mail cadastrado
                         </FormLabel>
                         <FormControl>
                           <Input
                             id="forgot-password-email"
                             placeholder="seu@email.com"
                             {...field}
-                            className="h-12 border-0 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd]"
-                            style={{
-                              backgroundColor: '#2d3449',
-                              color: '#dbe2fd',
-                            }}
+                            className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
+                            style={{color: '#060d20'}}
                           />
                         </FormControl>
                         <FormMessage />
@@ -277,87 +273,82 @@ export default function ForgotPassword() {
                   <Button
                     id="forgot-password-submit"
                     type="submit"
-                    disabled={isPending}
-                    className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200"
+                    className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20"
                     style={{
                       background: 'linear-gradient(135deg, #2665fd, #0050e1)',
                       color: '#f9f7ff',
-                    }}>
+                    }}
+                    disabled={isPending}>
                     {isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Enviando...
                       </>
                     ) : (
-                      'Enviar Instruções'
+                      <>
+                        Enviar Instruções
+                        <ArrowRight className="h-4 w-4" />
+                      </>
                     )}
                   </Button>
                 </form>
               </Form>
             </>
           ) : (
-            <div id="forgot-password-success">
-              {/* Estado de sucesso */}
-              <div className="mb-8">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{backgroundColor: 'rgba(38,101,253,0.12)'}}>
-                  <CheckCircle2
-                    className="h-6 w-6"
-                    style={{color: '#b5c4ff'}}
-                  />
-                </div>
-                <h2
-                  className="font-bold mb-2"
-                  style={{
-                    color: '#dbe2fd',
-                    fontSize: '1.875rem',
-                    fontFamily: 'Manrope, sans-serif',
-                    letterSpacing: '-0.02em',
-                  }}>
-                  Email enviado!
-                </h2>
-                <p
-                  style={{
-                    color: 'rgba(195,197,216,0.6)',
-                    fontSize: '0.9rem',
-                    lineHeight: '1.6',
-                  }}>
-                  Enviamos as instruções de recuperação para{' '}
-                  <span style={{color: '#b5c4ff', fontWeight: 600}}>
-                    {form.getValues().email}
-                  </span>
-                  . Verifique sua caixa de entrada e a pasta de spam.
-                </p>
+            <div id="forgot-password-success" className="text-center">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                style={{backgroundColor: 'rgba(16,185,129,0.08)'}}>
+                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
               </div>
+              <h2
+                className="font-bold mb-3"
+                style={{
+                  color: '#060d20',
+                  fontSize: '1.875rem',
+                  fontFamily: 'Manrope, sans-serif',
+                  letterSpacing: '-0.02em',
+                }}>
+                E-mail enviado!
+              </h2>
+              <p className="mb-8" style={{color: '#64748b', lineHeight: '1.6'}}>
+                Enviamos as instruções de recuperação para{' '}
+                <span className="font-semibold text-[#060d20]">
+                  {form.getValues().email}
+                </span>
+                . Por favor, verifique sua caixa de entrada e spam.
+              </p>
 
               <div
-                className="rounded-xl p-4 mb-6"
-                style={{backgroundColor: '#131b2e'}}>
-                <p className="text-sm" style={{color: 'rgba(195,197,216,0.7)'}}>
-                  O link de recuperação expira em{' '}
-                  <strong style={{color: '#b5c4ff'}}>30 minutos</strong>. Caso
-                  não receba o e-mail, tente novamente.
+                className="rounded-xl p-4 mb-8 text-left border border-slate-100"
+                style={{backgroundColor: '#f8fafc'}}>
+                <p
+                  className="text-xs leading-relaxed"
+                  style={{color: '#64748b'}}>
+                  <strong>Aviso:</strong> O link de recuperação enviado expira
+                  em 30 minutos por motivos de segurança.
                 </p>
               </div>
 
               <Button
                 id="forgot-password-retry"
                 variant="outline"
-                className="w-full h-12 font-semibold text-sm border-0 transition-all duration-200"
-                style={{
-                  backgroundColor: '#2d3449',
-                  color: '#dbe2fd',
-                }}
+                className="w-full h-12 font-semibold text-sm border-slate-200 hover:bg-slate-50 transition-colors"
                 onClick={() => setIsSubmitted(false)}>
                 Tentar outro e-mail
               </Button>
+
+              <button
+                onClick={() => navigate('/')}
+                className="mt-6 text-sm font-medium transition-colors hover:text-[#2665fd]"
+                style={{color: '#64748b'}}>
+                Voltar para o login
+              </button>
             </div>
           )}
 
-          <p
-            className="text-xs text-center mt-8"
-            style={{color: 'rgba(195,197,216,0.3)'}}>
+          {/* Rodapé */}
+          <p className="text-xs text-center mt-12" style={{color: '#94a3b8'}}>
             Copyright © 2025 Trackerr. Todos os direitos reservados.
           </p>
         </div>
