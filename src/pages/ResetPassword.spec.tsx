@@ -61,7 +61,7 @@ describe('ResetPassword', () => {
 
   it('deve exibir o formulário quando o token é válido', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: {twoFactorEnabled: false},
+      data: {requiresMfa: false},
     });
 
     renderResetPassword();
@@ -100,7 +100,7 @@ describe('ResetPassword', () => {
 
   it('deve exibir erro de validação quando as senhas não coincidem', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: {twoFactorEnabled: false},
+      data: {requiresMfa: false},
     });
 
     renderResetPassword();
@@ -120,7 +120,7 @@ describe('ResetPassword', () => {
 
   it('deve exibir erro de validação para senha muito curta', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: {twoFactorEnabled: false},
+      data: {requiresMfa: false},
     });
 
     renderResetPassword();
@@ -140,7 +140,7 @@ describe('ResetPassword', () => {
 
   it('deve chamar a API com token e nova senha ao submeter o formulário', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: {twoFactorEnabled: false},
+      data: {requiresMfa: false},
     });
     vi.mocked(apiClient.post).mockResolvedValueOnce({data: {success: true}});
 
@@ -158,14 +158,14 @@ describe('ResetPassword', () => {
       expect(apiClient.post).toHaveBeenCalledWith('/auth/reset-password', {
         token: 'valid-token-abc',
         newPassword: 'novasenha123',
-        code: '',
+        tfCode: '',
       });
     });
   });
 
   it('deve exibir tela de sucesso após redefinir a senha com sucesso', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: {twoFactorEnabled: false},
+      data: {requiresMfa: false},
     });
     vi.mocked(apiClient.post).mockResolvedValueOnce({data: {success: true}});
 
@@ -187,7 +187,7 @@ describe('ResetPassword', () => {
 
   it('deve navegar para / ao clicar em "Ir para o Login" após sucesso', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: {twoFactorEnabled: false},
+      data: {requiresMfa: false},
     });
     vi.mocked(apiClient.post).mockResolvedValueOnce({data: {success: true}});
 
@@ -211,7 +211,7 @@ describe('ResetPassword', () => {
 
   it('deve navegar para / ao clicar em "Voltar para o login"', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: {twoFactorEnabled: false},
+      data: {requiresMfa: false},
     });
 
     renderResetPassword();
@@ -226,7 +226,7 @@ describe('ResetPassword', () => {
 
   it('deve exibir o campo 2FA quando requiresMfa é true', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: {twoFactorEnabled: true},
+      data: {requiresMfa: true},
     });
 
     renderResetPassword();
