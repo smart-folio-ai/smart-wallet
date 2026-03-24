@@ -41,6 +41,7 @@ function LoadingState() {
   return (
     <div
       id="reset-password-loading"
+      data-testid="reset-password-loading"
       className="min-h-screen flex items-center justify-center"
       style={{backgroundColor: '#0b1326'}}
     >
@@ -60,6 +61,7 @@ function InvalidTokenState({onRetry}: {onRetry: () => void}) {
   return (
     <div
       id="reset-password-invalid"
+      data-testid="reset-password-invalid"
       className="min-h-screen flex items-center justify-center p-8"
       style={{backgroundColor: '#0b1326'}}
     >
@@ -128,7 +130,7 @@ export default function ResetPassword() {
       try {
         const response = await apiClient.get(`/auth/reset-password/${token}`);
         setIsValidToken(true);
-        setRequiresMfa(response.data.twoFactorEnabled);
+        setRequiresMfa(Boolean(response.data?.requiresMfa));
       } catch {
         setIsValidToken(false);
       } finally {
@@ -156,7 +158,7 @@ export default function ResetPassword() {
       await apiClient.post('/auth/reset-password', {
         token,
         newPassword: data.password,
-        code: data.code,
+        tfCode: data.code,
       });
 
       setIsSuccess(true);
@@ -303,7 +305,7 @@ export default function ResetPassword() {
 
           {isSuccess ? (
             /* ── Estado de sucesso ── */
-            <div id="reset-password-success">
+            <div id="reset-password-success" data-testid="reset-password-success">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
                 style={{backgroundColor: 'rgba(38,101,253,0.12)'}}
