@@ -115,7 +115,7 @@ export function AppSidebar() {
     <Sidebar variant="inset" collapsible="icon" className="z-40">
       <SidebarHeader className="border-b border-sidebar-border/60 py-4">
         <div className="flex items-center justify-between px-4">
-          <AppLogo size="lg" />
+          <AppLogo size="md" />
           <ThemeToggle />
         </div>
       </SidebarHeader>

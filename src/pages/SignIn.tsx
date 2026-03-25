@@ -3,7 +3,7 @@ import {useNavigate, useLocation} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-import {Eye, EyeOff, ArrowRight, TrendingUp} from 'lucide-react';
+import {Eye, EyeOff, ArrowRight} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -18,6 +18,7 @@ import {Checkbox} from '@/components/ui/checkbox';
 import {toast} from 'sonner';
 import AuthenticationService from '../services/authentication';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
+import {AppLogo} from '@/components/AppLogo';
 
 const formSchema = z.object({
   email: z.string().email('Digite um email válido'),
@@ -158,17 +159,8 @@ export default function SignIn() {
           />
 
           {/* Logo */}
-          <div className="flex items-center gap-3 relative z-10">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{backgroundColor: 'var(--auth-brand)'}}>
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span
-              className="text-xl font-bold tracking-tight"
-              style={{color: 'var(--auth-text-main)', fontFamily: 'var(--font-heading)'}}>
-              Trackerr
-            </span>
+          <div className="relative z-10 ml-2">
+            <AppLogo size="lg" />
           </div>
 
           {/* Conteúdo central */}
@@ -262,17 +254,8 @@ export default function SignIn() {
           style={{backgroundColor: '#ffffff'}}>
           <div className="w-full max-w-md">
             {/* Logo mobile */}
-            <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center"
-                style={{backgroundColor: 'var(--auth-brand)'}}>
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              <span
-                className="text-xl font-bold"
-                style={{color: 'var(--auth-panel)', fontFamily: 'var(--font-heading)'}}>
-                Trackerr
-              </span>
+            <div className="mb-8 flex justify-center lg:hidden">
+              <AppLogo size="lg" />
             </div>
 
             {/* Cabeçalho do form */}
@@ -287,7 +270,11 @@ export default function SignIn() {
                 }}>
                 Entrar no Terminal
               </h2>
-              <p style={{color: 'var(--auth-text-secondary)', fontSize: '0.9rem'}}>
+              <p
+                style={{
+                  color: 'var(--auth-text-secondary)',
+                  fontSize: '0.9rem',
+                }}>
                 Não tem uma conta?{' '}
                 <button
                   id="signin-goto-register"
@@ -312,7 +299,10 @@ export default function SignIn() {
                     <FormItem>
                       <FormLabel
                         className="uppercase tracking-widest text-xs font-bold"
-                        style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}>
+                        style={{
+                          color: 'var(--auth-text-secondary)',
+                          letterSpacing: '0.1em',
+                        }}>
                         E-mail
                       </FormLabel>
                       <FormControl>
@@ -337,7 +327,10 @@ export default function SignIn() {
                       <div className="flex items-center justify-between">
                         <FormLabel
                           className="uppercase tracking-widest text-xs font-bold"
-                          style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}>
+                          style={{
+                            color: 'var(--auth-text-secondary)',
+                            letterSpacing: '0.1em',
+                          }}>
                           Senha
                         </FormLabel>
                         <a
@@ -407,7 +400,8 @@ export default function SignIn() {
                   type="submit"
                   className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20"
                   style={{
-                    background: 'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
+                    background:
+                      'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                     color: '#f9f7ff',
                   }}
                   disabled={authenticating || isSyncing}>

@@ -8,7 +8,6 @@ import * as z from 'zod';
 import {
   ArrowLeft,
   Loader2,
-  TrendingUp,
   Mail,
   CheckCircle2,
   ArrowRight,
@@ -24,6 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import {toast} from 'sonner';
+import {AppLogo} from '@/components/AppLogo';
 
 const formSchema = z.object({
   email: z.string().email('Digite um email válido'),
@@ -81,20 +81,8 @@ export default function ForgotPassword() {
         />
 
         {/* Logo */}
-        <div className="flex items-center gap-3 relative z-10">
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center"
-            style={{backgroundColor: 'var(--auth-brand)'}}>
-            <TrendingUp className="w-5 h-5 text-white" />
-          </div>
-          <span
-            className="text-xl font-bold tracking-tight"
-            style={{
-              color: 'var(--auth-text-main)',
-              fontFamily: 'var(--font-heading)',
-            }}>
-            Trackerr
-          </span>
+        <div className="relative z-10">
+          <AppLogo size="lg" />
         </div>
 
         {/* Conteúdo central */}
@@ -198,20 +186,8 @@ export default function ForgotPassword() {
         style={{backgroundColor: '#ffffff'}}>
         <div className="w-full max-w-md">
           {/* Logo mobile */}
-          <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{backgroundColor: 'var(--auth-brand)'}}>
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span
-              className="text-xl font-bold"
-              style={{
-                color: 'var(--auth-panel)',
-                fontFamily: 'var(--font-heading)',
-              }}>
-              Trackerr
-            </span>
+          <div className="mb-8 flex justify-center lg:hidden">
+            <AppLogo size="lg" />
           </div>
 
           {!isSubmitted ? (
