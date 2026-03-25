@@ -3,7 +3,7 @@ import {useNavigate} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-import {Eye, EyeOff, ArrowRight, TrendingUp, BarChart3, Cpu, ShieldCheck} from 'lucide-react';
+import {Eye, EyeOff, ArrowRight, BarChart3, Cpu, ShieldCheck} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -20,6 +20,7 @@ import {ICreateUser} from '@/interface/authentication';
 import AuthenticationService from '../services/authentication';
 import Loader from '@/components/loader';
 import {AxiosError} from 'axios';
+import {AppLogo} from '@/components/AppLogo';
 
 const formSchema = z
   .object({
@@ -58,6 +59,11 @@ export default function Register() {
       acceptTerms: false,
     },
   });
+  const passwordValue = form.watch('password') || '';
+  const confirmPasswordValue = form.watch('confirmPassword') || '';
+  const hasMinLength = passwordValue.length >= 6;
+  const passwordsMatch =
+    confirmPasswordValue.length > 0 && confirmPasswordValue === passwordValue;
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -107,19 +113,8 @@ export default function Register() {
         />
 
         {/* Logo */}
-        <div className="flex items-center gap-3 relative z-10">
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center"
-            style={{backgroundColor: 'var(--auth-brand)'}}
-          >
-            <TrendingUp className="w-5 h-5 text-white" />
-          </div>
-          <span
-            className="text-xl font-bold tracking-tight"
-            style={{color: 'var(--auth-text-main)', fontFamily: 'var(--font-heading)'}}
-          >
-            Trackerr
-          </span>
+        <div className="relative z-10">
+          <AppLogo size="lg" />
         </div>
 
         {/* Conteúdo central */}
@@ -205,19 +200,8 @@ export default function Register() {
       >
         <div className="w-full max-w-md my-8">
           {/* Logo mobile */}
-          <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{backgroundColor: 'var(--auth-brand)'}}
-            >
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span
-              className="text-xl font-bold"
-              style={{color: 'var(--auth-panel)', fontFamily: 'var(--font-heading)'}}
-            >
-              Trackerr
-            </span>
+          <div className="mb-8 flex justify-center lg:hidden">
+            <AppLogo size="lg" />
           </div>
 
           {/* Cabeçalho do form */}
@@ -410,6 +394,16 @@ export default function Register() {
                   </FormItem>
                 )}
               />
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-600">
+                <p className="mb-2 font-semibold text-slate-700">Regras da senha</p>
+                <p className={hasMinLength ? 'text-emerald-600' : 'text-slate-600'}>
+                  {hasMinLength ? '•' : '•'} Mínimo de 6 caracteres
+                </p>
+                <p className={passwordsMatch ? 'text-emerald-600' : 'text-slate-600'}>
+                  {passwordsMatch ? '•' : '•'} A confirmação deve ser igual à senha
+                </p>
+              </div>
 
               <FormField
                 control={form.control}

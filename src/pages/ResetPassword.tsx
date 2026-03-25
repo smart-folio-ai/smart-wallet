@@ -4,7 +4,7 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
 import apiClient from '@/server/api/api';
-import {Eye, EyeOff, ArrowLeft, TrendingUp, ShieldCheck, Loader2, KeyRound, CheckCircle2, AlertCircle} from 'lucide-react';
+import {Eye, EyeOff, ArrowLeft, ShieldCheck, Loader2, KeyRound, CheckCircle2, AlertCircle} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -21,6 +21,7 @@ import {
   InputOTPSlot,
 } from '@/components/ui/input-otp';
 import {toast} from 'sonner';
+import {AppLogo} from '@/components/AppLogo';
 
 const formSchema = z
   .object({
@@ -149,6 +150,11 @@ export default function ResetPassword() {
       code: '',
     },
   });
+  const passwordValue = form.watch('password') || '';
+  const confirmPasswordValue = form.watch('confirmPassword') || '';
+  const hasMinLength = passwordValue.length >= 8;
+  const passwordsMatch =
+    confirmPasswordValue.length > 0 && passwordValue === confirmPasswordValue;
 
   const onSubmit = async (data: FormValues) => {
     if (!token) return;
@@ -194,19 +200,8 @@ export default function ResetPassword() {
         />
 
         {/* Logo */}
-        <div className="flex items-center gap-3 relative z-10">
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center"
-            style={{backgroundColor: 'var(--auth-brand)'}}
-          >
-            <TrendingUp className="w-5 h-5 text-white" />
-          </div>
-          <span
-            className="text-xl font-bold tracking-tight"
-            style={{color: 'var(--auth-text-main)', fontFamily: 'var(--font-heading)'}}
-          >
-            Trackerr
-          </span>
+        <div className="relative z-10">
+          <AppLogo size="lg" />
         </div>
 
         {/* Conteúdo central */}
@@ -275,19 +270,8 @@ export default function ResetPassword() {
       >
         <div className="w-full max-w-md">
           {/* Logo mobile */}
-          <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{backgroundColor: 'var(--auth-brand)'}}
-            >
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span
-              className="text-xl font-bold"
-              style={{color: 'var(--auth-text-main)', fontFamily: 'var(--font-heading)'}}
-            >
-              Trackerr
-            </span>
+          <div className="mb-8 flex justify-center lg:hidden">
+            <AppLogo size="lg" />
           </div>
 
           {/* Botão voltar */}
@@ -493,6 +477,40 @@ export default function ResetPassword() {
                       </FormItem>
                     )}
                   />
+
+                  <div
+                    className="rounded-xl border p-3 text-xs"
+                    style={{
+                      backgroundColor: 'var(--auth-surface)',
+                      borderColor: 'var(--auth-highlight)',
+                      color: 'var(--auth-text-muted)',
+                    }}>
+                    <p className="mb-2 font-semibold" style={{color: 'var(--auth-text-body-strong)'}}>
+                      Regras para criar a senha
+                    </p>
+                    <div className="space-y-1.5">
+                      <p
+                        className="flex items-center gap-2"
+                        style={{color: hasMinLength ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        {hasMinLength ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : (
+                          <AlertCircle className="h-3.5 w-3.5" />
+                        )}
+                        Mínimo de 8 caracteres
+                      </p>
+                      <p
+                        className="flex items-center gap-2"
+                        style={{color: passwordsMatch ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        {passwordsMatch ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : (
+                          <AlertCircle className="h-3.5 w-3.5" />
+                        )}
+                        A confirmação deve ser igual à nova senha
+                      </p>
+                    </div>
+                  </div>
 
                   <Button
                     id="reset-password-submit"

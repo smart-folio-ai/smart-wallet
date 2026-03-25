@@ -1,9 +1,17 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, LineChart, Shield, Zap, Brain, Target, Check } from "lucide-react";
-import { Link } from "react-router-dom";
-import trakkerLogo from "@/assets/trakker-logo.png";
-import { useState, useEffect } from "react";
+import {Button} from '@/components/ui/button';
+import {Card, CardContent} from '@/components/ui/card';
+import {
+  TrendingUp,
+  LineChart,
+  Shield,
+  Zap,
+  Brain,
+  Target,
+  Check,
+} from 'lucide-react';
+import {Link} from 'react-router-dom';
+import trakkerLogo from '@/assets/logo.png';
+import {useState, useEffect} from 'react';
 
 export default function Landing() {
   const [scrolled, setScrolled] = useState(false);
@@ -12,34 +20,43 @@ export default function Landing() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: "smooth" });
+    element?.scrollIntoView({behavior: 'smooth'});
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-accent/5">
       {/* Fixed Header */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-background/80 backdrop-blur-lg border-b shadow-sm" : "bg-transparent"
-      }`}>
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? 'bg-background/80 backdrop-blur-lg border-b shadow-sm'
+            : 'bg-transparent'
+        }`}>
         <div className="container mx-auto px-4 py-4">
           <nav className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src={trakkerLogo} alt="Trackerr" className="h-12" />
             </div>
             <div className="hidden md:flex items-center gap-6">
-              <button onClick={() => scrollToSection("inicio")} className="text-foreground/80 hover:text-foreground transition-colors">
+              <button
+                onClick={() => scrollToSection('inicio')}
+                className="text-foreground/80 hover:text-foreground transition-colors">
                 Início
               </button>
-              <button onClick={() => scrollToSection("sobre")} className="text-foreground/80 hover:text-foreground transition-colors">
+              <button
+                onClick={() => scrollToSection('sobre')}
+                className="text-foreground/80 hover:text-foreground transition-colors">
                 Sobre
               </button>
-              <button onClick={() => scrollToSection("planos")} className="text-foreground/80 hover:text-foreground transition-colors">
+              <button
+                onClick={() => scrollToSection('planos')}
+                className="text-foreground/80 hover:text-foreground transition-colors">
                 Planos
               </button>
             </div>
@@ -56,7 +73,9 @@ export default function Landing() {
       </header>
 
       {/* Hero Content */}
-      <section id="inicio" className="container mx-auto px-4 pt-32 pb-20 text-center">
+      <section
+        id="inicio"
+        className="container mx-auto px-4 pt-32 pb-20 text-center">
         <div className="mx-auto max-w-4xl space-y-6 animate-fade-in">
           <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
             Carteira Inteligente de
@@ -64,7 +83,8 @@ export default function Landing() {
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Gerencie e analise seus investimentos com inteligência artificial.
-            Tomada de decisão baseada em dados, análise em tempo real e insights personalizados.
+            Tomada de decisão baseada em dados, análise em tempo real e insights
+            personalizados.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
             <Link to="/register">
@@ -86,20 +106,22 @@ export default function Landing() {
           <div className="relative rounded-lg border bg-card shadow-2xl overflow-hidden animate-scale-in">
             <div className="aspect-video relative">
               {/* Parallax Background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-info/20 to-success/30" 
-                   style={{ 
-                     transform: `translateY(${typeof window !== 'undefined' ? window.scrollY * 0.3 : 0}px)`,
-                     transition: 'transform 0.1s ease-out'
-                   }}>
-              </div>
+              <div
+                className="absolute inset-0 bg-gradient-to-br from-primary/30 via-info/20 to-success/30"
+                style={{
+                  transform: `translateY(${typeof window !== 'undefined' ? window.scrollY * 0.3 : 0}px)`,
+                  transition: 'transform 0.1s ease-out',
+                }}></div>
               {/* Animated Grid */}
               <div className="absolute inset-0 opacity-20">
-                <div className="absolute inset-0" style={{
-                  backgroundImage: 'linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)',
-                  backgroundSize: '50px 50px',
-                  animation: 'slide 20s linear infinite'
-                }}>
-                </div>
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)',
+                    backgroundSize: '50px 50px',
+                    animation: 'slide 20s linear infinite',
+                  }}></div>
               </div>
               {/* Floating Icons */}
               <div className="absolute inset-0 flex items-center justify-center">
@@ -117,7 +139,9 @@ export default function Landing() {
       {/* Features Section */}
       <section id="sobre" className="container mx-auto px-4 py-20">
         <div className="text-center mb-16 animate-fade-in">
-          <h2 className="text-3xl font-bold mb-4">Inovação em Gestão de Investimentos</h2>
+          <h2 className="text-3xl font-bold mb-4">
+            Inovação em Gestão de Investimentos
+          </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Trackerr combina tecnologia de ponta com análise financeira avançada
             para oferecer uma experiência única de gestão de portfólio.
@@ -132,8 +156,8 @@ export default function Landing() {
               </div>
               <h3 className="text-xl font-semibold mb-2">IA Insights</h3>
               <p className="text-muted-foreground">
-                Análise inteligente do seu portfólio com recomendações personalizadas
-                baseadas em machine learning e dados do mercado.
+                Análise inteligente do seu portfólio com recomendações
+                personalizadas baseadas em machine learning e dados do mercado.
               </p>
             </CardContent>
           </Card>
@@ -143,7 +167,9 @@ export default function Landing() {
               <div className="rounded-full bg-info/10 w-12 h-12 flex items-center justify-center mb-4">
                 <TrendingUp className="w-6 h-6 text-info" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Análise em Tempo Real</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                Análise em Tempo Real
+              </h3>
               <p className="text-muted-foreground">
                 Acompanhe a performance dos seus ativos em tempo real com
                 gráficos interativos e métricas detalhadas.
@@ -156,10 +182,12 @@ export default function Landing() {
               <div className="rounded-full bg-success/10 w-12 h-12 flex items-center justify-center mb-4">
                 <Target className="w-6 h-6 text-success" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Comparador de Ativos</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                Comparador de Ativos
+              </h3>
               <p className="text-muted-foreground">
-                Compare múltiplos ativos lado a lado com análise de P/L, dividendos
-                e indicadores fundamentalistas.
+                Compare múltiplos ativos lado a lado com análise de P/L,
+                dividendos e indicadores fundamentalistas.
               </p>
             </CardContent>
           </Card>
@@ -182,10 +210,12 @@ export default function Landing() {
               <div className="rounded-full bg-primary/10 w-12 h-12 flex items-center justify-center mb-4">
                 <Zap className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Sincronização Automática</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                Sincronização Automática
+              </h3>
               <p className="text-muted-foreground">
-                Conecte suas contas de investimento e mantenha tudo
-                sincronizado automaticamente.
+                Conecte suas contas de investimento e mantenha tudo sincronizado
+                automaticamente.
               </p>
             </CardContent>
           </Card>
@@ -195,10 +225,12 @@ export default function Landing() {
               <div className="rounded-full bg-info/10 w-12 h-12 flex items-center justify-center mb-4">
                 <LineChart className="w-6 h-6 text-info" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Planejamento Financeiro</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                Planejamento Financeiro
+              </h3>
               <p className="text-muted-foreground">
-                Defina metas e acompanhe seu progresso com ferramentas
-                de planejamento estratégico.
+                Defina metas e acompanhe seu progresso com ferramentas de
+                planejamento estratégico.
               </p>
             </CardContent>
           </Card>
@@ -261,7 +293,9 @@ export default function Landing() {
                   <span className="text-4xl font-bold">R$ 29</span>
                   <span className="text-muted-foreground">/mês</span>
                 </div>
-                <p className="text-muted-foreground">Para investidores sérios</p>
+                <p className="text-muted-foreground">
+                  Para investidores sérios
+                </p>
               </div>
               <ul className="space-y-3 mb-6">
                 <li className="flex items-center gap-2">
@@ -286,9 +320,7 @@ export default function Landing() {
                 </li>
               </ul>
               <Link to="/register" className="block">
-                <Button className="w-full">
-                  Assinar Premium
-                </Button>
+                <Button className="w-full">Assinar Premium</Button>
               </Link>
             </CardContent>
           </Card>
@@ -337,8 +369,8 @@ export default function Landing() {
               Pronto para Revolucionar seus Investimentos?
             </h2>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Junte-se a milhares de investidores que já utilizam Trackerr
-              para maximizar seus retornos.
+              Junte-se a milhares de investidores que já utilizam Trackerr para
+              maximizar seus retornos.
             </p>
             <Link to="/register">
               <Button size="lg" className="text-lg px-12">
@@ -360,9 +392,15 @@ export default function Landing() {
               </span>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Termos</a>
-              <a href="#" className="hover:text-foreground transition-colors">Privacidade</a>
-              <a href="#" className="hover:text-foreground transition-colors">Suporte</a>
+              <a href="#" className="hover:text-foreground transition-colors">
+                Termos
+              </a>
+              <a href="#" className="hover:text-foreground transition-colors">
+                Privacidade
+              </a>
+              <a href="#" className="hover:text-foreground transition-colors">
+                Suporte
+              </a>
             </div>
           </div>
         </div>
