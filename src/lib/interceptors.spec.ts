@@ -44,6 +44,7 @@ describe('Interceptors — Request', () => {
     mock = new MockAdapter(apiClient);
     vi.clearAllMocks();
     localStorageMock.clear();
+    window.location.href = '';
   });
 
   afterEach(() => {
@@ -69,6 +70,15 @@ describe('Interceptors — Request', () => {
 
     expect(mock.history.get[0].headers!['Authorization']).toBeUndefined();
   });
+
+  it('não deve adicionar Authorization em rota pública de recuperação', async () => {
+    localStorageMock.setItem('access_token', 'token-valido');
+    mock.onGet('/auth/reset-password/token-abc').reply(200, {valid: true});
+
+    await apiClient.get('/auth/reset-password/token-abc');
+
+    expect(mock.history.get[0].headers!['Authorization']).toBeUndefined();
+  });
 });
 
 describe('Interceptors — Response (Refresh Token)', () => {
@@ -80,6 +90,7 @@ describe('Interceptors — Response (Refresh Token)', () => {
     mockAxios = new MockAdapter(axios);
     vi.clearAllMocks();
     localStorageMock.clear();
+    window.location.href = '';
   });
 
   afterEach(() => {
@@ -137,5 +148,21 @@ describe('Interceptors — Response (Refresh Token)', () => {
 
     // O endpoint de refresh NÃO deve ter sido chamado
     expect(mockAxios.history.post?.length ?? 0).toBe(0);
+  });
+
+  it('não deve tentar refresh em 401 de rota pública de recuperação', async () => {
+    localStorageMock.setItem('access_token', 'token-expirado');
+    localStorageMock.setItem('refresh_token', 'refresh-valido');
+
+    mockApi.onGet('/auth/reset-password/valid-token').reply(401, {
+      message: 'Token inválido',
+    });
+
+    await expect(apiClient.get('/auth/reset-password/valid-token')).rejects.toThrow();
+
+    expect(mockAxios.history.post?.length ?? 0).toBe(0);
+    expect(localStorageMock.removeItem).not.toHaveBeenCalledWith('access_token');
+    expect(localStorageMock.removeItem).not.toHaveBeenCalledWith('refresh_token');
+    expect(window.location.href).not.toBe('/');
   });
 });

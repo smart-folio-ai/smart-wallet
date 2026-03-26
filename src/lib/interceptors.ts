@@ -9,8 +9,19 @@ const onRefreshed = (token) => {
   refreshSubscribers = [];
 };
 
+const isRecoveryPublicRoute = (url?: string) => {
+  const value = String(url || '');
+  return (
+    value.includes('/auth/forgot-password') ||
+    value.includes('/auth/reset-password')
+  );
+};
+
 apiClient.interceptors.request.use(
   (config) => {
+    if (isRecoveryPublicRoute(config.url)) {
+      return config;
+    }
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -24,6 +35,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    if (isRecoveryPublicRoute(originalRequest?.url)) {
+      return Promise.reject(error);
+    }
     const refreshToken = localStorage.getItem('refresh_token');
     const urlResponse =
       import.meta.env.VITE_API_URL_DEVELOPMENT + '/auth/refresh-token';
