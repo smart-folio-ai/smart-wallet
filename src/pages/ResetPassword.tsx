@@ -4,6 +4,7 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
 import apiClient from '@/server/api/api';
+import {AxiosError} from 'axios';
 import {Eye, EyeOff, ArrowLeft, ShieldCheck, Loader2, KeyRound, CheckCircle2, AlertCircle} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
@@ -25,7 +26,13 @@ import {AppLogo} from '@/components/AppLogo';
 
 const formSchema = z
   .object({
-    password: z.string().min(8, 'A senha deve ter no mínimo 8 caracteres'),
+    password: z
+      .string()
+      .min(8, 'A senha deve ter no mínimo 8 caracteres')
+      .regex(/[A-Z]/, 'A senha deve conter pelo menos 1 letra maiúscula')
+      .regex(/[a-z]/, 'A senha deve conter pelo menos 1 letra minúscula')
+      .regex(/\d/, 'A senha deve conter pelo menos 1 número')
+      .regex(/[^A-Za-z0-9]/, 'A senha deve conter pelo menos 1 caractere especial'),
     confirmPassword: z.string(),
     code: z.string().optional(),
   })
@@ -58,7 +65,15 @@ function LoadingState() {
 
 // ─── Estado: Token inválido ──────────────────────────────────────────────────
 
-function InvalidTokenState({onRetry}: {onRetry: () => void}) {
+function InvalidTokenState({
+  onRetry,
+  title,
+  description,
+}: {
+  onRetry: () => void;
+  title: string;
+  description: string;
+}) {
   return (
     <div
       id="reset-password-invalid"
@@ -82,13 +97,13 @@ function InvalidTokenState({onRetry}: {onRetry: () => void}) {
             letterSpacing: '-0.02em',
           }}
         >
-          Link inválido ou expirado
+          {title}
         </h2>
         <p
           className="mb-8 leading-relaxed"
           style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem'}}
         >
-          O link para redefinição de senha não é válido ou já expirou. Por favor, solicite um novo link de recuperação.
+          {description}
         </p>
         <Button
           id="reset-password-request-new"
@@ -115,6 +130,7 @@ export default function ResetPassword() {
 
   const [isValidating, setIsValidating] = useState(true);
   const [isValidToken, setIsValidToken] = useState(false);
+  const [tokenErrorType, setTokenErrorType] = useState<'invalid' | 'expired'>('invalid');
   const [requiresMfa, setRequiresMfa] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -132,7 +148,13 @@ export default function ResetPassword() {
         const response = await apiClient.get(`/auth/reset-password/${token}`);
         setIsValidToken(true);
         setRequiresMfa(Boolean(response.data?.requiresMfa));
-      } catch {
+      } catch (error) {
+        const apiError = error as AxiosError<{message?: string | string[]}>;
+        const message = apiError.response?.data?.message;
+        const normalizedMessage = Array.isArray(message) ? message.join(' ') : String(message || '');
+        setTokenErrorType(
+          normalizedMessage.toLowerCase().includes('expirad') ? 'expired' : 'invalid',
+        );
         setIsValidToken(false);
       } finally {
         setIsValidating(false);
@@ -153,6 +175,10 @@ export default function ResetPassword() {
   const passwordValue = form.watch('password') || '';
   const confirmPasswordValue = form.watch('confirmPassword') || '';
   const hasMinLength = passwordValue.length >= 8;
+  const hasUppercase = /[A-Z]/.test(passwordValue);
+  const hasLowercase = /[a-z]/.test(passwordValue);
+  const hasNumber = /\d/.test(passwordValue);
+  const hasSpecial = /[^A-Za-z0-9]/.test(passwordValue);
   const passwordsMatch =
     confirmPasswordValue.length > 0 && passwordValue === confirmPasswordValue;
 
@@ -164,14 +190,19 @@ export default function ResetPassword() {
       await apiClient.post('/auth/reset-password', {
         token,
         newPassword: data.password,
+        confirmPassword: data.confirmPassword,
         tfCode: data.code,
       });
 
       setIsSuccess(true);
       toast.success('Senha alterada com sucesso!');
-    } catch {
+    } catch (error) {
+      const apiError = error as AxiosError<{message?: string | string[]}>;
+      const message = apiError.response?.data?.message;
+      const normalizedMessage = Array.isArray(message) ? message.join('\n') : message;
       toast.error(
-        'Não foi possível redefinir sua senha. Verifique o código informado e tente novamente.',
+        normalizedMessage ||
+          'Não foi possível redefinir sua senha. Verifique os dados informados e tente novamente.',
       );
     } finally {
       setIsSubmitting(false);
@@ -179,7 +210,20 @@ export default function ResetPassword() {
   };
 
   if (isValidating) return <LoadingState />;
-  if (!token || !isValidToken) return <InvalidTokenState onRetry={() => navigate('/forgot-password')} />;
+  if (!token || !isValidToken) {
+    const title = tokenErrorType === 'expired' ? 'Link expirado' : 'Link inválido';
+    const description =
+      tokenErrorType === 'expired'
+        ? 'O link para redefinição expirou. Solicite um novo link para continuar.'
+        : 'O link para redefinição não é válido. Solicite um novo link de recuperação.';
+    return (
+      <InvalidTokenState
+        onRetry={() => navigate('/forgot-password')}
+        title={title}
+        description={description}
+      />
+    );
+  }
 
   return (
     <div
@@ -498,6 +542,46 @@ export default function ResetPassword() {
                           <AlertCircle className="h-3.5 w-3.5" />
                         )}
                         Mínimo de 8 caracteres
+                      </p>
+                      <p
+                        className="flex items-center gap-2"
+                        style={{color: hasUppercase ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        {hasUppercase ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : (
+                          <AlertCircle className="h-3.5 w-3.5" />
+                        )}
+                        Pelo menos 1 letra maiúscula
+                      </p>
+                      <p
+                        className="flex items-center gap-2"
+                        style={{color: hasLowercase ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        {hasLowercase ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : (
+                          <AlertCircle className="h-3.5 w-3.5" />
+                        )}
+                        Pelo menos 1 letra minúscula
+                      </p>
+                      <p
+                        className="flex items-center gap-2"
+                        style={{color: hasNumber ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        {hasNumber ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : (
+                          <AlertCircle className="h-3.5 w-3.5" />
+                        )}
+                        Pelo menos 1 número
+                      </p>
+                      <p
+                        className="flex items-center gap-2"
+                        style={{color: hasSpecial ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        {hasSpecial ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : (
+                          <AlertCircle className="h-3.5 w-3.5" />
+                        )}
+                        Pelo menos 1 caractere especial
                       </p>
                       <p
                         className="flex items-center gap-2"

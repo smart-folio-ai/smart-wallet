@@ -16,6 +16,7 @@ import {
   BarChart3,
   Calculator,
   CircleDollarSign,
+  FileText,
   FileSpreadsheet,
   GitCompare,
   Layers,
@@ -51,6 +52,7 @@ const sections: NavSection[] = [
       {to: '/comparator', label: 'Comparador', icon: GitCompare},
       {to: '/transactions', label: 'Transações', icon: Wallet},
       {to: '/fiscal', label: 'Fiscal', icon: FileSpreadsheet},
+      {to: '/ri-inteligente', label: 'RI Inteligente', icon: FileText},
     ],
   },
   {

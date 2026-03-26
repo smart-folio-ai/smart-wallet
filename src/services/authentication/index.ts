@@ -42,6 +42,13 @@ class AuthenticationService implements IAuthentication {
       return true;
     } catch (error) {
       if (error instanceof AxiosError) {
+        const backendMessage =
+          (error.response?.data as {error?: string; message?: string})?.error ||
+          (error.response?.data as {error?: string; message?: string})?.message;
+        if (backendMessage) {
+          throw new Error(backendMessage);
+        }
+
         switch (error.response?.status) {
           case 400:
             throw new Error('Erro ao criar conta. Tente novamente.');
@@ -55,7 +62,7 @@ class AuthenticationService implements IAuthentication {
             throw new Error('Erro desconhecido. Tente novamente.');
         }
       }
-      return false;
+      throw error;
     }
   }
   async logout(): Promise<boolean> {

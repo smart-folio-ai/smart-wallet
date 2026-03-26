@@ -27,10 +27,16 @@ const formSchema = z
     firstname: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
     lastname: z.string().min(2, 'O sobrenome deve ter pelo menos 2 caracteres'),
     email: z.string().email('Digite um email válido'),
-    password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+    password: z
+      .string()
+      .min(8, 'A senha deve ter pelo menos 8 caracteres')
+      .regex(/[A-Z]/, 'A senha deve conter pelo menos 1 letra maiúscula')
+      .regex(/[a-z]/, 'A senha deve conter pelo menos 1 letra minúscula')
+      .regex(/\d/, 'A senha deve conter pelo menos 1 número')
+      .regex(/[^A-Za-z0-9]/, 'A senha deve conter pelo menos 1 caractere especial'),
     confirmPassword: z
       .string()
-      .min(6, 'A senha deve ter pelo menos 6 caracteres'),
+      .min(8, 'A senha deve ter pelo menos 8 caracteres'),
     acceptTerms: z.boolean().refine((value) => value === true, {
       message: 'Você precisa aceitar os termos para continuar',
     }),
@@ -61,7 +67,11 @@ export default function Register() {
   });
   const passwordValue = form.watch('password') || '';
   const confirmPasswordValue = form.watch('confirmPassword') || '';
-  const hasMinLength = passwordValue.length >= 6;
+  const hasMinLength = passwordValue.length >= 8;
+  const hasUppercase = /[A-Z]/.test(passwordValue);
+  const hasLowercase = /[a-z]/.test(passwordValue);
+  const hasNumber = /\d/.test(passwordValue);
+  const hasSpecial = /[^A-Za-z0-9]/.test(passwordValue);
   const passwordsMatch =
     confirmPasswordValue.length > 0 && confirmPasswordValue === passwordValue;
 
@@ -87,6 +97,8 @@ export default function Register() {
       setLoading(false);
       if (error instanceof AxiosError && error.response?.data?.message) {
         toast.error(error.response.data.message);
+      } else if (error instanceof Error && error.message) {
+        toast.error(error.message);
       } else {
         toast.error('Não foi possível criar sua conta agora. Tente novamente.');
       }
@@ -398,10 +410,22 @@ export default function Register() {
               <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-600">
                 <p className="mb-2 font-semibold text-slate-700">Regras da senha</p>
                 <p className={hasMinLength ? 'text-emerald-600' : 'text-slate-600'}>
-                  {hasMinLength ? '•' : '•'} Mínimo de 6 caracteres
+                  • Mínimo de 8 caracteres
+                </p>
+                <p className={hasUppercase ? 'text-emerald-600' : 'text-slate-600'}>
+                  • Pelo menos 1 letra maiúscula
+                </p>
+                <p className={hasLowercase ? 'text-emerald-600' : 'text-slate-600'}>
+                  • Pelo menos 1 letra minúscula
+                </p>
+                <p className={hasNumber ? 'text-emerald-600' : 'text-slate-600'}>
+                  • Pelo menos 1 número
+                </p>
+                <p className={hasSpecial ? 'text-emerald-600' : 'text-slate-600'}>
+                  • Pelo menos 1 caractere especial
                 </p>
                 <p className={passwordsMatch ? 'text-emerald-600' : 'text-slate-600'}>
-                  {passwordsMatch ? '•' : '•'} A confirmação deve ser igual à senha
+                  • A confirmação deve ser igual à senha
                 </p>
               </div>
 
