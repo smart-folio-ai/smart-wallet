@@ -23,6 +23,10 @@ describe('ri-intelligence service', () => {
     getMock.mockResolvedValueOnce({
       data: {
         warnings: ['ri_invalid_documents_filtered'],
+        fallback: {
+          availableDocumentTypes: ['earnings_release'],
+          suggestedFilters: ['all', 'earnings_release'],
+        },
         documents: [
           {
             id: 'doc-1',
@@ -43,6 +47,7 @@ describe('ri-intelligence service', () => {
     expect(output.documents).toHaveLength(1);
     expect(output.documents[0].ticker).toBe('BBDC4');
     expect(output.warnings).toEqual(['ri_invalid_documents_filtered']);
+    expect(output.fallback.suggestedFilters).toEqual(['all', 'earnings_release']);
   });
 
   it('autocomplete supports ticker and company search', async () => {
@@ -71,6 +76,10 @@ describe('ri-intelligence service', () => {
         documents: [],
         total: 0,
         warnings: [],
+        fallback: {
+          availableDocumentTypes: [],
+          suggestedFilters: ['all'],
+        },
       },
     });
 
@@ -148,5 +157,33 @@ describe('ri-intelligence service', () => {
     expect(output.summary.limitations).toEqual(
       expect.arrayContaining(['ri_ai_summary_failed']),
     );
+  });
+
+  it('normalizes document types from indexer payload before rendering', async () => {
+    getMock.mockResolvedValueOnce({
+      data: {
+        documents: [
+          {
+            id: 'doc-2',
+            ticker: 'movi3',
+            company: 'Movida',
+            title: 'Apresentação de Resultados 4T25',
+            documentType: 'presentation',
+            publishedAt: '2026-02-10T00:00:00.000Z',
+            source: {type: 'url', value: 'https://example.com/movi3.pdf'},
+          },
+        ],
+        warnings: [],
+        fallback: {
+          availableDocumentTypes: ['presentation'],
+          suggestedFilters: ['all', 'presentation'],
+        },
+      },
+    });
+
+    const output = await searchRiDocuments({query: 'MOVI3', documentType: 'all'});
+
+    expect(output.documents[0].documentType).toBe('investor_presentation');
+    expect(output.fallback.availableDocumentTypes).toEqual(['investor_presentation']);
   });
 });

@@ -4,7 +4,12 @@ export type RiDocumentType =
   | 'material_fact'
   | 'reference_form'
   | 'shareholder_notice'
-  | 'other';
+  | 'financial_statement'
+  | 'management_report'
+  | 'conference_call_material'
+  | 'dividend_notice'
+  | 'other_ri_document'
+  | 'unknown';
 
 export interface RiDocumentListItem {
   id: string;
@@ -30,6 +35,10 @@ export interface SearchRiDocumentsOutput {
   documents: RiDocumentListItem[];
   total: number;
   warnings: string[];
+  fallback: {
+    availableDocumentTypes: RiDocumentType[];
+    suggestedFilters: Array<RiDocumentType | 'all'>;
+  };
 }
 
 export interface RiAssetSuggestion {

@@ -65,6 +65,46 @@ function writeSummaryCache(documentId: string, data: RiDocumentSummaryOutput) {
   });
 }
 
+function normalizeDocumentType(rawType: unknown, rawTitle?: unknown): RiDocumentListItem['documentType'] {
+  const normalizedType = String(rawType || '')
+    .trim()
+    .toLowerCase();
+  const title = String(rawTitle || '')
+    .trim()
+    .toLowerCase();
+
+  const byExactType: Record<string, RiDocumentListItem['documentType']> = {
+    earnings_release: 'earnings_release',
+    release: 'earnings_release',
+    release_resultados: 'earnings_release',
+    investor_presentation: 'investor_presentation',
+    presentation: 'investor_presentation',
+    material_fact: 'material_fact',
+    reference_form: 'reference_form',
+    shareholder_notice: 'shareholder_notice',
+    financial_statement: 'financial_statement',
+    management_report: 'management_report',
+    conference_call_material: 'conference_call_material',
+    dividend_notice: 'dividend_notice',
+    other_ri_document: 'other_ri_document',
+    other: 'other_ri_document',
+    unknown: 'unknown',
+  };
+  if (byExactType[normalizedType]) return byExactType[normalizedType];
+
+  if (title.includes('apresenta')) return 'investor_presentation';
+  if (title.includes('release') || title.includes('resultado')) return 'earnings_release';
+  if (title.includes('fato relevante')) return 'material_fact';
+  if (title.includes('formulario de referencia') || title.includes('formulário de referência'))
+    return 'reference_form';
+  if (title.includes('acionista')) return 'shareholder_notice';
+  if (title.includes('conference call') || title.includes('teleconferencia')) return 'conference_call_material';
+  if (title.includes('demonstracoes financeiras') || title.includes('financial statement')) return 'financial_statement';
+  if (title.includes('relatorio da administracao') || title.includes('management report')) return 'management_report';
+  if (title.includes('dividendo') || title.includes('jcp')) return 'dividend_notice';
+  return 'unknown';
+}
+
 function normalizeDocuments(payload: any): RiDocumentListItem[] {
   const items = Array.isArray(payload) ? payload : payload?.documents || [];
   return items
@@ -73,7 +113,7 @@ function normalizeDocuments(payload: any): RiDocumentListItem[] {
       ticker: String(item?.ticker || '').toUpperCase(),
       company: String(item?.company || item?.empresa || ''),
       title: String(item?.title || item?.titulo || ''),
-      documentType: String(item?.documentType || 'other') as RiDocumentListItem['documentType'],
+      documentType: normalizeDocumentType(item?.documentType, item?.title || item?.titulo),
       period: item?.period ? String(item.period) : null,
       publishedAt: String(item?.publishedAt || item?.date || ''),
       source: {
@@ -92,6 +132,22 @@ function normalizeAutocomplete(payload: any): RiAssetSuggestion[] {
       company: String(item?.company || item?.name || '').trim(),
     }))
     .filter((item: RiAssetSuggestion) => item.ticker.length > 0 && item.company.length > 0);
+}
+
+function normalizeFallback(payload: any): SearchRiDocumentsOutput['fallback'] {
+  const availableItems = Array.isArray(payload?.availableDocumentTypes)
+    ? payload.availableDocumentTypes
+    : [];
+  const suggestedItems = Array.isArray(payload?.suggestedFilters)
+    ? payload.suggestedFilters
+    : ['all'];
+
+  return {
+    availableDocumentTypes: availableItems.map((item: unknown) => normalizeDocumentType(item)),
+    suggestedFilters: suggestedItems.map((item: unknown) =>
+      String(item) === 'all' ? 'all' : normalizeDocumentType(item),
+    ),
+  };
 }
 
 export async function autocompleteRiAssets(
@@ -133,12 +189,17 @@ export async function searchRiDocuments(
       documents,
       total: Number(response.data?.total || documents.length),
       warnings: Array.isArray(response.data?.warnings) ? response.data.warnings : [],
+      fallback: normalizeFallback(response.data?.fallback),
     };
   } catch {
     return {
       documents: [],
       total: 0,
       warnings: ['ri_documents_unavailable'],
+      fallback: {
+        availableDocumentTypes: [],
+        suggestedFilters: ['all'],
+      },
     };
   }
 }
