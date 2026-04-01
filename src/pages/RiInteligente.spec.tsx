@@ -51,6 +51,10 @@ describe('RiInteligente', () => {
       configurable: true,
       value: () => undefined,
     });
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: () => undefined,
+    });
     useSubscriptionMock.mockReturnValue({
       planName: 'premium',
       isSubscribed: true,
@@ -74,6 +78,10 @@ describe('RiInteligente', () => {
       ],
       total: 1,
       warnings: [],
+      fallback: {
+        availableDocumentTypes: ['earnings_release'],
+        suggestedFilters: ['all', 'earnings_release'],
+      },
     });
   });
 
@@ -110,6 +118,32 @@ describe('RiInteligente', () => {
       expect(searchRiDocumentsMock).toHaveBeenCalledWith(
         expect.objectContaining({query: 'BBDC4'}),
       );
+    });
+  });
+
+  it('refetches when selecting the same ticker suggestion again', async () => {
+    renderPage();
+
+    await userEvent.type(screen.getByLabelText('Busca de RI'), 'BBDC4');
+    await userEvent.click(screen.getByTestId('ri-apply-search'));
+
+    await waitFor(() => {
+      expect(searchRiDocumentsMock).toHaveBeenCalledWith(
+        expect.objectContaining({query: 'BBDC4'}),
+      );
+    });
+    const callsAfterSearch = searchRiDocumentsMock.mock.calls.length;
+
+    await waitFor(() => {
+      expect(screen.getByTestId('ri-autocomplete-list')).toBeDefined();
+    });
+    const autocompleteList = screen.getByTestId('ri-autocomplete-list');
+    await userEvent.click(
+      within(autocompleteList).getByRole('button', {name: /BBDC4/i}),
+    );
+
+    await waitFor(() => {
+      expect(searchRiDocumentsMock.mock.calls.length).toBeGreaterThan(callsAfterSearch);
     });
   });
 
@@ -206,13 +240,55 @@ describe('RiInteligente', () => {
       documents: [],
       total: 0,
       warnings: ['ri_no_recent_releases_found', 'ri_no_valid_documents_found'],
+      fallback: {
+        availableDocumentTypes: [],
+        suggestedFilters: ['all'],
+      },
     });
 
     renderPage();
 
     await waitFor(() => {
       expect(screen.getByTestId('ri-empty-state')).toBeDefined();
-      expect(screen.getByTestId('ri-warnings')).toBeDefined();
+      expect(screen.getByTestId('ri-notice')).toBeDefined();
+    });
+  });
+
+  it('shows friendly message and fallback when selected type is incompatible', async () => {
+    searchRiDocumentsMock.mockResolvedValueOnce({
+      documents: [],
+      total: 0,
+      warnings: ['ri_no_documents_for_selected_type'],
+      fallback: {
+        availableDocumentTypes: ['earnings_release'],
+        suggestedFilters: ['all', 'earnings_release'],
+      },
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Nenhum documento neste tipo de filtro/i)).toBeDefined();
+      expect(screen.getByTestId('ri-fallback-filter-earnings_release')).toBeDefined();
+    });
+  });
+
+  it('shows friendly message when ticker has no RI documents', async () => {
+    searchRiDocumentsMock.mockResolvedValueOnce({
+      documents: [],
+      total: 0,
+      warnings: ['ri_no_documents_found'],
+      fallback: {
+        availableDocumentTypes: [],
+        suggestedFilters: ['all'],
+      },
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Nenhum documento encontrado para este ticker/i)).toBeDefined();
+      expect(screen.queryByText(/ri_no_documents_found/i)).toBeNull();
     });
   });
 });

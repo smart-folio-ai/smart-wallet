@@ -33,6 +33,14 @@ const documentTypeOptions: Array<{label: string; value: RiDocumentType | 'all'}>
   {label: 'Release de resultados', value: 'earnings_release'},
   {label: 'Apresentação de resultados', value: 'investor_presentation'},
   {label: 'Fato relevante', value: 'material_fact'},
+  {label: 'Formulário de referência', value: 'reference_form'},
+  {label: 'Aviso aos acionistas', value: 'shareholder_notice'},
+  {label: 'Demonstrações financeiras', value: 'financial_statement'},
+  {label: 'Relatório da administração', value: 'management_report'},
+  {label: 'Material de conference call', value: 'conference_call_material'},
+  {label: 'Aviso de dividendos/JCP', value: 'dividend_notice'},
+  {label: 'Outros documentos de RI', value: 'other_ri_document'},
+  {label: 'Tipo desconhecido', value: 'unknown'},
 ];
 
 const typeLabels: Record<string, string> = {
@@ -41,8 +49,93 @@ const typeLabels: Record<string, string> = {
   material_fact: 'Fato Relevante',
   reference_form: 'Form. Referência',
   shareholder_notice: 'Aviso Acionistas',
-  other: 'Outros',
+  financial_statement: 'Demonstrativos',
+  management_report: 'Relatório Gestão',
+  conference_call_material: 'Conference Call',
+  dividend_notice: 'Dividendos/JCP',
+  other_ri_document: 'Outros RI',
+  unknown: 'Desconhecido',
 };
+
+const filterLabels: Record<RiDocumentType | 'all', string> = {
+  all: 'Todos os releases recentes',
+  earnings_release: 'Release de resultados',
+  investor_presentation: 'Apresentação de resultados',
+  material_fact: 'Fato relevante',
+  reference_form: 'Formulário de referência',
+  shareholder_notice: 'Aviso aos acionistas',
+  financial_statement: 'Demonstrações financeiras',
+  management_report: 'Relatório da administração',
+  conference_call_material: 'Material de conference call',
+  dividend_notice: 'Aviso de dividendos/JCP',
+  other_ri_document: 'Outros documentos de RI',
+  unknown: 'Tipo desconhecido',
+};
+
+type RiNoticeState = {
+  title: string;
+  description: string;
+  suggestedFilters: Array<RiDocumentType | 'all'>;
+};
+
+function buildRiNotice(params: {
+  warnings: string[];
+  query: string;
+  typeFilter: RiDocumentType | 'all';
+  availableDocumentTypes: RiDocumentType[];
+  suggestedFilters: Array<RiDocumentType | 'all'>;
+}): RiNoticeState | null {
+  const {warnings, query, typeFilter, availableDocumentTypes, suggestedFilters} = params;
+  if (!warnings.length) return null;
+
+  if (warnings.includes('ri_no_documents_for_selected_type')) {
+    const availableTypesLabel = availableDocumentTypes
+      .filter((type) => type !== typeFilter)
+      .map((type) => filterLabels[type])
+      .join(', ');
+    return {
+      title: 'Nenhum documento neste tipo de filtro',
+      description: availableTypesLabel
+        ? `Encontramos documentos de RI para ${query || 'o ticker informado'}, mas não em "${filterLabels[typeFilter]}". Tente ${availableTypesLabel} ou volte para "Todos os releases recentes".`
+        : `Encontramos documentos de RI para ${query || 'o ticker informado'}, mas não em "${filterLabels[typeFilter]}". Tente "Todos os releases recentes".`,
+      suggestedFilters,
+    };
+  }
+
+  if (warnings.includes('ri_no_documents_found')) {
+    return {
+      title: 'Nenhum documento encontrado para este ticker',
+      description: `Não encontramos documentos de RI para ${query || 'o ticker informado'} no período recente.`,
+      suggestedFilters: ['all'],
+    };
+  }
+
+  if (warnings.includes('ri_no_matching_assets')) {
+    return {
+      title: 'Ticker não encontrado',
+      description: 'Não foi possível identificar o ticker informado. Revise o código e tente novamente.',
+      suggestedFilters: ['all'],
+    };
+  }
+
+  if (warnings.includes('ri_documents_unavailable')) {
+    return {
+      title: 'Busca de RI indisponível no momento',
+      description: 'Não foi possível consultar os documentos agora. Tente novamente em instantes.',
+      suggestedFilters: ['all'],
+    };
+  }
+
+  if (warnings.includes('ri_no_recent_releases_found')) {
+    return {
+      title: 'Sem documentos recentes com os filtros atuais',
+      description: 'Encontramos histórico, mas não há documentos recentes válidos para a busca aplicada.',
+      suggestedFilters: ['all'],
+    };
+  }
+
+  return null;
+}
 
 function formatDate(value: string) {
   const parsed = new Date(value);
@@ -92,6 +185,25 @@ const RiInteligente = () => {
 
   const documents = useMemo(() => data?.documents || [], [data?.documents]);
   const warnings = useMemo(() => data?.warnings || [], [data?.warnings]);
+  const fallback = useMemo(
+    () =>
+      data?.fallback || {
+        availableDocumentTypes: [],
+        suggestedFilters: ['all' as const],
+      },
+    [data?.fallback],
+  );
+  const notice = useMemo(
+    () =>
+      buildRiNotice({
+        warnings,
+        query,
+        typeFilter,
+        availableDocumentTypes: fallback.availableDocumentTypes,
+        suggestedFilters: fallback.suggestedFilters,
+      }),
+    [warnings, query, typeFilter, fallback.availableDocumentTypes, fallback.suggestedFilters],
+  );
 
   const handleOpenDocument = (document: RiDocumentListItem) => {
     if (!document.source?.value) return;
@@ -118,8 +230,13 @@ const RiInteligente = () => {
   };
 
   const selectSuggestion = (suggestion: RiAssetSuggestion) => {
-    setQueryDraft(suggestion.ticker);
-    setQuery(suggestion.ticker);
+    const ticker = suggestion.ticker;
+    setQueryDraft(ticker);
+    if (query === ticker) {
+      void refetch();
+      return;
+    }
+    setQuery(ticker);
   };
 
   const clearSearch = () => {
@@ -226,9 +343,28 @@ const RiInteligente = () => {
             </Button>
           </div>
 
-          {warnings.length > 0 && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300" data-testid="ri-warnings">
-              Avisos: {warnings.join(', ')}
+          {notice && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200 space-y-2" data-testid="ri-notice">
+              <p className="font-semibold">{notice.title}</p>
+              <p>{notice.description}</p>
+              {notice.suggestedFilters.some((filter) => filter !== typeFilter) && (
+                <div className="flex flex-wrap gap-2">
+                  {notice.suggestedFilters
+                    .filter((filter) => filter !== typeFilter)
+                    .map((filter) => (
+                      <Button
+                        key={filter}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-amber-400/30 bg-amber-400/10 text-amber-100 hover:bg-amber-400/20"
+                        onClick={() => setTypeFilter(filter)}
+                        data-testid={`ri-fallback-filter-${filter}`}>
+                        Ver {filterLabels[filter]}
+                      </Button>
+                    ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -238,7 +374,7 @@ const RiInteligente = () => {
             </div>
           ) : documents.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground" data-testid="ri-empty-state">
-              Nenhum release recente válido encontrado com os filtros atuais.
+              {notice?.description || 'Nenhum release recente válido encontrado com os filtros atuais.'}
             </div>
           ) : (
             <div className="space-y-3" data-testid="ri-document-list">
