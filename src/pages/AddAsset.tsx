@@ -1,4 +1,4 @@
-import {useState, useRef, useEffect} from 'react';
+import {useMemo, useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {
   Card,
@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {Separator} from '@/components/ui/separator';
-import {CalendarIcon, Plus, TrendingUp, X} from 'lucide-react';
+import {CalendarIcon, Plus, TrendingUp} from 'lucide-react';
 import {useToast} from '@/components/ui/use-toast';
 import {Calendar} from '@/components/ui/calendar';
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
@@ -28,13 +28,14 @@ import PortfolioService from '@/services/portfolio';
 import Stock from '@/services/stocks';
 import {StockAllNacionalResponse} from '@/types/stock';
 import {formatCurrency} from '@/utils/formatters';
+import {StockAutocompleteInput} from '@/components/stocks/StockAutocompleteInput';
+import {normalizeStockSymbol} from '@/components/stocks/stock-autocomplete.utils';
 
 export default function AddAsset() {
   const {toast} = useToast();
   const [date, setDate] = useState<Date>();
-  const symbolRef = useRef<HTMLDivElement>(null);
   const [symbolSearch, setSymbolSearch] = useState('');
-  const [showSymbolSuggestions, setShowSymbolSuggestions] = useState(false);
+  const normalizedSymbolSearch = String(symbolSearch || '').trim().toUpperCase();
 
   const [formData, setFormData] = useState({
     symbol: '',
@@ -51,60 +52,95 @@ export default function AddAsset() {
     queryFn: PortfolioService.getPortfolios,
   });
 
-  // Load all stocks for autocomplete
-  const {data: allStocks} = useQuery({
-    queryKey: ['all-national-stocks'],
+  const {data: stocksSearchData} = useQuery({
+    queryKey: ['add-asset-stock-search', normalizedSymbolSearch],
     queryFn: async (): Promise<StockAllNacionalResponse> => {
-      const response = await Stock.getAllNacionalStocks();
-      return Array.isArray(response) ? response[0] : response;
+      const response = await Stock.getAllNacionalStocks(normalizedSymbolSearch);
+      const normalized = Array.isArray(response) ? response[0] : response;
+      const stocks = Array.isArray(normalized?.stocks) ? [...normalized.stocks] : [];
+      const pushIfMissing = (candidate: any) => {
+        const symbol = normalizeStockSymbol(candidate?.stock || '');
+        if (!symbol) return;
+        if (stocks.some((s: any) => normalizeStockSymbol(s?.stock || '') === symbol)) {
+          return;
+        }
+        stocks.unshift({
+          stock: symbol,
+          name: candidate?.name || symbol,
+          close: Number(candidate?.close || 0),
+          change: Number(candidate?.change || 0),
+          logo: candidate?.logo || '',
+          type: candidate?.type || 'stock',
+        });
+      };
+
+      const looksLikeTicker = /^[A-Z]{4}\d{1,2}F?$/.test(normalizedSymbolSearch);
+      if (looksLikeTicker) {
+        try {
+          const quote = await Stock.getNationalStock(normalizedSymbolSearch);
+          const item = quote?.results?.[0];
+          const symbol = normalizeStockSymbol(item?.symbol || normalizedSymbolSearch);
+          pushIfMissing({
+            stock: symbol,
+            name: item?.longName || item?.shortName || symbol,
+            close: Number(item?.regularMarketPrice || 0),
+            change: Number(item?.regularMarketChangePercent || 0),
+            logo: item?.logourl || '',
+            type: 'stock',
+          });
+        } catch {
+          // best effort
+        }
+      }
+
+      const looksLikeCompanyRoot = /^[A-Z]{4,6}$/.test(normalizedSymbolSearch);
+      const hasPrefixMatch = stocks.some((s: any) =>
+        normalizeStockSymbol(s?.stock || '').startsWith(normalizedSymbolSearch),
+      );
+      if (looksLikeCompanyRoot && !hasPrefixMatch) {
+        const candidates = [`${normalizedSymbolSearch}3`, `${normalizedSymbolSearch}4`, `${normalizedSymbolSearch}11`];
+        const responses = await Promise.allSettled(
+          candidates.map((symbol) => Stock.getNationalStock(symbol)),
+        );
+        for (const result of responses) {
+          if (result.status !== 'fulfilled') continue;
+          const item = result.value?.results?.[0];
+          const symbol = normalizeStockSymbol(item?.symbol || '');
+          if (!symbol) continue;
+          pushIfMissing({
+            stock: symbol,
+            name: item?.longName || item?.shortName || symbol,
+            close: Number(item?.regularMarketPrice || 0),
+            change: Number(item?.regularMarketChangePercent || 0),
+            logo: item?.logourl || '',
+            type: 'stock',
+          });
+        }
+      }
+
+      return {
+        ...normalized,
+        stocks,
+      };
     },
-    staleTime: 10 * 60 * 1000,
+    enabled: normalizedSymbolSearch.length >= 2,
+    staleTime: 2 * 60 * 1000,
   });
 
   const [selectedPortfolioId, setSelectedPortfolioId] = useState('');
 
-  // Symbol autocomplete suggestions — sorted by relevance (prefix first)
-  const symbolSuggestions = (() => {
-    if (!symbolSearch.trim() || !allStocks) return [];
-    const q = symbolSearch.toLowerCase();
-    return allStocks.stocks
-      .filter(
-        (s) =>
-          s.stock.toLowerCase().includes(q) ||
-          (s.name && s.name.toLowerCase().includes(q)),
-      )
-      .sort((a, b) => {
-        const aSymbol = a.stock.toLowerCase();
-        const bSymbol = b.stock.toLowerCase();
-        // Exact symbol match first
-        if (aSymbol === q) return -1;
-        if (bSymbol === q) return 1;
-        // Symbol prefix match second
-        const aPrefix = aSymbol.startsWith(q);
-        const bPrefix = bSymbol.startsWith(q);
-        if (aPrefix && !bPrefix) return -1;
-        if (bPrefix && !aPrefix) return 1;
-        // Symbol contains match third
-        const aContains = aSymbol.includes(q);
-        const bContains = bSymbol.includes(q);
-        if (aContains && !bContains) return -1;
-        if (bContains && !aContains) return 1;
-        // Name match last — alphabetical
-        return aSymbol.localeCompare(bSymbol);
-      })
-      .slice(0, 7);
-  })();
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (symbolRef.current && !symbolRef.current.contains(e.target as Node)) {
-        setShowSymbolSuggestions(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  const stockAutocompleteItems = useMemo(
+    () =>
+      (stocksSearchData?.stocks || []).map((s) => ({
+        stock: s.stock,
+        name: s.name,
+        close: s.close,
+        change: s.change,
+        logo: s.logo,
+        type: s.type,
+      })),
+    [stocksSearchData?.stocks],
+  );
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -119,10 +155,11 @@ export default function AddAsset() {
     type: string;
     close: number;
   }) => {
-    setSymbolSearch(s.stock);
+    const normalizedSymbol = normalizeStockSymbol(s.stock);
+    setSymbolSearch(normalizedSymbol);
     setFormData((prev) => ({
       ...prev,
-      symbol: s.stock,
+      symbol: normalizedSymbol,
       name: s.name,
       type:
         s.type === 'fii'
@@ -133,7 +170,6 @@ export default function AddAsset() {
       purchasePrice: s.close ? String(s.close) : prev.purchasePrice,
       currentPrice: s.close ? String(s.close) : prev.currentPrice,
     }));
-    setShowSymbolSuggestions(false);
   };
 
   const queryClient = useQueryClient();
@@ -231,71 +267,16 @@ export default function AddAsset() {
                     {/* Symbol with Autocomplete */}
                     <div className="space-y-2">
                       <Label htmlFor="symbol">Símbolo do Ativo *</Label>
-                      <div ref={symbolRef} className="relative">
-                        <Input
-                          id="symbol"
-                          placeholder="Ex: PETR4, VALE3..."
-                          value={symbolSearch}
-                          onChange={(e) => {
-                            const v = e.target.value.toUpperCase();
-                            setSymbolSearch(v);
-                            handleInputChange('symbol', v);
-                            setShowSymbolSuggestions(true);
-                          }}
-                          onFocus={() =>
-                            symbolSearch && setShowSymbolSuggestions(true)
-                          }
-                          autoComplete="off"
-                          required
-                        />
-                        {symbolSearch && (
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            onClick={() => {
-                              setSymbolSearch('');
-                              handleInputChange('symbol', '');
-                              setShowSymbolSuggestions(false);
-                            }}>
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-
-                        {showSymbolSuggestions &&
-                          symbolSuggestions.length > 0 && (
-                            <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-lg shadow-xl overflow-hidden">
-                              {symbolSuggestions.map((s) => (
-                                <button
-                                  key={s.stock}
-                                  type="button"
-                                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-primary/10 transition-colors text-left"
-                                  onMouseDown={() => handleSymbolSelect(s)}>
-                                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-sm">
-                                      {s.stock}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {s.name}
-                                    </p>
-                                  </div>
-                                  <div className="text-right flex-shrink-0">
-                                    <p className="text-xs font-medium">
-                                      {formatCurrency(s.close)}
-                                    </p>
-                                    <p
-                                      className={`text-xs ${s.change >= 0 ? 'text-success' : 'text-destructive'}`}>
-                                      {s.change >= 0 ? '+' : ''}
-                                      {s.change?.toFixed(2)}%
-                                    </p>
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                      </div>
+                      <StockAutocompleteInput
+                        value={symbolSearch}
+                        stocks={stockAutocompleteItems}
+                        placeholder="Ex: PETR4, VALE3..."
+                        onValueChange={(value) => {
+                          setSymbolSearch(value);
+                          handleInputChange('symbol', value);
+                        }}
+                        onSelect={(item) => handleSymbolSelect(item)}
+                      />
                     </div>
 
                     <div className="space-y-2">

@@ -6,7 +6,7 @@ const {chatMock} = vi.hoisted(() => ({
 
 vi.mock('@/services/ai', () => ({
   aiAnalysisService: {
-    chat: chatMock,
+    intelligentChat: chatMock,
   },
 }));
 
@@ -22,12 +22,13 @@ describe('chat service adapter', () => {
       intent: 'portfolio_summary',
       deterministic: true,
       message: 'Resumo pronto',
-      data: {portfolioSummary: {totalValue: 1000}},
+      portfolioFacts: {totalValue: 1000},
     });
 
     expect(normalized.intent).toBe('portfolio_summary');
     expect(normalized.message).toBe('Resumo pronto');
     expect(normalized.deterministic).toBe(true);
+    expect((normalized.data as any).portfolioFacts.totalValue).toBe(1000);
   });
 
   it('normaliza JSON serializado retornado no campo answer', () => {
@@ -56,21 +57,22 @@ describe('chat service adapter', () => {
     expect(normalized.message).toBe('Resposta textual simples');
   });
 
-  it('askStructuredChat delega ao provider de IA e retorna estrutura normalizada', async () => {
+  it('askStructuredChat delega ao endpoint inteligente e retorna estrutura normalizada', async () => {
     chatMock.mockResolvedValueOnce({
-      answer: JSON.stringify({
-        intent: 'tax_estimation',
-        deterministic: true,
-        message: 'Imposto estimado',
-        data: {sellSimulation: {estimatedTax: 150}},
-      }),
+      intent: 'portfolio_summary',
+      deterministic: true,
+      message: 'Resumo determinístico da carteira concluído.',
+      portfolioFacts: {totalValue: 15000},
+      externalData: null,
+      estimates: null,
+      unavailable: [],
     });
 
     const response = await askStructuredChat('Quanto imposto pago?');
 
     expect(chatMock).toHaveBeenCalledWith({question: 'Quanto imposto pago?'});
-    expect(response.intent).toBe('tax_estimation');
-    expect(response.message).toBe('Imposto estimado');
-    expect((response.data as any).sellSimulation.estimatedTax).toBe(150);
+    expect(response.intent).toBe('portfolio_summary');
+    expect(response.message).toContain('Resumo');
+    expect((response.data as any).portfolioFacts.totalValue).toBe(15000);
   });
 });
