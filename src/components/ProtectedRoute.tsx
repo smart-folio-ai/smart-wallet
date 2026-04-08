@@ -2,6 +2,7 @@ import {Navigate, useLocation} from 'react-router-dom';
 import {ReactNode} from 'react';
 import {useAuth} from '@/hooks/useAuth';
 import Loader from '@/components/loader';
+import WalletLoadingScreen from '@/components/WalletLoadingScreen';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -15,7 +16,10 @@ const ProtectedRoute = ({children}: ProtectedRouteProps) => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader text="Verificando autenticação..." />
+        <WalletLoadingScreen
+          isLoading={isLoading}
+          loadingText="Verificando autenticação..."
+        />
       </div>
     );
   }

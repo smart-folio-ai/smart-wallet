@@ -3,6 +3,7 @@ import {useNavigate} from 'react-router-dom';
 import {toast} from 'sonner';
 import AuthenticationService from '../services/authentication';
 import Loader from '@/components/loader';
+import WalletLoadingScreen from '@/components/WalletLoadingScreen';
 
 const SignOut = () => {
   const navigate = useNavigate();
@@ -19,18 +20,18 @@ const SignOut = () => {
         toast.success('Você saiu com sucesso!');
 
         setTimeout(() => {
-          navigate('/');
+          navigate('/signin', {replace: true});
         }, 500);
       } catch (error) {
         toast.error('Ocorreu um erro ao tentar sair');
-        navigate('/');
+        navigate('/signin', {replace: true});
       }
     };
 
     logoutProcess();
   }, [navigate]);
 
-  return <Loader text="Saindo..." />;
+  return <WalletLoadingScreen isLoading={true} loadingText="Saindo..." />;
 };
 
 export default SignOut;

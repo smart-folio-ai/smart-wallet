@@ -3,7 +3,14 @@ import {useNavigate} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-import {Eye, EyeOff, ArrowRight, BarChart3, Cpu, ShieldCheck} from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  ArrowRight,
+  BarChart3,
+  Cpu,
+  ShieldCheck,
+} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -21,6 +28,7 @@ import AuthenticationService from '../services/authentication';
 import Loader from '@/components/loader';
 import {AxiosError} from 'axios';
 import {AppLogo} from '@/components/AppLogo';
+import WalletLoadingScreen from '@/components/WalletLoadingScreen';
 
 const formSchema = z
   .object({
@@ -33,7 +41,10 @@ const formSchema = z
       .regex(/[A-Z]/, 'A senha deve conter pelo menos 1 letra maiúscula')
       .regex(/[a-z]/, 'A senha deve conter pelo menos 1 letra minúscula')
       .regex(/\d/, 'A senha deve conter pelo menos 1 número')
-      .regex(/[^A-Za-z0-9]/, 'A senha deve conter pelo menos 1 caractere especial'),
+      .regex(
+        /[^A-Za-z0-9]/,
+        'A senha deve conter pelo menos 1 caractere especial',
+      ),
     confirmPassword: z
       .string()
       .min(8, 'A senha deve ter pelo menos 8 caracteres'),
@@ -109,18 +120,17 @@ export default function Register() {
     <div
       id="register-page"
       className="min-h-screen flex"
-      style={{fontFamily: 'var(--font-body)'}}
-    >
+      style={{fontFamily: 'var(--font-body)'}}>
       {/* Painel esquerdo - editorial */}
       <div
         className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-        style={{backgroundColor: 'var(--auth-panel)'}}
-      >
+        style={{backgroundColor: 'var(--auth-panel)'}}>
         {/* Glow ambiental */}
         <div
           className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
           style={{
-            background: 'radial-gradient(circle, var(--auth-highlight-mid) 0%, transparent 70%)',
+            background:
+              'radial-gradient(circle, var(--auth-highlight-mid) 0%, transparent 70%)',
           }}
         />
 
@@ -139,8 +149,7 @@ export default function Register() {
                 backgroundColor: 'var(--auth-highlight)',
                 fontFamily: 'var(--font-body)',
                 letterSpacing: '0.12em',
-              }}
-            >
+              }}>
               Nova Conta
             </span>
           </div>
@@ -151,46 +160,64 @@ export default function Register() {
               fontSize: '2.75rem',
               fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
-            }}
-          >
+            }}>
             Comece sua jornada de investimentos hoje.
           </h1>
           <p
             className="leading-relaxed"
-            style={{color: 'var(--auth-text-body)', fontSize: '1rem', lineHeight: '1.7'}}
-          >
-            Crie sua conta em menos de 2 minutos. Acesso imediato ao terminal completo, análises em tempo real e inteligência artificial para impulsionar seus resultados.
+            style={{
+              color: 'var(--auth-text-body)',
+              fontSize: '1rem',
+              lineHeight: '1.7',
+            }}>
+            Crie sua conta em menos de 2 minutos. Acesso imediato ao terminal
+            completo, análises em tempo real e inteligência artificial para
+            impulsionar seus resultados.
           </p>
 
           {/* Features */}
           <div className="mt-10 space-y-4">
             {[
-              {icon: <BarChart3 className="w-5 h-5" />, title: 'Dashboard completo', desc: 'Visão consolidada do seu portfólio'},
-              {icon: <Cpu className="w-5 h-5" />, title: 'IA integrada', desc: 'Insights inteligentes sobre seus ativos'},
-              {icon: <ShieldCheck className="w-5 h-5" />, title: 'Segurança avançada', desc: 'Autenticação de dois fatores inclusa'},
+              {
+                icon: <BarChart3 className="w-5 h-5" />,
+                title: 'Dashboard completo',
+                desc: 'Visão consolidada do seu portfólio',
+              },
+              {
+                icon: <Cpu className="w-5 h-5" />,
+                title: 'IA integrada',
+                desc: 'Insights inteligentes sobre seus ativos',
+              },
+              {
+                icon: <ShieldCheck className="w-5 h-5" />,
+                title: 'Segurança avançada',
+                desc: 'Autenticação de dois fatores inclusa',
+              },
             ].map((item, index) => (
               <div
                 key={index}
                 className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-[#1a253d]"
-                style={{backgroundColor: 'var(--auth-surface)'}}
-              >
+                style={{backgroundColor: 'var(--auth-surface)'}}>
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center"
                   style={{
                     backgroundColor: 'var(--auth-brand-soft-10)',
                     color: 'var(--auth-brand)',
-                  }}
-                >
+                  }}>
                   {item.icon}
                 </div>
                 <div>
                   <div
                     className="font-semibold text-sm mb-0.5"
-                    style={{color: 'var(--auth-text-main)', fontFamily: 'var(--font-heading)'}}
-                  >
+                    style={{
+                      color: 'var(--auth-text-main)',
+                      fontFamily: 'var(--font-heading)',
+                    }}>
                     {item.title}
                   </div>
-                  <div className="text-xs" style={{color: 'var(--auth-text-muted)'}}>
+                  <div
+                    className="text-xs"
+                    style={{color: 'var(--auth-text-muted)'}}>
                     {item.desc}
                   </div>
                 </div>
@@ -200,7 +227,9 @@ export default function Register() {
         </div>
 
         {/* Rodapé */}
-        <p className="text-xs relative z-10" style={{color: 'var(--auth-text-soft)'}}>
+        <p
+          className="text-xs relative z-10"
+          style={{color: 'var(--auth-text-soft)'}}>
           © 2025 Trackerr. Plataforma de análise de investimentos.
         </p>
       </div>
@@ -208,8 +237,7 @@ export default function Register() {
       {/* Painel direito - formulário (BRANCO) */}
       <div
         className="flex-1 flex items-center justify-center p-8 overflow-y-auto"
-        style={{backgroundColor: '#ffffff'}}
-      >
+        style={{backgroundColor: '#ffffff'}}>
         <div className="w-full max-w-md my-8">
           {/* Logo mobile */}
           <div className="mb-8 flex justify-center lg:hidden">
@@ -225,18 +253,17 @@ export default function Register() {
                 fontSize: '1.875rem',
                 fontFamily: 'var(--font-heading)',
                 letterSpacing: '-0.02em',
-              }}
-            >
+              }}>
               Criar conta
             </h2>
-            <p style={{color: 'var(--auth-text-secondary)', fontSize: '0.9rem'}}>
+            <p
+              style={{color: 'var(--auth-text-secondary)', fontSize: '0.9rem'}}>
               Já possui uma conta?{' '}
               <button
                 id="register-goto-signin"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/signin')}
                 className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline"
-                style={{color: 'var(--auth-brand)'}}
-              >
+                style={{color: 'var(--auth-brand)'}}>
                 Faça login
               </button>
             </p>
@@ -247,8 +274,7 @@ export default function Register() {
             <form
               id="register-form"
               onSubmit={form.handleSubmit(onSubmit)}
-              className="space-y-5"
-            >
+              className="space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -257,8 +283,10 @@ export default function Register() {
                     <FormItem>
                       <FormLabel
                         className="uppercase tracking-widest text-xs font-bold"
-                        style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}
-                      >
+                        style={{
+                          color: 'var(--auth-text-secondary)',
+                          letterSpacing: '0.1em',
+                        }}>
                         Nome
                       </FormLabel>
                       <FormControl>
@@ -281,8 +309,10 @@ export default function Register() {
                     <FormItem>
                       <FormLabel
                         className="uppercase tracking-widest text-xs font-bold"
-                        style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}
-                      >
+                        style={{
+                          color: 'var(--auth-text-secondary)',
+                          letterSpacing: '0.1em',
+                        }}>
                         Sobrenome
                       </FormLabel>
                       <FormControl>
@@ -307,8 +337,10 @@ export default function Register() {
                   <FormItem>
                     <FormLabel
                       className="uppercase tracking-widest text-xs font-bold"
-                      style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}
-                    >
+                      style={{
+                        color: 'var(--auth-text-secondary)',
+                        letterSpacing: '0.1em',
+                      }}>
                       E-mail
                     </FormLabel>
                     <FormControl>
@@ -332,8 +364,10 @@ export default function Register() {
                   <FormItem>
                     <FormLabel
                       className="uppercase tracking-widest text-xs font-bold"
-                      style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}
-                    >
+                      style={{
+                        color: 'var(--auth-text-secondary)',
+                        letterSpacing: '0.1em',
+                      }}>
                       Senha
                     </FormLabel>
                     <div className="relative">
@@ -353,9 +387,12 @@ export default function Register() {
                         size="icon"
                         className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
                         style={{color: '#94a3b8'}}
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        onClick={() => setShowPassword(!showPassword)}>
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                         <span className="sr-only">
                           {showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                         </span>
@@ -373,8 +410,10 @@ export default function Register() {
                   <FormItem>
                     <FormLabel
                       className="uppercase tracking-widest text-xs font-bold"
-                      style={{color: 'var(--auth-text-secondary)', letterSpacing: '0.1em'}}
-                    >
+                      style={{
+                        color: 'var(--auth-text-secondary)',
+                        letterSpacing: '0.1em',
+                      }}>
                       Confirmar Senha
                     </FormLabel>
                     <div className="relative">
@@ -394,11 +433,18 @@ export default function Register() {
                         size="icon"
                         className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
                         style={{color: '#94a3b8'}}
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }>
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                         <span className="sr-only">
-                          {showConfirmPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                          {showConfirmPassword
+                            ? 'Ocultar senha'
+                            : 'Mostrar senha'}
                         </span>
                       </Button>
                     </div>
@@ -408,23 +454,41 @@ export default function Register() {
               />
 
               <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-600">
-                <p className="mb-2 font-semibold text-slate-700">Regras da senha</p>
-                <p className={hasMinLength ? 'text-emerald-600' : 'text-slate-600'}>
+                <p className="mb-2 font-semibold text-slate-700">
+                  Regras da senha
+                </p>
+                <p
+                  className={
+                    hasMinLength ? 'text-emerald-600' : 'text-slate-600'
+                  }>
                   • Mínimo de 8 caracteres
                 </p>
-                <p className={hasUppercase ? 'text-emerald-600' : 'text-slate-600'}>
+                <p
+                  className={
+                    hasUppercase ? 'text-emerald-600' : 'text-slate-600'
+                  }>
                   • Pelo menos 1 letra maiúscula
                 </p>
-                <p className={hasLowercase ? 'text-emerald-600' : 'text-slate-600'}>
+                <p
+                  className={
+                    hasLowercase ? 'text-emerald-600' : 'text-slate-600'
+                  }>
                   • Pelo menos 1 letra minúscula
                 </p>
-                <p className={hasNumber ? 'text-emerald-600' : 'text-slate-600'}>
+                <p
+                  className={hasNumber ? 'text-emerald-600' : 'text-slate-600'}>
                   • Pelo menos 1 número
                 </p>
-                <p className={hasSpecial ? 'text-emerald-600' : 'text-slate-600'}>
+                <p
+                  className={
+                    hasSpecial ? 'text-emerald-600' : 'text-slate-600'
+                  }>
                   • Pelo menos 1 caractere especial
                 </p>
-                <p className={passwordsMatch ? 'text-emerald-600' : 'text-slate-600'}>
+                <p
+                  className={
+                    passwordsMatch ? 'text-emerald-600' : 'text-slate-600'
+                  }>
                   • A confirmação deve ser igual à senha
                 </p>
               </div>
@@ -445,14 +509,17 @@ export default function Register() {
                     </FormControl>
                     <FormLabel
                       className="font-medium text-sm leading-snug cursor-pointer"
-                      style={{color: '#475569'}}
-                    >
+                      style={{color: '#475569'}}>
                       Eu li e concordo com os{' '}
-                      <a href="#" className="font-semibold text-[var(--auth-brand)] hover:underline underline-offset-4 decoration-primary/30 transition-colors">
+                      <a
+                        href="#"
+                        className="font-semibold text-[var(--auth-brand)] hover:underline underline-offset-4 decoration-primary/30 transition-colors">
                         Termos de Uso
                       </a>{' '}
                       e{' '}
-                      <a href="#" className="font-semibold text-[var(--auth-brand)] hover:underline underline-offset-4 decoration-primary/30 transition-colors">
+                      <a
+                        href="#"
+                        className="font-semibold text-[var(--auth-brand)] hover:underline underline-offset-4 decoration-primary/30 transition-colors">
                         Política de Privacidade
                       </a>
                     </FormLabel>
@@ -461,7 +528,10 @@ export default function Register() {
               />
 
               {loading && (
-                <Loader text="Estamos criando sua conta, por favor aguarde..." />
+                <WalletLoadingScreen
+                  isLoading
+                  loadingText="Estamos criando sua conta, por favor aguarde..."
+                />
               )}
 
               <Button
@@ -469,12 +539,14 @@ export default function Register() {
                 type="submit"
                 className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20"
                 style={{
-                  background: 'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
+                  background:
+                    'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                   color: '#f9f7ff',
                 }}
-                disabled={loading}
-              >
-                {loading ? 'Criando Conta...' : (
+                disabled={loading}>
+                {loading ? (
+                  'Criando Conta...'
+                ) : (
                   <>
                     Criar Conta no Terminal
                     <ArrowRight className="h-4 w-4" />
@@ -485,10 +557,7 @@ export default function Register() {
           </Form>
 
           {/* Rodapé */}
-          <p
-            className="text-xs text-center mt-8"
-            style={{color: '#94a3b8'}}
-          >
+          <p className="text-xs text-center mt-8" style={{color: '#94a3b8'}}>
             Copyright © 2025 Trackerr. Todos os direitos reservados.
           </p>
         </div>

@@ -5,7 +5,16 @@ import {useForm} from 'react-hook-form';
 import * as z from 'zod';
 import apiClient from '@/server/api/api';
 import {AxiosError} from 'axios';
-import {Eye, EyeOff, ArrowLeft, ShieldCheck, Loader2, KeyRound, CheckCircle2, AlertCircle} from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  ShieldCheck,
+  Loader2,
+  KeyRound,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -16,11 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from '@/components/ui/input-otp';
+import {InputOTP, InputOTPGroup, InputOTPSlot} from '@/components/ui/input-otp';
 import {toast} from 'sonner';
 import {AppLogo} from '@/components/AppLogo';
 
@@ -32,7 +37,10 @@ const formSchema = z
       .regex(/[A-Z]/, 'A senha deve conter pelo menos 1 letra maiúscula')
       .regex(/[a-z]/, 'A senha deve conter pelo menos 1 letra minúscula')
       .regex(/\d/, 'A senha deve conter pelo menos 1 número')
-      .regex(/[^A-Za-z0-9]/, 'A senha deve conter pelo menos 1 caractere especial'),
+      .regex(
+        /[^A-Za-z0-9]/,
+        'A senha deve conter pelo menos 1 caractere especial',
+      ),
     confirmPassword: z.string(),
     code: z.string().optional(),
   })
@@ -51,10 +59,12 @@ function LoadingState() {
       id="reset-password-loading"
       data-testid="reset-password-loading"
       className="min-h-screen flex items-center justify-center"
-      style={{backgroundColor: 'var(--auth-bg)'}}
-    >
+      style={{backgroundColor: 'var(--auth-bg)'}}>
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="w-10 h-10 animate-spin" style={{color: 'var(--auth-brand)'}} />
+        <Loader2
+          className="w-10 h-10 animate-spin"
+          style={{color: 'var(--auth-brand)'}}
+        />
         <p className="text-sm" style={{color: 'var(--auth-text-muted)'}}>
           Validando link de recuperação...
         </p>
@@ -79,13 +89,11 @@ function InvalidTokenState({
       id="reset-password-invalid"
       data-testid="reset-password-invalid"
       className="min-h-screen flex items-center justify-center p-8"
-      style={{backgroundColor: 'var(--auth-bg)'}}
-    >
+      style={{backgroundColor: 'var(--auth-bg)'}}>
       <div className="w-full max-w-md text-center">
         <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-          style={{backgroundColor: 'var(--auth-danger-soft)'}}
-        >
+          style={{backgroundColor: 'var(--auth-danger-soft)'}}>
           <AlertCircle className="w-8 h-8" style={{color: '#ffb59a'}} />
         </div>
         <h2
@@ -95,14 +103,12 @@ function InvalidTokenState({
             fontSize: '1.75rem',
             fontFamily: 'var(--font-heading)',
             letterSpacing: '-0.02em',
-          }}
-        >
+          }}>
           {title}
         </h2>
         <p
           className="mb-8 leading-relaxed"
-          style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem'}}
-        >
+          style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem'}}>
           {description}
         </p>
         <Button
@@ -110,10 +116,10 @@ function InvalidTokenState({
           onClick={onRetry}
           className="w-full h-12 font-semibold text-sm"
           style={{
-            background: 'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
+            background:
+              'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
             color: '#f9f7ff',
-          }}
-        >
+          }}>
           Solicitar novo link
         </Button>
       </div>
@@ -130,7 +136,9 @@ export default function ResetPassword() {
 
   const [isValidating, setIsValidating] = useState(true);
   const [isValidToken, setIsValidToken] = useState(false);
-  const [tokenErrorType, setTokenErrorType] = useState<'invalid' | 'expired'>('invalid');
+  const [tokenErrorType, setTokenErrorType] = useState<'invalid' | 'expired'>(
+    'invalid',
+  );
   const [requiresMfa, setRequiresMfa] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -151,9 +159,13 @@ export default function ResetPassword() {
       } catch (error) {
         const apiError = error as AxiosError<{message?: string | string[]}>;
         const message = apiError.response?.data?.message;
-        const normalizedMessage = Array.isArray(message) ? message.join(' ') : String(message || '');
+        const normalizedMessage = Array.isArray(message)
+          ? message.join(' ')
+          : String(message || '');
         setTokenErrorType(
-          normalizedMessage.toLowerCase().includes('expirad') ? 'expired' : 'invalid',
+          normalizedMessage.toLowerCase().includes('expirad')
+            ? 'expired'
+            : 'invalid',
         );
         setIsValidToken(false);
       } finally {
@@ -199,7 +211,9 @@ export default function ResetPassword() {
     } catch (error) {
       const apiError = error as AxiosError<{message?: string | string[]}>;
       const message = apiError.response?.data?.message;
-      const normalizedMessage = Array.isArray(message) ? message.join('\n') : message;
+      const normalizedMessage = Array.isArray(message)
+        ? message.join('\n')
+        : message;
       toast.error(
         normalizedMessage ||
           'Não foi possível redefinir sua senha. Verifique os dados informados e tente novamente.',
@@ -211,7 +225,8 @@ export default function ResetPassword() {
 
   if (isValidating) return <LoadingState />;
   if (!token || !isValidToken) {
-    const title = tokenErrorType === 'expired' ? 'Link expirado' : 'Link inválido';
+    const title =
+      tokenErrorType === 'expired' ? 'Link expirado' : 'Link inválido';
     const description =
       tokenErrorType === 'expired'
         ? 'O link para redefinição expirou. Solicite um novo link para continuar.'
@@ -229,17 +244,19 @@ export default function ResetPassword() {
     <div
       id="reset-password-page"
       className="min-h-screen flex"
-      style={{backgroundColor: 'var(--auth-bg)', fontFamily: 'var(--font-body)'}}
-    >
+      style={{
+        backgroundColor: 'var(--auth-bg)',
+        fontFamily: 'var(--font-body)',
+      }}>
       {/* Painel esquerdo */}
       <div
         className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-        style={{backgroundColor: 'var(--auth-panel)'}}
-      >
+        style={{backgroundColor: 'var(--auth-panel)'}}>
         <div
           className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
           style={{
-            background: 'radial-gradient(circle, var(--auth-highlight-soft) 0%, transparent 70%)',
+            background:
+              'radial-gradient(circle, var(--auth-highlight-soft) 0%, transparent 70%)',
           }}
         />
 
@@ -258,8 +275,7 @@ export default function ResetPassword() {
                 backgroundColor: 'var(--auth-highlight)',
                 fontFamily: 'var(--font-body)',
                 letterSpacing: '0.12em',
-              }}
-            >
+              }}>
               Redefinição de Senha
             </span>
           </div>
@@ -270,15 +286,18 @@ export default function ResetPassword() {
               fontSize: '2.75rem',
               fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
-            }}
-          >
+            }}>
             Quase lá. Crie uma nova senha segura.
           </h1>
           <p
             className="leading-relaxed"
-            style={{color: 'var(--auth-text-body)', fontSize: '1rem', lineHeight: '1.7'}}
-          >
-            Escolha uma senha forte e exclusiva para proteger o acesso ao seu terminal financeiro.
+            style={{
+              color: 'var(--auth-text-body)',
+              fontSize: '1rem',
+              lineHeight: '1.7',
+            }}>
+            Escolha uma senha forte e exclusiva para proteger o acesso ao seu
+            terminal financeiro.
           </p>
 
           {/* Dicas de segurança */}
@@ -291,10 +310,14 @@ export default function ResetPassword() {
               <div
                 key={tip}
                 className="flex items-center gap-3 rounded-xl p-4"
-                style={{backgroundColor: 'var(--auth-surface)'}}
-              >
-                <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{color: 'var(--auth-brand)'}} />
-                <span className="text-sm" style={{color: 'var(--auth-text-body-strong)'}}>
+                style={{backgroundColor: 'var(--auth-surface)'}}>
+                <ShieldCheck
+                  className="w-4 h-4 flex-shrink-0"
+                  style={{color: 'var(--auth-brand)'}}
+                />
+                <span
+                  className="text-sm"
+                  style={{color: 'var(--auth-text-body-strong)'}}>
                   {tip}
                 </span>
               </div>
@@ -302,7 +325,9 @@ export default function ResetPassword() {
           </div>
         </div>
 
-        <p className="text-xs relative z-10" style={{color: 'var(--auth-text-soft)'}}>
+        <p
+          className="text-xs relative z-10"
+          style={{color: 'var(--auth-text-soft)'}}>
           © 2025 Trackerr. Plataforma de análise de investimentos.
         </p>
       </div>
@@ -310,8 +335,7 @@ export default function ResetPassword() {
       {/* Painel direito */}
       <div
         className="flex-1 flex items-center justify-center p-8"
-        style={{backgroundColor: 'var(--auth-bg)'}}
-      >
+        style={{backgroundColor: 'var(--auth-bg)'}}>
         <div className="w-full max-w-md">
           {/* Logo mobile */}
           <div className="mb-8 flex justify-center lg:hidden">
@@ -321,24 +345,31 @@ export default function ResetPassword() {
           {/* Botão voltar */}
           <button
             id="reset-password-back"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/signin')}
             className="flex items-center gap-2 mb-8 text-sm transition-colors"
             style={{color: 'var(--auth-text-muted)'}}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--auth-text-accent)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--auth-text-muted)')}
-          >
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = 'var(--auth-text-accent)')
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = 'var(--auth-text-muted)')
+            }>
             <ArrowLeft className="h-4 w-4" />
             Voltar para o login
           </button>
 
           {isSuccess ? (
             /* ── Estado de sucesso ── */
-            <div id="reset-password-success" data-testid="reset-password-success">
+            <div
+              id="reset-password-success"
+              data-testid="reset-password-success">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{backgroundColor: 'var(--auth-highlight)'}}
-              >
-                <CheckCircle2 className="h-6 w-6" style={{color: 'var(--auth-text-accent)'}} />
+                style={{backgroundColor: 'var(--auth-highlight)'}}>
+                <CheckCircle2
+                  className="h-6 w-6"
+                  style={{color: 'var(--auth-text-accent)'}}
+                />
               </div>
               <h2
                 className="font-bold mb-2"
@@ -347,25 +378,28 @@ export default function ResetPassword() {
                   fontSize: '1.875rem',
                   fontFamily: 'var(--font-heading)',
                   letterSpacing: '-0.02em',
-                }}
-              >
+                }}>
                 Senha redefinida!
               </h2>
               <p
                 className="mb-8"
-                style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem', lineHeight: '1.6'}}
-              >
-                Sua senha foi alterada com sucesso. Você já pode acessar o terminal com suas novas credenciais.
+                style={{
+                  color: 'var(--auth-text-muted)',
+                  fontSize: '0.9rem',
+                  lineHeight: '1.6',
+                }}>
+                Sua senha foi alterada com sucesso. Você já pode acessar o
+                terminal com suas novas credenciais.
               </p>
               <Button
                 id="reset-password-goto-login"
                 onClick={() => navigate('/')}
                 className="w-full h-12 font-semibold text-sm"
                 style={{
-                  background: 'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
+                  background:
+                    'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                   color: '#f9f7ff',
-                }}
-              >
+                }}>
                 Ir para o Login
               </Button>
             </div>
@@ -375,9 +409,11 @@ export default function ResetPassword() {
               <div className="mb-8">
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{backgroundColor: 'var(--auth-highlight)'}}
-                >
-                  <KeyRound className="h-6 w-6" style={{color: 'var(--auth-brand)'}} />
+                  style={{backgroundColor: 'var(--auth-highlight)'}}>
+                  <KeyRound
+                    className="h-6 w-6"
+                    style={{color: 'var(--auth-brand)'}}
+                  />
                 </div>
                 <h2
                   className="font-bold mb-2"
@@ -386,13 +422,14 @@ export default function ResetPassword() {
                     fontSize: '1.875rem',
                     fontFamily: 'var(--font-heading)',
                     letterSpacing: '-0.02em',
-                  }}
-                >
+                  }}>
                   Nova senha
                 </h2>
-                <p style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem'}}>
+                <p
+                  style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem'}}>
                   Digite sua nova senha abaixo.
-                  {requiresMfa && ' Você também precisará informar seu código de Autenticação em Duas Etapas (2FA).'}
+                  {requiresMfa &&
+                    ' Você também precisará informar seu código de Autenticação em Duas Etapas (2FA).'}
                 </p>
               </div>
 
@@ -400,8 +437,7 @@ export default function ResetPassword() {
                 <form
                   id="reset-password-form"
                   onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-5"
-                >
+                  className="space-y-5">
                   {/* Campo 2FA (condicional) */}
                   {requiresMfa && (
                     <FormField
@@ -411,8 +447,10 @@ export default function ResetPassword() {
                         <FormItem>
                           <FormLabel
                             className="uppercase tracking-widest text-xs"
-                            style={{color: 'var(--auth-text-body-strong)', letterSpacing: '0.1em'}}
-                          >
+                            style={{
+                              color: 'var(--auth-text-body-strong)',
+                              letterSpacing: '0.1em',
+                            }}>
                             Código de Autenticação (2FA)
                           </FormLabel>
                           <FormControl>
@@ -446,8 +484,10 @@ export default function ResetPassword() {
                       <FormItem>
                         <FormLabel
                           className="uppercase tracking-widest text-xs"
-                          style={{color: 'var(--auth-text-body-strong)', letterSpacing: '0.1em'}}
-                        >
+                          style={{
+                            color: 'var(--auth-text-body-strong)',
+                            letterSpacing: '0.1em',
+                          }}>
                           Nova Senha
                         </FormLabel>
                         <div className="relative">
@@ -458,7 +498,10 @@ export default function ResetPassword() {
                               placeholder="••••••••"
                               {...field}
                               className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)]"
-                              style={{backgroundColor: 'var(--auth-input)', color: 'var(--auth-text-main)'}}
+                              style={{
+                                backgroundColor: 'var(--auth-input)',
+                                color: 'var(--auth-text-main)',
+                              }}
                             />
                           </FormControl>
                           <Button
@@ -467,9 +510,12 @@ export default function ResetPassword() {
                             size="icon"
                             className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
                             style={{color: 'var(--auth-text-muted)'}}
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            onClick={() => setShowPassword(!showPassword)}>
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
                             <span className="sr-only">
                               {showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                             </span>
@@ -488,8 +534,10 @@ export default function ResetPassword() {
                       <FormItem>
                         <FormLabel
                           className="uppercase tracking-widest text-xs"
-                          style={{color: 'var(--auth-text-body-strong)', letterSpacing: '0.1em'}}
-                        >
+                          style={{
+                            color: 'var(--auth-text-body-strong)',
+                            letterSpacing: '0.1em',
+                          }}>
                           Confirmar Nova Senha
                         </FormLabel>
                         <div className="relative">
@@ -500,7 +548,10 @@ export default function ResetPassword() {
                               placeholder="••••••••"
                               {...field}
                               className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)]"
-                              style={{backgroundColor: 'var(--auth-input)', color: 'var(--auth-text-main)'}}
+                              style={{
+                                backgroundColor: 'var(--auth-input)',
+                                color: 'var(--auth-text-main)',
+                              }}
                             />
                           </FormControl>
                           <Button
@@ -509,11 +560,18 @@ export default function ResetPassword() {
                             size="icon"
                             className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
                             style={{color: 'var(--auth-text-muted)'}}
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          >
-                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }>
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
                             <span className="sr-only">
-                              {showConfirmPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                              {showConfirmPassword
+                                ? 'Ocultar senha'
+                                : 'Mostrar senha'}
                             </span>
                           </Button>
                         </div>
@@ -529,13 +587,19 @@ export default function ResetPassword() {
                       borderColor: 'var(--auth-highlight)',
                       color: 'var(--auth-text-muted)',
                     }}>
-                    <p className="mb-2 font-semibold" style={{color: 'var(--auth-text-body-strong)'}}>
+                    <p
+                      className="mb-2 font-semibold"
+                      style={{color: 'var(--auth-text-body-strong)'}}>
                       Regras para criar a senha
                     </p>
                     <div className="space-y-1.5">
                       <p
                         className="flex items-center gap-2"
-                        style={{color: hasMinLength ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        style={{
+                          color: hasMinLength
+                            ? '#34d399'
+                            : 'var(--auth-text-muted)',
+                        }}>
                         {hasMinLength ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
                         ) : (
@@ -545,7 +609,11 @@ export default function ResetPassword() {
                       </p>
                       <p
                         className="flex items-center gap-2"
-                        style={{color: hasUppercase ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        style={{
+                          color: hasUppercase
+                            ? '#34d399'
+                            : 'var(--auth-text-muted)',
+                        }}>
                         {hasUppercase ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
                         ) : (
@@ -555,7 +623,11 @@ export default function ResetPassword() {
                       </p>
                       <p
                         className="flex items-center gap-2"
-                        style={{color: hasLowercase ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        style={{
+                          color: hasLowercase
+                            ? '#34d399'
+                            : 'var(--auth-text-muted)',
+                        }}>
                         {hasLowercase ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
                         ) : (
@@ -565,7 +637,11 @@ export default function ResetPassword() {
                       </p>
                       <p
                         className="flex items-center gap-2"
-                        style={{color: hasNumber ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        style={{
+                          color: hasNumber
+                            ? '#34d399'
+                            : 'var(--auth-text-muted)',
+                        }}>
                         {hasNumber ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
                         ) : (
@@ -575,7 +651,11 @@ export default function ResetPassword() {
                       </p>
                       <p
                         className="flex items-center gap-2"
-                        style={{color: hasSpecial ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        style={{
+                          color: hasSpecial
+                            ? '#34d399'
+                            : 'var(--auth-text-muted)',
+                        }}>
                         {hasSpecial ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
                         ) : (
@@ -585,7 +665,11 @@ export default function ResetPassword() {
                       </p>
                       <p
                         className="flex items-center gap-2"
-                        style={{color: passwordsMatch ? '#34d399' : 'var(--auth-text-muted)'}}>
+                        style={{
+                          color: passwordsMatch
+                            ? '#34d399'
+                            : 'var(--auth-text-muted)',
+                        }}>
                         {passwordsMatch ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
                         ) : (
@@ -602,10 +686,10 @@ export default function ResetPassword() {
                     disabled={isSubmitting}
                     className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200"
                     style={{
-                      background: 'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
+                      background:
+                        'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                       color: '#f9f7ff',
-                    }}
-                  >
+                    }}>
                     {isSubmitting ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -622,8 +706,7 @@ export default function ResetPassword() {
 
           <p
             className="text-xs text-center mt-8"
-            style={{color: 'rgba(195,197,216,0.3)'}}
-          >
+            style={{color: 'rgba(195,197,216,0.3)'}}>
             Copyright © 2025 Trackerr. Todos os direitos reservados.
           </p>
         </div>
