@@ -1,6 +1,13 @@
 import {useMemo, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {FileSearch, FileText, RefreshCcw, Search, Sparkles, XCircle} from 'lucide-react';
+import {
+  FileSearch,
+  FileText,
+  RefreshCcw,
+  Search,
+  Sparkles,
+  XCircle,
+} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -20,7 +27,11 @@ import {
 } from '@/components/ui/select';
 import {PremiumBlur} from '@/components/ui/premium-blur';
 import {useSubscription} from '@/hooks/useSubscription';
-import {RiAssetSuggestion, RiDocumentListItem, RiDocumentType} from '@/interface/ri-intelligence';
+import {
+  RiAssetSuggestion,
+  RiDocumentListItem,
+  RiDocumentType,
+} from '@/interface/ri-intelligence';
 import {
   RiDocumentSummaryOutput,
   autocompleteRiAssets,
@@ -28,7 +39,10 @@ import {
   summarizeRiDocument,
 } from '@/services/ri-intelligence';
 
-const documentTypeOptions: Array<{label: string; value: RiDocumentType | 'all'}> = [
+const documentTypeOptions: Array<{
+  label: string;
+  value: RiDocumentType | 'all';
+}> = [
   {label: 'Todos os releases recentes', value: 'all'},
   {label: 'Release de resultados', value: 'earnings_release'},
   {label: 'Apresentação de resultados', value: 'investor_presentation'},
@@ -85,7 +99,13 @@ function buildRiNotice(params: {
   availableDocumentTypes: RiDocumentType[];
   suggestedFilters: Array<RiDocumentType | 'all'>;
 }): RiNoticeState | null {
-  const {warnings, query, typeFilter, availableDocumentTypes, suggestedFilters} = params;
+  const {
+    warnings,
+    query,
+    typeFilter,
+    availableDocumentTypes,
+    suggestedFilters,
+  } = params;
   if (!warnings.length) return null;
 
   if (warnings.includes('ri_no_documents_for_selected_type')) {
@@ -113,7 +133,8 @@ function buildRiNotice(params: {
   if (warnings.includes('ri_no_matching_assets')) {
     return {
       title: 'Ticker não encontrado',
-      description: 'Não foi possível identificar o ticker informado. Revise o código e tente novamente.',
+      description:
+        'Não foi possível identificar o ticker informado. Revise o código e tente novamente.',
       suggestedFilters: ['all'],
     };
   }
@@ -121,7 +142,8 @@ function buildRiNotice(params: {
   if (warnings.includes('ri_documents_unavailable')) {
     return {
       title: 'Busca de RI indisponível no momento',
-      description: 'Não foi possível consultar os documentos agora. Tente novamente em instantes.',
+      description:
+        'Não foi possível consultar os documentos agora. Tente novamente em instantes.',
       suggestedFilters: ['all'],
     };
   }
@@ -129,7 +151,8 @@ function buildRiNotice(params: {
   if (warnings.includes('ri_no_recent_releases_found')) {
     return {
       title: 'Sem documentos recentes com os filtros atuais',
-      description: 'Encontramos histórico, mas não há documentos recentes válidos para a busca aplicada.',
+      description:
+        'Encontramos histórico, mas não há documentos recentes válidos para a busca aplicada.',
       suggestedFilters: ['all'],
     };
   }
@@ -141,6 +164,12 @@ function formatDate(value: string) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return '-';
   return parsed.toLocaleDateString('pt-BR');
+}
+
+function buildDocumentDisplayTitle(document: RiDocumentListItem): string {
+  const typeLabel = typeLabels[document.documentType] || 'Document';
+  if (document.period) return `${typeLabel} · ${document.period}`;
+  return typeLabel;
 }
 
 function isPremiumOrGlobal(planName: string, isSubscribed: boolean) {
@@ -157,7 +186,8 @@ const RiInteligente = () => {
   const [queryDraft, setQueryDraft] = useState('');
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<RiDocumentType | 'all'>('all');
-  const [selectedDocument, setSelectedDocument] = useState<RiDocumentListItem | null>(null);
+  const [selectedDocument, setSelectedDocument] =
+    useState<RiDocumentListItem | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summary, setSummary] = useState<RiDocumentSummaryOutput | null>(null);
 
@@ -165,6 +195,8 @@ const RiInteligente = () => {
   const canUseAiSummary = isPremiumOrGlobal(planName, isSubscribed);
 
   const normalizedDraft = normalizeSearchQuery(queryDraft);
+  const normalizedQuery = normalizeSearchQuery(query);
+  const hasSearchQuery = normalizedQuery.length >= 2;
 
   const {data: suggestions = []} = useQuery({
     queryKey: ['ri-autocomplete', normalizedDraft],
@@ -177,10 +209,11 @@ const RiInteligente = () => {
     queryKey: ['ri-documents', query, typeFilter],
     queryFn: () =>
       searchRiDocuments({
-        query,
+        query: normalizedQuery,
         documentType: typeFilter,
         limit: 30,
       }),
+    enabled: hasSearchQuery,
   });
 
   const documents = useMemo(() => data?.documents || [], [data?.documents]);
@@ -202,7 +235,13 @@ const RiInteligente = () => {
         availableDocumentTypes: fallback.availableDocumentTypes,
         suggestedFilters: fallback.suggestedFilters,
       }),
-    [warnings, query, typeFilter, fallback.availableDocumentTypes, fallback.suggestedFilters],
+    [
+      warnings,
+      query,
+      typeFilter,
+      fallback.availableDocumentTypes,
+      fallback.suggestedFilters,
+    ],
   );
 
   const handleOpenDocument = (document: RiDocumentListItem) => {
@@ -227,16 +266,16 @@ const RiInteligente = () => {
     const next = normalizeSearchQuery(value ?? queryDraft);
     setQueryDraft(next);
     setQuery(next);
+    setSelectedDocument(null);
+    setSummary(null);
   };
 
   const selectSuggestion = (suggestion: RiAssetSuggestion) => {
     const ticker = suggestion.ticker;
-    setQueryDraft(ticker);
-    if (query === ticker) {
+    applySearch(ticker);
+    if (normalizeSearchQuery(query) === ticker) {
       void refetch();
-      return;
     }
-    setQuery(ticker);
   };
 
   const clearSearch = () => {
@@ -251,9 +290,12 @@ const RiInteligente = () => {
       <header className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-background to-background p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">RI Inteligente</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              RI Inteligente
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Busque releases recentes e relevantes com links validados antes da exibição.
+              Busque releases recentes e relevantes com links validados antes da
+              exibição.
             </p>
           </div>
           <Badge variant="outline" className="border-primary/30 text-primary">
@@ -269,7 +311,8 @@ const RiInteligente = () => {
             Busca de RI
           </CardTitle>
           <CardDescription>
-            Pesquise por ticker ou empresa com autocomplete e filtre por tipo de release.
+            Pesquise por ticker ou empresa com autocomplete e filtre por tipo de
+            release.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -299,27 +342,34 @@ const RiInteligente = () => {
                 </Button>
               </div>
 
-              {normalizedDraft.length >= 2 && suggestions.length > 0 && (
-                <div
-                  className="rounded-xl border border-border/80 bg-card p-2"
-                  data-testid="ri-autocomplete-list">
-                  {suggestions.slice(0, 6).map((item) => (
-                    <button
-                      key={`${item.ticker}-${item.company}`}
-                      type="button"
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted/60"
-                      onClick={() => selectSuggestion(item)}>
-                      <span className="font-semibold">{item.ticker}</span>
-                      <span className="text-muted-foreground"> · {item.company}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              {normalizedDraft.length >= 2 &&
+                suggestions.length > 0 &&
+                normalizedDraft !== normalizedQuery && (
+                  <div
+                    className="rounded-xl border border-border/80 bg-card p-2"
+                    data-testid="ri-autocomplete-list">
+                    {suggestions.slice(0, 6).map((item) => (
+                      <button
+                        key={`${item.ticker}-${item.company}`}
+                        type="button"
+                        className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted/60"
+                        onClick={() => selectSuggestion(item)}>
+                        <span className="font-semibold">{item.ticker}</span>
+                        <span className="text-muted-foreground">
+                          {' '}
+                          · {item.company}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
             </div>
 
             <Select
               value={typeFilter}
-              onValueChange={(value) => setTypeFilter(value as RiDocumentType | 'all')}>
+              onValueChange={(value) =>
+                setTypeFilter(value as RiDocumentType | 'all')
+              }>
               <SelectTrigger aria-label="Filtro por tipo">
                 <SelectValue placeholder="Tipo de documento" />
               </SelectTrigger>
@@ -332,22 +382,33 @@ const RiInteligente = () => {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" onClick={() => refetch()} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              className="gap-2">
               <RefreshCcw className="h-4 w-4" />
               Atualizar
             </Button>
 
-            <Button variant="ghost" onClick={clearSearch} className="gap-2" data-testid="ri-clear-search">
+            <Button
+              variant="ghost"
+              onClick={clearSearch}
+              className="gap-2"
+              data-testid="ri-clear-search">
               <XCircle className="h-4 w-4" />
               Limpar
             </Button>
           </div>
 
           {notice && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200 space-y-2" data-testid="ri-notice">
+            <div
+              className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200 space-y-2"
+              data-testid="ri-notice">
               <p className="font-semibold">{notice.title}</p>
               <p>{notice.description}</p>
-              {notice.suggestedFilters.some((filter) => filter !== typeFilter) && (
+              {notice.suggestedFilters.some(
+                (filter) => filter !== typeFilter,
+              ) && (
                 <div className="flex flex-wrap gap-2">
                   {notice.suggestedFilters
                     .filter((filter) => filter !== typeFilter)
@@ -368,13 +429,20 @@ const RiInteligente = () => {
             </div>
           )}
 
-          {isLoading ? (
+          {!hasSearchQuery ? (
+            <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              Type a ticker (e.g. PETR4) and click search.
+            </div>
+          ) : isLoading ? (
             <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
               Carregando documentos...
             </div>
           ) : documents.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground" data-testid="ri-empty-state">
-              {notice?.description || 'Nenhum release recente válido encontrado com os filtros atuais.'}
+            <div
+              className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground"
+              data-testid="ri-empty-state">
+              {notice?.description ||
+                'Nenhum release recente válido encontrado com os filtros atuais.'}
             </div>
           ) : (
             <div className="space-y-3" data-testid="ri-document-list">
@@ -387,9 +455,13 @@ const RiInteligente = () => {
                       <p className="text-sm font-semibold">
                         {document.ticker} · {document.company}
                       </p>
-                      <p className="text-sm text-muted-foreground">{document.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {buildDocumentDisplayTitle(document)}
+                      </p>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="secondary">{typeLabels[document.documentType] || 'Outros'}</Badge>
+                        <Badge variant="secondary">
+                          {typeLabels[document.documentType] || 'Outros'}
+                        </Badge>
                         <span>Data: {formatDate(document.publishedAt)}</span>
                         <span>Período: {document.period || 'N/A'}</span>
                       </div>
@@ -403,7 +475,11 @@ const RiInteligente = () => {
                       </Button>
                       <Button
                         size="sm"
-                        variant={selectedDocument?.id === document.id ? 'secondary' : 'default'}
+                        variant={
+                          selectedDocument?.id === document.id
+                            ? 'secondary'
+                            : 'default'
+                        }
                         onClick={() => setSelectedDocument(document)}>
                         Selecionar
                       </Button>
@@ -427,7 +503,8 @@ const RiInteligente = () => {
               Resumo automático do release
             </CardTitle>
             <CardDescription>
-              Gera highlights estruturados do documento selecionado com fallback seguro.
+              Gera highlights estruturados do documento selecionado com fallback
+              seguro.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -452,12 +529,22 @@ const RiInteligente = () => {
                 Resumo ainda não gerado.
               </div>
             ) : (
-              <div className="rounded-lg border border-border/70 p-4 space-y-3" data-testid="ri-summary-result">
+              <div
+                className="rounded-lg border border-border/70 p-4 space-y-3"
+                data-testid="ri-summary-result">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <Badge variant="outline">Status: {summary.summary.status}</Badge>
-                  <Badge variant="outline">Fonte: {summary.summary.sourceLabel}</Badge>
-                  <Badge variant="outline">Cache hit: {summary.cache.hit ? 'sim' : 'não'}</Badge>
-                  <Badge variant="outline">AI calls: {summary.cost.aiCalls}</Badge>
+                  <Badge variant="outline">
+                    Status: {summary.summary.status}
+                  </Badge>
+                  <Badge variant="outline">
+                    Fonte: {summary.summary.sourceLabel}
+                  </Badge>
+                  <Badge variant="outline">
+                    Cache hit: {summary.cache.hit ? 'sim' : 'não'}
+                  </Badge>
+                  <Badge variant="outline">
+                    AI calls: {summary.cost.aiCalls}
+                  </Badge>
                 </div>
 
                 {summary.summary.highlights.length > 0 ? (
@@ -484,8 +571,11 @@ const RiInteligente = () => {
               </div>
             )}
 
-            <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground" data-testid="ri-release-comparison-placeholder">
-              Comparação com release anterior será habilitada nesta área para planos Premium/Global.
+            <div
+              className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground"
+              data-testid="ri-release-comparison-placeholder">
+              Comparação com release anterior será habilitada nesta área para
+              planos Premium/Global.
             </div>
           </CardContent>
         </Card>

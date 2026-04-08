@@ -140,6 +140,16 @@ export interface AiChatResponse {
   answer: string;
 }
 
+export interface AiIntelligentChatResponse {
+  intent: string;
+  deterministic: boolean;
+  message: string;
+  portfolioFacts?: Record<string, unknown> | null;
+  externalData?: Record<string, unknown> | null;
+  estimates?: Record<string, unknown> | null;
+  unavailable?: string[];
+}
+
 class AiAnalysisService {
   async analyze(payload: AiAnalysisPayload): Promise<AiAnalysisResult> {
     const response = await aiService.analyze(payload);
@@ -153,6 +163,13 @@ class AiAnalysisService {
 
   async chat(payload: AiChatRequest): Promise<AiChatResponse> {
     const response = await aiService.chat(payload);
+    return response.data;
+  }
+
+  async intelligentChat(
+    payload: AiChatRequest,
+  ): Promise<AiIntelligentChatResponse> {
+    const response = await aiService.intelligentChat(payload);
     return response.data;
   }
 }

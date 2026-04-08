@@ -1,4 +1,8 @@
-import {aiAnalysisService, AiChatResponse} from '@/services/ai';
+import {
+  aiAnalysisService,
+  AiChatResponse,
+  AiIntelligentChatResponse,
+} from '@/services/ai';
 
 export type ChatRouteType = 'deterministic_no_llm' | 'synthesis_required';
 
@@ -35,9 +39,23 @@ function parsePotentialJson(answer: string): unknown {
 
 export function normalizeChatResponse(raw: AiChatResponse | any): StructuredChatResponse {
   if (looksStructured(raw)) {
+    const maybeIntelligent = raw as AiIntelligentChatResponse;
+    const hasIntelligentFields =
+      Object.prototype.hasOwnProperty.call(raw, 'portfolioFacts') ||
+      Object.prototype.hasOwnProperty.call(raw, 'externalData') ||
+      Object.prototype.hasOwnProperty.call(raw, 'estimates');
     return {
       ...raw,
       message: String((raw as any).message || ''),
+      data:
+        (raw as any).data ||
+        (hasIntelligentFields
+          ? {
+              portfolioFacts: maybeIntelligent.portfolioFacts || null,
+              externalData: maybeIntelligent.externalData || null,
+              estimates: maybeIntelligent.estimates || null,
+            }
+          : {}),
     };
   }
 
@@ -67,9 +85,8 @@ export function normalizeChatResponse(raw: AiChatResponse | any): StructuredChat
 }
 
 export async function askStructuredChat(question: string): Promise<StructuredChatResponse> {
-  const response = await aiAnalysisService.chat({
+  const response = await aiAnalysisService.intelligentChat({
     question,
   });
   return normalizeChatResponse(response);
 }
-

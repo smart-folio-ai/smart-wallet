@@ -41,6 +41,7 @@ export const aiService = {
   analyze: (payload: any) => apiClient.post('/ai/analyze', payload),
   simulate: (payload: any) => apiClient.post('/ai/simulate', payload),
   chat: (payload: any) => apiClient.post('/ai/chat', payload),
+  intelligentChat: (payload: any) => apiClient.post('/ai/chat/intelligent', payload),
 };
 
 export const stockServices = {
