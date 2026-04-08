@@ -3,7 +3,7 @@ import {useNavigate, useLocation} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-import {Eye, EyeOff, ArrowRight, TrendingUp} from 'lucide-react';
+import {Eye, EyeOff, ArrowRight} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -18,6 +18,7 @@ import {Checkbox} from '@/components/ui/checkbox';
 import {toast} from 'sonner';
 import AuthenticationService from '../services/authentication';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
+import {AppLogo} from '@/components/AppLogo';
 
 const formSchema = z.object({
   email: z.string().email('Digite um email válido'),
@@ -136,39 +137,30 @@ export default function SignIn() {
       <div
         id="signin-page"
         className="min-h-screen flex"
-        style={{fontFamily: 'Inter, sans-serif'}}>
+        style={{fontFamily: 'var(--font-body)'}}>
         {/* Painel esquerdo - editorial */}
         <div
           className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-          style={{backgroundColor: '#060d20'}}>
+          style={{backgroundColor: 'var(--auth-panel)'}}>
           {/* Glow ambiental */}
           <div
             className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
             style={{
               background:
-                'radial-gradient(circle, rgba(38,101,253,0.08) 0%, transparent 70%)',
+                'radial-gradient(circle, var(--auth-highlight-soft) 0%, transparent 70%)',
             }}
           />
           <div
             className="absolute bottom-0 right-0 w-80 h-80 rounded-full pointer-events-none"
             style={{
               background:
-                'radial-gradient(circle, rgba(38,101,253,0.05) 0%, transparent 70%)',
+                'radial-gradient(circle, var(--auth-highlight-subtle) 0%, transparent 70%)',
             }}
           />
 
           {/* Logo */}
-          <div className="flex items-center gap-3 relative z-10">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{backgroundColor: '#2665fd'}}>
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span
-              className="text-xl font-bold tracking-tight"
-              style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}>
-              Trackerr
-            </span>
+          <div className="relative z-10 ml-2">
+            <AppLogo size="lg" />
           </div>
 
           {/* Conteúdo central */}
@@ -177,9 +169,9 @@ export default function SignIn() {
               <span
                 className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full"
                 style={{
-                  color: '#b5c4ff',
-                  backgroundColor: 'rgba(38,101,253,0.12)',
-                  fontFamily: 'Inter, sans-serif',
+                  color: 'var(--auth-text-accent)',
+                  backgroundColor: 'var(--auth-highlight)',
+                  fontFamily: 'var(--font-body)',
                   letterSpacing: '0.12em',
                 }}>
                 Terminal Financeiro
@@ -188,9 +180,9 @@ export default function SignIn() {
             <h1
               className="font-bold leading-tight mb-5"
               style={{
-                color: '#dbe2fd',
+                color: 'var(--auth-text-main)',
                 fontSize: '2.75rem',
-                fontFamily: 'Manrope, sans-serif',
+                fontFamily: 'var(--font-heading)',
                 letterSpacing: '-0.02em',
                 minHeight: '2.5em',
               }}>
@@ -199,7 +191,7 @@ export default function SignIn() {
             <p
               className="leading-relaxed"
               style={{
-                color: 'rgba(195,197,216,0.75)',
+                color: 'var(--auth-text-body)',
                 fontSize: '1rem',
                 lineHeight: '1.7',
               }}>
@@ -229,18 +221,18 @@ export default function SignIn() {
                 <div
                   key={index}
                   className="rounded-xl p-4"
-                  style={{backgroundColor: '#131b2e'}}>
+                  style={{backgroundColor: 'var(--auth-surface)'}}>
                   <div
                     className="font-bold text-lg mb-1"
                     style={{
-                      color: '#b5c4ff',
-                      fontFamily: 'Manrope, sans-serif',
+                      color: 'var(--auth-text-accent)',
+                      fontFamily: 'var(--font-heading)',
                     }}>
                     {item.value}
                   </div>
                   <div
                     className="text-xs"
-                    style={{color: 'rgba(195,197,216,0.6)'}}>
+                    style={{color: 'var(--auth-text-muted)'}}>
                     {item.label}
                   </div>
                 </div>
@@ -251,7 +243,7 @@ export default function SignIn() {
           {/* Rodapé */}
           <p
             className="text-xs relative z-10"
-            style={{color: 'rgba(195,197,216,0.4)'}}>
+            style={{color: 'var(--auth-text-soft)'}}>
             © 2025 Trackerr. Plataforma de análise de investimentos.
           </p>
         </div>
@@ -262,17 +254,8 @@ export default function SignIn() {
           style={{backgroundColor: '#ffffff'}}>
           <div className="w-full max-w-md">
             {/* Logo mobile */}
-            <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center"
-                style={{backgroundColor: '#2665fd'}}>
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              <span
-                className="text-xl font-bold"
-                style={{color: '#060d20', fontFamily: 'Manrope, sans-serif'}}>
-                Trackerr
-              </span>
+            <div className="mb-8 flex justify-center lg:hidden">
+              <AppLogo size="lg" />
             </div>
 
             {/* Cabeçalho do form */}
@@ -280,20 +263,24 @@ export default function SignIn() {
               <h2
                 className="font-bold mb-2"
                 style={{
-                  color: '#060d20',
+                  color: 'var(--auth-panel)',
                   fontSize: '1.875rem',
-                  fontFamily: 'Manrope, sans-serif',
+                  fontFamily: 'var(--font-heading)',
                   letterSpacing: '-0.02em',
                 }}>
                 Entrar no Terminal
               </h2>
-              <p style={{color: '#64748b', fontSize: '0.9rem'}}>
+              <p
+                style={{
+                  color: 'var(--auth-text-secondary)',
+                  fontSize: '0.9rem',
+                }}>
                 Não tem uma conta?{' '}
                 <button
                   id="signin-goto-register"
                   onClick={() => navigate('/register')}
                   className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline"
-                  style={{color: '#2665fd'}}>
+                  style={{color: 'var(--auth-brand)'}}>
                   Criar conta agora
                 </button>
               </p>
@@ -312,7 +299,10 @@ export default function SignIn() {
                     <FormItem>
                       <FormLabel
                         className="uppercase tracking-widest text-xs font-bold"
-                        style={{color: '#64748b', letterSpacing: '0.1em'}}>
+                        style={{
+                          color: 'var(--auth-text-secondary)',
+                          letterSpacing: '0.1em',
+                        }}>
                         E-mail
                       </FormLabel>
                       <FormControl>
@@ -320,8 +310,8 @@ export default function SignIn() {
                           id="signin-email"
                           placeholder="seu@email.com"
                           {...field}
-                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
-                          style={{color: '#060d20'}}
+                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
+                          style={{color: 'var(--auth-panel)'}}
                         />
                       </FormControl>
                       <FormMessage />
@@ -337,13 +327,16 @@ export default function SignIn() {
                       <div className="flex items-center justify-between">
                         <FormLabel
                           className="uppercase tracking-widest text-xs font-bold"
-                          style={{color: '#64748b', letterSpacing: '0.1em'}}>
+                          style={{
+                            color: 'var(--auth-text-secondary)',
+                            letterSpacing: '0.1em',
+                          }}>
                           Senha
                         </FormLabel>
                         <a
                           href="/forgot-password"
                           className="text-xs font-medium transition-colors hover:text-primary"
-                          style={{color: '#2665fd'}}>
+                          style={{color: 'var(--auth-brand)'}}>
                           Esqueceu a senha?
                         </a>
                       </div>
@@ -354,8 +347,8 @@ export default function SignIn() {
                             type={showPassword ? 'text' : 'password'}
                             placeholder="••••••••"
                             {...field}
-                            className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
-                            style={{color: '#060d20'}}
+                            className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
+                            style={{color: 'var(--auth-panel)'}}
                           />
                         </FormControl>
                         <Button
@@ -390,7 +383,7 @@ export default function SignIn() {
                           id="signin-keep-connected"
                           checked={field.value}
                           onCheckedChange={field.onChange}
-                          className="border-slate-300 data-[state=checked]:bg-[#2665fd] data-[state=checked]:border-[#2665fd]"
+                          className="border-slate-300 data-[state=checked]:bg-[var(--auth-brand)] data-[state=checked]:border-[var(--auth-brand)]"
                         />
                       </FormControl>
                       <FormLabel
@@ -407,7 +400,8 @@ export default function SignIn() {
                   type="submit"
                   className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20"
                   style={{
-                    background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+                    background:
+                      'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                     color: '#f9f7ff',
                   }}
                   disabled={authenticating || isSyncing}>

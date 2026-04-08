@@ -36,6 +36,7 @@ import Fiscal from './pages/Fiscal';
 import Transactions from './pages/Transactions';
 import Dividends from './pages/Dividends';
 import DividendDetail from './pages/DividendDetail';
+import RiInteligente from './pages/RiInteligente';
 
 const ScrollToTopOnRouteChange = () => {
   const {pathname} = useLocation();
@@ -69,8 +70,8 @@ const App = () => (
       <BrowserRouter>
         <ScrollToTopOnRouteChange />
         <Routes>
-          <Route path="/landing" element={<Landing />} />
-          <Route path="/" element={<SignIn />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/signin" element={<SignIn />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -147,6 +148,10 @@ const App = () => (
                               element={<Transactions />}
                             />
                             <Route path="/dividends" element={<Dividends />} />
+                            <Route
+                              path="/ri-inteligente"
+                              element={<RiInteligente />}
+                            />
                             <Route
                               path="/dividends/:symbol"
                               element={<DividendDetail />}

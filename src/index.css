@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Share+Tech&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,6 +6,9 @@
 
 @layer base {
   :root {
+    --font-body: 'Inter', 'Segoe UI', Arial, sans-serif;
+    --font-heading: 'Manrope', 'Inter', 'Segoe UI', sans-serif;
+
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -50,6 +53,32 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    --auth-bg: #0b1326;
+    --auth-panel: #060d20;
+    --auth-surface: #131b2e;
+    --auth-input: #2d3449;
+    --auth-brand: #2665fd;
+    --auth-brand-strong: #0050e1;
+    --auth-brand-soft-05: rgba(38, 101, 253, 0.05);
+    --auth-brand-soft-10: rgba(38, 101, 253, 0.1);
+    --auth-brand-soft-20: rgba(38, 101, 253, 0.2);
+    --auth-brand-soft-40: rgba(38, 101, 253, 0.4);
+    --auth-brand-soft-50: rgba(38, 101, 253, 0.5);
+    --auth-text-main: #dbe2fd;
+    --auth-text-main-alt: #dae2fd;
+    --auth-text-accent: #b5c4ff;
+    --auth-text-muted: rgba(195, 197, 216, 0.6);
+    --auth-text-body: rgba(195, 197, 216, 0.75);
+    --auth-text-body-strong: rgba(195, 197, 216, 0.7);
+    --auth-text-soft: rgba(195, 197, 216, 0.4);
+    --auth-text-secondary: #64748b;
+    --auth-highlight: rgba(38, 101, 253, 0.12);
+    --auth-highlight-soft: rgba(38, 101, 253, 0.08);
+    --auth-highlight-mid: rgba(38, 101, 253, 0.07);
+    --auth-highlight-subtle: rgba(38, 101, 253, 0.05);
+    --auth-success-soft: rgba(16, 185, 129, 0.08);
+    --auth-danger-soft: rgba(201, 70, 0, 0.12);
   }
 
   .dark {
@@ -104,7 +133,7 @@
   }
 
   body {
-    font-family: 'Inter', 'Manrope', 'Segoe UI', Arial, sans-serif;
+    font-family: var(--font-body);
     @apply bg-background text-foreground antialiased;
   }
 
@@ -112,7 +141,7 @@
   h2,
   h3,
   h4 {
-    font-family: 'Space Grotesk', 'Manrope', 'Segoe UI', sans-serif;
+    font-family: var(--font-heading);
     letter-spacing: -0.01em;
   }
 
@@ -149,5 +178,5 @@
 }
 
 .font-share-tech {
-  font-family: 'Share Tech', 'Space Grotesk', sans-serif;
+  font-family: var(--font-heading);
 }

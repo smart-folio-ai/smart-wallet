@@ -1,5 +1,5 @@
-import {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useMemo, useState} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {
   Card,
@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
-import {Download, Share2, Upload, Loader2, Trash2} from 'lucide-react';
+import {Download, Share2, Upload, Loader2, Trash2, AlertTriangle} from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import {useQueryClient, useMutation} from '@tanstack/react-query';
 
@@ -45,11 +45,15 @@ import {
 const Portfolio = () => {
   const {toast} = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const {planName} = useSubscription();
   const [activeTab, setActiveTab] = useState('all');
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sectorFilter, setSectorFilter] = useState('all');
+  const [recommendationFilter, setRecommendationFilter] = useState('all');
+  const [imbalanceFilter, setImbalanceFilter] = useState('all');
   const [isUploadingB3, setIsUploadingB3] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: '',
@@ -129,6 +133,7 @@ const Portfolio = () => {
         ? Number(((a.total / totalApiValue) * 100).toFixed(2))
         : 0,
     type: a.type,
+    sector: a.sector ?? undefined,
     aiRecommendation:
       aiRecommendationsBySymbol[String(a.symbol || '').toUpperCase()] ||
       a.aiRecommendation ||
@@ -152,6 +157,18 @@ const Portfolio = () => {
   }));
 
   // Filter and sort assets
+  const availableSectors = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          assets
+            .map((asset) => String(asset.sector || '').trim())
+            .filter((value) => value.length > 0),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [assets],
+  );
+
   const filteredAssets = assets
     .filter((asset) => {
       if (activeTab !== 'all' && asset.type !== activeTab) return false;
@@ -160,6 +177,21 @@ const Portfolio = () => {
         !asset.symbol.toLowerCase().includes(searchQuery.toLowerCase()) &&
         !asset.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
+        return false;
+      if (sectorFilter !== 'all' && String(asset.sector || '') !== sectorFilter)
+        return false;
+      if (recommendationFilter !== 'all') {
+        if (recommendationFilter === 'uncovered' && asset.aiRecommendation)
+          return false;
+        if (
+          recommendationFilter !== 'uncovered' &&
+          asset.aiRecommendation !== recommendationFilter
+        )
+          return false;
+      }
+      if (imbalanceFilter === 'overallocated' && asset.allocation <= 20)
+        return false;
+      if (imbalanceFilter === 'high-risk' && Math.abs(asset.change24h || 0) <= 5)
         return false;
       return true;
     })
@@ -188,42 +220,6 @@ const Portfolio = () => {
 
   // Get total values
   const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
-
-  // Calculate totals by type
-  const totalsByType = assets.reduce(
-    (acc, asset) => {
-      const kind = ['stock', 'fii', 'crypto', 'other'].includes(asset.type)
-        ? asset.type
-        : 'other';
-      (acc as any)[kind] += asset.value;
-      return acc;
-    },
-    {stock: 0, fii: 0, crypto: 0, other: 0},
-  );
-
-  // Prepare data for charts
-  const assetAllocationData = [
-    {
-      name: 'Ações',
-      value: (totalsByType.stock / totalValue) * 100,
-      color: '#22c55e',
-    },
-    {
-      name: 'FIIs',
-      value: (totalsByType.fii / totalValue) * 100,
-      color: '#8b5cf6',
-    },
-    {
-      name: 'Criptomoedas',
-      value: (totalsByType.crypto / totalValue) * 100,
-      color: '#3b82f6',
-    },
-    {
-      name: 'Outros',
-      value: (totalsByType.other / totalValue) * 100,
-      color: '#f59e0b',
-    },
-  ];
 
   // Sort function
   const requestSort = (key: keyof Asset) => {
@@ -258,6 +254,17 @@ const Portfolio = () => {
 
   const dividendYield =
     totalValue > 0 ? (totalDividends / totalValue) * 100 : 0;
+
+  const imbalanceInsights = useMemo(() => {
+    const overAllocated = assets.filter((asset) => asset.allocation > 20);
+    const highRisk = assets.filter((asset) => Math.abs(asset.change24h || 0) > 5);
+    const concentrated = assets.filter((asset) => asset.allocation > 25);
+    return {
+      overAllocated,
+      highRisk,
+      concentrated,
+    };
+  }, [assets]);
 
   const handleB3Import = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -323,6 +330,28 @@ const Portfolio = () => {
 
   return (
     <div className="container py-8 min-h-[calc(100vh-4rem)] animate-fade-in overflow-x-hidden">
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Button
+          variant={location.pathname === '/portfolio' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => navigate('/portfolio')}>
+          Carteira
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            document
+              .getElementById('portfolio-assets-section')
+              ?.scrollIntoView({behavior: 'smooth', block: 'start'})
+          }>
+          Meus ativos
+        </Button>
+        <Button variant={location.pathname === '/dividends' ? 'default' : 'outline'} size="sm" onClick={() => navigate('/dividends')}>
+          Dividendos
+        </Button>
+      </div>
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold">Portfólio</h1>
@@ -438,7 +467,7 @@ const Portfolio = () => {
         <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden h-full">
           <CardHeader>
             <CardTitle>Alocação de Ativos</CardTitle>
-            <CardDescription>Distribuição por tipo de ativo</CardDescription>
+            <CardDescription>Top 10 posições + outros e visão por classe</CardDescription>
           </CardHeader>
           <CardContent>
             <AssetAllocationChart assets={assets} />
@@ -497,18 +526,49 @@ const Portfolio = () => {
         </div>
       </div>
 
+      <Card className="mb-8 rounded-2xl border border-amber-500/20 bg-amber-500/5">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <AlertTriangle className="h-4 w-4 text-amber-400" />
+            Visão de desequilíbrio
+          </CardTitle>
+          <CardDescription>Alertas de concentração e risco com dados atuais da carteira</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
+          <div className="rounded-lg border border-border/50 bg-background/60 p-3">
+            <p className="text-muted-foreground">Sobrealocados (&gt; 20%)</p>
+            <p className="text-xl font-semibold">{imbalanceInsights.overAllocated.length}</p>
+          </div>
+          <div className="rounded-lg border border-border/50 bg-background/60 p-3">
+            <p className="text-muted-foreground">Alta oscilação (24h &gt; 5%)</p>
+            <p className="text-xl font-semibold">{imbalanceInsights.highRisk.length}</p>
+          </div>
+          <div className="rounded-lg border border-border/50 bg-background/60 p-3">
+            <p className="text-muted-foreground">Concentração crítica (&gt; 25%)</p>
+            <p className="text-xl font-semibold">{imbalanceInsights.concentrated.length}</p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Assets List */}
-      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+      <Card id="portfolio-assets-section" className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <CardTitle>Ativos</CardTitle>
-              <CardDescription>Todos os ativos em sua carteira</CardDescription>
+              <CardDescription>Visão de decisão por ativo com filtros avançados</CardDescription>
             </div>
             <AssetsListHeader
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               requestSort={requestSort}
+              sectorFilter={sectorFilter}
+              setSectorFilter={setSectorFilter}
+              availableSectors={availableSectors}
+              recommendationFilter={recommendationFilter}
+              setRecommendationFilter={setRecommendationFilter}
+              imbalanceFilter={imbalanceFilter}
+              setImbalanceFilter={setImbalanceFilter}
             />
           </div>
           <Tabs

@@ -5,14 +5,7 @@ import {useForm} from 'react-hook-form';
 import apiClient from '@/server/api/api';
 import {useMutation} from '@tanstack/react-query';
 import * as z from 'zod';
-import {
-  ArrowLeft,
-  Loader2,
-  TrendingUp,
-  Mail,
-  CheckCircle2,
-  ArrowRight,
-} from 'lucide-react';
+import {ArrowLeft, Loader2, Mail, CheckCircle2, ArrowRight} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -24,6 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import {toast} from 'sonner';
+import {AppLogo} from '@/components/AppLogo';
 
 const formSchema = z.object({
   email: z.string().email('Digite um email válido'),
@@ -66,32 +60,23 @@ export default function ForgotPassword() {
     <div
       id="forgot-password-page"
       className="min-h-screen flex"
-      style={{fontFamily: 'Inter, sans-serif'}}>
+      style={{fontFamily: 'var(--font-body)'}}>
       {/* Painel esquerdo - editorial */}
       <div
         className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-        style={{backgroundColor: '#060d20'}}>
+        style={{backgroundColor: 'var(--auth-panel)'}}>
         {/* Glow ambiental */}
         <div
           className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
           style={{
             background:
-              'radial-gradient(circle, rgba(38,101,253,0.08) 0%, transparent 70%)',
+              'radial-gradient(circle, var(--auth-highlight-soft) 0%, transparent 70%)',
           }}
         />
 
         {/* Logo */}
-        <div className="flex items-center gap-3 relative z-10">
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center"
-            style={{backgroundColor: '#2665fd'}}>
-            <TrendingUp className="w-5 h-5 text-white" />
-          </div>
-          <span
-            className="text-xl font-bold tracking-tight"
-            style={{color: '#dbe2fd', fontFamily: 'Manrope, sans-serif'}}>
-            Trackerr
-          </span>
+        <div className="relative z-10">
+          <AppLogo size="lg" />
         </div>
 
         {/* Conteúdo central */}
@@ -100,9 +85,9 @@ export default function ForgotPassword() {
             <span
               className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full"
               style={{
-                color: '#b5c4ff',
-                backgroundColor: 'rgba(38,101,253,0.12)',
-                fontFamily: 'Inter, sans-serif',
+                color: 'var(--auth-text-accent)',
+                backgroundColor: 'var(--auth-highlight)',
+                fontFamily: 'var(--font-body)',
                 letterSpacing: '0.12em',
               }}>
               Recuperação de Acesso
@@ -111,9 +96,9 @@ export default function ForgotPassword() {
           <h1
             className="font-bold leading-tight mb-5"
             style={{
-              color: '#dbe2fd',
+              color: 'var(--auth-text-main)',
               fontSize: '2.75rem',
-              fontFamily: 'Manrope, sans-serif',
+              fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
             }}>
             Recupere seu acesso com segurança.
@@ -121,7 +106,7 @@ export default function ForgotPassword() {
           <p
             className="leading-relaxed"
             style={{
-              color: 'rgba(195,197,216,0.75)',
+              color: 'var(--auth-text-body)',
               fontSize: '1rem',
               lineHeight: '1.7',
             }}>
@@ -152,24 +137,27 @@ export default function ForgotPassword() {
               <div
                 key={item.step}
                 className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-[#1a253d]"
-                style={{backgroundColor: '#131b2e'}}>
+                style={{backgroundColor: 'var(--auth-surface)'}}>
                 <span
                   className="text-xs font-bold mt-0.5"
-                  style={{color: '#2665fd', fontFamily: 'Manrope, sans-serif'}}>
+                  style={{
+                    color: 'var(--auth-brand)',
+                    fontFamily: 'var(--font-heading)',
+                  }}>
                   {item.step}
                 </span>
                 <div>
                   <div
                     className="font-semibold text-sm mb-0.5"
                     style={{
-                      color: '#dbe2fd',
-                      fontFamily: 'Manrope, sans-serif',
+                      color: 'var(--auth-text-main)',
+                      fontFamily: 'var(--font-heading)',
                     }}>
                     {item.title}
                   </div>
                   <div
                     className="text-xs"
-                    style={{color: 'rgba(195,197,216,0.6)'}}>
+                    style={{color: 'var(--auth-text-muted)'}}>
                     {item.desc}
                   </div>
                 </div>
@@ -181,7 +169,7 @@ export default function ForgotPassword() {
         {/* Rodapé */}
         <p
           className="text-xs relative z-10"
-          style={{color: 'rgba(195,197,216,0.4)'}}>
+          style={{color: 'var(--auth-text-soft)'}}>
           © 2025 Trackerr. Terminal de inteligência financeira.
         </p>
       </div>
@@ -192,17 +180,8 @@ export default function ForgotPassword() {
         style={{backgroundColor: '#ffffff'}}>
         <div className="w-full max-w-md">
           {/* Logo mobile */}
-          <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{backgroundColor: '#2665fd'}}>
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span
-              className="text-xl font-bold"
-              style={{color: '#060d20', fontFamily: 'Manrope, sans-serif'}}>
-              Trackerr
-            </span>
+          <div className="mb-8 flex justify-center lg:hidden">
+            <AppLogo size="lg" />
           </div>
 
           {!isSubmitted ? (
@@ -211,8 +190,8 @@ export default function ForgotPassword() {
               <button
                 id="forgot-password-back"
                 onClick={() => navigate('/')}
-                className="flex items-center gap-2 mb-8 text-sm font-medium transition-colors hover:text-[#2665fd]"
-                style={{color: '#64748b'}}>
+                className="flex items-center gap-2 mb-8 text-sm font-medium transition-colors hover:text-[var(--auth-brand)]"
+                style={{color: 'var(--auth-text-secondary)'}}>
                 <ArrowLeft className="h-4 w-4" />
                 Voltar para o login
               </button>
@@ -221,20 +200,27 @@ export default function ForgotPassword() {
               <div className="mb-8">
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{backgroundColor: 'rgba(38,101,253,0.08)'}}>
-                  <Mail className="h-6 w-6" style={{color: '#2665fd'}} />
+                  style={{backgroundColor: 'var(--auth-highlight-soft)'}}>
+                  <Mail
+                    className="h-6 w-6"
+                    style={{color: 'var(--auth-brand)'}}
+                  />
                 </div>
                 <h2
                   className="font-bold mb-2"
                   style={{
-                    color: '#060d20',
+                    color: 'var(--auth-panel)',
                     fontSize: '1.875rem',
-                    fontFamily: 'Manrope, sans-serif',
+                    fontFamily: 'var(--font-heading)',
                     letterSpacing: '-0.02em',
                   }}>
                   Esqueceu a senha?
                 </h2>
-                <p style={{color: '#64748b', fontSize: '0.9rem'}}>
+                <p
+                  style={{
+                    color: 'var(--auth-text-secondary)',
+                    fontSize: '0.9rem',
+                  }}>
                   Não se preocupe, vamos te ajudar a recuperar o acesso ao seu
                   terminal financeiro.
                 </p>
@@ -253,7 +239,10 @@ export default function ForgotPassword() {
                       <FormItem>
                         <FormLabel
                           className="uppercase tracking-widest text-xs font-bold"
-                          style={{color: '#64748b', letterSpacing: '0.1em'}}>
+                          style={{
+                            color: 'var(--auth-text-secondary)',
+                            letterSpacing: '0.1em',
+                          }}>
                           E-mail cadastrado
                         </FormLabel>
                         <FormControl>
@@ -261,8 +250,8 @@ export default function ForgotPassword() {
                             id="forgot-password-email"
                             placeholder="seu@email.com"
                             {...field}
-                            className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#2665fd] bg-slate-50/50"
-                            style={{color: '#060d20'}}
+                            className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
+                            style={{color: 'var(--auth-panel)'}}
                           />
                         </FormControl>
                         <FormMessage />
@@ -275,7 +264,8 @@ export default function ForgotPassword() {
                     type="submit"
                     className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20"
                     style={{
-                      background: 'linear-gradient(135deg, #2665fd, #0050e1)',
+                      background:
+                        'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                       color: '#f9f7ff',
                     }}
                     disabled={isPending}>
@@ -298,22 +288,27 @@ export default function ForgotPassword() {
             <div id="forgot-password-success" className="text-center">
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-                style={{backgroundColor: 'rgba(16,185,129,0.08)'}}>
+                style={{backgroundColor: 'var(--auth-success-soft)'}}>
                 <CheckCircle2 className="h-8 w-8 text-emerald-500" />
               </div>
               <h2
                 className="font-bold mb-3"
                 style={{
-                  color: '#060d20',
+                  color: 'var(--auth-panel)',
                   fontSize: '1.875rem',
-                  fontFamily: 'Manrope, sans-serif',
+                  fontFamily: 'var(--font-heading)',
                   letterSpacing: '-0.02em',
                 }}>
                 E-mail enviado!
               </h2>
-              <p className="mb-8" style={{color: '#64748b', lineHeight: '1.6'}}>
+              <p
+                className="mb-8"
+                style={{
+                  color: 'var(--auth-text-secondary)',
+                  lineHeight: '1.6',
+                }}>
                 Enviamos as instruções de recuperação para{' '}
-                <span className="font-semibold text-[#060d20]">
+                <span className="font-semibold text-[var(--auth-panel)]">
                   {form.getValues().email}
                 </span>
                 . Por favor, verifique sua caixa de entrada e spam.
@@ -324,7 +319,7 @@ export default function ForgotPassword() {
                 style={{backgroundColor: '#f8fafc'}}>
                 <p
                   className="text-xs leading-relaxed"
-                  style={{color: '#64748b'}}>
+                  style={{color: 'var(--auth-text-secondary)'}}>
                   <strong>Aviso:</strong> O link de recuperação enviado expira
                   em 30 minutos por motivos de segurança.
                 </p>
@@ -340,8 +335,8 @@ export default function ForgotPassword() {
 
               <button
                 onClick={() => navigate('/')}
-                className="mt-6 text-sm font-medium transition-colors hover:text-[#2665fd]"
-                style={{color: '#64748b'}}>
+                className="mt-6 text-sm font-medium transition-colors hover:text-[var(--auth-brand)]"
+                style={{color: 'var(--auth-text-secondary)'}}>
                 Voltar para o login
               </button>
             </div>

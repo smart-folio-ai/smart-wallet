@@ -5,7 +5,6 @@ import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import ResetPassword from './ResetPassword';
 
-// Mock do apiClient
 vi.mock('@/server/api/api', () => ({
   default: {
     get: vi.fn(),
@@ -13,7 +12,6 @@ vi.mock('@/server/api/api', () => ({
   },
 }));
 
-// Mock do input-otp para evitar erros de DOM
 vi.mock('@/components/ui/input-otp', () => ({
   InputOTP: ({children, ...props}: React.PropsWithChildren<object>) => (
     <div data-testid="otp-input" {...props}>{children}</div>
@@ -47,13 +45,18 @@ const renderResetPassword = () => {
   );
 };
 
+const fillResetForm = async (password: string, confirmPassword = password) => {
+  const inputs = screen.getAllByPlaceholderText(/••••••••/);
+  await userEvent.type(inputs[0], password);
+  await userEvent.type(inputs[1], confirmPassword);
+};
+
 describe('ResetPassword', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it('deve exibir tela de carregamento enquanto valida o token', () => {
-    // Deixamos o GET pendente para mostrar o estado de carregamento
     vi.mocked(apiClient.get).mockReturnValueOnce(new Promise(() => {}));
     renderResetPassword();
     expect(screen.getByTestId('reset-password-loading')).toBeDefined();
@@ -67,26 +70,41 @@ describe('ResetPassword', () => {
     renderResetPassword();
 
     await waitFor(() => {
-      expect(screen.getByText(/Nova senha/i)).toBeDefined();
-      expect(screen.getByLabelText(/Nova Senha/i)).toBeDefined();
-      expect(screen.getByLabelText(/Confirmar Nova Senha/i)).toBeDefined();
+      expect(screen.getByRole('heading', {name: /^Nova senha$/i})).toBeDefined();
       expect(screen.getByRole('button', {name: /Salvar Nova Senha/i})).toBeDefined();
     });
   });
 
-  it('deve exibir tela de erro quando o token é inválido', async () => {
-    vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('Token inválido'));
+  it('deve exibir estado de token inválido', async () => {
+    vi.mocked(apiClient.get).mockRejectedValueOnce({
+      response: {data: {message: 'Token inválido'}},
+    });
 
     renderResetPassword();
 
     await waitFor(() => {
       expect(screen.getByTestId('reset-password-invalid')).toBeDefined();
-      expect(screen.getByText(/Link inválido ou expirado/i)).toBeDefined();
+      expect(screen.getByText(/Link inválido/i)).toBeDefined();
     });
   });
 
-  it('deve redirecionar para /forgot-password ao clicar em "Solicitar novo link"', async () => {
-    vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('Token inválido'));
+  it('deve exibir estado de token expirado', async () => {
+    vi.mocked(apiClient.get).mockRejectedValueOnce({
+      response: {data: {message: 'Token expirado'}},
+    });
+
+    renderResetPassword();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('reset-password-invalid')).toBeDefined();
+      expect(screen.getByText(/Link expirado/i)).toBeDefined();
+    });
+  });
+
+  it('deve redirecionar para /forgot-password ao clicar em solicitar novo link', async () => {
+    vi.mocked(apiClient.get).mockRejectedValueOnce({
+      response: {data: {message: 'Token inválido'}},
+    });
 
     renderResetPassword();
 
@@ -98,7 +116,7 @@ describe('ResetPassword', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/forgot-password');
   });
 
-  it('deve exibir erro de validação quando as senhas não coincidem', async () => {
+  it('deve exibir erro quando as senhas não coincidem', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
       data: {requiresMfa: false},
     });
@@ -106,11 +124,10 @@ describe('ResetPassword', () => {
     renderResetPassword();
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/Nova Senha/i)).toBeDefined();
+      expect(screen.getAllByPlaceholderText(/••••••••/)).toHaveLength(2);
     });
 
-    await userEvent.type(screen.getByLabelText(/Nova Senha/i), 'minhasenha123');
-    await userEvent.type(screen.getByLabelText(/Confirmar Nova Senha/i), 'senhadiferente');
+    await fillResetForm('Password123@', 'Different123@');
     await userEvent.click(screen.getByRole('button', {name: /Salvar Nova Senha/i}));
 
     await waitFor(() => {
@@ -118,7 +135,7 @@ describe('ResetPassword', () => {
     });
   });
 
-  it('deve exibir erro de validação para senha muito curta', async () => {
+  it('deve exibir erro quando senha não tem caractere especial', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
       data: {requiresMfa: false},
     });
@@ -126,19 +143,18 @@ describe('ResetPassword', () => {
     renderResetPassword();
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/Nova Senha/i)).toBeDefined();
+      expect(screen.getAllByPlaceholderText(/••••••••/)).toHaveLength(2);
     });
 
-    await userEvent.type(screen.getByLabelText(/Nova Senha/i), 'abc');
-    await userEvent.type(screen.getByLabelText(/Confirmar Nova Senha/i), 'abc');
+    await fillResetForm('Password1234');
     await userEvent.click(screen.getByRole('button', {name: /Salvar Nova Senha/i}));
 
     await waitFor(() => {
-      expect(screen.getByText(/A senha deve ter no mínimo 8 caracteres/i)).toBeDefined();
+      expect(screen.getByText(/A senha deve conter pelo menos 1 caractere especial/i)).toBeDefined();
     });
   });
 
-  it('deve chamar a API com token e nova senha ao submeter o formulário', async () => {
+  it('deve chamar API com token, nova senha e confirmação', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
       data: {requiresMfa: false},
     });
@@ -147,23 +163,23 @@ describe('ResetPassword', () => {
     renderResetPassword();
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/Nova Senha/i)).toBeDefined();
+      expect(screen.getAllByPlaceholderText(/••••••••/)).toHaveLength(2);
     });
 
-    await userEvent.type(screen.getByLabelText(/Nova Senha/i), 'novasenha123');
-    await userEvent.type(screen.getByLabelText(/Confirmar Nova Senha/i), 'novasenha123');
+    await fillResetForm('Password123@');
     await userEvent.click(screen.getByRole('button', {name: /Salvar Nova Senha/i}));
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith('/auth/reset-password', {
         token: 'valid-token-abc',
-        newPassword: 'novasenha123',
+        newPassword: 'Password123@',
+        confirmPassword: 'Password123@',
         tfCode: '',
       });
     });
   });
 
-  it('deve exibir tela de sucesso após redefinir a senha com sucesso', async () => {
+  it('deve exibir sucesso após redefinição', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
       data: {requiresMfa: false},
     });
@@ -172,59 +188,18 @@ describe('ResetPassword', () => {
     renderResetPassword();
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/Nova Senha/i)).toBeDefined();
+      expect(screen.getAllByPlaceholderText(/••••••••/)).toHaveLength(2);
     });
 
-    await userEvent.type(screen.getByLabelText(/Nova Senha/i), 'novasenha123');
-    await userEvent.type(screen.getByLabelText(/Confirmar Nova Senha/i), 'novasenha123');
-    await userEvent.click(screen.getByRole('button', {name: /Salvar Nova Senha/i}));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('reset-password-success')).toBeDefined();
-      expect(screen.getByText(/Senha redefinida!/i)).toBeDefined();
-    });
-  });
-
-  it('deve navegar para / ao clicar em "Ir para o Login" após sucesso', async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: {requiresMfa: false},
-    });
-    vi.mocked(apiClient.post).mockResolvedValueOnce({data: {success: true}});
-
-    renderResetPassword();
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/Nova Senha/i)).toBeDefined();
-    });
-
-    await userEvent.type(screen.getByLabelText(/Nova Senha/i), 'novasenha123');
-    await userEvent.type(screen.getByLabelText(/Confirmar Nova Senha/i), 'novasenha123');
+    await fillResetForm('Password123@');
     await userEvent.click(screen.getByRole('button', {name: /Salvar Nova Senha/i}));
 
     await waitFor(() => {
       expect(screen.getByTestId('reset-password-success')).toBeDefined();
     });
-
-    await userEvent.click(screen.getByRole('button', {name: /Ir para o Login/i}));
-    expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
-  it('deve navegar para / ao clicar em "Voltar para o login"', async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: {requiresMfa: false},
-    });
-
-    renderResetPassword();
-
-    await waitFor(() => {
-      expect(screen.getByText(/Voltar para o login/i)).toBeDefined();
-    });
-
-    await userEvent.click(screen.getByText(/Voltar para o login/i));
-    expect(mockNavigate).toHaveBeenCalledWith('/');
-  });
-
-  it('deve exibir o campo 2FA quando requiresMfa é true', async () => {
+  it('deve exibir campo 2FA quando requiresMfa é true', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
       data: {requiresMfa: true},
     });

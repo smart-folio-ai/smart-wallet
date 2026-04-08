@@ -16,6 +16,7 @@ import {
   BarChart3,
   Calculator,
   CircleDollarSign,
+  FileText,
   FileSpreadsheet,
   GitCompare,
   Layers,
@@ -47,11 +48,11 @@ const sections: NavSection[] = [
     label: 'Visão Geral',
     items: [
       {to: '/dashboard', label: 'Dashboard', icon: BarChart3},
-      {to: '/portfolio', label: 'Portfólio', icon: Layers},
       {to: '/planning', label: 'Planejamento', icon: Calculator},
       {to: '/comparator', label: 'Comparador', icon: GitCompare},
       {to: '/transactions', label: 'Transações', icon: Wallet},
       {to: '/fiscal', label: 'Fiscal', icon: FileSpreadsheet},
+      {to: '/ri-inteligente', label: 'RI Inteligente', icon: FileText},
     ],
   },
   {
@@ -65,6 +66,7 @@ const sections: NavSection[] = [
   {
     label: 'Carteira',
     items: [
+      {to: '/portfolio', label: 'Portfólio', icon: Layers},
       {to: '/add-asset', label: 'Adicionar Ativo', icon: Plus},
       {to: '/dividends', label: 'Dividendos', icon: Wallet},
     ],
@@ -115,7 +117,7 @@ export function AppSidebar() {
     <Sidebar variant="inset" collapsible="icon" className="z-40">
       <SidebarHeader className="border-b border-sidebar-border/60 py-4">
         <div className="flex items-center justify-between px-4">
-          <AppLogo size="lg" />
+          <AppLogo size="md" />
           <ThemeToggle />
         </div>
       </SidebarHeader>
