@@ -199,7 +199,17 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
           className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3"
           data-testid="chat-block-warnings">
           <p className="text-xs uppercase tracking-wide text-yellow-300">Avisos</p>
-          <p className="text-sm text-foreground">{payload.warnings.slice(0, 3).join(' · ')}</p>
+          <p className="text-sm text-foreground">
+            {payload.warnings.slice(0, 3).map(w => {
+              const dict: Record<string, string> = {
+                'sell_simulation_requires_owned_asset': 'Ativo não possuído',
+                'comparison_requires_two_assets': 'Ativos insuficientes para comparar',
+                'tax_estimation_requires_owned_asset': 'Imposto não calculado',
+                'external_asset_data_unavailable': 'Sem cotação de mercado atual',
+              };
+              return dict[w] || w;
+            }).join(' · ')}
+          </p>
         </div>
       ) : null}
 

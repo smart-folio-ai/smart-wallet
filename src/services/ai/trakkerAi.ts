@@ -2,7 +2,7 @@ import {AiAnalysisResult, aiAnalysisService} from '@/services/ai';
 import {fiscalService} from '@/server/api/api';
 
 const AI_CACHE_TTL_MS = 30 * 60 * 1000;
-const AI_CACHE_PREFIX = 'trakker_ai_analysis_v1';
+const AI_CACHE_PREFIX = 'trakker_ai_analysis_v2';
 
 type AiPlan = 'free' | 'premium' | 'pro';
 
@@ -14,6 +14,7 @@ type NormalizedAsset = {
   current_price: number;
   change_24h: number;
   sector?: string;
+  metrics?: Record<string, unknown>;
 };
 
 export type HighlightItem = {
@@ -34,8 +35,59 @@ function normalizeAssets(rawAssets: any[]): NormalizedAsset[] {
       current_price: Number(asset.current_price || asset.price || 0),
       change_24h: Number(asset.change_24h || asset.change24h || 0),
       sector: asset.sector ? String(asset.sector) : undefined,
+      metrics: buildAssetMetrics(asset),
     }))
     .filter((asset) => Boolean(asset.symbol));
+}
+
+function normalizePercentInput(value: unknown): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  // Some providers return fractions (0.12), others already percent (12).
+  return parsed <= 1 ? parsed * 100 : parsed;
+}
+
+function buildAssetMetrics(asset: any): Record<string, unknown> | undefined {
+  if (!asset || typeof asset !== 'object') return undefined;
+  const symbol = String(asset.symbol || asset.ticker || '').toUpperCase();
+  const type = String(asset.type || 'stock').toLowerCase();
+  const indicators = (asset.indicators || {}) as Record<string, unknown>;
+
+  if (type === 'stock' || type === 'etf') {
+    return {
+      symbol,
+      roe_5y: normalizePercentInput(indicators.roe),
+      cagr_5y: normalizePercentInput(
+        indicators.cagr5y ?? indicators.cagr_5y ?? indicators.revenueCagr5y,
+      ),
+      dividend_yield: normalizePercentInput(
+        indicators.dividendYield ?? indicators.currentYield,
+      ),
+      governance_score: Number(indicators.governanceScore || 0),
+      net_debt_ebitda: Number(indicators.debtEbitda || indicators.netDebtEbitda || 0),
+      is_blue_chip: Boolean(indicators.isBlueChip),
+      is_state_free:
+        indicators.isStateControlled === undefined
+          ? true
+          : !Boolean(indicators.isStateControlled),
+    };
+  }
+
+  if (type === 'fii') {
+    return {
+      symbol,
+      pvp_ratio: Number(indicators.pvpRatio || indicators.priceToBook || 1),
+      current_yield: normalizePercentInput(
+        indicators.currentYield ?? indicators.dividendYield,
+      ),
+      sector_yield_avg: normalizePercentInput(indicators.sectorYieldAvg),
+      dividend_years: Number(indicators.dividendYears || 0),
+      main_tenant_concentration: Number(indicators.mainTenantConcentration || 0),
+      main_property_concentration: Number(indicators.mainPropertyConcentration || 0),
+    };
+  }
+
+  return undefined;
 }
 
 export function getAiPlanFromPlanName(planName: string): AiPlan {
@@ -283,9 +335,25 @@ export function extractAssetRecommendationsFromAnalysis(
     anyAnalysis?.ai_analysis?.stock_scores,
     anyAnalysis?.recommendationsByAsset,
     anyAnalysis?.ai_analysis?.recommendationsByAsset,
+    anyAnalysis?.recommendations,
+    anyAnalysis?.ai_analysis?.recommendations,
   ].filter(Boolean);
 
   for (const source of sources) {
+    if (Array.isArray(source)) {
+      for (const item of source) {
+        const data: any = item;
+        const symbol = String(data?.symbol || data?.ticker || '').toUpperCase();
+        const recommendation = normalizeRecommendation(
+          data?.recommendation ?? data?.action ?? data?.signal ?? data,
+        );
+        if (symbol && recommendation) {
+          map[symbol] = recommendation;
+        }
+      }
+      continue;
+    }
+
     for (const [symbol, payload] of Object.entries(source)) {
       const data: any = payload;
       const recommendation = normalizeRecommendation(
@@ -293,6 +361,19 @@ export function extractAssetRecommendationsFromAnalysis(
       );
       if (recommendation) {
         map[String(symbol).toUpperCase()] = recommendation;
+      }
+    }
+  }
+
+  const opportunitySources = [
+    anyAnalysis?.opportunity_radar,
+    anyAnalysis?.ai_analysis?.opportunity_radar,
+  ].filter(Array.isArray);
+  for (const source of opportunitySources) {
+    for (const item of source as any[]) {
+      const symbol = String(item?.symbol || '').toUpperCase();
+      if (symbol && !map[symbol]) {
+        map[symbol] = 'buy';
       }
     }
   }

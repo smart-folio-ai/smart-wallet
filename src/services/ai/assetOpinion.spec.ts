@@ -1,4 +1,4 @@
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 const {chatMock} = vi.hoisted(() => ({
   chatMock: vi.fn(),
@@ -13,6 +13,10 @@ vi.mock('@/services/ai', () => ({
 import {getAssetOpinion, parseAssetOpinion} from './assetOpinion';
 
 describe('assetOpinion service', () => {
+  beforeEach(() => {
+    chatMock.mockReset();
+  });
+
   it('parseia JSON válido da resposta da IA', () => {
     const parsed = parseAssetOpinion(
       '{"summary":"Resumo real","strength":"Caixa forte","attention":"Dívida alta","tags":["atenção","volatilidade"]}',
@@ -74,5 +78,25 @@ describe('assetOpinion service', () => {
     expect(opinion.attention).toBe('Alavancagem elevada');
     expect(opinion.tags).toEqual(['alavancagem', 'turnaround']);
     expect(chatMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('aplica fallback determinístico quando IA retorna narrativa de dados insuficientes', async () => {
+    chatMock.mockResolvedValueOnce({
+      answer:
+        '{"summary":"Não há dados suficientes para analisar o ativo VBBR3.","strength":"Não foi possível identificar pontos fortes.","attention":"Falta de dados para análise precisa.","tags":["falta de dados","análise limitada"]}',
+    });
+
+    const opinion = await getAssetOpinion({
+      symbol: 'VBBR3',
+      indicators: {
+        roe: 0.12,
+        dividendYield: 0.045,
+        debtEbitda: 1.8,
+      },
+    });
+
+    expect(opinion.summary).toContain('VBBR3');
+    expect(opinion.summary).toContain('score');
+    expect(opinion.summary).not.toContain('Não há dados suficientes');
   });
 });

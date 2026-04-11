@@ -14,6 +14,7 @@ vi.mock('@/services/ai', () => ({
 import {
   buildAiCacheSignature,
   deriveDashboardHighlights,
+  extractAssetRecommendationsFromAnalysis,
   getAiPlanFromPlanName,
   getOrCreateAiAnalysis,
   isProOrHigherPlan,
@@ -128,5 +129,62 @@ describe('trakkerAi service helpers', () => {
       {symbol: 'VALE3', quantity: 2, price: 10, current_price: 11, type: 'stock'},
     ]);
     expect(a).toBe(b);
+  });
+
+  it('extrai recomendações por ativo em formatos mapa e lista', () => {
+    const extracted = extractAssetRecommendationsFromAnalysis({
+      stock_scores: {
+        BBAS3: {recommendation: 'COMPRA'},
+      },
+      ai_analysis: {
+        recommendationsByAsset: {
+          VALE3: {action: 'HOLD'},
+        },
+        recommendations: [
+          {symbol: 'PETR4', recommendation: 'VENDA'},
+        ],
+      } as any,
+      opportunity_radar: [{symbol: 'ITUB4'}] as any,
+    } as any);
+
+    expect(extracted.BBAS3).toBe('buy');
+    expect(extracted.VALE3).toBe('hold');
+    expect(extracted.PETR4).toBe('sell');
+    expect(extracted.ITUB4).toBe('buy');
+  });
+
+  it('inclui métricas normalizadas no payload da análise', async () => {
+    analyzeMock.mockResolvedValue({
+      ai_analysis: {smart_feed: []},
+    });
+
+    await getOrCreateAiAnalysis({
+      rawAssets: [
+        {
+          symbol: 'BBAS3',
+          type: 'stock',
+          quantity: 10,
+          price: 20,
+          current_price: 21,
+          indicators: {
+            roe: 0.18,
+            dividendYield: 0.06,
+            debtEbitda: 1.5,
+          },
+        },
+      ],
+      plan: 'premium',
+      userId: 'u1',
+      forceRefresh: true,
+    });
+
+    expect(analyzeMock).toHaveBeenCalledTimes(1);
+    const payload = analyzeMock.mock.calls[0][0];
+    expect(payload.portfolio.assets[0].metrics).toMatchObject({
+      symbol: 'BBAS3',
+      roe_5y: 18,
+      dividend_yield: 6,
+      net_debt_ebitda: 1.5,
+    });
   });
 });

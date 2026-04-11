@@ -47,6 +47,11 @@ import {
   isProOrHigherPlan,
 } from '@/services/ai/trakkerAi';
 import {
+  buildDashboardEventsFeed,
+  buildRecommendedActionsQueue,
+  buildRiskSnapshot,
+} from './dashboard-insights.utils';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -712,41 +717,41 @@ const Dashboard = () => {
   }, [concentrationInfo, optimizerData?.opportunities, summary, topLosers]);
 
   const recommendedActions = useMemo(() => {
-    const actions: {title: string; reason: string}[] = [];
+    const strongestAllocationDrift = allocationContext
+      .filter((row) => row.delta !== null)
+      .slice()
+      .sort((a, b) => Math.abs(Number(b.delta || 0)) - Math.abs(Number(a.delta || 0)))[0];
 
-    if (concentrationInfo && concentrationInfo.value >= 30) {
-      actions.push({
-        title: 'Revisar concentração da carteira',
-        reason: `${concentrationInfo.name} com ${concentrationInfo.value.toFixed(2)}% de participação.`,
-      });
-    }
+    const bestOpportunity = (optimizerData?.opportunities || [])
+      .slice()
+      .sort((a, b) => b.taxSaved - a.taxSaved)[0];
 
-    if ((optimizerData?.opportunities || []).length > 0) {
-      const first = optimizerData?.opportunities?.[0];
-      if (first) {
-        actions.push({
-          title: `Rodar simulação fiscal de ${first.symbol}`,
-          reason: `Economia potencial estimada: ${formatCurrency(first.taxSaved)}.`,
-        });
-      }
-    }
-
-    if (topLosers.length > 0) {
-      actions.push({
-        title: `Reavaliar posição em ${topLosers[0].symbol}`,
-        reason: `Queda de ${Math.abs(topLosers[0].change24h).toFixed(2)}% no período.`,
-      });
-    }
-
-    if (topGainers.length > 0) {
-      actions.push({
-        title: `Atualizar plano para ${topGainers[0].symbol}`,
-        reason: `Alta de ${topGainers[0].change24h.toFixed(2)}% no período.`,
-      });
-    }
-
-    return actions.slice(0, 4);
-  }, [concentrationInfo, optimizerData?.opportunities, topGainers, topLosers]);
+    return buildRecommendedActionsQueue({
+      concentrationName: concentrationInfo?.name ?? null,
+      concentrationValue: concentrationInfo?.value ?? null,
+      taxSimulationSymbol: bestOpportunity?.symbol ?? topLosers[0]?.symbol ?? null,
+      taxSimulationSavings: bestOpportunity?.taxSaved ?? null,
+      hasTargetAllocation: allocationContext.some((row) => row.target !== null),
+      allocationDriftLabel: strongestAllocationDrift
+        ? `${strongestAllocationDrift.label} está ${Math.abs(Number(strongestAllocationDrift.delta || 0)).toFixed(2)}% distante da meta.`
+        : null,
+      riSymbol: topPositions[0]?.symbol ?? null,
+      internationalExposurePct:
+        summary.distribution.crypto +
+        summary.distribution.other * 0.3,
+      dollarVariationPct: marketComparators?.dollar?.variationPct ?? null,
+    });
+  }, [
+    allocationContext,
+    concentrationInfo?.name,
+    concentrationInfo?.value,
+    marketComparators?.dollar?.variationPct,
+    optimizerData?.opportunities,
+    summary.distribution.crypto,
+    summary.distribution.other,
+    topLosers,
+    topPositions,
+  ]);
 
   const marketComparatorCards: MarketComparator[] = useMemo(
     () => [
@@ -922,6 +927,70 @@ const Dashboard = () => {
       .sort((a, b) => +new Date(a.date) - +new Date(b.date))
       .slice(0, 4);
   }, [summary.dividendEntries]);
+
+  const dominantSectorInfo = useMemo(() => {
+    if (!apiAssets.length || summary.totalValue <= 0) return null;
+    const sectorMap = new Map<string, number>();
+
+    for (const asset of apiAssets) {
+      const sector = String(
+        asset?.sector ||
+          asset?.indicators?.sector ||
+          asset?.profile?.sector ||
+          'Não classificado',
+      ).trim();
+      const value = Number(asset?.total || 0);
+      if (!Number.isFinite(value) || value <= 0) continue;
+      sectorMap.set(sector, (sectorMap.get(sector) || 0) + value);
+    }
+
+    const ordered = [...sectorMap.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (!ordered) return null;
+
+    return {
+      name: ordered[0],
+      pct: (ordered[1] / summary.totalValue) * 100,
+    };
+  }, [apiAssets, summary.totalValue]);
+
+  const riskSnapshot = useMemo(
+    () =>
+      buildRiskSnapshot({
+        volatilityPct,
+        concentrationName: concentrationInfo?.name ?? null,
+        concentrationValue: concentrationInfo?.value ?? null,
+        classExposureCount: distributionData.filter((d) => d.value > 0).length,
+        dominantSectorName: dominantSectorInfo?.name ?? null,
+        dominantSectorPct: dominantSectorInfo?.pct ?? null,
+      }),
+    [
+      concentrationInfo?.name,
+      concentrationInfo?.value,
+      distributionData,
+      dominantSectorInfo?.name,
+      dominantSectorInfo?.pct,
+      volatilityPct,
+    ],
+  );
+
+  const dashboardEvents = useMemo(
+    () =>
+      buildDashboardEventsFeed({
+        futureDividends: futureDividendEvents.map((event) => ({
+          symbol: event.symbol,
+          date: event.date,
+          value: Number(event.value || 0),
+        })),
+        watchlistSignals: dashboardHighlights.map((item) => item.title),
+        topSymbol: topPositions[0]?.symbol ?? null,
+      }),
+    [dashboardHighlights, futureDividendEvents, topPositions],
+  );
+
+  const upcomingThreeDividends = useMemo(
+    () => futureDividendEvents.slice(0, 3),
+    [futureDividendEvents],
+  );
 
   const formatComparatorValue = (item: MarketComparator): string => {
     if (item.value === null) return 'Dados indisponíveis';
@@ -1318,16 +1387,18 @@ const Dashboard = () => {
               <CalendarClock className="h-4 w-4 text-primary" />
               Próximas ações recomendadas
             </CardTitle>
-            <CardDescription>Ações priorizadas para manter a carteira saudável</CardDescription>
+            <CardDescription>Fila de decisões relevantes para as próximas movimentações</CardDescription>
           </CardHeader>
           <CardContent>
             {recommendedActions.length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem ações pendentes com os dados atuais.</p>
             ) : (
               <div className="space-y-3">
-                {recommendedActions.map((item) => (
-                  <div key={item.title} className="rounded-lg border border-border/40 bg-background/60 p-3">
-                    <p className="text-sm font-semibold">{item.title}</p>
+                {recommendedActions.map((item, index) => (
+                  <div key={`${item.title}-${index}`} className="rounded-lg border border-border/40 bg-background/60 p-3">
+                    <p className="text-sm font-semibold">
+                      {index + 1}. {item.title}
+                    </p>
                     <p className="text-xs text-muted-foreground">{item.reason}</p>
                   </div>
                 ))}
@@ -1347,20 +1418,34 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p className="flex items-center justify-between">
+              <span>Risco geral</span>
+              <strong>{riskSnapshot.riskLevel}</strong>
+            </p>
+            <p className="flex items-center justify-between">
+              <span>Score de risco</span>
+              <strong>{riskSnapshot.riskScore}/100</strong>
+            </p>
+            <p className="flex items-center justify-between">
+              <span>Score de diversificação</span>
+              <strong>{riskSnapshot.diversificationScore}/100</strong>
+            </p>
+            <p className="flex items-center justify-between">
               <span>Volatilidade diária</span>
               <strong>{volatilityPct !== null ? `${volatilityPct.toFixed(2)}%` : 'Dados insuficientes'}</strong>
             </p>
             <p className="flex items-center justify-between">
               <span>Maior concentração</span>
-              <strong>
-                {concentrationInfo
-                  ? `${concentrationInfo.name} (${concentrationInfo.value.toFixed(2)}%)`
-                  : 'Sem dados'}
-              </strong>
+              <strong>{riskSnapshot.dominantClassText}</strong>
+            </p>
+            <p className="flex items-center justify-between">
+              <span>Exposição setorial dominante</span>
+              <strong>{riskSnapshot.dominantSectorText}</strong>
             </p>
             <p className="flex items-center justify-between">
               <span>Exposição por classe</span>
-              <strong>{distributionData.filter((d) => d.value > 0).length} classes</strong>
+              <strong>
+                {distributionData.filter((d) => d.value > 0).length} classes
+              </strong>
             </p>
             <p className="text-xs text-muted-foreground">
               Correlação detalhada entre ativos ainda não está disponível na API atual.
@@ -1376,17 +1461,22 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {futureDividendEvents.length === 0 ? (
+            {dashboardEvents.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Sem eventos futuros disponíveis nas fontes atuais.
               </p>
             ) : (
               <div className="space-y-2">
-                {futureDividendEvents.map((event) => (
-                  <div key={`${event.symbol}-${event.date}`} className="rounded-lg border border-border/40 p-2 text-sm">
-                    <p className="font-medium">{event.symbol}</p>
+                {dashboardEvents.map((event, index) => (
+                  <div key={`${event.tag}-${event.title}-${index}`} className="rounded-lg border border-border/40 p-2 text-sm">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <p className="font-medium">{event.title}</p>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
+                        {event.tag}
+                      </span>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Provento previsto: {formatCurrency(event.value)} em {formatHistoryDate(event.date)}
+                      {event.detail}
                     </p>
                   </div>
                 ))}
@@ -1427,7 +1517,7 @@ const Dashboard = () => {
       <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Dividendos</CardTitle>
-          <CardDescription>Total no ano, média mensal, próximo pagamento e yield estimado</CardDescription>
+          <CardDescription>Total no ano, média mensal, próximo pagamento, yield e próximos recebimentos</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
@@ -1455,6 +1545,26 @@ const Dashboard = () => {
                   : 'Indisponível'}
               </p>
             </div>
+          </div>
+
+          <div className="rounded-lg border border-border/40 p-3">
+            <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
+              Próximos 3 pagamentos previstos
+            </p>
+            {upcomingThreeDividends.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Sem previsão de proventos futuros nas fontes atuais.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {upcomingThreeDividends.map((payment, idx) => (
+                  <p key={`${payment.symbol}-${payment.date}-${idx}`} className="text-sm">
+                    <span className="font-semibold">{payment.symbol}</span> • {formatHistoryDate(payment.date)} •{' '}
+                    {formatCurrency(payment.value)}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="h-56">

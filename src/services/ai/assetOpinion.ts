@@ -194,6 +194,23 @@ function buildDeterministicOpinion(
   return {summary, strength, attention, tags};
 }
 
+function isInsufficientDataNarrative(opinion: AssetOpinion | null): boolean {
+  if (!opinion) return false;
+  const content = `${opinion.summary} ${opinion.strength} ${opinion.attention}`
+    .toLowerCase()
+    .trim();
+  if (!content) return true;
+  return [
+    'não há dados suficientes',
+    'nao ha dados suficientes',
+    'dados insuficientes',
+    'análise limitada',
+    'analise limitada',
+    'falta de dados',
+    'insufficient data',
+  ].some((marker) => content.includes(marker));
+}
+
 export async function getAssetOpinion(
   input: AssetOpinionInput,
 ): Promise<AssetOpinion> {
@@ -207,6 +224,9 @@ export async function getAssetOpinion(
       profile_plan: 'premium',
     });
     const parsed = parseAssetOpinion(String(response?.answer || ''));
+    if (isInsufficientDataNarrative(parsed)) {
+      return deterministicFallback;
+    }
     return parsed || deterministicFallback;
   } catch {
     return deterministicFallback;
