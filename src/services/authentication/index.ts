@@ -30,6 +30,32 @@ class AuthenticationService implements IAuthentication {
       return {success: false};
     }
   }
+
+  async authenticateWithGoogle(
+    idToken: string,
+    keepConnected: boolean,
+  ): Promise<any> {
+    try {
+      const response = await authService.googleSignin(idToken, keepConnected);
+
+      if (response.data.requiresTwoFactor) {
+        sessionStorage.setItem('2fa_temp_token', response.data.tempToken);
+        return {success: true, requires2FA: true};
+      }
+
+      if (response.data.accessToken) {
+        localStorage.setItem('access_token', response.data.accessToken);
+        localStorage.setItem('refresh_token', response.data.refreshToken);
+        localStorage.setItem('keepConnected', JSON.stringify(keepConnected));
+        window.dispatchEvent(new CustomEvent('auth:login'));
+      }
+
+      return {success: true};
+    } catch (error) {
+      console.error('Google login failed', error);
+      return {success: false};
+    }
+  }
   async register(data: ICreateUser): Promise<boolean> {
     try {
       const response = await authService.register(data);

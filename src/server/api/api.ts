@@ -18,6 +18,8 @@ const apiClient = axios.create({
 export const authService = {
   login: (email: string, password: string, keepConnected: boolean) =>
     apiClient.post('/auth/signin', {email, password, keepConnected}),
+  googleSignin: (idToken: string, keepConnected: boolean) =>
+    apiClient.post('/auth/google/signin', {idToken, keepConnected}),
   register: (data: ICreateUser) => apiClient.post('/users/create', data),
   logout: (token: string) => apiClient.post('/auth/signout', {token}),
   changePassword: (data: any) => apiClient.post('/auth/change-password', data),
