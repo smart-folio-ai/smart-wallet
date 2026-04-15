@@ -4,6 +4,7 @@ interface IAuthentication {
     password: string,
     keepConnected: boolean,
   ): Promise<any>;
+  authenticateWithGoogle(idToken: string, keepConnected: boolean): Promise<any>;
   register(data: ICreateUser): Promise<boolean>;
   logout(): Promise<boolean>;
 }

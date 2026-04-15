@@ -9,6 +9,7 @@ import SignIn from './SignIn';
 vi.mock('../services/authentication', () => ({
   default: {
     authenticate: vi.fn(),
+    authenticateWithGoogle: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
   },
@@ -53,6 +54,15 @@ describe('SignIn', () => {
     expect(screen.getByLabelText(/E-mail/i)).toBeDefined();
     expect(screen.getByLabelText(/Senha/i)).toBeDefined();
     expect(screen.getByRole('button', {name: /Entrar no Terminal/i})).toBeDefined();
+    expect(screen.getByRole('button', {name: /Entrar com Google/i})).toBeDefined();
+  });
+
+  it('deve aplicar limites de caracteres nos campos de login', () => {
+    renderSignIn();
+    const emailInput = screen.getByLabelText(/E-mail/i);
+    const passwordInput = screen.getByLabelText(/Senha/i);
+    expect(emailInput).toHaveAttribute('maxLength', '254');
+    expect(passwordInput).toHaveAttribute('maxLength', '128');
   });
 
   it('deve exibir erros de validação ao submeter o formulário vazio', async () => {

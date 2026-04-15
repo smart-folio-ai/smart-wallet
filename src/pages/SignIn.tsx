@@ -19,10 +19,17 @@ import {toast} from 'sonner';
 import AuthenticationService from '../services/authentication';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
 import {AppLogo} from '@/components/AppLogo';
+import {googleClientId} from '@/utils/env';
 
 const formSchema = z.object({
-  email: z.string().email('Digite um email válido'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  email: z
+    .string()
+    .email('Digite um email válido')
+    .max(254, 'E-mail muito longo'),
+  password: z
+    .string()
+    .min(6, 'A senha deve ter pelo menos 6 caracteres')
+    .max(128, 'Senha muito longa'),
   keepConnect: z.boolean().optional().default(false),
 });
 
@@ -82,6 +89,7 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -126,6 +134,76 @@ export default function SignIn() {
       setIsSyncing(false);
       navigate(from, {replace: true});
     }, 2000);
+  };
+
+  const handleGoogleLogin = async () => {
+    if (!googleClientId) {
+      toast.error('Google Login não configurado no ambiente.');
+      return;
+    }
+    setGoogleLoading(true);
+    try {
+      const scriptId = 'google-identity-script';
+      const hasScript = document.getElementById(scriptId);
+      if (!hasScript) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.id = scriptId;
+          script.src = 'https://accounts.google.com/gsi/client';
+          script.async = true;
+          script.defer = true;
+          script.onload = () => resolve();
+          script.onerror = () =>
+            reject(new Error('Falha ao carregar o script do Google'));
+          document.head.appendChild(script);
+        });
+      }
+
+      const googleApi = (window as any)?.google;
+      if (!googleApi?.accounts?.id) {
+        throw new Error('Google Identity indisponível');
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        googleApi.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response: any) => {
+            try {
+              const idToken = String(response?.credential || '');
+              if (!idToken) {
+                reject(new Error('Credencial Google inválida'));
+                return;
+              }
+              const keepConnected = Boolean(form.getValues('keepConnect'));
+              const login = await AuthenticationService.authenticateWithGoogle(
+                idToken,
+                keepConnected,
+              );
+              if (!login || !login.success) {
+                reject(new Error('Falha ao autenticar com Google'));
+                return;
+              }
+              if (login.requires2FA) {
+                toast.info('Código 2FA necessário');
+                navigate('/2fa-verify', {replace: true});
+                resolve();
+                return;
+              }
+              toast.success('Login com Google realizado com sucesso!');
+              navigate(from, {replace: true});
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          },
+        });
+        googleApi.accounts.id.prompt();
+      });
+    } catch (error) {
+      toast.error('Não foi possível autenticar com Google no momento.');
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -309,6 +387,7 @@ export default function SignIn() {
                         <Input
                           id="signin-email"
                           placeholder="seu@email.com"
+                          maxLength={254}
                           {...field}
                           className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
                           style={{color: 'var(--auth-panel)'}}
@@ -346,6 +425,7 @@ export default function SignIn() {
                             id="signin-password"
                             type={showPassword ? 'text' : 'password'}
                             placeholder="••••••••"
+                            maxLength={128}
                             {...field}
                             className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
                             style={{color: 'var(--auth-panel)'}}
@@ -413,6 +493,16 @@ export default function SignIn() {
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
+                </Button>
+
+                <Button
+                  id="signin-google"
+                  type="button"
+                  variant="outline"
+                  className="w-full h-12 font-semibold"
+                  onClick={handleGoogleLogin}
+                  disabled={authenticating || isSyncing || googleLoading}>
+                  {googleLoading ? 'Conectando com Google...' : 'Entrar com Google'}
                 </Button>
               </form>
             </Form>
