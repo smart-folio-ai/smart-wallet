@@ -6,6 +6,7 @@ import {MemoryRouter} from 'react-router-dom';
 import ChatInteligente from './ChatInteligente';
 
 const askStructuredChatMock = vi.fn();
+const askStructuredCopilotChatMock = vi.fn();
 
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => ({
@@ -17,6 +18,8 @@ vi.mock('@/hooks/useSubscription', () => ({
 
 vi.mock('@/services/chat', () => ({
   askStructuredChat: (...args: unknown[]) => askStructuredChatMock(...args),
+  askStructuredCopilotChat: (...args: unknown[]) =>
+    askStructuredCopilotChatMock(...args),
 }));
 
 const renderPage = () => {
@@ -209,6 +212,37 @@ describe('ChatInteligente', () => {
 
     await waitFor(() => {
       expect(scrollSpy).toHaveBeenCalled();
+    });
+  });
+
+  it('uses guided copilot flow buttons', async () => {
+    askStructuredCopilotChatMock.mockResolvedValueOnce({
+      intent: 'investment_committee',
+      deterministic: true,
+      message: 'Comitê semanal gerado.',
+      data: {
+        investmentCommittee: {
+          modelVersion: 'investment_committee_v1',
+          recommended: [{symbol: 'ITUB4'}],
+          avoid: [{symbol: 'PETR4'}],
+        },
+      },
+      warnings: [],
+      unavailable: [],
+      assumptions: [],
+    });
+
+    renderPage();
+    await userEvent.click(screen.getByRole('button', {name: /Gerar comitê semanal/i}));
+
+    await waitFor(() => {
+      expect(askStructuredCopilotChatMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          question: 'Gerar comitê de investimento semanal',
+          copilotFlow: 'committee_mode',
+        }),
+      );
+      expect(screen.getByText(/Comitê semanal gerado/i)).toBeDefined();
     });
   });
 });
