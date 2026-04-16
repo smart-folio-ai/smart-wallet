@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
 import {
   ArrowLeft,
@@ -10,6 +10,8 @@ import {
   Wallet,
   ExternalLink,
   Receipt,
+  Sparkles,
+  Calculator,
 } from 'lucide-react';
 import {
   Card,
@@ -21,6 +23,7 @@ import {
 import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import {Input} from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -32,6 +35,9 @@ import {
 import {
   LineChart,
   Line,
+  BarChart as RechartsBarChart,
+  Bar,
+  Legend,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -43,6 +49,14 @@ import {
 import {useQuery} from '@tanstack/react-query';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
 import {portfolioService} from '@/server/api/api';
+import {PremiumBlur} from '@/components/ui/premium-blur';
+import {useSubscription} from '@/hooks/useSubscription';
+import Stock from '@/services/stocks';
+import {
+  calculateAssetProjection,
+  getDefaultProjectionAnnualReturn,
+  getDefaultProjectionTaxRate,
+} from './asset-projection.utils';
 
 interface Transaction {
   _id: string;
@@ -58,6 +72,7 @@ const MyAssetDetail = () => {
   const {assetId, symbol: symbolParam} = useParams<{assetId?: string; symbol?: string}>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const {hasAiInsights} = useSubscription();
 
   // Resolve: use assetId if available, otherwise use symbolParam as fallback key
   const lookupId = assetId;
@@ -96,6 +111,16 @@ const MyAssetDetail = () => {
 
   const asset = assetById || assetBySymbol;
   const isLoading = loadingById || loadingSymbol;
+  const shouldLoadMarketFinancials = Boolean(
+    asset?.symbol &&
+      ['stock', 'fii', 'etf'].includes(String(asset?.type || '').toLowerCase()),
+  );
+
+  const [monthlyContribution, setMonthlyContribution] = useState(100);
+  const [projectionYears, setProjectionYears] = useState(5);
+  const [annualReturnRatePercent, setAnnualReturnRatePercent] = useState<number | null>(null);
+  const [annualInflationRatePercent, setAnnualInflationRatePercent] = useState(4.5);
+  const [annualTaxRatePercent, setAnnualTaxRatePercent] = useState<number | null>(null);
 
   // Fetch transactions for this asset
   const resolvedId = asset?._id || lookupId;
@@ -107,6 +132,23 @@ const MyAssetDetail = () => {
       return res.data?.transactions || res.data || [];
     },
     enabled: !!resolvedId,
+  });
+
+  const {data: marketSnapshot} = useQuery({
+    queryKey: ['asset-market-financials', asset?.symbol],
+    queryFn: async () => {
+      if (!asset?.symbol) return null;
+      const response = await Stock.getNationalStock(asset.symbol, {
+        fundamental: true,
+        dividends: true,
+        range: '5y',
+        interval: '1mo',
+      });
+      return response?.results?.[0] ?? null;
+    },
+    enabled: shouldLoadMarketFinancials,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
   });
 
   if (isLoading) {
@@ -168,11 +210,45 @@ const MyAssetDetail = () => {
       ? 'Ação'
       : asset.type === 'fii'
       ? 'FII'
+      : asset.type === 'etf'
+      ? 'ETF'
       : asset.type === 'crypto'
       ? 'Cripto'
       : asset.type === 'fund'
       ? 'Renda Fixa'
       : 'Outro';
+
+  const defaultAnnualReturnRatePercent = Number(
+    (getDefaultProjectionAnnualReturn(asset?.type) * 100).toFixed(2),
+  );
+  const defaultTaxRatePercent = Number(
+    (getDefaultProjectionTaxRate(asset?.type) * 100).toFixed(2),
+  );
+  const annualReturnRate = (annualReturnRatePercent ?? defaultAnnualReturnRatePercent) / 100;
+  const annualTaxRate = (annualTaxRatePercent ?? defaultTaxRatePercent) / 100;
+  const annualInflationRate = annualInflationRatePercent / 100;
+  const projectionResult = calculateAssetProjection({
+    currentValue,
+    monthlyContribution,
+    years: projectionYears,
+    annualReturnRate,
+    annualInflationRate,
+    taxRate: annualTaxRate,
+  });
+  const estimatedTaxOnProfit = Math.max(
+    0,
+    projectionResult.grossFinalValue - projectionResult.netFinalValue,
+  );
+  const financialHistoryData = Array.isArray((marketSnapshot as any)?.financialHistory)
+    ? [...(marketSnapshot as any).financialHistory]
+        .filter((row: any) => typeof row?.year === 'number')
+        .sort((a: any, b: any) => a.year - b.year)
+        .map((row: any) => ({
+          year: row.year,
+          revenue: Number(row.revenue || 0),
+          profit: Number(row.netIncome || 0),
+        }))
+    : [];
 
   const displaySymbol = (() => {
     const rawName = String((asset as any).name || '').trim();
@@ -383,6 +459,145 @@ const MyAssetDetail = () => {
                 </CardContent>
               </Card>
             </div>
+            <PremiumBlur
+              locked={!hasAiInsights}
+              className="mt-6"
+              title="Projeção Premium do Ativo"
+              description="Faça upgrade para simular cenários com aportes mensais, inflação e imposto estimado.">
+              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/60 border-primary/10 shadow-2xl shadow-primary/5 overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    Projeção de Valor Futuro ({asset.symbol})
+                  </CardTitle>
+                  <CardDescription>
+                    Estimativa para {projectionYears} anos com aporte mensal ajustável. Aplicável para Ações, FIIs, ETFs, Cripto e outros ativos.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                        Aporte mensal (R$)
+                      </p>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="50"
+                        value={monthlyContribution}
+                        onChange={(event) =>
+                          setMonthlyContribution(
+                            Math.max(0, Number(event.target.value || 0)),
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                        Prazo (anos)
+                      </p>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={40}
+                        value={projectionYears}
+                        onChange={(event) =>
+                          setProjectionYears(
+                            Math.max(1, Number(event.target.value || 1)),
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                        Retorno anual (%)
+                      </p>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        value={annualReturnRatePercent ?? defaultAnnualReturnRatePercent}
+                        onChange={(event) =>
+                          setAnnualReturnRatePercent(
+                            Number(event.target.value || defaultAnnualReturnRatePercent),
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                        Inflação anual (%)
+                      </p>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        value={annualInflationRatePercent}
+                        onChange={(event) =>
+                          setAnnualInflationRatePercent(
+                            Math.max(0, Number(event.target.value || 0)),
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                        IR no ganho (%)
+                      </p>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={30}
+                        step="0.5"
+                        value={annualTaxRatePercent ?? defaultTaxRatePercent}
+                        onChange={(event) =>
+                          setAnnualTaxRatePercent(
+                            Math.max(0, Number(event.target.value || defaultTaxRatePercent)),
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="rounded-lg border p-3 bg-muted/20">
+                      <p className="text-xs text-muted-foreground">Capital total aportado</p>
+                      <p className="text-lg font-bold">{formatCurrency(projectionResult.totalContributed)}</p>
+                    </div>
+                    <div className="rounded-lg border p-3 bg-muted/20">
+                      <p className="text-xs text-muted-foreground">Valor final estimado (líquido)</p>
+                      <p className="text-lg font-bold text-primary">{formatCurrency(projectionResult.netFinalValue)}</p>
+                    </div>
+                    <div className="rounded-lg border p-3 bg-muted/20">
+                      <p className="text-xs text-muted-foreground">Lucro nominal estimado</p>
+                      <p className="text-lg font-bold text-emerald-500">
+                        {formatCurrency(projectionResult.nominalProfitAfterTax)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-3 bg-muted/20">
+                      <p className="text-xs text-muted-foreground">Valor real (descontando inflação)</p>
+                      <p className="text-lg font-bold">{formatCurrency(projectionResult.realFinalValue)}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                      <Calculator className="h-4 w-4 text-primary" />
+                      Leitura da estimativa
+                    </p>
+                    <p className="text-sm">
+                      Com aporte de <strong>{formatCurrency(monthlyContribution)}</strong> por mês, o cenário atual projeta
+                      <strong> {formatCurrency(projectionResult.netFinalValue)}</strong> em {projectionYears} anos para {asset.symbol}, já com
+                      IR estimado de <strong>{formatCurrency(estimatedTaxOnProfit)}</strong> sobre o ganho.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Retorno real anual estimado: {formatPercentage(projectionResult.annualRealRate * 100)}.
+                      Esta simulação é educativa e não constitui recomendação.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </PremiumBlur>
           </TabsContent>
 
           {/* Movements */}
@@ -454,6 +669,51 @@ const MyAssetDetail = () => {
           {/* Charts */}
           <TabsContent value="charts">
             <div className="grid grid-cols-1 gap-6">
+              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Histórico de Lucro e Receita</CardTitle>
+                    <CardDescription>
+                      Série anual de fundamentos para ativos com demonstrativos financeiros.
+                    </CardDescription>
+                  </div>
+                  <Badge variant="outline">até 5 anos</Badge>
+                </CardHeader>
+                <CardContent>
+                  {financialHistoryData.length < 2 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <BarChart3 className="h-8 w-8 mx-auto mb-3 opacity-30" />
+                      <p>Dados fundamentalistas insuficientes para este ativo</p>
+                      <p className="text-xs mt-1">
+                        Para Ações/FIIs/ETFs, os dados aparecem quando disponíveis no provedor.
+                      </p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={320}>
+                      <RechartsBarChart data={financialHistoryData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                        <XAxis dataKey="year" tick={{fontSize: 11}} axisLine={false} tickLine={false} />
+                        <YAxis
+                          tick={{fontSize: 11}}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(v) => `R$ ${(Number(v) / 1e9).toFixed(1)}B`}
+                        />
+                        <Tooltip
+                          formatter={(v: any, key: any) => [
+                            formatCurrency(Number(v || 0)),
+                            key === 'profit' ? 'Lucro Líquido' : 'Receita Líquida',
+                          ]}
+                        />
+                        <Legend iconType="circle" />
+                        <Bar dataKey="revenue" name="Receita Líquida" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="profit" name="Lucro Líquido" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      </RechartsBarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-lg">Saldo Bruto vs Valor Investido</CardTitle>

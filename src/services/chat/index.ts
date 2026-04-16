@@ -21,6 +21,23 @@ export interface StructuredChatResponse {
   assumptions?: string[];
 }
 
+export interface StructuredChatRequest {
+  question: string;
+  investorProfile?: 'renda' | 'crescimento' | 'conservador' | 'agressivo';
+  copilotFlow?:
+    | 'sell_asset'
+    | 'rebalance_portfolio'
+    | 'reduce_risk_20'
+    | 'committee_mode';
+  decisionFlow?: {
+    action: 'sell' | 'rebalance' | 'reduce_risk';
+    ticker?: string;
+    quantity?: number;
+    sellPrice?: number;
+    targetRiskReductionPct?: number;
+  };
+}
+
 function looksStructured(value: unknown): value is StructuredChatResponse {
   if (!value || typeof value !== 'object') return false;
   const intent = (value as any).intent;
@@ -84,9 +101,36 @@ export function normalizeChatResponse(raw: AiChatResponse | any): StructuredChat
   };
 }
 
-export async function askStructuredChat(question: string): Promise<StructuredChatResponse> {
+export async function askStructuredChat(
+  payload: string | StructuredChatRequest,
+): Promise<StructuredChatResponse> {
+  const normalizedPayload =
+    typeof payload === 'string' ? {question: payload} : payload;
+  const response = await aiAnalysisService.intelligentChat(normalizedPayload);
+  return normalizeChatResponse(response);
+}
+
+export async function askStructuredCopilotChat(input: {
+  question: string;
+  investorProfile?: 'renda' | 'crescimento' | 'conservador' | 'agressivo';
+  copilotFlow?:
+    | 'sell_asset'
+    | 'rebalance_portfolio'
+    | 'reduce_risk_20'
+    | 'committee_mode';
+  decisionFlow?: {
+    action: 'sell' | 'rebalance' | 'reduce_risk';
+    ticker?: string;
+    quantity?: number;
+    sellPrice?: number;
+    targetRiskReductionPct?: number;
+  };
+}): Promise<StructuredChatResponse> {
   const response = await aiAnalysisService.intelligentChat({
-    question,
+    question: input.question,
+    investorProfile: input.investorProfile,
+    copilotFlow: input.copilotFlow,
+    decisionFlow: input.decisionFlow,
   });
   return normalizeChatResponse(response);
 }

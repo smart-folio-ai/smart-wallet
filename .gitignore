@@ -23,10 +23,13 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment
+# dotenv environment variable files
 .env
-.env.*
-!.env.example
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
 
 # Playwright
 playwright-report/
