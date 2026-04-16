@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
 import {
   ArrowLeft,
@@ -15,7 +15,6 @@ import {
   Clock,
   ExternalLink,
   Zap,
-  ShieldCheck,
   MessageSquare,
 } from 'lucide-react';
 import {
@@ -46,6 +45,7 @@ import {PremiumBlur} from '@/components/ui/premium-blur';
 import {useQuery} from '@tanstack/react-query';
 import Stock from '@/services/stocks';
 import {useSubscription} from '@/hooks/useSubscription';
+import {getAssetOpinion} from '@/services/ai/assetOpinion';
 
 export default function AssetDetail() {
   const {symbol} = useParams<{symbol: string}>();
@@ -163,6 +163,90 @@ export default function AssetDetail() {
   const upside =
     asset && grahamValue > 0 ? (grahamValue / asset.price - 1) * 100 : 0;
   const isUndervalued = asset && grahamValue > asset.price;
+  const {data: assetOpinion, isFetching: isLoadingAssetOpinion} = useQuery({
+    queryKey: [
+      'asset-opinion',
+      symbol,
+      s?.regularMarketPrice,
+      s?.regularMarketChangePercent,
+      s?.priceEarnings,
+      s?.priceToBook,
+      s?.returnOnEquity,
+      s?.returnOnInvestedCapital,
+      s?.netMargin,
+      s?.debtToEbitda,
+      s?.dividendYield,
+    ],
+    queryFn: async () =>
+      getAssetOpinion({
+        symbol: asset?.symbol || symbol || '',
+        name: asset?.name,
+        price: asset?.price,
+        change24h: asset?.change24h,
+        sector: asset?.sector,
+        indicators: {
+          dividendYield: asset?.dividendYield,
+          pe: asset?.indicators.valuation.pe,
+          pvp: asset?.indicators.valuation.pvp,
+          roe: asset?.indicators.efficiency.roe,
+          roic: asset?.indicators.efficiency.roic,
+          netMargin: asset?.indicators.efficiency.net_margin,
+          debtEbitda: asset?.indicators.debt.debt_ebitda,
+        },
+        valuation: {
+          grahamValue,
+          upside,
+        },
+      }),
+    enabled: Boolean(asset?.symbol && hasAiInsights),
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const getOpinionTagStyle = (tag: string) => {
+    const normalized = String(tag || '')
+      .trim()
+      .toLowerCase();
+
+    if (normalized.startsWith('score_')) {
+      return {
+        label: `Score ${normalized.replace('score_', '')}`,
+        className:
+          'bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30',
+      };
+    }
+
+    if (normalized === 'venda' || normalized === 'evitar') {
+      return {
+        label: normalized.toUpperCase(),
+        className:
+          'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/40',
+      };
+    }
+
+    if (normalized === 'compra' || normalized === 'top') {
+      return {
+        label: normalized.toUpperCase(),
+        className:
+          'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40',
+      };
+    }
+
+    if (normalized === 'hold' || normalized === 'bom') {
+      return {
+        label: normalized.toUpperCase(),
+        className:
+          'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40',
+      };
+    }
+
+    return {
+      label: tag,
+      className: 'bg-primary/10 text-primary border border-primary/20',
+    };
+  };
 
   const currentYear = new Date().getFullYear();
   const cashflowYears = [currentYear, currentYear - 1, currentYear - 2];
@@ -733,79 +817,86 @@ export default function AssetDetail() {
             </div>
 
             {/* Trackerr Opinion - AI Section */}
-            <Card className="border-none shadow-lg bg-gradient-to-br from-indigo-600/10 to-primary/5 relative overflow-hidden ring-1 ring-primary/20">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-primary fill-primary" />
-                    <CardTitle className="text-xl font-black">
-                      Opinião Trackerr IA
-                    </CardTitle>
+            <PremiumBlur
+              locked={!hasAiInsights}
+              title="Opinião Trackerr IA é Premium"
+              description="Faça upgrade para acessar análise contextual com IA no detalhe do ativo.">
+              <Card className="border-none shadow-lg bg-gradient-to-br from-indigo-600/10 to-primary/5 relative overflow-hidden ring-1 ring-primary/20">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-primary fill-primary" />
+                      <CardTitle className="text-xl font-black">
+                        Opinião Trackerr IA
+                      </CardTitle>
+                    </div>
+                    <Badge className="bg-primary hover:bg-primary text-[10px] font-bold uppercase tracking-widest">
+                      Premium
+                    </Badge>
                   </div>
-                  <Badge className="bg-primary hover:bg-primary text-[10px] font-bold uppercase tracking-widest">
-                    Premium
-                  </Badge>
-                </div>
-                <CardDescription>
-                  Análise contextual baseada em fundamentos e sentimento de
-                  mercado
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-6">
-                <div className="flex gap-4 p-4 rounded-2xl bg-white/50 dark:bg-card/50 border border-primary/10">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <MessageSquare className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium leading-relaxed">
-                      {asset.symbol} apresenta um robusto histórico de{' '}
-                      {asset.indicators.efficiency.roe > 0
-                        ? asset.indicators.efficiency.roe * 100 > 15
-                          ? 'alta rentabilidade'
-                          : 'consistência'
-                        : 'estabilidade'}
-                      {asset.indicators.efficiency.roe > 0
-                        ? ` com ROE de ${formatPercentage(asset.indicators.efficiency.roe * 100)}`
-                        : ''}
-                      .
-                      {grahamValue > 0
-                        ? `O Graham Value indica um potencial de ${upside > 0 ? `upside de ${upside.toFixed(1)}%` : 'que o ativo está próximo do seu valor justo'}.`
-                        : ''}
-                    </p>
-                    <div className="flex items-center gap-4 text-[11px] font-bold text-primary uppercase tracking-widest">
-                      <span className="flex items-center gap-1">
-                        <ShieldCheck className="h-3 w-3" /> Risco Controlado
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" /> Tendência de Alta
-                      </span>
+                  <CardDescription>
+                    Análise contextual baseada em fundamentos e sentimento de
+                    mercado
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4 space-y-6">
+                  <div className="flex gap-4 p-4 rounded-2xl bg-white/50 dark:bg-card/50 border border-primary/10">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <MessageSquare className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium leading-relaxed">
+                        {isLoadingAssetOpinion
+                          ? 'Gerando análise da IA para este ativo...'
+                          : assetOpinion?.summary ||
+                            'Análise contextual indisponível no momento.'}
+                      </p>
+                      {Array.isArray(assetOpinion?.tags) &&
+                        assetOpinion.tags.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-primary uppercase tracking-widest">
+                            {assetOpinion.tags.map((tag) => {
+                              const tagStyle = getOpinionTagStyle(tag);
+                              return (
+                                <span
+                                  key={tag}
+                                  className={`rounded-full px-2 py-1 ${tagStyle.className}`}>
+                                  {tagStyle.label}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                    <p className="text-[10px] font-black text-emerald-600 uppercase mb-2">
-                      Ponto Forte
-                    </p>
-                    <p className="text-xs font-medium">
-                      Geração de caixa resiliente e política de dividendos
-                      sustentável ao longo dos anos.
-                    </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                      <p className="text-[10px] font-black text-emerald-600 uppercase mb-2">
+                        Ponto Forte
+                      </p>
+                      <p className="text-xs font-medium">
+                        {isLoadingAssetOpinion
+                          ? 'Carregando ponto forte...'
+                          : assetOpinion?.strength ||
+                            'A leitura atual mostra sinais operacionais mistos.'}
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                      <p className="text-[10px] font-black text-amber-600 uppercase mb-2">
+                        Atenção
+                      </p>
+                      <p className="text-xs font-medium">
+                        {isLoadingAssetOpinion
+                          ? 'Carregando ponto de atenção...'
+                          : assetOpinion?.attention ||
+                            'Monitore fundamentos e contexto macro para validar a tese.'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10">
-                    <p className="text-[10px] font-black text-amber-600 uppercase mb-2">
-                      Atenção
-                    </p>
-                    <p className="text-xs font-medium">
-                      Exposição a variações macroeconômicas que podem impactar a
-                      margem líquida no curto prazo.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-              <div className="absolute -bottom-6 -right-6 h-24 w-24 bg-primary/5 rounded-full blur-2xl" />
-            </Card>
+                </CardContent>
+                <div className="absolute -bottom-6 -right-6 h-24 w-24 bg-primary/5 rounded-full blur-2xl" />
+              </Card>
+            </PremiumBlur>
           </div>
 
           {/* Right Column: Indicators */}

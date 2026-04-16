@@ -27,6 +27,34 @@ interface FiscalOptimizerResponse {
   }>;
 }
 
+interface FiscalTaxDriver {
+  symbol: string;
+  category: 'stock' | 'fii' | 'crypto';
+  operations: number;
+  grossSales: number;
+  realizedProfit: number;
+  estimatedTax: number;
+  taxRate: number;
+  reason: string;
+}
+
+interface FiscalSummaryResponse {
+  year: number;
+  totals?: {
+    stockProfit?: number;
+    fiiProfit?: number;
+    cryptoProfit?: number;
+    taxDue?: number;
+  };
+  monthly?: Array<{
+    year: number;
+    month: number;
+    totalTax: number;
+  }>;
+  taxDrivers?: FiscalTaxDriver[];
+  guide?: string[];
+}
+
 export default function Fiscal() {
   const toast = useAppToast();
   const [year, setYear] = useState<number | ''>('');
@@ -38,7 +66,7 @@ export default function Fiscal() {
     data: summary,
     isLoading: loadingSummary,
     refetch,
-  } = useQuery({
+  } = useQuery<FiscalSummaryResponse>({
     queryKey: ['fiscal-summary', year],
     queryFn: async () =>
       (
@@ -108,6 +136,16 @@ export default function Fiscal() {
         : null
     : null;
   const firstOpportunity = optimizerData?.opportunities?.[0];
+  const taxDrivers = useMemo(
+    () => (Array.isArray(summary?.taxDrivers) ? summary.taxDrivers : []),
+    [summary?.taxDrivers],
+  );
+  const topTaxDrivers = useMemo(
+    () => taxDrivers.filter((item) => item.estimatedTax > 0).slice(0, 5),
+    [taxDrivers],
+  );
+  const taxDue = summary?.totals?.taxDue || 0;
+  const topTaxContributor = topTaxDrivers[0] || null;
 
   const downloadReport = async (
     type: 'fiscal' | 'transactions' | 'assets',
@@ -134,6 +172,12 @@ export default function Fiscal() {
     }
   };
 
+  const categoryLabel = (category?: string) => {
+    if (category === 'fii') return 'FII';
+    if (category === 'crypto') return 'Cripto';
+    return 'Ação';
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -154,6 +198,93 @@ export default function Fiscal() {
           </Button>
         </div>
       </div>
+
+      <Card className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-card to-card shadow-lg">
+        <CardContent className="p-6">
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Imposto Estimado
+              </p>
+              {loadingSummary ? (
+                <Skeleton className="h-12 w-56 mt-2" />
+              ) : (
+                <p className="mt-2 text-4xl font-black text-emerald-500">
+                  {formatCurrency(taxDue)}
+                </p>
+              )}
+              <p className="mt-2 text-sm text-muted-foreground">
+                Valor calculado com base nas vendas com lucro tributável no ano.
+              </p>
+            </div>
+            <div className="w-full md:w-[420px] rounded-xl border border-primary/20 bg-background/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Por Que Você Vai Pagar Esse Valor
+              </p>
+              {loadingSummary ? (
+                <div className="space-y-2 mt-3">
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-2/3" />
+                </div>
+              ) : topTaxDrivers.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Não há vendas tributáveis registradas no período atual.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {topTaxContributor ? (
+                    <div className="mb-2">
+                      <Badge className="bg-amber-500/20 text-amber-700 border border-amber-400/40 dark:text-amber-300">
+                        Maior Contribuinte: {topTaxContributor.symbol} (
+                        {formatCurrency(topTaxContributor.estimatedTax)})
+                      </Badge>
+                    </div>
+                  ) : null}
+                  {topTaxDrivers.map((driver) => (
+                    <div
+                      key={driver.symbol}
+                      className="rounded-lg border border-border/70 bg-card/80 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold">
+                          {driver.symbol} · {categoryLabel(driver.category)}
+                        </p>
+                        <p className="text-sm font-bold text-amber-500">
+                          {formatCurrency(driver.estimatedTax)}
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Lucro apurado: {formatCurrency(driver.realizedProfit)} ·
+                        vendas: {formatCurrency(driver.grossSales)} · operações:{' '}
+                        {driver.operations}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Motivo: {driver.reason}
+                      </p>
+                      <div className="mt-2 h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-amber-500"
+                          style={{
+                            width: `${Math.max(
+                              8,
+                              Math.min(
+                                100,
+                                taxDue > 0
+                                  ? (driver.estimatedTax / taxDue) * 100
+                                  : 0,
+                              ),
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm">
@@ -200,7 +331,7 @@ export default function Fiscal() {
             {loadingSummary ? (
               <Skeleton className="h-8 w-28" />
             ) : (
-              formatCurrency(summary?.totals?.taxDue || 0)
+              formatCurrency(taxDue)
             )}
           </CardContent>
         </Card>
@@ -357,6 +488,22 @@ export default function Fiscal() {
                     ) : null}
                   </div>
                 ) : null}
+                {topTaxDrivers.length > 0 && (
+                  <div className="mt-3 rounded-md border bg-background p-3 space-y-2">
+                    <p className="text-sm font-medium">
+                      Ativos que mais pesam no imposto estimado:
+                    </p>
+                    {topTaxDrivers.slice(0, 3).map((driver) => (
+                      <p
+                        key={`sim-${driver.symbol}`}
+                        className="text-xs text-muted-foreground">
+                        {driver.symbol}: imposto estimado de{' '}
+                        <strong>{formatCurrency(driver.estimatedTax)}</strong> (
+                        {driver.reason})
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

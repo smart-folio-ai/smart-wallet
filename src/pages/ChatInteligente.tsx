@@ -39,12 +39,18 @@ function formatCurrency(value: number | null | undefined) {
 function ResponseEvidence({payload}: {payload?: StructuredChatResponse}) {
   if (!payload) return null;
   const hasPortfolioFacts = Boolean(
-    (payload.data as any)?.portfolioSummary || (payload.data as any)?.portfolioRisk,
+    (payload.data as any)?.portfolioSummary ||
+      (payload.data as any)?.portfolioRisk ||
+      (payload.data as any)?.portfolioFacts,
   );
   const hasExternalData = Boolean(
-    (payload.data as any)?.externalAsset || (payload.data as any)?.comparison,
+    (payload.data as any)?.externalAsset ||
+      (payload.data as any)?.comparison ||
+      (payload.data as any)?.externalData,
   );
-  const hasSimulation = Boolean((payload.data as any)?.sellSimulation);
+  const hasSimulation = Boolean(
+    (payload.data as any)?.sellSimulation || (payload.data as any)?.estimates,
+  );
 
   return (
     <div className="mt-3 flex flex-wrap gap-2" data-testid="chat-evidence-badges">
@@ -80,6 +86,9 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
   const portfolioRisk = data.portfolioRisk as any;
   const portfolioSummary = data.portfolioSummary as any;
   const externalAsset = data.externalAsset as any;
+  const portfolioFacts = data.portfolioFacts as any;
+  const externalData = data.externalData as any;
+  const estimates = data.estimates as any;
   const suggestions = (data as any)?.suggestions as string[] | undefined;
 
   return (
@@ -116,6 +125,10 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
           <p className="text-sm text-foreground">
             Imposto estimado: {formatCurrency(sellSimulation.estimatedTax)}
           </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            PnL realizado: {formatCurrency(sellSimulation.realizedPnl)} · Classificação:{' '}
+            {sellSimulation.classification || 'N/D'}
+          </p>
         </div>
       )}
 
@@ -127,6 +140,11 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
           <p className="text-sm text-foreground">
             Score: {portfolioRisk.risk.score ?? 'N/D'}
           </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Top concentração (ativo):{' '}
+            {portfolioRisk.concentrationByAsset?.[0]?.symbol || 'N/D'} ·{' '}
+            {`${Number(portfolioRisk.concentrationByAsset?.[0]?.weightPct ?? 0).toFixed(1)}%`}
+          </p>
         </div>
       )}
 
@@ -137,6 +155,41 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
           <p className="text-xs uppercase tracking-wide text-violet-300">Ativo Fora da Carteira</p>
           <p className="text-sm text-foreground">
             {externalAsset.symbol || 'Ativo'} · Preço {formatCurrency(externalAsset.price)}
+          </p>
+        </div>
+      )}
+
+      {portfolioFacts && !portfolioSummary && !portfolioRisk && (
+        <div
+          className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-3"
+          data-testid="chat-block-portfolio-facts">
+          <p className="text-xs uppercase tracking-wide text-emerald-300">Fatos da Carteira</p>
+          <p className="text-sm text-foreground">
+            {portfolioFacts.symbol
+              ? `Ativo: ${portfolioFacts.symbol}`
+              : `Posições na carteira: ${portfolioFacts.positionsCount ?? portfolioFacts.portfolioAssetsCount ?? 'N/D'}`}
+          </p>
+        </div>
+      )}
+
+      {externalData && !externalAsset && !comparison && (
+        <div
+          className="rounded-xl border border-violet-400/30 bg-violet-500/10 p-3"
+          data-testid="chat-block-external-data">
+          <p className="text-xs uppercase tracking-wide text-violet-300">Dados Externos</p>
+          <p className="text-sm text-foreground">
+            Dados de mercado usados na resposta.
+          </p>
+        </div>
+      )}
+
+      {estimates && !sellSimulation && (
+        <div
+          className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-3"
+          data-testid="chat-block-estimates">
+          <p className="text-xs uppercase tracking-wide text-amber-300">Estimativas</p>
+          <p className="text-sm text-foreground">
+            Estimativas calculadas para apoiar a decisão.
           </p>
         </div>
       )}
