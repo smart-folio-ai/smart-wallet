@@ -7,7 +7,7 @@ import {MessageSquare, Send, AlertTriangle, Bot, User2, Sparkles, RotateCcw} fro
 import {useSubscription} from '@/hooks/useSubscription';
 import {PremiumBlur} from '@/components/ui/premium-blur';
 import {isProOrHigherPlan} from '@/services/ai/trakkerAi';
-import {askStructuredChat, StructuredChatResponse} from '@/services/chat';
+import {askStructuredCopilotChat, askStructuredChat, StructuredChatResponse} from '@/services/chat';
 
 type ChatMessage = {
   id: string;
@@ -25,6 +25,33 @@ const QUICK_PROMPTS = [
   'Mostre o risco da minha carteira',
   'Esse ativo faz sentido para minha carteira? PETR4',
   'Qual meu resumo da carteira hoje?',
+];
+
+const COPILOT_FLOWS: Array<{
+  label: string;
+  question: string;
+  flow: 'sell_asset' | 'rebalance_portfolio' | 'reduce_risk_20' | 'committee_mode';
+}> = [
+  {
+    label: 'Quero vender PETR4',
+    question: 'Quero vender PETR4',
+    flow: 'sell_asset',
+  },
+  {
+    label: 'Quero rebalancear',
+    question: 'Quero rebalancear minha carteira',
+    flow: 'rebalance_portfolio',
+  },
+  {
+    label: 'Quero reduzir risco em 20%',
+    question: 'Quero reduzir risco em 20%',
+    flow: 'reduce_risk_20',
+  },
+  {
+    label: 'Gerar comitê semanal',
+    question: 'Gerar comitê de investimento semanal',
+    flow: 'committee_mode',
+  },
 ];
 
 function formatCurrency(value: number | null | undefined) {
@@ -90,6 +117,11 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
   const externalData = data.externalData as any;
   const estimates = data.estimates as any;
   const suggestions = (data as any)?.suggestions as string[] | undefined;
+  const trackerrScore = (data as any)?.trackerrScore as any;
+  const tradePlaybook = (data as any)?.tradePlaybook as any;
+  const riTimeline = (data as any)?.riTimeline as Array<any> | undefined;
+  const personalizedInsights = (data as any)?.personalizedInsights as any;
+  const investmentCommittee = (data as any)?.investmentCommittee as any;
 
   return (
     <div className="mt-3 space-y-3" data-testid="chat-structured-details">
@@ -220,6 +252,66 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
           <p className="text-sm text-foreground">{suggestions.slice(0, 2).join(' · ')}</p>
         </div>
       ) : null}
+
+      {trackerrScore?.overall ? (
+        <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3">
+          <p className="text-xs uppercase tracking-wide text-blue-300">Trackerr Score</p>
+          <p className="text-sm text-foreground">
+            Score geral: {trackerrScore.overall} / 100
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Pesos visíveis: Qualidade {Math.round(((trackerrScore.weights?.quality ?? trackerrScore.weights?.qualidade) || 0) * 100)}% ·
+            Risco {Math.round(((trackerrScore.weights?.risk ?? trackerrScore.weights?.risco) || 0) * 100)}% ·
+            Valuation {Math.round((trackerrScore.weights?.valuation || 0) * 100)}%
+          </p>
+        </div>
+      ) : null}
+
+      {tradePlaybook?.preTrade ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+          <p className="text-xs uppercase tracking-wide text-amber-300">Pré/Pós Trade Fiscal</p>
+          <p className="text-sm text-foreground">
+            Pré-trade: imposto estimado {formatCurrency(tradePlaybook.preTrade.estimatedTax)}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Pós-trade: impacto na carteira {Number((tradePlaybook.postTrade?.portfolioImpactPct ?? tradePlaybook.postTrade?.portfolioImpactPercent) || 0).toFixed(2)}% ·
+            DARF estimado {formatCurrency(tradePlaybook.postTrade?.estimatedDarf)}
+          </p>
+        </div>
+      ) : null}
+
+      {riTimeline?.length ? (
+        <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 p-3">
+          <p className="text-xs uppercase tracking-wide text-violet-300">Timeline RI</p>
+          <p className="text-sm text-foreground">
+            Últimos releases comparados: {riTimeline.map((item) => item.period || 'N/D').join(' → ')}
+          </p>
+        </div>
+      ) : null}
+
+      {investmentCommittee?.modelVersion ? (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+          <p className="text-xs uppercase tracking-wide text-emerald-300">Comitê de Investimento</p>
+          <p className="text-sm text-foreground">
+            Recomendações: {(investmentCommittee.recommended || investmentCommittee.recommendedAssets || []).map((item: any) =>
+              typeof item === 'string' ? item : item.symbol,
+            ).join(', ') || 'N/D'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Evitar: {(investmentCommittee.avoid || investmentCommittee.avoidAssets || []).map((item: any) =>
+              typeof item === 'string' ? item : item.symbol,
+            ).join(', ') || 'N/D'}
+          </p>
+        </div>
+      ) : null}
+
+      {personalizedInsights?.narrative ? (
+        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3">
+          <p className="text-xs uppercase tracking-wide text-cyan-300">Narrativa por Perfil</p>
+          <p className="text-sm text-foreground">{personalizedInsights.narrative}</p>
+          <p className="text-xs text-muted-foreground mt-1">{personalizedInsights.recommendedAction}</p>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -229,6 +321,9 @@ export default function ChatInteligente() {
   const hasProOrHigher = isProOrHigherPlan(planName, isSubscribed);
 
   const [question, setQuestion] = useState('');
+  const [investorProfile, setInvestorProfile] = useState<
+    'renda' | 'crescimento' | 'conservador' | 'agressivo'
+  >('conservador');
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -249,7 +344,12 @@ export default function ChatInteligente() {
     [messages],
   );
 
-  const sendQuestion = async (rawQuestion: string) => {
+  const sendQuestion = async (
+    rawQuestion: string,
+    options?: {
+      copilotFlow?: 'sell_asset' | 'rebalance_portfolio' | 'reduce_risk_20' | 'committee_mode';
+    },
+  ) => {
     const trimmed = String(rawQuestion || '').trim();
     if (!trimmed || sending || !hasProOrHigher) return;
 
@@ -264,7 +364,13 @@ export default function ChatInteligente() {
     setSending(true);
 
     try {
-      const response = await askStructuredChat(trimmed);
+      const response = options?.copilotFlow
+        ? await askStructuredCopilotChat({
+            question: trimmed,
+            investorProfile,
+            copilotFlow: options.copilotFlow,
+          })
+        : await askStructuredChat(trimmed);
       const assistantText =
         response.message?.trim() ||
         'Análise estruturada concluída com base nos dados disponíveis.';
@@ -324,10 +430,36 @@ export default function ChatInteligente() {
                 <CardDescription>
                   Fatos da carteira, dados externos e estimativas exibidos separadamente.
                 </CardDescription>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(['conservador', 'renda', 'crescimento', 'agressivo'] as const).map((profile) => (
+                    <Button
+                      key={profile}
+                      type="button"
+                      size="sm"
+                      variant={investorProfile === profile ? 'default' : 'outline'}
+                      className="h-7 rounded-full text-xs"
+                      onClick={() => setInvestorProfile(profile)}>
+                      Perfil: {profile}
+                    </Button>
+                  ))}
+                </div>
               </div>
               <Badge variant="outline" className="border-primary/40 text-primary">
                 Premium
               </Badge>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {COPILOT_FLOWS.map((item) => (
+                <Button
+                  key={item.label}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full border-primary/30 bg-primary/5 hover:bg-primary/10"
+                  onClick={() => sendQuestion(item.question, {copilotFlow: item.flow})}>
+                  {item.label}
+                </Button>
+              ))}
             </div>
           </CardHeader>
 

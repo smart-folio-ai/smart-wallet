@@ -134,6 +134,19 @@ export interface AiChatRequest {
   question: string;
   profile_plan?: 'free' | 'premium' | 'pro';
   context?: Record<string, unknown>;
+  investorProfile?: 'renda' | 'crescimento' | 'conservador' | 'agressivo';
+  copilotFlow?:
+    | 'sell_asset'
+    | 'rebalance_portfolio'
+    | 'reduce_risk_20'
+    | 'committee_mode';
+  decisionFlow?: {
+    action: 'sell' | 'rebalance' | 'reduce_risk';
+    ticker?: string;
+    quantity?: number;
+    sellPrice?: number;
+    targetRiskReductionPct?: number;
+  };
 }
 
 export interface AiChatResponse {
@@ -148,6 +161,35 @@ export interface AiIntelligentChatResponse {
   externalData?: Record<string, unknown> | null;
   estimates?: Record<string, unknown> | null;
   unavailable?: string[];
+}
+
+export interface TrackerrScoreResponse {
+  symbol: string;
+  status: 'ok' | 'degraded';
+  overall: number;
+  overallScore: number;
+  weights: Record<string, number>;
+  pillars: Array<{
+    pillar: 'qualidade' | 'risco' | 'valuation' | 'fiscal' | 'portfolio_fit';
+    weight: number;
+    score: number;
+    weightedScore: number;
+    reasonCodes: Array<{
+      code: string;
+      direction: 'up' | 'down' | 'neutral';
+      description: string;
+    }>;
+  }>;
+  reasonCodes: {
+    upward: string[];
+    downward: string[];
+  };
+  warnings: string[];
+  explanation: {
+    summary: string;
+    topPositiveDrivers: string[];
+    topNegativeDrivers: string[];
+  };
 }
 
 class AiAnalysisService {
@@ -170,6 +212,14 @@ class AiAnalysisService {
     payload: AiChatRequest,
   ): Promise<AiIntelligentChatResponse> {
     const response = await aiService.intelligentChat(payload);
+    return response.data;
+  }
+
+  async trackerrScore(payload: {
+    symbol: string;
+    previousPillarScores?: Record<string, number>;
+  }): Promise<TrackerrScoreResponse> {
+    const response = await aiService.trackerrScore(payload);
     return response.data;
   }
 }

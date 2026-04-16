@@ -10,7 +10,7 @@ vi.mock('@/services/ai', () => ({
   },
 }));
 
-import {askStructuredChat, normalizeChatResponse} from './index';
+import {askStructuredChat, askStructuredCopilotChat, normalizeChatResponse} from './index';
 
 describe('chat service adapter', () => {
   beforeEach(() => {
@@ -74,5 +74,41 @@ describe('chat service adapter', () => {
     expect(response.intent).toBe('portfolio_summary');
     expect(response.message).toContain('Resumo');
     expect((response.data as any).portfolioFacts.totalValue).toBe(15000);
+  });
+
+  it('askStructuredCopilotChat envia perfil e fluxo guiado', async () => {
+    chatMock.mockResolvedValueOnce({
+      intent: 'sell_simulation',
+      deterministic: true,
+      message: 'Pré-trade concluído.',
+      data: {
+        tradePlaybook: {
+          preTrade: {estimatedTax: 100},
+        },
+      },
+    });
+
+    const response = await askStructuredCopilotChat({
+      question: 'Quero vender PETR4',
+      investorProfile: 'conservador',
+      copilotFlow: 'sell_asset',
+      decisionFlow: {
+        action: 'sell',
+        ticker: 'PETR4',
+        quantity: 10,
+      },
+    });
+
+    expect(chatMock).toHaveBeenCalledWith({
+      question: 'Quero vender PETR4',
+      investorProfile: 'conservador',
+      copilotFlow: 'sell_asset',
+      decisionFlow: {
+        action: 'sell',
+        ticker: 'PETR4',
+        quantity: 10,
+      },
+    });
+    expect(response.intent).toBe('sell_simulation');
   });
 });
