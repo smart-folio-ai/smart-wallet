@@ -50,7 +50,7 @@ describe('SignIn', () => {
 
   it('deve renderizar o formulário de login corretamente', () => {
     renderSignIn();
-    expect(screen.getByText(/Entrar no Terminal/i)).toBeDefined();
+    expect(screen.getByRole('heading', {name: /Entrar no Terminal/i})).toBeDefined();
     expect(screen.getByLabelText(/E-mail/i)).toBeDefined();
     expect(screen.getByLabelText(/Senha/i)).toBeDefined();
     expect(screen.getByRole('button', {name: /Entrar no Terminal/i})).toBeDefined();

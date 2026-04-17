@@ -36,6 +36,14 @@ const renderPage = () => {
   );
 };
 
+const executeSearch = async (value = 'BBDC4') => {
+  await userEvent.type(screen.getByLabelText('Busca de RI'), value);
+  await userEvent.click(screen.getByTestId('ri-apply-search'));
+  await waitFor(() => {
+    expect(searchRiDocumentsMock).toHaveBeenCalled();
+  });
+};
+
 describe('RiInteligente', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -88,6 +96,7 @@ describe('RiInteligente', () => {
   it('lists recent valid releases and opens PDF', async () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     renderPage();
+    await executeSearch();
 
     await waitFor(() => {
       expect(screen.getByText(/BBDC4 · Bradesco/i)).toBeDefined();
@@ -124,8 +133,7 @@ describe('RiInteligente', () => {
   it('refetches when selecting the same ticker suggestion again', async () => {
     renderPage();
 
-    await userEvent.type(screen.getByLabelText('Busca de RI'), 'BBDC4');
-    await userEvent.click(screen.getByTestId('ri-apply-search'));
+    await executeSearch('BBDC4');
 
     await waitFor(() => {
       expect(searchRiDocumentsMock).toHaveBeenCalledWith(
@@ -133,6 +141,10 @@ describe('RiInteligente', () => {
       );
     });
     const callsAfterSearch = searchRiDocumentsMock.mock.calls.length;
+
+    const searchInput = screen.getByLabelText('Busca de RI');
+    await userEvent.clear(searchInput);
+    await userEvent.type(searchInput, 'BBD');
 
     await waitFor(() => {
       expect(screen.getByTestId('ri-autocomplete-list')).toBeDefined();
@@ -170,6 +182,7 @@ describe('RiInteligente', () => {
     });
 
     renderPage();
+    await executeSearch();
 
     await waitFor(() => {
       expect(screen.getByText(/BBDC4 · Bradesco/i)).toBeDefined();
@@ -191,6 +204,7 @@ describe('RiInteligente', () => {
     });
 
     renderPage();
+    await executeSearch();
     await waitFor(() => {
       expect(screen.getByText(/BBDC4 · Bradesco/i)).toBeDefined();
     });
@@ -223,6 +237,7 @@ describe('RiInteligente', () => {
     });
 
     renderPage();
+    await executeSearch();
     await waitFor(() => {
       expect(screen.getByText(/BBDC4 · Bradesco/i)).toBeDefined();
     });
@@ -247,6 +262,7 @@ describe('RiInteligente', () => {
     });
 
     renderPage();
+    await executeSearch();
 
     await waitFor(() => {
       expect(screen.getByTestId('ri-empty-state')).toBeDefined();
@@ -266,6 +282,7 @@ describe('RiInteligente', () => {
     });
 
     renderPage();
+    await executeSearch();
 
     await waitFor(() => {
       expect(screen.getByText(/Nenhum documento neste tipo de filtro/i)).toBeDefined();
@@ -285,6 +302,7 @@ describe('RiInteligente', () => {
     });
 
     renderPage();
+    await executeSearch();
 
     await waitFor(() => {
       expect(screen.getByText(/Nenhum documento encontrado para este ticker/i)).toBeDefined();

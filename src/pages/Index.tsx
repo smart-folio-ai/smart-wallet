@@ -218,8 +218,11 @@ const PERIOD_TO_BRAPI_RANGE: Record<string, string> = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const {planName, isSubscribed, isLoading: loadingSubscription} =
-    useSubscription();
+  const {
+    planName,
+    isSubscribed,
+    isLoading: loadingSubscription,
+  } = useSubscription();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
   const [openFeatureTour, setOpenFeatureTour] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('1M');
@@ -267,14 +270,13 @@ const Dashboard = () => {
     queryKey: ['dashboard-market-comparators'],
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const [dollarResponse, ibovResponse, btcResponse, cdiResponse] = await Promise.allSettled(
-        [
+      const [dollarResponse, ibovResponse, btcResponse, cdiResponse] =
+        await Promise.allSettled([
           stockServices.getNationalStock('USDBRL=X'),
           stockServices.getNationalStock('^BVSP'),
           stockServices.getNationalStock('BTC-USD'),
           stockServices.getCdiRate(),
-        ],
-      );
+        ]);
 
       return {
         dollar:
@@ -309,10 +311,11 @@ const Dashboard = () => {
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const range = PERIOD_TO_BRAPI_RANGE[selectedPeriod] || '1mo';
-      const [ibovHistoryResponse, btcHistoryResponse] = await Promise.allSettled([
-        stockServices.getNationalStock('^BVSP', {range, interval: '1d'}),
-        stockServices.getNationalStock('BTC-USD', {range, interval: '1d'}),
-      ]);
+      const [ibovHistoryResponse, btcHistoryResponse] =
+        await Promise.allSettled([
+          stockServices.getNationalStock('^BVSP', {range, interval: '1d'}),
+          stockServices.getNationalStock('BTC-USD', {range, interval: '1d'}),
+        ]);
 
       const parseHistory = (payload: any) => {
         const series = payload?.results?.[0]?.historicalDataPrice;
@@ -326,7 +329,9 @@ const Dashboard = () => {
             value: Number(point?.close),
           }))
           .filter((point: any) => point.date && Number.isFinite(point.value))
-          .sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)));
+          .sort((a: any, b: any) =>
+            String(a.date).localeCompare(String(b.date)),
+          );
       };
 
       return {
@@ -368,13 +373,15 @@ const Dashboard = () => {
     );
 
     const profitLoss = totalValue - totalCost;
-    const profitLossPercentage = totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
+    const profitLossPercentage =
+      totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
 
     const calculateAllocation = (type: string) => {
       if (totalValue === 0) return 0;
       const typeTotal = apiAssets
         .filter((a: any) => {
-          if (type === 'other') return !['stock', 'crypto', 'fii'].includes(a.type);
+          if (type === 'other')
+            return !['stock', 'crypto', 'fii'].includes(a.type);
           return a.type === type;
         })
         .reduce((sum: number, a: any) => sum + (a.total || 0), 0);
@@ -386,7 +393,11 @@ const Dashboard = () => {
       return history.map((entry: any) => ({
         symbol: asset.symbol,
         type:
-          asset.type === 'fii' ? 'fii' : asset.type === 'stock' ? 'stock' : 'other',
+          asset.type === 'fii'
+            ? 'fii'
+            : asset.type === 'stock'
+              ? 'stock'
+              : 'other',
         date: entry.date,
         value: (entry.value ?? 0) * (asset.quantity ?? 0),
       }));
@@ -419,11 +430,13 @@ const Dashboard = () => {
       history: historyData,
       lastDividends: dividendEntries
         .sort(
-          (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+          (a: any, b: any) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime(),
         )
         .slice(0, 10),
       dividendEntries: dividendEntries.sort(
-        (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        (a: any, b: any) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime(),
       ),
     };
   }, [apiAssets, portfolioHistory, selectedPortfolioId]);
@@ -507,7 +520,10 @@ const Dashboard = () => {
       if (Number.isNaN(date.getTime())) continue;
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       if (!monthlyMap.has(key)) continue;
-      monthlyMap.set(key, (monthlyMap.get(key) || 0) + Number(dividend.value || 0));
+      monthlyMap.set(
+        key,
+        (monthlyMap.get(key) || 0) + Number(dividend.value || 0),
+      );
     }
 
     return months.map((key) => ({
@@ -519,7 +535,10 @@ const Dashboard = () => {
 
   const totalDividendsYear = useMemo(
     () =>
-      dividendMonthlyData.reduce((sum, month) => sum + Number(month.value || 0), 0),
+      dividendMonthlyData.reduce(
+        (sum, month) => sum + Number(month.value || 0),
+        0,
+      ),
     [dividendMonthlyData],
   );
   const dividendMonthlyAverage = totalDividendsYear / 12;
@@ -535,7 +554,9 @@ const Dashboard = () => {
   }, [summary.dividendEntries]);
 
   const estimatedDividendYieldPct =
-    summary.totalValue > 0 ? (totalDividendsYear / summary.totalValue) * 100 : null;
+    summary.totalValue > 0
+      ? (totalDividendsYear / summary.totalValue) * 100
+      : null;
 
   const topPositions = useMemo(
     () => [...assets].sort((a, b) => b.value - a.value).slice(0, 5),
@@ -574,7 +595,10 @@ const Dashboard = () => {
 
   const hasProOrHigher = isProOrHigherPlan(planName, isSubscribed);
   const aiPlan = getAiPlanFromPlanName(planName);
-  const aiSignature = useMemo(() => buildAiCacheSignature(apiAssets), [apiAssets]);
+  const aiSignature = useMemo(
+    () => buildAiCacheSignature(apiAssets),
+    [apiAssets],
+  );
 
   const {data: dashboardAiAnalysis} = useQuery({
     queryKey: ['dashboard-ai-analysis', aiPlan, aiSignature],
@@ -629,7 +653,9 @@ const Dashboard = () => {
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object') return null;
-      return parsed as Partial<Record<'stocks' | 'crypto' | 'fiis' | 'other', number>>;
+      return parsed as Partial<
+        Record<'stocks' | 'crypto' | 'fiis' | 'other', number>
+      >;
     } catch {
       return null;
     }
@@ -676,7 +702,9 @@ const Dashboard = () => {
     }
 
     if ((optimizerData?.opportunities || []).length > 0) {
-      const best = optimizerData?.opportunities?.slice().sort((a, b) => b.taxSaved - a.taxSaved)[0];
+      const best = optimizerData?.opportunities
+        ?.slice()
+        .sort((a, b) => b.taxSaved - a.taxSaved)[0];
       if (best) {
         insights.push({
           priority: 'Média',
@@ -688,7 +716,8 @@ const Dashboard = () => {
       insights.push({
         priority: 'Baixa',
         title: 'Sem ação fiscal imediata',
-        description: 'No cenário atual, não há oportunidade fiscal clara com os dados disponíveis.',
+        description:
+          'No cenário atual, não há oportunidade fiscal clara com os dados disponíveis.',
       });
     }
 
@@ -704,7 +733,8 @@ const Dashboard = () => {
       insights.push({
         priority: 'Baixa',
         title: 'Dados insuficientes para recomendações',
-        description: 'Sincronize carteira e histórico para gerar ações mais específicas.',
+        description:
+          'Sincronize carteira e histórico para gerar ações mais específicas.',
       });
     }
 
@@ -806,8 +836,7 @@ const Dashboard = () => {
     if (!historyByPeriod || historyByPeriod.length < 2) return [];
 
     const sortedPortfolio = [...historyByPeriod].sort(
-      (a, b) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime(),
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
 
     const portfolioBase = Number(sortedPortfolio[0]?.value || 0);
@@ -830,10 +859,7 @@ const Dashboard = () => {
       const isoDate = toIsoDate(point.date);
       if (!isoDate) return false;
       const ibovValue = ibovMap.get(isoDate);
-      return (
-        Number.isFinite(Number(ibovValue)) &&
-        Number(ibovValue) > 0
-      );
+      return Number.isFinite(Number(ibovValue)) && Number(ibovValue) > 0;
     });
     const firstBtcComparablePoint = sortedPortfolio.find((point) => {
       const isoDate = toIsoDate(point.date);
@@ -853,7 +879,8 @@ const Dashboard = () => {
 
     return sortedPortfolio.map((point) => {
       const isoDate = toIsoDate(point.date);
-      const portfolioPerformance = ((Number(point.value) / portfolioBase) - 1) * 100;
+      const portfolioPerformance =
+        (Number(point.value) / portfolioBase - 1) * 100;
       const ibovValue = isoDate ? ibovMap.get(isoDate) : undefined;
       const btcValue = isoDate ? btcMap.get(isoDate) : undefined;
 
@@ -864,11 +891,11 @@ const Dashboard = () => {
           : null,
         ibovPerformance:
           firstIbovValue && ibovValue && ibovValue > 0
-            ? ((ibovValue / firstIbovValue) - 1) * 100
+            ? (ibovValue / firstIbovValue - 1) * 100
             : null,
         btcPerformance:
           firstBtcValue && btcValue && btcValue > 0
-            ? ((btcValue / firstBtcValue) - 1) * 100
+            ? (btcValue / firstBtcValue - 1) * 100
             : null,
       };
     });
@@ -936,7 +963,9 @@ const Dashboard = () => {
     <div className="container py-8 animate-fade-in">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Select value={selectedPortfolioId || ''} onValueChange={setSelectedPortfolioId}>
+        <Select
+          value={selectedPortfolioId || ''}
+          onValueChange={setSelectedPortfolioId}>
           <SelectTrigger className="w-full sm:w-72">
             <SelectValue placeholder="Selecione a carteira" />
           </SelectTrigger>
@@ -954,7 +983,7 @@ const Dashboard = () => {
       <FeatureTourModal
         open={openFeatureTour}
         onOpenChange={setOpenFeatureTour}
-        heading="Conheca as novidades"
+        heading="Conheça as novidades"
         subheading="Recursos que melhoram suas decisoes"
         items={[
           {
@@ -1003,10 +1032,17 @@ const Dashboard = () => {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-emerald-700 dark:text-emerald-300">Otimizador Fiscal</CardTitle>
-              <CardDescription>Oportunidades para reduzir imposto com prejuízo acumulado</CardDescription>
+              <CardTitle className="text-emerald-700 dark:text-emerald-300">
+                Otimizador Fiscal
+              </CardTitle>
+              <CardDescription>
+                Oportunidades para reduzir imposto com prejuízo acumulado
+              </CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/fiscal')}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/fiscal')}>
               Abrir Fiscal
             </Button>
           </div>
@@ -1017,18 +1053,29 @@ const Dashboard = () => {
           ) : (
             <>
               <p className="text-sm">
-                Prejuízo acumulado disponível: <strong>{formatCurrency(optimizerData?.accumulatedLosses?.total || 0)}</strong>
+                Prejuízo acumulado disponível:{' '}
+                <strong>
+                  {formatCurrency(optimizerData?.accumulatedLosses?.total || 0)}
+                </strong>
               </p>
-              <p className="text-sm text-muted-foreground">{optimizerData?.explanation}</p>
+              <p className="text-sm text-muted-foreground">
+                {optimizerData?.explanation}
+              </p>
               {(optimizerData?.opportunities || []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">Sem oportunidades claras no momento.</p>
+                <p className="text-sm text-muted-foreground">
+                  Sem oportunidades claras no momento.
+                </p>
               ) : (
                 <div className="space-y-2">
                   {optimizerData?.opportunities?.slice(0, 3).map((item) => (
-                    <div key={item.symbol} className="rounded-lg border border-border/40 bg-background/30 p-3 text-sm">
+                    <div
+                      key={item.symbol}
+                      className="rounded-lg border border-border/40 bg-background/30 p-3 text-sm">
                       <p className="font-medium">{item.headline}</p>
                       <p className="text-muted-foreground">
-                        Imposto com compensação: {formatCurrency(item.estimatedTaxWithOffset)} | economia: {formatCurrency(item.taxSaved)}
+                        Imposto com compensação:{' '}
+                        {formatCurrency(item.estimatedTaxWithOffset)} |
+                        economia: {formatCurrency(item.taxSaved)}
                       </p>
                     </div>
                   ))}
@@ -1045,7 +1092,9 @@ const Dashboard = () => {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>Patrimônio</CardTitle>
-                <CardDescription>Valor consolidado da carteira com comparativos de mercado</CardDescription>
+                <CardDescription>
+                  Valor consolidado da carteira com comparativos de mercado
+                </CardDescription>
               </div>
               <div className="flex space-x-1 rounded-full bg-secondary/30 p-1">
                 {['7D', '1M', '3M', '6M', '1A', '5A'].map((period) => (
@@ -1074,17 +1123,24 @@ const Dashboard = () => {
               </div>
             ) : (
               <>
-                <h3 className="mb-2 text-4xl font-bold text-primary animate-value">{formatCurrency(summary.totalValue || 0)}</h3>
+                <h3 className="mb-2 text-4xl font-bold text-primary animate-value">
+                  {formatCurrency(summary.totalValue || 0)}
+                </h3>
                 <p className="mb-4 text-sm text-muted-foreground">
                   P&L acumulado: {summary.totalPnl >= 0 ? '+' : '-'}
-                  {formatCurrency(Math.abs(summary.totalPnl || 0))} ({summary.totalPnlPercentage >= 0 ? '+' : '-'}
+                  {formatCurrency(Math.abs(summary.totalPnl || 0))} (
+                  {summary.totalPnlPercentage >= 0 ? '+' : '-'}
                   {Math.abs(summary.totalPnlPercentage || 0).toFixed(2)}%)
                 </p>
 
                 <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   {marketComparatorCards.map((item) => (
-                    <div key={item.key} className="rounded-xl border border-border/50 bg-background/60 p-3">
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">{item.label}</p>
+                    <div
+                      key={item.key}
+                      className="rounded-xl border border-border/50 bg-background/60 p-3">
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                        {item.label}
+                      </p>
                       <p className={`text-sm font-semibold ${item.colorClass}`}>
                         {formatComparatorValue(item)}
                       </p>
@@ -1106,8 +1162,14 @@ const Dashboard = () => {
 
                 <div className="h-44">
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={comparisonChartData} margin={{top: 10, right: 8, left: 0, bottom: 0}}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground)/0.15)" />
+                    <ComposedChart
+                      data={comparisonChartData}
+                      margin={{top: 10, right: 8, left: 0, bottom: 0}}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="hsl(var(--muted-foreground)/0.15)"
+                      />
                       <XAxis dataKey="date" hide />
                       <YAxis hide domain={['auto', 'auto']} />
                       <Tooltip
@@ -1168,7 +1230,8 @@ const Dashboard = () => {
                 </div>
                 {comparisonChartData.length < 2 && (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Histórico insuficiente para comparação de rendimento no período.
+                    Histórico insuficiente para comparação de rendimento no
+                    período.
                   </p>
                 )}
                 {comparisonChartData.length >= 2 &&
@@ -1194,7 +1257,9 @@ const Dashboard = () => {
               <Target className="h-4 w-4 text-primary" />
               Alocação com contexto
             </CardTitle>
-            <CardDescription>Comparação com meta e alerta de concentração</CardDescription>
+            <CardDescription>
+              Comparação com meta e alerta de concentração
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -1206,19 +1271,45 @@ const Dashboard = () => {
               <>
                 <div className="mb-4 h-44">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={allocationChartData} layout="vertical" margin={{top: 8, right: 10, left: 10, bottom: 8}}>
-                      <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} tick={{fontSize: 11, fill: 'hsl(var(--muted-foreground))'}} axisLine={false} tickLine={false} />
-                      <YAxis dataKey="name" type="category" width={72} tick={{fontSize: 12, fill: 'hsl(var(--foreground))'}} axisLine={false} tickLine={false} />
+                    <BarChart
+                      data={allocationChartData}
+                      layout="vertical"
+                      margin={{top: 8, right: 10, left: 10, bottom: 8}}>
+                      <XAxis
+                        type="number"
+                        domain={[0, 100]}
+                        tickFormatter={(value) => `${value}%`}
+                        tick={{
+                          fontSize: 11,
+                          fill: 'hsl(var(--muted-foreground))',
+                        }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        width={72}
+                        tick={{fontSize: 12, fill: 'hsl(var(--foreground))'}}
+                        axisLine={false}
+                        tickLine={false}
+                      />
                       <Tooltip
                         content={
                           <CustomTooltip
-                            formatter={(value) => [`${Number(value).toFixed(2)}%`, 'Alocação']}
+                            formatter={(value) => [
+                              `${Number(value).toFixed(2)}%`,
+                              'Alocação',
+                            ]}
                           />
                         }
                       />
                       <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={18}>
                         {allocationChartData.map((entry, index) => (
-                          <Cell key={`allocation-${index}`} fill={entry.color} />
+                          <Cell
+                            key={`allocation-${index}`}
+                            fill={entry.color}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -1226,17 +1317,24 @@ const Dashboard = () => {
                 </div>
                 <div className="space-y-2">
                   {allocationContext.map((row) => (
-                    <div key={row.label} className="rounded-lg border border-border/40 p-2">
+                    <div
+                      key={row.label}
+                      className="rounded-lg border border-border/40 p-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium">{row.label}</span>
                         <span>{row.current.toFixed(2)}%</span>
                       </div>
                       {row.target !== null ? (
-                        <p className={`text-xs ${row.delta && row.delta > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                          {row.delta && row.delta > 0 ? 'Acima' : 'Abaixo'} da meta em {Math.abs(row.delta || 0).toFixed(2)}% (meta {row.target.toFixed(2)}%)
+                        <p
+                          className={`text-xs ${row.delta && row.delta > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                          {row.delta && row.delta > 0 ? 'Acima' : 'Abaixo'} da
+                          meta em {Math.abs(row.delta || 0).toFixed(2)}% (meta{' '}
+                          {row.target.toFixed(2)}%)
                         </p>
                       ) : (
-                        <p className="text-xs text-muted-foreground">Meta de alocação não configurada.</p>
+                        <p className="text-xs text-muted-foreground">
+                          Meta de alocação não configurada.
+                        </p>
                       )}
                     </div>
                   ))}
@@ -1256,10 +1354,15 @@ const Dashboard = () => {
                   <Brain className="h-5 w-5 text-primary" />
                   Trackerr IA Hoje
                 </CardTitle>
-                <CardDescription>Prioridades práticas para hoje com base no portfólio atual</CardDescription>
+                <CardDescription>
+                  Prioridades práticas para hoje com base no portfólio atual
+                </CardDescription>
               </div>
               {!hasProOrHigher && (
-                <Button variant="outline" size="sm" onClick={() => navigate('/subscription')}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/subscription')}>
                   Upgrade PRO
                 </Button>
               )}
@@ -1275,7 +1378,9 @@ const Dashboard = () => {
                 description="Faça upgrade para liberar alertas diários da Trackerr IA com base nos seus dados reais.">
                 <div className="space-y-3">
                   {actionableInsights.map((item, idx) => (
-                    <div key={`${item.title}-${idx}`} className="rounded-lg border border-border/40 bg-background/70 p-3">
+                    <div
+                      key={`${item.title}-${idx}`}
+                      className="rounded-lg border border-border/40 bg-background/70 p-3">
                       <div className="mb-1 flex items-center justify-between">
                         <p className="text-sm font-semibold">{item.title}</p>
                         <span
@@ -1289,7 +1394,9 @@ const Dashboard = () => {
                           {item.priority}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground">{item.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.description}
+                      </p>
                     </div>
                   ))}
                   {dashboardHighlights.length > 0 && (
@@ -1299,7 +1406,9 @@ const Dashboard = () => {
                       </p>
                       <div className="space-y-1">
                         {dashboardHighlights.map((item, idx) => (
-                          <p key={`${item.title}-${idx}`} className="text-xs text-muted-foreground">
+                          <p
+                            key={`${item.title}-${idx}`}
+                            className="text-xs text-muted-foreground">
                             {item.title}
                           </p>
                         ))}
@@ -1318,17 +1427,25 @@ const Dashboard = () => {
               <CalendarClock className="h-4 w-4 text-primary" />
               Próximas ações recomendadas
             </CardTitle>
-            <CardDescription>Ações priorizadas para manter a carteira saudável</CardDescription>
+            <CardDescription>
+              Ações priorizadas para manter a carteira saudável
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {recommendedActions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Sem ações pendentes com os dados atuais.</p>
+              <p className="text-sm text-muted-foreground">
+                Sem ações pendentes com os dados atuais.
+              </p>
             ) : (
               <div className="space-y-3">
                 {recommendedActions.map((item) => (
-                  <div key={item.title} className="rounded-lg border border-border/40 bg-background/60 p-3">
+                  <div
+                    key={item.title}
+                    className="rounded-lg border border-border/40 bg-background/60 p-3">
                     <p className="text-sm font-semibold">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.reason}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.reason}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -1348,7 +1465,11 @@ const Dashboard = () => {
           <CardContent className="space-y-2 text-sm">
             <p className="flex items-center justify-between">
               <span>Volatilidade diária</span>
-              <strong>{volatilityPct !== null ? `${volatilityPct.toFixed(2)}%` : 'Dados insuficientes'}</strong>
+              <strong>
+                {volatilityPct !== null
+                  ? `${volatilityPct.toFixed(2)}%`
+                  : 'Dados insuficientes'}
+              </strong>
             </p>
             <p className="flex items-center justify-between">
               <span>Maior concentração</span>
@@ -1360,10 +1481,13 @@ const Dashboard = () => {
             </p>
             <p className="flex items-center justify-between">
               <span>Exposição por classe</span>
-              <strong>{distributionData.filter((d) => d.value > 0).length} classes</strong>
+              <strong>
+                {distributionData.filter((d) => d.value > 0).length} classes
+              </strong>
             </p>
             <p className="text-xs text-muted-foreground">
-              Correlação detalhada entre ativos ainda não está disponível na API atual.
+              Correlação detalhada entre ativos ainda não está disponível na API
+              atual.
             </p>
           </CardContent>
         </Card>
@@ -1383,10 +1507,13 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-2">
                 {futureDividendEvents.map((event) => (
-                  <div key={`${event.symbol}-${event.date}`} className="rounded-lg border border-border/40 p-2 text-sm">
+                  <div
+                    key={`${event.symbol}-${event.date}`}
+                    className="rounded-lg border border-border/40 p-2 text-sm">
                     <p className="font-medium">{event.symbol}</p>
                     <p className="text-xs text-muted-foreground">
-                      Provento previsto: {formatCurrency(event.value)} em {formatHistoryDate(event.date)}
+                      Provento previsto: {formatCurrency(event.value)} em{' '}
+                      {formatHistoryDate(event.date)}
                     </p>
                   </div>
                 ))}
@@ -1404,7 +1531,9 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="space-y-2">
             {benchmarkCards.map((item) => (
-              <div key={item.label} className="flex items-center justify-between rounded-lg border border-border/40 p-2 text-sm">
+              <div
+                key={item.label}
+                className="flex items-center justify-between rounded-lg border border-border/40 p-2 text-sm">
                 <span>{item.label}</span>
                 <strong
                   className={
@@ -1427,20 +1556,32 @@ const Dashboard = () => {
       <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Dividendos</CardTitle>
-          <CardDescription>Total no ano, média mensal, próximo pagamento e yield estimado</CardDescription>
+          <CardDescription>
+            Total no ano, média mensal, próximo pagamento e yield estimado
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div className="rounded-lg border border-border/40 p-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Total no ano</p>
-              <p className="text-lg font-semibold">{formatCurrency(totalDividendsYear)}</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Total no ano
+              </p>
+              <p className="text-lg font-semibold">
+                {formatCurrency(totalDividendsYear)}
+              </p>
             </div>
             <div className="rounded-lg border border-border/40 p-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Média mensal</p>
-              <p className="text-lg font-semibold">{formatCurrency(dividendMonthlyAverage)}</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Média mensal
+              </p>
+              <p className="text-lg font-semibold">
+                {formatCurrency(dividendMonthlyAverage)}
+              </p>
             </div>
             <div className="rounded-lg border border-border/40 p-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Próximo pagamento</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Próximo pagamento
+              </p>
               <p className="text-sm font-semibold">
                 {nextDividend
                   ? `${nextDividend.symbol} • ${formatHistoryDate(nextDividend.date)}`
@@ -1448,7 +1589,9 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="rounded-lg border border-border/40 p-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Yield estimado</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Yield estimado
+              </p>
               <p className="text-lg font-semibold">
                 {estimatedDividendYieldPct !== null
                   ? `${estimatedDividendYieldPct.toFixed(2)}%`
@@ -1459,14 +1602,27 @@ const Dashboard = () => {
 
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dividendMonthlyData} margin={{top: 8, right: 8, left: 8, bottom: 8}}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground)/0.15)" />
+              <BarChart
+                data={dividendMonthlyData}
+                margin={{top: 8, right: 8, left: 8, bottom: 8}}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="hsl(var(--muted-foreground)/0.15)"
+                />
                 <XAxis dataKey="label" tick={{fontSize: 11}} />
-                <YAxis tickFormatter={(value) => formatCurrency(Number(value))} width={90} tick={{fontSize: 11}} />
+                <YAxis
+                  tickFormatter={(value) => formatCurrency(Number(value))}
+                  width={90}
+                  tick={{fontSize: 11}}
+                />
                 <Tooltip
                   content={
                     <CustomTooltip
-                      formatter={(value) => [formatCurrency(Number(value)), 'Dividendos']}
+                      formatter={(value) => [
+                        formatCurrency(Number(value)),
+                        'Dividendos',
+                      ]}
                       labelFormatter={(label) => String(label)}
                     />
                   }
@@ -1481,13 +1637,19 @@ const Dashboard = () => {
       <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Ativos em foco</CardTitle>
-          <CardDescription>Top posições, maiores altas/quedas e oportunidades</CardDescription>
+          <CardDescription>
+            Top posições, maiores altas/quedas e oportunidades
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-xl border border-border/40 p-3">
-            <h4 className="mb-2 text-sm font-semibold">Top 5 maiores posições</h4>
+            <h4 className="mb-2 text-sm font-semibold">
+              Top 5 maiores posições
+            </h4>
             {topPositions.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Sem ativos carregados.</p>
+              <p className="text-xs text-muted-foreground">
+                Sem ativos carregados.
+              </p>
             ) : (
               <div className="space-y-2">
                 {topPositions.map((asset) => (
@@ -1497,7 +1659,9 @@ const Dashboard = () => {
                     className="flex w-full items-center justify-between text-left text-sm hover:text-primary"
                     onClick={() => navigate(`/portfolio/asset/${asset.id}`)}>
                     <span>{asset.symbol}</span>
-                    <span className="font-semibold">{formatCurrency(asset.value)}</span>
+                    <span className="font-semibold">
+                      {formatCurrency(asset.value)}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -1507,13 +1671,19 @@ const Dashboard = () => {
           <div className="rounded-xl border border-border/40 p-3">
             <h4 className="mb-2 text-sm font-semibold">Top 3 maiores altas</h4>
             {topGainers.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Sem altas no período.</p>
+              <p className="text-xs text-muted-foreground">
+                Sem altas no período.
+              </p>
             ) : (
               <div className="space-y-2">
                 {topGainers.map((asset) => (
-                  <p key={`gainer-${asset.id}`} className="flex items-center justify-between text-sm">
+                  <p
+                    key={`gainer-${asset.id}`}
+                    className="flex items-center justify-between text-sm">
                     <span>{asset.symbol}</span>
-                    <span className="font-semibold text-emerald-500">+{asset.change24h.toFixed(2)}%</span>
+                    <span className="font-semibold text-emerald-500">
+                      +{asset.change24h.toFixed(2)}%
+                    </span>
                   </p>
                 ))}
               </div>
@@ -1523,13 +1693,19 @@ const Dashboard = () => {
           <div className="rounded-xl border border-border/40 p-3">
             <h4 className="mb-2 text-sm font-semibold">Top 3 maiores quedas</h4>
             {topLosers.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Sem quedas no período.</p>
+              <p className="text-xs text-muted-foreground">
+                Sem quedas no período.
+              </p>
             ) : (
               <div className="space-y-2">
                 {topLosers.map((asset) => (
-                  <p key={`loser-${asset.id}`} className="flex items-center justify-between text-sm">
+                  <p
+                    key={`loser-${asset.id}`}
+                    className="flex items-center justify-between text-sm">
                     <span>{asset.symbol}</span>
-                    <span className="font-semibold text-rose-500">{asset.change24h.toFixed(2)}%</span>
+                    <span className="font-semibold text-rose-500">
+                      {asset.change24h.toFixed(2)}%
+                    </span>
                   </p>
                 ))}
               </div>
@@ -1539,13 +1715,17 @@ const Dashboard = () => {
           <div className="rounded-xl border border-border/40 p-3">
             <h4 className="mb-2 text-sm font-semibold">Top 3 oportunidades</h4>
             {visibleOpportunities.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Sem oportunidade clara nos dados atuais.</p>
+              <p className="text-xs text-muted-foreground">
+                Sem oportunidade clara nos dados atuais.
+              </p>
             ) : (
               <div className="space-y-2">
                 {visibleOpportunities.slice(0, 3).map((item) => (
                   <p key={item.key} className="text-sm">
                     <span className="font-semibold">{item.title}</span>
-                    <span className="block text-xs text-muted-foreground">{item.subtitle}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {item.subtitle}
+                    </span>
                   </p>
                 ))}
               </div>
@@ -1564,24 +1744,37 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <div className="rounded-lg border border-border/40 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Vendas do mês</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Vendas do mês
+            </p>
             <p className="text-sm font-semibold">Disponível na tela Fiscal</p>
           </div>
           <div className="rounded-lg border border-border/40 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Lucro acumulado</p>
-            <p className="text-sm font-semibold">{formatCurrency(summary.totalPnl || 0)}</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Lucro acumulado
+            </p>
+            <p className="text-sm font-semibold">
+              {formatCurrency(summary.totalPnl || 0)}
+            </p>
           </div>
           <div className="rounded-lg border border-border/40 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Prejuízo compensável</p>
-            <p className="text-sm font-semibold">{formatCurrency(optimizerData?.accumulatedLosses?.total || 0)}</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Prejuízo compensável
+            </p>
+            <p className="text-sm font-semibold">
+              {formatCurrency(optimizerData?.accumulatedLosses?.total || 0)}
+            </p>
           </div>
           <div className="rounded-lg border border-border/40 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Imposto potencial</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Imposto potencial
+            </p>
             <p className="text-sm font-semibold">
               {optimizerData?.opportunities?.length
                 ? formatCurrency(
                     optimizerData.opportunities.reduce(
-                      (sum, item) => sum + Number(item.estimatedTaxWithOffset || 0),
+                      (sum, item) =>
+                        sum + Number(item.estimatedTaxWithOffset || 0),
                       0,
                     ),
                   )

@@ -244,6 +244,7 @@ export default function ForgotPassword() {
                     render={({field}) => (
                       <FormItem>
                         <FormLabel
+                          htmlFor="forgot-password-email"
                           className="uppercase tracking-widest text-xs font-bold"
                           style={{
                             color: 'var(--auth-text-secondary)',

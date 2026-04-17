@@ -210,12 +210,14 @@ export default function Landing() {
             : 'bg-transparent'
         }`}>
         <div className="container mx-auto px-4 py-4 sm:px-6">
-          <nav className="flex items-center justify-between" aria-label="Navegação principal">
+          <nav
+            className="flex items-center justify-between"
+            aria-label="Navegação principal">
             <div className="flex items-center gap-3">
-              <img src={trakkerLogo} alt="trackerr" className="h-10 w-auto" />
-              <span className="text-lg font-semibold lowercase tracking-tight text-white">
+              <img src={trakkerLogo} alt="trackerr" className="h-16 w-auto" />
+              {/* <span className="text-lg font-semibold lowercase tracking-tight text-white">
                 trackerr
-              </span>
+              </span> */}
             </div>
 
             <div className="hidden md:flex items-center gap-7 text-sm">
@@ -255,7 +257,9 @@ export default function Landing() {
         </div>
       </header>
 
-      <section id="inicio" className="relative overflow-hidden pt-28 sm:pt-32 lg:pt-36">
+      <section
+        id="inicio"
+        className="relative overflow-hidden pt-28 sm:pt-32 lg:pt-36">
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-[440px]"
           style={{
@@ -274,7 +278,11 @@ export default function Landing() {
 
             <div className="mb-6 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 sm:max-w-[460px]">
               <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#2665fd] to-[#0050e1] shadow-[0_14px_30px_-14px_rgba(38,101,253,0.9)] sm:h-20 sm:w-20">
-                <img src={trakkerLogo} alt="Logo trackerr" className="h-12 w-auto sm:h-14" />
+                <img
+                  src={trakkerLogo}
+                  alt="Logo trackerr"
+                  className="h-12 w-auto sm:h-14"
+                />
               </div>
               <div>
                 <p className="text-[0.68rem] uppercase tracking-[0.2em] text-[#9eb3ff]">
@@ -290,8 +298,9 @@ export default function Landing() {
               Seu terminal de mercado para decidir mais rápido e melhor.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-[#c3c5d8] sm:text-lg">
-              A IA da trackerr analisa carteira, portfólio, fiscal, RI, comparador e
-              cenário futuro em tempo quase real para transformar dados em ação.
+              A IA da trackerr analisa carteira, portfólio, fiscal, RI,
+              comparador e cenário futuro em tempo quase real para transformar
+              dados em ação.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -325,7 +334,9 @@ export default function Landing() {
                     <p className="text-[0.68rem] uppercase tracking-[0.14em] text-[#9eb3ff]">
                       {item.label}
                     </p>
-                    <p className="mt-1 text-2xl font-extrabold text-[#e6ecff]">{item.value}</p>
+                    <p className="mt-1 text-2xl font-extrabold text-[#e6ecff]">
+                      {item.value}
+                    </p>
                   </CardContent>
                 </Card>
               ))}
@@ -345,12 +356,18 @@ export default function Landing() {
                     <p className="text-[0.68rem] uppercase tracking-[0.14em] text-[#9eb3ff]">
                       Market Pulse
                     </p>
-                    <p className="text-sm font-semibold text-white">Painel em tempo real</p>
+                    <p className="text-sm font-semibold text-white">
+                      Painel em tempo real
+                    </p>
                   </div>
                   <div className="inline-flex items-center gap-2 text-xs text-[#b5c4ff]">
                     <span
                       className="h-2.5 w-2.5 rounded-full bg-[#2f71ff]"
-                      style={{animation: enableMotion ? 'pulseDot 1.2s ease-in-out infinite' : 'none'}}
+                      style={{
+                        animation: enableMotion
+                          ? 'pulseDot 1.2s ease-in-out infinite'
+                          : 'none',
+                      }}
                     />
                     Online
                   </div>
@@ -358,20 +375,35 @@ export default function Landing() {
 
                 <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#071129]/85 p-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs uppercase tracking-[0.14em] text-[#9eb3ff]">trackerr index</p>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[#9eb3ff]">
+                      trackerr index
+                    </p>
                     <div className="inline-flex items-center gap-1 text-sm font-bold text-[#dbe2fd]">
                       <TrendingUp className="h-4 w-4 text-primary" />
                       +12,84%
                     </div>
                   </div>
 
-                  <svg viewBox="0 0 620 260" className="h-52 w-full" aria-label="Gráfico em alta">
+                  <svg
+                    viewBox="0 0 620 260"
+                    className="h-52 w-full"
+                    aria-label="Gráfico em alta">
                     <defs>
-                      <linearGradient id="chartStroke" x1="0" y1="0" x2="1" y2="0">
+                      <linearGradient
+                        id="chartStroke"
+                        x1="0"
+                        y1="0"
+                        x2="1"
+                        y2="0">
                         <stop offset="0%" stopColor="#2f71ff" />
                         <stop offset="100%" stopColor="#8ab2ff" />
                       </linearGradient>
-                      <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient
+                        id="chartFill"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1">
                         <stop offset="0%" stopColor="rgba(47,113,255,0.35)" />
                         <stop offset="100%" stopColor="rgba(47,113,255,0.02)" />
                       </linearGradient>
@@ -393,7 +425,9 @@ export default function Landing() {
                       style={{
                         strokeDasharray: 620,
                         strokeDashoffset: enableMotion ? 620 : 0,
-                        animation: enableMotion ? 'drawLine 1.8s ease-out forwards' : 'none',
+                        animation: enableMotion
+                          ? 'drawLine 1.8s ease-out forwards'
+                          : 'none',
                       }}
                     />
 
@@ -404,24 +438,34 @@ export default function Landing() {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <Card
                     className="border-white/10 bg-white/5"
-                    style={{animation: enableMotion ? 'floatCard 3.4s ease-in-out infinite' : 'none'}}>
+                    style={{
+                      animation: enableMotion
+                        ? 'floatCard 3.4s ease-in-out infinite'
+                        : 'none',
+                    }}>
                     <CardContent className="p-3">
                       <p className="text-[0.65rem] uppercase tracking-[0.12em] text-[#9eb3ff]">
                         Retorno diário
                       </p>
-                      <p className="mt-1 text-lg font-black text-white">+2,47%</p>
+                      <p className="mt-1 text-lg font-black text-white">
+                        +2,47%
+                      </p>
                     </CardContent>
                   </Card>
                   <Card
                     className="border-white/10 bg-white/5"
                     style={{
-                      animation: enableMotion ? 'floatCard 3.4s ease-in-out infinite 0.35s' : 'none',
+                      animation: enableMotion
+                        ? 'floatCard 3.4s ease-in-out infinite 0.35s'
+                        : 'none',
                     }}>
                     <CardContent className="p-3">
                       <p className="text-[0.65rem] uppercase tracking-[0.12em] text-[#9eb3ff]">
                         Oportunidades IA
                       </p>
-                      <p className="mt-1 text-lg font-black text-white">07 ativos</p>
+                      <p className="mt-1 text-lg font-black text-white">
+                        07 ativos
+                      </p>
                     </CardContent>
                   </Card>
                 </div>
@@ -438,7 +482,9 @@ export default function Landing() {
             <div
               className="flex min-w-max items-center gap-4"
               style={{
-                animation: enableMotion ? 'tickerSlide 26s linear infinite' : 'none',
+                animation: enableMotion
+                  ? 'tickerSlide 26s linear infinite'
+                  : 'none',
               }}>
               {[...marketTape, ...marketTape].map((item, index) => (
                 <div
@@ -448,7 +494,9 @@ export default function Landing() {
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#9eb3ff]">
                       {item.symbol}
                     </p>
-                    <p className="text-sm font-bold text-[#e6ecff]">{item.price}</p>
+                    <p className="text-sm font-bold text-[#e6ecff]">
+                      {item.price}
+                    </p>
                   </div>
                   <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-2 py-1 text-xs font-semibold text-[#dbe2fd]">
                     <TrendingUp className="h-3.5 w-3.5 text-primary" />
@@ -461,7 +509,9 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="sobre" className="container mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+      <section
+        id="sobre"
+        className="container mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-10 space-y-4 text-center sm:mb-14">
           <p className="text-sm font-semibold uppercase tracking-[0.14em] text-primary">
             Valor real
@@ -470,8 +520,9 @@ export default function Landing() {
             Inteligência financeira completa em uma única interface.
           </h2>
           <p className="mx-auto max-w-2xl text-[#c3c5d8]">
-            A trackerr integra sinais de mercado, dados reais da carteira e motores de IA para
-            responder com clareza onde ajustar alocação, risco e execução.
+            A trackerr integra sinais de mercado, dados reais da carteira e
+            motores de IA para responder com clareza onde ajustar alocação,
+            risco e execução.
           </p>
         </div>
 
@@ -484,8 +535,12 @@ export default function Landing() {
                 <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
                   <Icon className="h-5 w-5" />
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-white">{title}</h3>
-                <p className="text-sm leading-relaxed text-[#c3c5d8]">{description}</p>
+                <h3 className="mb-2 text-lg font-semibold text-white">
+                  {title}
+                </h3>
+                <p className="text-sm leading-relaxed text-[#c3c5d8]">
+                  {description}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -493,19 +548,26 @@ export default function Landing() {
 
         <div className="mt-12 grid gap-4 rounded-2xl border border-white/10 bg-[#0b1326]/70 p-6 sm:grid-cols-3 sm:p-8">
           <div>
-            <p className="text-xs uppercase tracking-[0.12em] text-[#b5c4ff]">Realtime feel</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-[#b5c4ff]">
+              Realtime feel
+            </p>
             <p className="mt-1 text-lg font-semibold text-white">
               Tickers, retornos e sinais de performance sempre visíveis.
             </p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.12em] text-[#b5c4ff]">IA aplicada</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-[#b5c4ff]">
+              IA aplicada
+            </p>
             <p className="mt-1 text-lg font-semibold text-white">
-              Carteira, portfólio, fiscal, RI e comparador em decisões conectadas.
+              Carteira, portfólio, fiscal, RI e comparador em decisões
+              conectadas.
             </p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.12em] text-[#b5c4ff]">Execução</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-[#b5c4ff]">
+              Execução
+            </p>
             <p className="mt-1 text-lg font-semibold text-white">
               Prioridades práticas para agir com segurança e velocidade.
             </p>
@@ -525,12 +587,15 @@ export default function Landing() {
 
         <div className="container mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <div className="mb-10 space-y-4 text-center sm:mb-14">
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-primary">Planos</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-primary">
+              Planos
+            </p>
             <h2 className="text-3xl font-bold text-white sm:text-4xl">
               IA financeira no nível que sua carteira exige
             </h2>
             <p className="mx-auto max-w-2xl text-[#c3c5d8]">
-              Do acompanhamento essencial ao copilot completo: trackerr escala com sua carteira.
+              Do acompanhamento essencial ao copilot completo: trackerr escala
+              com sua carteira.
             </p>
           </div>
 
@@ -551,22 +616,30 @@ export default function Landing() {
 
                 <CardContent className="flex h-full flex-col p-6">
                   <div className="mb-6">
-                    <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
+                    <h3 className="text-2xl font-bold text-white">
+                      {plan.name}
+                    </h3>
                     <p className="mt-1 text-sm text-[#c3c5d8]">{plan.detail}</p>
                     <p className="mt-3 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-medium text-[#dbe2fd]">
                       {plan.aiPillar}
                     </p>
                     <div className="mt-4">
-                      <span className="text-4xl font-extrabold text-white">{plan.price}</span>
+                      <span className="text-4xl font-extrabold text-white">
+                        {plan.price}
+                      </span>
                       {plan.period ? (
-                        <span className="ml-1 text-sm text-[#c3c5d8]">{plan.period}</span>
+                        <span className="ml-1 text-sm text-[#c3c5d8]">
+                          {plan.period}
+                        </span>
                       ) : null}
                     </div>
                   </div>
 
                   <ul className="mb-8 space-y-3">
                     {plan.benefits.map((benefit) => (
-                      <li key={benefit} className="flex items-start gap-2 text-sm">
+                      <li
+                        key={benefit}
+                        className="flex items-start gap-2 text-sm">
                         <Check className="mt-0.5 h-4 w-4 text-primary" />
                         <span className="text-[#dbe2fd]">{benefit}</span>
                       </li>
@@ -612,8 +685,8 @@ export default function Landing() {
                 Transforme sua leitura de mercado em decisões consistentes.
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-base text-[#c3c5d8] sm:text-lg">
-                Crie sua conta e use a IA da trackerr para analisar carteira, fiscal, RI e
-                oportunidades sem sair do fluxo.
+                Crie sua conta e use a IA da trackerr para analisar carteira,
+                fiscal, RI e oportunidades sem sair do fluxo.
               </p>
 
               <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">

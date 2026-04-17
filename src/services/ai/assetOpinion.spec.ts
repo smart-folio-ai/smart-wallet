@@ -1,4 +1,4 @@
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 const {chatMock} = vi.hoisted(() => ({
   chatMock: vi.fn(),
@@ -13,6 +13,10 @@ vi.mock('@/services/ai', () => ({
 import {getAssetOpinion, parseAssetOpinion} from './assetOpinion';
 
 describe('assetOpinion service', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('parseia JSON válido da resposta da IA', () => {
     const parsed = parseAssetOpinion(
       '{"summary":"Resumo real","strength":"Caixa forte","attention":"Dívida alta","tags":["atenção","volatilidade"]}',
