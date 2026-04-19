@@ -37,6 +37,9 @@ import Transactions from './pages/Transactions';
 import Dividends from './pages/Dividends';
 import DividendDetail from './pages/DividendDetail';
 import RiInteligente from './pages/RiInteligente';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminPlans from './pages/AdminPlans';
+import AdminGrants from './pages/AdminGrants';
 
 const ScrollToTopOnRouteChange = () => {
   const {pathname} = useLocation();
@@ -158,6 +161,30 @@ const App = () => (
                             />
                             <Route path="/fiscal" element={<Fiscal />} />
                             <Route path="/settings" element={<Settings />} />
+                            <Route
+                              path="/admin"
+                              element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                  <AdminDashboard />
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/admin/plans"
+                              element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                  <AdminPlans />
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/admin/grants"
+                              element={
+                                <ProtectedRoute allowedRoles={['admin', 'editor']}>
+                                  <AdminGrants />
+                                </ProtectedRoute>
+                              }
+                            />
                             <Route
                               path="/subscription-success"
                               element={<SubscriptionSuccess />}

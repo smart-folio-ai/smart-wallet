@@ -3,6 +3,12 @@ import {
   ICreateSubscription,
   IUpdateSubscriptionFeature,
 } from '@/interface/subscription';
+import {
+  AdminPlanPayload,
+  AdminPlanUpdatePayload,
+  ManualGrantPayload,
+  UpdateUserRolePayload,
+} from '@/interface/admin';
 
 import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
 import axios from 'axios';
@@ -137,6 +143,19 @@ export const subscriptionService = {
       {headers: {Authorization: `Bearer ${token}`}},
     );
   },
+};
+
+export const adminService = {
+  getOverview: () => apiClient.get('/admin/overview'),
+  getPlans: () => apiClient.get('/admin/plans'),
+  createPlan: (data: AdminPlanPayload) => apiClient.post('/admin/plans', data),
+  updatePlan: (planId: string, data: AdminPlanUpdatePayload) =>
+    apiClient.patch(`/admin/plans/${planId}`, data),
+  deactivatePlan: (planId: string) => apiClient.delete(`/admin/plans/${planId}`),
+  grantSubscription: (data: ManualGrantPayload) =>
+    apiClient.post('/admin/grants', data),
+  updateUserRoleByEmail: (data: UpdateUserRolePayload) =>
+    apiClient.post('/admin/users/role', data),
 };
 
 export const twoFactorService = {

@@ -1,16 +1,16 @@
 import {Navigate, useLocation} from 'react-router-dom';
 import {ReactNode} from 'react';
-import {useAuth} from '@/hooks/useAuth';
-import Loader from '@/components/loader';
+import {AuthRole, useAuth} from '@/hooks/useAuth';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
 
 interface ProtectedRouteProps {
   children: ReactNode;
+  allowedRoles?: AuthRole[];
 }
 
-const ProtectedRoute = ({children}: ProtectedRouteProps) => {
+const ProtectedRoute = ({children, allowedRoles}: ProtectedRouteProps) => {
   const location = useLocation();
-  const {isAuthenticated, isLoading} = useAuth();
+  const {isAuthenticated, isLoading, role} = useAuth();
 
   // Mostra loading enquanto verifica autenticação
   if (isLoading) {
@@ -28,6 +28,10 @@ const ProtectedRoute = ({children}: ProtectedRouteProps) => {
   if (!isAuthenticated) {
     // Salva a URL atual para redirecionar após o login
     return <Navigate to="/" state={{from: location}} replace />;
+  }
+
+  if (allowedRoles?.length && (!role || !allowedRoles.includes(role))) {
+    return <Navigate to="/dashboard" state={{from: location}} replace />;
   }
 
   // Se está autenticado, renderiza o componente filho
