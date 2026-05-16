@@ -38,6 +38,18 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
     title: 'Dividendos',
     subtitle: 'Acompanhe eventos e históricos de proventos.',
   },
+  '/admin': {
+    title: 'Admin Dashboard',
+    subtitle: 'Métricas essenciais da operação administrativa.',
+  },
+  '/admin/plans': {
+    title: 'Admin Planos',
+    subtitle: 'Cadastre, edite e desative planos com sincronização Stripe.',
+  },
+  '/admin/grants': {
+    title: 'Admin Concessões',
+    subtitle: 'Conceda planos manualmente e distribua permissões internas.',
+  },
 };
 
 function getPageMeta(pathname: string) {

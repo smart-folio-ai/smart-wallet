@@ -61,6 +61,10 @@ describe('ChatInteligente', () => {
         portfolioSummary: {
           totalValue: 250000,
         },
+        portfolioAssets: [
+          {symbol: 'ITUB4', allocationPct: 40},
+          {symbol: 'XPLG11', allocationPct: 20},
+        ],
         comparison: {
           results: [{symbol: 'PETR4'}, {symbol: 'VALE3'}],
         },
@@ -69,6 +73,21 @@ describe('ChatInteligente', () => {
         },
         portfolioRisk: {
           risk: {score: 71},
+          concentrationByAsset: [{symbol: 'ITUB4', percentage: 40}],
+        },
+        rebalanceSuggestion: {
+          profile: 'conservador',
+          riskScore: {
+            targetReductionPct: 20,
+            targetSuggested: 56.8,
+          },
+          targetRanges: {
+            maxAssetConcentrationPct: 18,
+          },
+          targetAllocationMix: [
+            {bucket: 'Renda fixa BR (Tesouro/LCI/Prefixado)', targetPct: 45},
+            {bucket: 'Ações Brasil', targetPct: 25},
+          ],
         },
         externalAsset: {
           symbol: 'AAPL',
@@ -95,6 +114,7 @@ describe('ChatInteligente', () => {
       expect(screen.getByTestId('chat-block-comparison')).toBeDefined();
       expect(screen.getByTestId('chat-block-tax-result')).toBeDefined();
       expect(screen.getByTestId('chat-block-risk')).toBeDefined();
+      expect(screen.getByTestId('chat-block-rebalance-suggestion')).toBeDefined();
       expect(screen.getByTestId('chat-block-external-asset')).toBeDefined();
       expect(screen.getByTestId('chat-block-warnings')).toBeDefined();
       expect(screen.getByTestId('chat-block-unavailable')).toBeDefined();
@@ -223,8 +243,14 @@ describe('ChatInteligente', () => {
       data: {
         investmentCommittee: {
           modelVersion: 'investment_committee_v1',
-          recommended: [{symbol: 'ITUB4'}],
-          avoid: [{symbol: 'PETR4'}],
+          recommended: [
+            {symbol: 'ITUB4', reasons: ['ROE robusto sustentando qualidade.']},
+          ],
+          avoid: [
+            {symbol: 'PETR4', reasons: ['Volatilidade de curto prazo elevada.']},
+          ],
+          criticalRisks: ['Concentração elevada em ITUB4 (35.2%).'],
+          objectivePlan: ['Reduzir risco agregado da carteira no curto prazo.'],
         },
       },
       warnings: [],
@@ -243,6 +269,10 @@ describe('ChatInteligente', () => {
         }),
       );
       expect(screen.getByText(/Comitê semanal gerado/i)).toBeDefined();
+      expect(screen.getByText(/Motivos \(top recomendações\)/i)).toBeDefined();
+      expect(screen.getByText(/Motivos \(itens para evitar\)/i)).toBeDefined();
+      expect(screen.getByText(/Riscos críticos/i)).toBeDefined();
+      expect(screen.getByText(/Plano da semana/i)).toBeDefined();
     });
   });
 });

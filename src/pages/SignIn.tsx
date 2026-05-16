@@ -376,6 +376,7 @@ export default function SignIn() {
                   render={({field}) => (
                     <FormItem>
                       <FormLabel
+                        htmlFor="signin-email"
                         className="uppercase tracking-widest text-xs font-bold"
                         style={{
                           color: 'var(--auth-text-secondary)',
@@ -405,6 +406,7 @@ export default function SignIn() {
                     <FormItem>
                       <div className="flex items-center justify-between">
                         <FormLabel
+                          htmlFor="signin-password"
                           className="uppercase tracking-widest text-xs font-bold"
                           style={{
                             color: 'var(--auth-text-secondary)',
