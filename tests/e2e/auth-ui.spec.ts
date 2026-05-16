@@ -4,9 +4,9 @@ test.describe('Auth UI — Telas de Autenticação', () => {
   // ── Login ─────────────────────────────────────────────────────────────────
   test.describe('Login (/)', () => {
     test('renderiza o formulário de login com todos os elementos', async ({page}) => {
-      await page.goto('/');
+      await page.goto('/signin');
 
-      await expect(page.getByText('Entrar no Terminal')).toBeVisible();
+      await expect(page.getByRole('heading', {name: 'Entrar no Terminal'})).toBeVisible();
       await expect(page.locator('#signin-email')).toBeVisible();
       await expect(page.locator('#signin-password')).toBeVisible();
       await expect(page.locator('#signin-submit')).toBeVisible();
@@ -15,28 +15,28 @@ test.describe('Auth UI — Telas de Autenticação', () => {
     });
 
     test('exibe erro de validação para e-mail inválido', async ({page}) => {
-      await page.goto('/');
+      await page.goto('/signin');
       await page.locator('#signin-email').fill('emailinvalido');
       await page.locator('#signin-submit').click();
       await expect(page.getByText('Digite um email válido')).toBeVisible();
     });
 
     test('navega para recuperação de senha ao clicar no link', async ({page}) => {
-      await page.goto('/');
+      await page.goto('/signin');
       await page.locator('a[href="/forgot-password"]').click();
       await expect(page).toHaveURL(/forgot-password/);
-      await expect(page.getByText('Esqueceu sua senha?')).toBeVisible();
+      await expect(page.getByText('Esqueceu a senha?')).toBeVisible();
     });
 
     test('navega para criação de conta ao clicar em "Criar conta agora"', async ({page}) => {
-      await page.goto('/');
+      await page.goto('/signin');
       await page.locator('#signin-goto-register').click();
       await expect(page).toHaveURL(/register/);
       await expect(page.getByText('Criar conta', {exact: true})).toBeVisible();
     });
 
     test('alterna visibilidade da senha', async ({page}) => {
-      await page.goto('/');
+      await page.goto('/signin');
       const passwordInput = page.locator('#signin-password');
       await expect(passwordInput).toHaveAttribute('type', 'password');
 
@@ -99,7 +99,7 @@ test.describe('Auth UI — Telas de Autenticação', () => {
     test('navega para login ao clicar em "Faça login"', async ({page}) => {
       await page.goto('/register');
       await page.locator('#register-goto-signin').click();
-      await expect(page).toHaveURL('/');
+      await expect(page).toHaveURL('/signin');
     });
   });
 
@@ -108,7 +108,7 @@ test.describe('Auth UI — Telas de Autenticação', () => {
     test('renderiza a tela de recuperação de senha', async ({page}) => {
       await page.goto('/forgot-password');
 
-      await expect(page.getByText('Esqueceu sua senha?', {exact: true})).toBeVisible();
+      await expect(page.getByText('Esqueceu a senha?', {exact: true})).toBeVisible();
       await expect(page.locator('#forgot-password-email')).toBeVisible();
       await expect(page.locator('#forgot-password-submit')).toBeVisible();
     });

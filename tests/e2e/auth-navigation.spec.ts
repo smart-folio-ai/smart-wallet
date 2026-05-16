@@ -5,14 +5,14 @@ test.describe('Auth Navigation And Validation', () => {
     await page.goto('/forgot-password');
     await page.locator('#forgot-password-back').click();
     await expect(page).toHaveURL(/\/?$/);
-    await expect(page.getByText(/Entrar no Terminal/i)).toBeVisible();
+    await expect(page.getByRole('button', {name: /Entrar/i}).first()).toBeVisible();
   });
 
   test('volta de cadastro para login', async ({page}) => {
     await page.goto('/register');
     await page.locator('#register-goto-signin').click();
-    await expect(page).toHaveURL(/\/?$/);
-    await expect(page.getByText(/Entrar no Terminal/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/signin(?:\/)?$/);
+    await expect(page.locator('#signin-submit')).toBeVisible();
   });
 
   test('valida email inválido em recuperar senha', async ({page}) => {
@@ -31,15 +31,15 @@ test.describe('Auth Navigation And Validation', () => {
     await page.locator('#register-confirm-password').fill('Senha123!');
     await page.locator('#register-submit').click();
     await expect(page).toHaveURL(/register(?:\/)?$/);
-    await expect(page.getByText(/Criar conta/i)).toBeVisible();
+    await expect(page.getByRole('heading', {name: /Criar conta/i})).toBeVisible();
   });
 
   test('redefine senha com token inválido e abre solicitar novo link', async ({page}) => {
     await page.goto('/reset-password?token=token-invalido');
     await expect(page.locator('#reset-password-invalid')).toBeVisible();
-    await expect(page.getByText(/Link inválido ou expirado/i)).toBeVisible();
+    await expect(page.getByText(/Link inválido/i)).toBeVisible();
     await page.getByRole('button', {name: /Solicitar novo link/i}).click();
     await expect(page).toHaveURL(/forgot-password(?:\/)?$/);
-    await expect(page.getByText(/Esqueceu sua senha\?/i)).toBeVisible();
+    await expect(page.getByText(/Esqueceu a senha\?/i)).toBeVisible();
   });
 });

@@ -112,6 +112,9 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
   const sellSimulation = data.sellSimulation as any;
   const portfolioRisk = data.portfolioRisk as any;
   const portfolioSummary = data.portfolioSummary as any;
+  const portfolioAssets = Array.isArray((data as any)?.portfolioAssets)
+    ? ((data as any).portfolioAssets as Array<any>)
+    : [];
   const externalAsset = data.externalAsset as any;
   const portfolioFacts = data.portfolioFacts as any;
   const externalData = data.externalData as any;
@@ -122,6 +125,10 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
   const riTimeline = (data as any)?.riTimeline as Array<any> | undefined;
   const personalizedInsights = (data as any)?.personalizedInsights as any;
   const investmentCommittee = (data as any)?.investmentCommittee as any;
+  const rebalanceSuggestion = (data as any)?.rebalanceSuggestion as any;
+  const topRiskAsset = portfolioRisk?.concentrationByAsset?.[0];
+  const topRiskAssetPct =
+    Number(topRiskAsset?.weightPct ?? topRiskAsset?.percentage ?? 0) || 0;
 
   return (
     <div className="mt-3 space-y-3" data-testid="chat-structured-details">
@@ -133,6 +140,17 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
           <p className="text-sm text-foreground">
             Valor total: {formatCurrency(portfolioSummary.totalValue)}
           </p>
+          {portfolioAssets.length > 0 ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              Ativos: {portfolioAssets
+                .slice(0, 6)
+                .map((asset) => {
+                  const pct = Number(asset?.allocationPct || 0);
+                  return `${asset?.symbol || 'Ativo'} (${pct.toFixed(1)}%)`;
+                })
+                .join(' · ')}
+            </p>
+          ) : null}
         </div>
       )}
 
@@ -174,11 +192,39 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Top concentração (ativo):{' '}
-            {portfolioRisk.concentrationByAsset?.[0]?.symbol || 'N/D'} ·{' '}
-            {`${Number(portfolioRisk.concentrationByAsset?.[0]?.weightPct ?? 0).toFixed(1)}%`}
+            {topRiskAsset?.symbol || topRiskAsset?.key || 'N/D'} ·{' '}
+            {`${topRiskAssetPct.toFixed(1)}%`}
           </p>
         </div>
       )}
+
+      {rebalanceSuggestion?.riskScore ? (
+        <div
+          className="rounded-xl border border-cyan-400/30 bg-cyan-500/10 p-3"
+          data-testid="chat-block-rebalance-suggestion">
+          <p className="text-xs uppercase tracking-wide text-cyan-300">
+            Sugestão de Balanceamento (Estimativa)
+          </p>
+          <p className="text-sm text-foreground">
+            Perfil {rebalanceSuggestion.profile || 'conservador'} · reduzir risco em{' '}
+            {Number(rebalanceSuggestion.riskScore.targetReductionPct || 0).toFixed(0)}%
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Alvo de score: {Number(rebalanceSuggestion.riskScore.targetSuggested || 0).toFixed(1)} ·
+            Limite por ativo: {Number(rebalanceSuggestion.targetRanges?.maxAssetConcentrationPct || 0).toFixed(0)}%
+          </p>
+          {Array.isArray(rebalanceSuggestion.targetAllocationMix) &&
+          rebalanceSuggestion.targetAllocationMix.length > 0 ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              Mix sugerido:{' '}
+              {rebalanceSuggestion.targetAllocationMix
+                .slice(0, 5)
+                .map((item: any) => `${item.bucket}: ${Number(item.targetPct || 0).toFixed(0)}%`)
+                .join(' · ')}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {externalAsset && (
         <div
@@ -293,15 +339,57 @@ function AssistantStructuredBlocks({payload}: {payload?: StructuredChatResponse}
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
           <p className="text-xs uppercase tracking-wide text-emerald-300">Comitê de Investimento</p>
           <p className="text-sm text-foreground">
-            Recomendações: {(investmentCommittee.recommended || investmentCommittee.recommendedAssets || []).map((item: any) =>
-              typeof item === 'string' ? item : item.symbol,
-            ).join(', ') || 'N/D'}
+            Recomendações: {(investmentCommittee.recommended || investmentCommittee.recommendedAssets || [])
+              .map((item: any) => (typeof item === 'string' ? item : item.symbol))
+              .join(', ') || 'N/D'}
           </p>
+          {(investmentCommittee.recommended || []).length > 0 ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              Motivos (top recomendações): {(investmentCommittee.recommended || [])
+                .slice(0, 2)
+                .map((item: any) => {
+                  const symbol = typeof item === 'string' ? item : item?.symbol || 'Ativo';
+                  const reason =
+                    Array.isArray(item?.reasons) && item.reasons.length > 0
+                      ? item.reasons[0]
+                      : null;
+                  return reason ? `${symbol}: ${reason}` : symbol;
+                })
+                .join(' · ') || 'N/D'}
+            </p>
+          ) : null}
           <p className="text-xs text-muted-foreground mt-1">
-            Evitar: {(investmentCommittee.avoid || investmentCommittee.avoidAssets || []).map((item: any) =>
-              typeof item === 'string' ? item : item.symbol,
-            ).join(', ') || 'N/D'}
+            Evitar: {(investmentCommittee.avoid || investmentCommittee.avoidAssets || [])
+              .map((item: any) => (typeof item === 'string' ? item : item.symbol))
+              .join(', ') || 'N/D'}
           </p>
+          {(investmentCommittee.avoid || []).length > 0 ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              Motivos (itens para evitar): {(investmentCommittee.avoid || [])
+                .slice(0, 2)
+                .map((item: any) => {
+                  const symbol = typeof item === 'string' ? item : item?.symbol || 'Ativo';
+                  const reason =
+                    Array.isArray(item?.reasons) && item.reasons.length > 0
+                      ? item.reasons[0]
+                      : null;
+                  return reason ? `${symbol}: ${reason}` : symbol;
+                })
+                .join(' · ') || 'N/D'}
+            </p>
+          ) : null}
+          {Array.isArray(investmentCommittee.criticalRisks) &&
+          investmentCommittee.criticalRisks.length > 0 ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              Riscos críticos: {investmentCommittee.criticalRisks.slice(0, 2).join(' · ')}
+            </p>
+          ) : null}
+          {Array.isArray(investmentCommittee.objectivePlan) &&
+          investmentCommittee.objectivePlan.length > 0 ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              Plano da semana: {investmentCommittee.objectivePlan.slice(0, 2).join(' · ')}
+            </p>
+          ) : null}
         </div>
       ) : null}
 

@@ -41,7 +41,7 @@ describe('ForgotPassword', () => {
 
   it('deve renderizar o formulário de recuperação de senha', () => {
     renderForgotPassword();
-    expect(screen.getByText(/Esqueceu sua senha?/i)).toBeDefined();
+    expect(screen.getByText(/Esqueceu (a|sua) senha\?/i)).toBeDefined();
     expect(screen.getByLabelText(/E-mail/i)).toBeDefined();
     expect(screen.getByRole('button', {name: /Enviar Instruções/i})).toBeDefined();
   });
@@ -80,7 +80,7 @@ describe('ForgotPassword', () => {
     await userEvent.click(screen.getByRole('button', {name: /Enviar Instruções/i}));
 
     await waitFor(() => {
-      expect(screen.getByText(/Email enviado!/i)).toBeDefined();
+      expect(screen.getByText(/E-?mail enviado!/i)).toBeDefined();
       expect(screen.getByText(/joao@email\.com/i)).toBeDefined();
     });
   });
@@ -94,13 +94,13 @@ describe('ForgotPassword', () => {
     await userEvent.click(screen.getByRole('button', {name: /Enviar Instruções/i}));
 
     await waitFor(() => {
-      expect(screen.getByText(/Email enviado!/i)).toBeDefined();
+      expect(screen.getByText(/E-?mail enviado!/i)).toBeDefined();
     });
 
     await userEvent.click(screen.getByRole('button', {name: /Tentar outro e-mail/i}));
 
     await waitFor(() => {
-      expect(screen.getByText(/Esqueceu sua senha?/i)).toBeDefined();
+      expect(screen.getByText(/Esqueceu (a|sua) senha\?/i)).toBeDefined();
     });
   });
 

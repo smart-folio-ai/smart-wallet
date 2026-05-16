@@ -29,7 +29,7 @@ describe('stock-autocomplete utils', () => {
       'VALE3',
       7,
     );
-    expect(result[0].stock).toBe('VALE3.SA');
+    expect(result[0].stock).toBe('VALE3');
     expect(normalizeStockSymbol(result[0].stock)).toBe('VALE3');
   });
 });

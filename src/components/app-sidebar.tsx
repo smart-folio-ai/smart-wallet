@@ -23,6 +23,7 @@ import {
   LogOut,
   MessageSquare,
   Plus,
+  ShieldCheck,
   Search,
   Settings,
   Star,
@@ -31,6 +32,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import {NavLink} from 'react-router-dom';
+import {useAuth} from '@/hooks/useAuth';
 
 type NavItem = {
   to: string;
@@ -113,6 +115,18 @@ function SidebarLink({to, label, icon: Icon}: NavItem) {
 }
 
 export function AppSidebar() {
+  const {role} = useAuth();
+  const adminItems: NavItem[] =
+    role === 'admin'
+      ? [
+          {to: '/admin', label: 'Dashboard Admin', icon: ShieldCheck},
+          {to: '/admin/plans', label: 'Planos', icon: Users},
+          {to: '/admin/grants', label: 'Concessões', icon: CircleDollarSign},
+        ]
+      : role === 'editor'
+        ? [{to: '/admin/grants', label: 'Concessões', icon: CircleDollarSign}]
+        : [];
+
   return (
     <Sidebar variant="inset" collapsible="icon" className="z-40">
       <SidebarHeader className="border-b border-sidebar-border/60 py-4">
@@ -137,6 +151,21 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+
+        {adminItems.length ? (
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/55">
+              Administração
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarLink key={item.to} {...item} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border/60 py-3">
