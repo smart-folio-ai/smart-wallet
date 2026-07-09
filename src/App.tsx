@@ -73,8 +73,8 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <CookieConsentBanner />
         <BrowserRouter>
+        <CookieConsentBanner />
         <ScrollToTopOnRouteChange />
         <Routes>
           <Route path="/" element={<Landing />} />
