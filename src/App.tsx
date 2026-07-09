@@ -8,6 +8,8 @@ import {SidebarInset, SidebarProvider} from '@/components/ui/sidebar';
 import {AppSidebar} from '@/components/app-sidebar';
 import {AppTopbar} from '@/components/layout/AppTopbar';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import {ConsentProvider} from '@/contexts/ConsentContext';
+import {CookieConsentBanner} from '@/components/CookieConsentBanner';
 
 import Index from './pages/Index';
 import Landing from './pages/Landing';
@@ -67,10 +69,12 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+    <ConsentProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <CookieConsentBanner />
+        <BrowserRouter>
         <ScrollToTopOnRouteChange />
         <Routes>
           <Route path="/" element={<Landing />} />
@@ -206,7 +210,8 @@ const App = () => (
           />
         </Routes>
       </BrowserRouter>
-    </TooltipProvider>
+      </TooltipProvider>
+    </ConsentProvider>
   </QueryClientProvider>
 );
 
