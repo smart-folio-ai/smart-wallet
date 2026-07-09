@@ -12,6 +12,7 @@ const ConsentContext = createContext<ConsentContextType | undefined>(undefined);
 
 export const ConsentProvider = ({children}: {children: ReactNode}) => {
   const [consent, setConsent] = useState<ConsentPreferences | null>(() => {
+    if (typeof window === 'undefined') return null;
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
@@ -49,7 +50,7 @@ export const ConsentProvider = ({children}: {children: ReactNode}) => {
         ...DEFAULT_CONSENT,
         ...consent,
         ...prefs,
-        essential: true as const,
+        essential: true,
         timestamp: new Date().toISOString(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newConsent));
