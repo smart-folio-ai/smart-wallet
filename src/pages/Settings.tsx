@@ -32,6 +32,7 @@ import {Switch} from '@/components/ui/switch';
 import {Label} from '@/components/ui/label';
 import {Input} from '@/components/ui/input';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import {PrivacySettings} from '@/components/settings/PrivacySettings';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Skeleton} from '@/components/ui/skeleton';
 import {z} from 'zod';
@@ -540,11 +541,12 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="subscription">Assinatura</TabsTrigger>
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
+          <TabsTrigger value="privacy">Privacidade</TabsTrigger>
         </TabsList>
 
         {/* ── Perfil ── */}
@@ -1266,6 +1268,15 @@ export default function Settings() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ── Privacidade ── */}
+      <TabsContent value="privacy" className="space-y-6">
+        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+          <CardContent className="pt-6">
+            <PrivacySettings />
+          </CardContent>
+        </Card>
+      </TabsContent>
     </div>
   );
 }
