@@ -20,6 +20,10 @@ vi.mock('@/components/WalletLoadingScreen', () => ({
     isLoading ? <div data-testid="loading-screen">Carregando...</div> : null,
 }));
 
+vi.mock('@/components/GoogleLoginButton', () => ({
+  GoogleLoginButton: () => <div data-testid="google-login-button">Google Login</div>,
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -54,7 +58,7 @@ describe('SignIn', () => {
     expect(screen.getByLabelText(/E-mail/i)).toBeDefined();
     expect(screen.getByLabelText(/Senha/i)).toBeDefined();
     expect(screen.getByRole('button', {name: /Entrar no Terminal/i})).toBeDefined();
-    expect(screen.getByRole('button', {name: /Entrar com Google/i})).toBeDefined();
+    expect(screen.getByTestId('google-login-button')).toBeDefined();
   });
 
   it('deve aplicar limites de caracteres nos campos de login', () => {
