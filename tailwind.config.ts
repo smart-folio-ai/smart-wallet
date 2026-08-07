@@ -139,6 +139,7 @@ export default {
           panel: 'hsl(var(--surface-panel) / <alpha-value>)',
           raised: 'hsl(var(--surface-raised) / <alpha-value>)',
           input: 'hsl(var(--surface-input) / <alpha-value>)',
+          hairline: 'hsl(var(--surface-hairline) / <alpha-value>)',
         },
         'on-surface': {
           DEFAULT: 'hsl(var(--on-surface) / <alpha-value>)',
@@ -146,6 +147,10 @@ export default {
           muted: 'hsl(var(--on-surface-muted) / <alpha-value>)',
           secondary: 'hsl(var(--on-surface-secondary) / <alpha-value>)',
         },
+        // Sinal de variação financeira. Substitui os emerald-400/rose-400
+        // hardcoded que existiam nos componentes da landing.
+        positive: 'hsl(var(--accent-positive) / <alpha-value>)',
+        negative: 'hsl(var(--accent-negative) / <alpha-value>)',
       },
       borderRadius: {
         lg: 'var(--radius)',

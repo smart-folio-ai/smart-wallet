@@ -116,6 +116,14 @@
     --auth-highlight-subtle: hsl(var(--brand) / 0.05);
     --auth-success-soft: hsl(160.1 84.1% 39.4% / 0.08);
     --auth-danger-soft: hsl(20.9 100% 39.4% / 0.12);
+
+    /* ──────────────────────────────────────────────────────────────
+     * Tokens do redesign da landing. Aditivos: nenhum token acima
+     * muda de valor, então nenhuma página existente muda de aparência.
+     * ────────────────────────────────────────────────────────────── */
+    --accent-positive: 158 84% 45%;
+    --accent-negative: 351 83% 61%;
+    --surface-hairline: 220 25% 100%;
   }
 
   .dark {
@@ -170,6 +178,20 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+ * Superfícies escurecidas do redesign, escopadas à landing.
+ * Ficam fora de :root de propósito: os aliases --auth-* derivam dos
+ * tokens globais e as páginas de autenticação não devem mudar agora.
+ * ────────────────────────────────────────────────────────────────── */
+.landing-root {
+  --surface-base: 224 30% 6%;
+  --surface-panel: 224 28% 8%;
+  --surface-raised: 223 24% 11%;
+
+  background-color: hsl(var(--surface-base));
+  color: hsl(var(--on-surface));
 }
 
 @layer base {
