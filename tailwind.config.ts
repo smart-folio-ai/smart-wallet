@@ -18,6 +18,11 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'Segoe UI', 'Arial', 'sans-serif'],
+        body: ['Inter', 'Segoe UI', 'Arial', 'sans-serif'],
+        heading: ['Manrope', 'Inter', 'Segoe UI', 'sans-serif'],
+      },
       keyframes: {
         float: {
           '0%, 100%': { transform: 'translateY(0px)' },
@@ -47,6 +52,12 @@ export default {
           from: {opacity: '0', transform: 'scale(0.95)'},
           to: {opacity: '1', transform: 'scale(1)'},
         },
+        // Marquee da fita de cotações: a lista é duplicada no DOM e o
+        // trilho anda -50%, então o loop reinicia sem salto visível.
+        ticker: {
+          from: {transform: 'translateX(0)'},
+          to: {transform: 'translateX(-50%)'},
+        },
       },
       animation: {
         float: 'float 3s ease-in-out infinite',
@@ -56,6 +67,7 @@ export default {
         'fade-in': 'fade-in 0.3s ease-out',
         'fade-out': 'fade-out 0.3s ease-out',
         'scale-in': 'scale-in 0.2s ease-out',
+        ticker: 'ticker 32s linear infinite',
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -101,17 +113,38 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        // Semânticas: agora seguem os tokens do index.css e reagem ao
+        // dark mode, em vez dos HSL fixos que havia aqui.
         success: {
-          DEFAULT: 'hsl(142.1, 76.2%, 36.3%)',
-          foreground: 'hsl(355.7, 100%, 97.3%)',
+          DEFAULT: 'hsl(var(--success) / <alpha-value>)',
+          foreground: 'hsl(var(--success-foreground) / <alpha-value>)',
         },
         warning: {
-          DEFAULT: 'hsl(47.9, 95.8%, 53.1%)',
-          foreground: 'hsl(26, 83.3%, 14.1%)',
+          DEFAULT: 'hsl(var(--warning) / <alpha-value>)',
+          foreground: 'hsl(var(--warning-foreground) / <alpha-value>)',
         },
         info: {
-          DEFAULT: 'hsl(221.2, 83.2%, 53.3%)',
-          foreground: 'hsl(210, 40%, 98%)',
+          DEFAULT: 'hsl(var(--info) / <alpha-value>)',
+          foreground: 'hsl(var(--info-foreground) / <alpha-value>)',
+        },
+        // Identidade de marca e superfícies escuras, antes acessíveis
+        // apenas por style inline via --auth-*.
+        brand: {
+          DEFAULT: 'hsl(var(--brand) / <alpha-value>)',
+          strong: 'hsl(var(--brand-strong) / <alpha-value>)',
+          foreground: 'hsl(var(--brand-foreground) / <alpha-value>)',
+        },
+        surface: {
+          DEFAULT: 'hsl(var(--surface-base) / <alpha-value>)',
+          panel: 'hsl(var(--surface-panel) / <alpha-value>)',
+          raised: 'hsl(var(--surface-raised) / <alpha-value>)',
+          input: 'hsl(var(--surface-input) / <alpha-value>)',
+        },
+        'on-surface': {
+          DEFAULT: 'hsl(var(--on-surface) / <alpha-value>)',
+          accent: 'hsl(var(--on-surface-accent) / <alpha-value>)',
+          muted: 'hsl(var(--on-surface-muted) / <alpha-value>)',
+          secondary: 'hsl(var(--on-surface-secondary) / <alpha-value>)',
         },
       },
       borderRadius: {

@@ -39,6 +39,38 @@
 
     --radius: 0.5rem;
 
+    /* ──────────────────────────────────────────────────────────────
+     * Tokens canônicos — fonte única de verdade da identidade visual.
+     * Formato: canais HSL sem wrapper, para funcionar tanto com as
+     * utilities do Tailwind (hsl(var(--x) / <alpha-value>)) quanto
+     * com hsl(var(--x)) em CSS puro.
+     * ────────────────────────────────────────────────────────────── */
+
+    /* Marca. Igual a --primary: os dois sistemas sempre foram a mesma cor. */
+    --brand: 222 98% 57%;
+    --brand-strong: 218.7 100% 44.1%;
+    --brand-foreground: 0 0% 100%;
+
+    /* Superfícies escuras (landing + páginas de autenticação) */
+    --surface-base: 222.2 55.1% 9.6%;
+    --surface-panel: 223.8 68.4% 7.5%;
+    --surface-raised: 222.2 41.5% 12.7%;
+    --surface-input: 225 23.7% 23.1%;
+
+    /* Texto sobre superfícies escuras */
+    --on-surface: 227.6 89.5% 92.5%;
+    --on-surface-accent: 227.8 100% 85.5%;
+    --on-surface-muted: 234.3 21.2% 80.6%;
+    --on-surface-secondary: 215.4 16.3% 46.9%;
+
+    /* Semânticas — antes hardcoded no tailwind.config */
+    --success: 142 76% 36%;
+    --success-foreground: 356 100% 97%;
+    --warning: 48 96% 53%;
+    --warning-foreground: 26 83% 14%;
+    --info: 221 83% 53%;
+    --info-foreground: 210 40% 98%;
+
     --sidebar-background: 223 36% 12%;
     --sidebar-foreground: 210 40% 96%;
     --sidebar-primary: 173 70% 43%;
@@ -54,31 +86,36 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    --auth-bg: #0b1326;
-    --auth-panel: #060d20;
-    --auth-surface: #131b2e;
-    --auth-input: #2d3449;
-    --auth-brand: #2665fd;
-    --auth-brand-strong: #0050e1;
-    --auth-brand-soft-05: rgba(38, 101, 253, 0.05);
-    --auth-brand-soft-10: rgba(38, 101, 253, 0.1);
-    --auth-brand-soft-20: rgba(38, 101, 253, 0.2);
-    --auth-brand-soft-40: rgba(38, 101, 253, 0.4);
-    --auth-brand-soft-50: rgba(38, 101, 253, 0.5);
-    --auth-text-main: #dbe2fd;
-    --auth-text-main-alt: #dae2fd;
-    --auth-text-accent: #b5c4ff;
-    --auth-text-muted: rgba(195, 197, 216, 0.6);
-    --auth-text-body: rgba(195, 197, 216, 0.75);
-    --auth-text-body-strong: rgba(195, 197, 216, 0.7);
-    --auth-text-soft: rgba(195, 197, 216, 0.4);
-    --auth-text-secondary: #64748b;
-    --auth-highlight: rgba(38, 101, 253, 0.12);
-    --auth-highlight-soft: rgba(38, 101, 253, 0.08);
-    --auth-highlight-mid: rgba(38, 101, 253, 0.07);
-    --auth-highlight-subtle: rgba(38, 101, 253, 0.05);
-    --auth-success-soft: rgba(16, 185, 129, 0.08);
-    --auth-danger-soft: rgba(201, 70, 0, 0.12);
+    /* ──────────────────────────────────────────────────────────────
+     * Aliases --auth-*: mantidos porque a landing e as 4 páginas de
+     * auth os consomem via style inline. Agora derivam dos tokens
+     * canônicos acima, então a marca tem um lugar único para mudar.
+     * ────────────────────────────────────────────────────────────── */
+    --auth-bg: hsl(var(--surface-base));
+    --auth-panel: hsl(var(--surface-panel));
+    --auth-surface: hsl(var(--surface-raised));
+    --auth-input: hsl(var(--surface-input));
+    --auth-brand: hsl(var(--brand));
+    --auth-brand-strong: hsl(var(--brand-strong));
+    --auth-brand-soft-05: hsl(var(--brand) / 0.05);
+    --auth-brand-soft-10: hsl(var(--brand) / 0.1);
+    --auth-brand-soft-20: hsl(var(--brand) / 0.2);
+    --auth-brand-soft-40: hsl(var(--brand) / 0.4);
+    --auth-brand-soft-50: hsl(var(--brand) / 0.5);
+    --auth-text-main: hsl(var(--on-surface));
+    --auth-text-main-alt: hsl(var(--on-surface));
+    --auth-text-accent: hsl(var(--on-surface-accent));
+    --auth-text-muted: hsl(var(--on-surface-muted) / 0.6);
+    --auth-text-body: hsl(var(--on-surface-muted) / 0.75);
+    --auth-text-body-strong: hsl(var(--on-surface-muted) / 0.7);
+    --auth-text-soft: hsl(var(--on-surface-muted) / 0.4);
+    --auth-text-secondary: hsl(var(--on-surface-secondary));
+    --auth-highlight: hsl(var(--brand) / 0.12);
+    --auth-highlight-soft: hsl(var(--brand) / 0.08);
+    --auth-highlight-mid: hsl(var(--brand) / 0.07);
+    --auth-highlight-subtle: hsl(var(--brand) / 0.05);
+    --auth-success-soft: hsl(160.1 84.1% 39.4% / 0.08);
+    --auth-danger-soft: hsl(20.9 100% 39.4% / 0.12);
   }
 
   .dark {
@@ -109,6 +146,14 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 222 98% 57%;
+
+    /* Semânticas com leitura melhor sobre fundo escuro */
+    --success: 142 70% 45%;
+    --success-foreground: 144 80% 10%;
+    --warning: 48 96% 60%;
+    --warning-foreground: 26 83% 14%;
+    --info: 217 91% 60%;
+    --info-foreground: 222 47% 11%;
 
     --sidebar-background: 223 36% 12%;
     --sidebar-foreground: 210 40% 96%;
