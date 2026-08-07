@@ -3,7 +3,10 @@ import z from 'zod';
 export const apiUrlDevelopment = import.meta.env.VITE_API_URL_DEVELOPMENT;
 export const apiUrlProduction = import.meta.env.VITE_API_URL_PRODUCTION;
 export const stripePublicApiKey = import.meta.env.VITE_STRIPE_PUBLIC_API_KEY;
-export const stripPrivateApiKey = import.meta.env.VITE_STRIPE_PRIVATE_API_KEY;
+/* Não exporte a chave secreta do Stripe daqui. Tudo com prefixo VITE_ é
+   embutido no bundle do navegador pelo Vite, então uma chave secreta ficaria
+   legível para qualquer visitante. Operações com chave secreta pertencem ao
+   `server`. */
 export const successUrl = import.meta.env.VITE_SUCCESS_URL;
 export const cancelUrl = import.meta.env.VITE_CANCEL_URL;
 export const urlLocalhost = import.meta.env.VITE_URL_LOCALHOST;

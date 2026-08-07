@@ -28,7 +28,10 @@ import PortfolioService from '@/services/portfolio';
 import Stock from '@/services/stocks';
 import {StockAllNacionalResponse} from '@/types/stock';
 import {formatCurrency} from '@/utils/formatters';
-import {StockAutocompleteInput} from '@/components/stocks/StockAutocompleteInput';
+import {
+  StockAutocompleteInput,
+  type StockAutocompleteItem,
+} from '@/components/stocks/StockAutocompleteInput';
 import {normalizeStockSymbol} from '@/components/stocks/stock-autocomplete.utils';
 
 export default function AddAsset() {
@@ -149,12 +152,9 @@ export default function AddAsset() {
     }));
   };
 
-  const handleSymbolSelect = (s: {
-    stock: string;
-    name: string;
-    type: string;
-    close: number;
-  }) => {
+  // Recebe exatamente o que o StockAutocompleteInput emite. `type` é opcional
+  // lá, e o encadeamento abaixo já cai em prev.type quando vem undefined.
+  const handleSymbolSelect = (s: StockAutocompleteItem) => {
     const normalizedSymbol = normalizeStockSymbol(s.stock);
     setSymbolSearch(normalizedSymbol);
     setFormData((prev) => ({

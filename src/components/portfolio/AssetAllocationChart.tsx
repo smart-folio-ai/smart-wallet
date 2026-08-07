@@ -21,6 +21,39 @@ const TREEMAP_COLORS = [
   '#64748b',
 ];
 
+/**
+ * Célula do treemap. O recharts tipa `content` como ReactElement e clona o
+ * elemento injetando as props de cada nó — por isso isto é um componente
+ * passado como `<TreemapCell />`, e não uma função de render.
+ */
+interface TreemapCellProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  name?: string;
+  fill?: string;
+}
+
+const TreemapCell = ({x, y, width, height, name, fill}: TreemapCellProps) => {
+  if (width === undefined || height === undefined) return null;
+  if (width < 44 || height < 24) return null;
+
+  return (
+    <g>
+      <rect x={x} y={y} width={width} height={height} rx={6} ry={6} fill={fill} />
+      <text
+        x={Number(x) + 8}
+        y={Number(y) + 18}
+        fill="#f8fafc"
+        fontSize={11}
+        fontWeight={700}>
+        {String(name)}
+      </text>
+    </g>
+  );
+};
+
 const TYPE_COLORS: Record<string, string> = {
   stock: '#22c55e',
   fii: '#8b5cf6',
@@ -107,18 +140,7 @@ export const AssetAllocationChart = ({assets}: AssetAllocationChartProps) => {
             dataKey="value"
             aspectRatio={4 / 3}
             stroke="hsl(var(--background))"
-            content={(props: any) => {
-              const {x, y, width, height, name, fill} = props || {};
-              if (width < 44 || height < 24) return null;
-              return (
-                <g>
-                  <rect x={x} y={y} width={width} height={height} rx={6} ry={6} fill={fill as string} />
-                  <text x={Number(x) + 8} y={Number(y) + 18} fill="#f8fafc" fontSize={11} fontWeight={700}>
-                    {String(name)}
-                  </text>
-                </g>
-              );
-            }}>
+            content={<TreemapCell />}>
             <Tooltip
               content={
                 <CustomTooltip

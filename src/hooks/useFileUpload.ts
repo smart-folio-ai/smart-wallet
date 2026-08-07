@@ -15,7 +15,9 @@ interface UseFileUploadReturn {
 }
 
 export const useFileUpload = (options?: UseFileUploadOptions): UseFileUploadReturn => {
-  const {toast} = useAppToast();
+  // useAppToast expõe {success, error, warning, info} — renomeados porque o
+  // hook já tem um estado `error` próprio.
+  const {success: showSuccess, error: showError} = useAppToast();
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -69,25 +71,18 @@ export const useFileUpload = (options?: UseFileUploadOptions): UseFileUploadRetu
           xhr.send(formData);
         });
 
-        toast({
-          title: 'Upload concluído',
-          description: 'Arquivo enviado com sucesso.',
-        });
+        showSuccess('Upload concluído', 'Arquivo enviado com sucesso.');
         options?.onSuccess?.();
       } catch (err: any) {
         const errorMessage = err.message || 'Erro ao enviar arquivo';
         setError(errorMessage);
-        toast({
-          title: 'Erro no upload',
-          description: errorMessage,
-          variant: 'destructive',
-        });
+        showError('Erro no upload', errorMessage);
         options?.onError?.(errorMessage);
       } finally {
         setIsUploading(false);
       }
     },
-    [toast, options]
+    [showSuccess, showError, options]
   );
 
   return {isUploading, progress, error, uploadFile, reset};

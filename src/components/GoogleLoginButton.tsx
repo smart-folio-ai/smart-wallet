@@ -18,7 +18,9 @@ declare global {
 
 export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProps) => {
   const navigate = useNavigate();
-  const {toast} = useAppToast();
+  // useAppToast expõe {success, error, warning, info} — renomeado aqui porque
+  // o catch abaixo já usa `error` para a exceção.
+  const {error: showError} = useAppToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
 
@@ -56,15 +58,14 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
         window.dispatchEvent(new Event('auth:login'));
         navigate('/dashboard');
       } catch (error: any) {
-        toast({
-          title: 'Erro ao entrar com Google',
-          description: error.message || 'Tente novamente mais tarde.',
-          variant: 'destructive',
-        });
+        showError(
+          'Erro ao entrar com Google',
+          error.message || 'Tente novamente mais tarde.'
+        );
         setIsLoading(false);
       }
     },
-    [keepConnected, navigate, toast]
+    [keepConnected, navigate, showError]
   );
 
   useEffect(() => {
