@@ -46,7 +46,10 @@ export const ConsentProvider = ({children}: {children: ReactNode}) => {
 
   const updateConsent = useCallback(
     (prefs: Partial<ConsentPreferences>) => {
-      const newConsent = {
+      // A anotação é necessária: sem ela o literal `essential: true` é alargado
+      // para boolean e deixa de casar com ConsentPreferences, que fixa o
+      // cookie essencial em true por exigência de LGPD.
+      const newConsent: ConsentPreferences = {
         ...DEFAULT_CONSENT,
         ...consent,
         ...prefs,

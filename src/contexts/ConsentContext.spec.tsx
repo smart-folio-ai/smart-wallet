@@ -6,6 +6,7 @@ import {
   ALL_ACCEPTED_CONSENT,
   ALL_REJECTED_CONSENT,
   DEFAULT_CONSENT,
+  type ConsentPreferences,
 } from '@/types/consent';
 
 const localStorageMock = (() => {
@@ -42,7 +43,16 @@ const TestComponent = () => {
       <button onClick={() => updateConsent({functional: false, marketing: true})}>
         Update Consent
       </button>
-      <button onClick={() => updateConsent({essential: false})}>Try Disable Essential</button>
+      {/* O duplo cast é proposital: ConsentPreferences fixa essential em true,
+          então este valor é inalcançável pelo tipo. O teste existe justamente
+          para provar que uma chamada vinda de runtime não tipado (storage
+          adulterado, console) não consegue desligar o cookie essencial. */}
+      <button
+        onClick={() =>
+          updateConsent({essential: false} as unknown as Partial<ConsentPreferences>)
+        }>
+        Try Disable Essential
+      </button>
     </div>
   );
 };
