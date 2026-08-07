@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paletas globais do Trackerr</title>
+<!--
+  Documentação de design das paletas globais.
+  Os valores aqui são a fonte de verdade visual para src/index.css.
+  Ao mudar um token no index.css, atualize este arquivo junto — ele existe
+  para que a decisão de cor possa ser vista, não só lida.
+-->
+
+<style>
+  /* Cromo da página. Neutros com viés azul na direção da marca Trackerr,
+     para o cinza parecer escolhido e não herdado. */
+  :root {
+    --ground: #fcfcfd;
+    --raised: #ffffff;
+    --ink: #14161c;
+    --ink-muted: #5b6072;
+    --ink-faint: #8b90a0;
+    --rule: #e4e5ea;
+    --accent: #2b46d8;
+    --ok: #1d7a4f;
+
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono",
+      "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0c0e13;
+      --raised: #14171f;
+      --ink: #e9eaf0;
+      --ink-muted: #9aa0b2;
+      --ink-faint: #6b7186;
+      --rule: #242833;
+      --accent: #7b90ff;
+      --ok: #4ec78d;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0c0e13;
+    --raised: #14171f;
+    --ink: #e9eaf0;
+    --ink-muted: #9aa0b2;
+    --ink-faint: #6b7186;
+    --rule: #242833;
+    --accent: #7b90ff;
+    --ok: #4ec78d;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 24px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
+
+  header { padding-top: 72px; display: flex; flex-direction: column; gap: 18px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0;
+  }
+
+  h1 {
+    font-size: clamp(28px, 4.4vw, 44px);
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    font-weight: 680;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .lede { font-size: 18px; color: var(--ink-muted); max-width: 62ch; margin: 0; }
+
+  h2 {
+    font-size: 22px;
+    letter-spacing: -0.015em;
+    font-weight: 640;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  section { display: flex; flex-direction: column; gap: 22px; }
+  .section-note { color: var(--ink-muted); max-width: 66ch; margin: 0; }
+
+  /* ── Espécimes: cada quadro é pintado com a própria paleta proposta,
+     por isso não reage ao tema de quem olha. É o conteúdo, não o cromo. ── */
+  .boards { display: grid; gap: 28px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .boards { grid-template-columns: 1fr 1fr; } }
+
+  .board {
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .board-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--raised);
+  }
+
+  .board-title { font-weight: 620; font-size: 15px; }
+  .board-meta { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+
+  .stage { padding: 26px 22px; display: flex; flex-direction: column; gap: 18px; }
+
+  /* Paleta escura */
+  .dark-stage {
+    background: hsl(224 30% 6%);
+    --s-panel: hsl(224 28% 8%);
+    --s-raised: hsl(223 24% 11%);
+    --t-main: hsl(228 90% 93%);
+    --t-muted: hsl(228 18% 72%);
+    --t-subtle: hsl(228 12% 55%);
+    --hair: hsl(0 0% 100% / 0.09);
+    --pos: hsl(158 84% 45%);
+    --neg: hsl(351 83% 61%);
+    --warn: hsl(40 95% 60%);
+  }
+
+  /* Paleta clara */
+  .light-stage {
+    background: hsl(40 33% 98%);
+    --s-panel: hsl(40 24% 96%);
+    --s-raised: hsl(40 40% 100%);
+    --t-main: hsl(30 14% 12%);
+    --t-muted: hsl(33 9% 38%);
+    --t-subtle: hsl(35 7% 50%);
+    --hair: hsl(30 12% 12% / 0.12);
+    --pos: hsl(158 76% 30%);
+    --neg: hsl(351 72% 42%);
+    --warn: hsl(32 90% 34%);
+  }
+
+  .stage { --brand: hsl(230 100% 62%); }
+
+  .stage-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--t-subtle);
+  }
+
+  .stage h3 {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 680;
+    color: var(--t-main);
+  }
+
+  .stage p { margin: 0; color: var(--t-muted); font-size: 15px; max-width: 46ch; }
+
+  .card {
+    background: var(--s-raised);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .ticker { font-weight: 640; color: var(--t-main); font-size: 14px; }
+  .price {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--t-muted);
+  }
+  .delta {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    min-width: 72px;
+    text-align: right;
+  }
+  .up { color: var(--pos); }
+  .down { color: var(--neg); }
+
+  .panel-strip {
+    background: var(--s-panel);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .kpi { display: flex; flex-direction: column; gap: 2px; }
+  .kpi-label { font-size: 11px; color: var(--t-subtle); }
+  .kpi-value {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+    font-weight: 620;
+    color: var(--t-main);
+  }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  .btn {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 560;
+    padding: 9px 16px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    cursor: default;
+  }
+  .btn-brand { background: var(--brand); color: #fff; }
+  .btn-quiet {
+    background: transparent;
+    color: var(--t-main);
+    border-color: var(--hair);
+  }
+  .link { color: var(--brand); font-size: 14px; font-weight: 560; }
+
+  .chip {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid;
+    font-weight: 560;
+  }
+  .chip-warn { color: var(--warn); border-color: var(--warn); }
+
+  /* ── Tabelas ── */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+  caption { text-align: left; padding: 14px 16px 0; color: var(--ink-muted); font-size: 14px; }
+  th, td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--rule); }
+  thead th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.val, td.num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  td.num { text-align: right; }
+  .pass { color: var(--ok); font-weight: 600; }
+
+  .swatch {
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    border-radius: 3px;
+    border: 1px solid var(--rule);
+    margin-right: 8px;
+    vertical-align: -2px;
+  }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+    padding: 14px 18px;
+    border-radius: 0 10px 10px 0;
+  }
+  .callout p { margin: 0; color: var(--ink); max-width: 70ch; }
+  .callout strong { font-weight: 640; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 22px;
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Trackerr · etapa A · fundação</p>
+    <h1>Duas paletas para aprovar antes de eu construir tela em cima delas</h1>
+    <p class="lede">
+      O tema escuro herda a superfície da landing. O claro vira papel — off-white
+      quente. O azul da marca é o mesmo nos dois, idêntico ao do logo novo.
+      Cada quadro abaixo está pintado com a paleta que representa.
+    </p>
+  </header>
+
+  <section>
+    <div>
+      <h2>Como cada paleta se comporta</h2>
+      <p class="section-note">
+        Não são amostras soltas: cada quadro é um recorte de interface real —
+        fundo, painel, card, três pesos de texto, botão de marca e números de
+        variação. É assim que a paleta vai aparecer no produto.
+      </p>
+    </div>
+
+    <div class="boards">
+      <div class="board">
+        <div class="board-head">
+          <span class="board-title">Escuro</span>
+          <span class="board-meta">landing · auth · app com tema escuro</span>
+        </div>
+        <div class="stage dark-stage">
+          <span class="stage-label">Carteira consolidada</span>
+          <h3>Patrimônio em alta</h3>
+          <p>
+            Texto secundário sobre o fundo base, no tom que carrega a maior
+            parte da leitura corrida.
+          </p>
+
+          <div class="panel-strip">
+            <div class="kpi">
+              <span class="kpi-label">Retorno 30D</span>
+              <span class="kpi-value">+8,42%</span>
+            </div>
+            <div class="kpi">
+              <span class="kpi-label">Posições</span>
+              <span class="kpi-value">27</span>
+            </div>
+            <div class="kpi">
+              <span class="kpi-label">Patrimônio</span>
+              <span class="kpi-value">R$ 284.930</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="row">
+              <span class="ticker">PETR4</span>
+              <span class="price">R$ 39,82</span>
+              <span class="delta up">+2,14%</span>
+            </div>
+            <div class="row">
+              <span class="ticker">ITUB4</span>
+              <span class="price">R$ 35,66</span>
+              <span class="delta down">−0,42%</span>
+            </div>
+            <div class="row">
+              <span class="ticker">VALE3</span>
+              <span class="price">R$ 67,19</span>
+              <span class="delta up">+1,37%</span>
+            </div>
+          </div>
+
+          <div class="actions">
+            <span class="btn btn-brand">Entrar</span>
+            <span class="btn btn-quiet">Criar conta</span>
+            <span class="link">Esqueci a senha</span>
+            <span class="chip chip-warn">Risco moderado</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="board">
+        <div class="board-head">
+          <span class="board-title">Claro</span>
+          <span class="board-meta">app com tema claro</span>
+        </div>
+        <div class="stage light-stage">
+          <span class="stage-label">Carteira consolidada</span>
+          <h3>Patrimônio em alta</h3>
+          <p>
+            Texto secundário sobre o fundo base, no tom que carrega a maior
+            parte da leitura corrida.
+          </p>
+
+          <div class="panel-strip">
+            <div class="kpi">
+              <span class="kpi-label">Retorno 30D</span>
+              <span class="kpi-value">+8,42%</span>
+            </div>
+            <div class="kpi">
+              <span class="kpi-label">Posições</span>
+              <span class="kpi-value">27</span>
+            </div>
+            <div class="kpi">
+              <span class="kpi-label">Patrimônio</span>
+              <span class="kpi-value">R$ 284.930</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="row">
+              <span class="ticker">PETR4</span>
+              <span class="price">R$ 39,82</span>
+              <span class="delta up">+2,14%</span>
+            </div>
+            <div class="row">
+              <span class="ticker">ITUB4</span>
+              <span class="price">R$ 35,66</span>
+              <span class="delta down">−0,42%</span>
+            </div>
+            <div class="row">
+              <span class="ticker">VALE3</span>
+              <span class="price">R$ 67,19</span>
+              <span class="delta up">+1,37%</span>
+            </div>
+          </div>
+
+          <div class="actions">
+            <span class="btn btn-brand">Entrar</span>
+            <span class="btn btn-quiet">Criar conta</span>
+            <span class="link">Esqueci a senha</span>
+            <span class="chip chip-warn">Risco moderado</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div>
+      <h2>Os valores</h2>
+      <p class="section-note">
+        Em canais HSL, o formato que o <span style="font-family:var(--mono)">index.css</span>
+        já usa. A marca não aparece duas vezes porque é constante: um só azul
+        atravessa os dois temas e o logo.
+      </p>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Token</th>
+            <th scope="col">Escuro</th>
+            <th scope="col">Claro</th>
+            <th scope="col">Papel</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>--surface-base</td>
+            <td class="val"><span class="swatch" style="background:hsl(224 30% 6%)"></span>224 30% 6%</td>
+            <td class="val"><span class="swatch" style="background:hsl(40 33% 98%)"></span>40 33% 98%</td>
+            <td>Fundo da página</td>
+          </tr>
+          <tr>
+            <td>--surface-panel</td>
+            <td class="val"><span class="swatch" style="background:hsl(224 28% 8%)"></span>224 28% 8%</td>
+            <td class="val"><span class="swatch" style="background:hsl(40 24% 96%)"></span>40 24% 96%</td>
+            <td>Faixas e agrupamentos</td>
+          </tr>
+          <tr>
+            <td>--surface-raised</td>
+            <td class="val"><span class="swatch" style="background:hsl(223 24% 11%)"></span>223 24% 11%</td>
+            <td class="val"><span class="swatch" style="background:hsl(40 40% 100%)"></span>40 40% 100%</td>
+            <td>Cards e popovers</td>
+          </tr>
+          <tr>
+            <td>--on-surface</td>
+            <td class="val"><span class="swatch" style="background:hsl(228 90% 93%)"></span>228 90% 93%</td>
+            <td class="val"><span class="swatch" style="background:hsl(30 14% 12%)"></span>30 14% 12%</td>
+            <td>Título e corpo</td>
+          </tr>
+          <tr>
+            <td>--on-surface-muted</td>
+            <td class="val"><span class="swatch" style="background:hsl(228 18% 72%)"></span>228 18% 72%</td>
+            <td class="val"><span class="swatch" style="background:hsl(33 9% 38%)"></span>33 9% 38%</td>
+            <td>Texto secundário</td>
+          </tr>
+          <tr>
+            <td>--on-surface-subtle</td>
+            <td class="val"><span class="swatch" style="background:hsl(228 12% 55%)"></span>228 12% 55%</td>
+            <td class="val"><span class="swatch" style="background:hsl(35 7% 50%)"></span>35 7% 50%</td>
+            <td>Rótulos e apoio</td>
+          </tr>
+          <tr>
+            <td>--brand</td>
+            <td class="val" colspan="2"><span class="swatch" style="background:hsl(230 100% 62%)"></span>230 100% 62% — igual nos dois temas</td>
+            <td>Ação primária, links</td>
+          </tr>
+          <tr>
+            <td>--accent-positive</td>
+            <td class="val"><span class="swatch" style="background:hsl(158 84% 45%)"></span>158 84% 45%</td>
+            <td class="val"><span class="swatch" style="background:hsl(158 76% 30%)"></span>158 76% 30%</td>
+            <td>Alta, ganho</td>
+          </tr>
+          <tr>
+            <td>--accent-negative</td>
+            <td class="val"><span class="swatch" style="background:hsl(351 83% 61%)"></span>351 83% 61%</td>
+            <td class="val"><span class="swatch" style="background:hsl(351 72% 42%)"></span>351 72% 42%</td>
+            <td>Baixa, perda</td>
+          </tr>
+          <tr>
+            <td>--warning</td>
+            <td class="val"><span class="swatch" style="background:hsl(40 95% 60%)"></span>40 95% 60%</td>
+            <td class="val"><span class="swatch" style="background:hsl(32 90% 34%)"></span>32 90% 34%</td>
+            <td>Atenção</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div>
+      <h2>Contraste medido</h2>
+      <p class="section-note">
+        Calculado par a par pela fórmula da WCAG, não estimado no olho. O mínimo
+        é 4,5:1 para texto corrido e 3:1 para elementos de interface e texto
+        grande.
+      </p>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <caption>Todos os pares passam no nível AA.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Par</th>
+            <th scope="col">Mínimo</th>
+            <th scope="col">Escuro</th>
+            <th scope="col">Claro</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Corpo sobre fundo</td><td class="num">4,5</td><td class="num pass">15,28</td><td class="num pass">15,82</td></tr>
+          <tr><td>Corpo sobre painel</td><td class="num">4,5</td><td class="num pass">14,77</td><td class="num pass">15,17</td></tr>
+          <tr><td>Corpo sobre card</td><td class="num">4,5</td><td class="num pass">13,82</td><td class="num pass">16,43</td></tr>
+          <tr><td>Secundário sobre fundo</td><td class="num">4,5</td><td class="num pass">8,99</td><td class="num pass">5,79</td></tr>
+          <tr><td>Secundário sobre painel</td><td class="num">4,5</td><td class="num pass">8,69</td><td class="num pass">5,56</td></tr>
+          <tr><td>Apoio sobre fundo</td><td class="num">3,0</td><td class="num pass">5,23</td><td class="num pass">3,70</td></tr>
+          <tr><td>Marca sobre fundo</td><td class="num">3,0</td><td class="num pass">3,91</td><td class="num pass">4,78</td></tr>
+          <tr><td>Branco no botão de marca</td><td class="num">4,5</td><td class="num pass">4,97</td><td class="num pass">4,97</td></tr>
+          <tr><td>Positiva sobre fundo</td><td class="num">3,0</td><td class="num pass">9,92</td><td class="num pass">4,37</td></tr>
+          <tr><td>Negativa sobre fundo</td><td class="num">3,0</td><td class="num pass">5,33</td><td class="num pass">6,16</td></tr>
+          <tr><td>Aviso sobre fundo</td><td class="num">3,0</td><td class="num pass">11,16</td><td class="num pass">4,90</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <p>
+        <strong>Uma regra sai daí.</strong> No tema escuro, a marca sobre o fundo
+        mede 3,91:1 — passa para botão, borda, ícone e texto grande, mas não para
+        texto corrido pequeno. Então azul de marca não vira cor de parágrafo no
+        escuro. No claro isso não é problema: 4,78:1.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    Contrastes calculados sobre os canais HSL exatos desta proposta. Os quadros
+    de exemplo usam as mesmas cores, então o que você vê é o que vai para o
+    <span style="font-family:var(--mono)">index.css</span>.
+  </footer>
+</div>
+
+</body>
+</html>
