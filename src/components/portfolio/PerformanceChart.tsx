@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {
   Card,
   CardContent,
@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
+import {Loader2} from 'lucide-react';
 import {
   AreaChart,
   Area,
@@ -25,6 +26,9 @@ interface PerformanceChartProps {
   activeTab: string;
   assets: Asset[];
   portfolioHistory: any[];
+  // true enquanto o histórico está sendo (re)buscado no backend (ex.: após
+  // upload de relatório B3). Mostra spinner nos botões de período.
+  isFetching?: boolean;
 }
 
 export const PerformanceChart = ({
@@ -32,10 +36,11 @@ export const PerformanceChart = ({
   activeTab,
   assets,
   portfolioHistory,
+  isFetching = false,
 }: PerformanceChartProps) => {
   const [selectedPeriod, setSelectedPeriod] = useState('3MO');
 
-  const getChartData = () => {
+  const getChartData = useMemo(() => () => {
     // If no portfolio history is available from the backend, show empty initially
     let aggregatedData = portfolioHistory.map((item) => ({
       date: item.date,
@@ -126,7 +131,7 @@ export const PerformanceChart = ({
     }
 
     return aggregatedData;
-  };
+  }, [portfolioHistory, assets, activeTab, selectedPeriod]);
 
   return (
     <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
@@ -142,13 +147,20 @@ export const PerformanceChart = ({
                 key={period}
                 variant="ghost"
                 size="sm"
+                disabled={isFetching}
                 onClick={() => setSelectedPeriod(period)}
                 className={`text-xs h-8 rounded-full px-4 font-bold transition-all ${
                   selectedPeriod === period
                     ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
                 }`}>
-                {period === '1S' ? '7D' : period}
+                {isFetching && selectedPeriod === period ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : period === '1S' ? (
+                  '7D'
+                ) : (
+                  period
+                )}
               </Button>
             ))}
           </div>

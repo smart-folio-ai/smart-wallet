@@ -77,7 +77,11 @@ const Portfolio = () => {
     },
   });
 
-  const {data: portfolioHistory = [], isLoading: historyLoading} = useQuery({
+  const {
+    data: portfolioHistory = [],
+    isLoading: historyLoading,
+    isFetching: historyFetching,
+  } = useQuery({
     queryKey: ['portfolioHistory', selectedPortfolioId],
     queryFn: async () => {
       if (selectedPortfolioId === 'all') {
@@ -288,6 +292,12 @@ const Portfolio = () => {
         description: 'Os ativos da B3 foram importados com sucesso.',
       });
       queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
+      // O backend faz backfill do histórico (reportDate -> hoje) no import,
+      // então invalidamos o histórico p/ o gráfico refletir a nova curva.
+      queryClient.invalidateQueries({
+        queryKey: ['portfolioHistory', selectedPortfolioId],
+      });
+      queryClient.invalidateQueries({queryKey: ['portfolios']});
     } catch (error) {
       toast({
         title: 'Erro na importação',
@@ -460,6 +470,7 @@ const Portfolio = () => {
         activeTab={activeTab}
         assets={assets}
         portfolioHistory={portfolioHistory}
+        isFetching={historyFetching}
       />
 
       {/* Asset Allocation Chart & Top Assets */}
