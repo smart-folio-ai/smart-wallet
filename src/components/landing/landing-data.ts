@@ -249,3 +249,46 @@ export const footerColumns = [
     ],
   },
 ];
+
+/* ──────────────────────────────────────────────────────────────────
+ * Dados fictícios dos mockups de produto. Não são screenshots: são
+ * componentes React, então acompanham o tema e podem ser animados.
+ * ────────────────────────────────────────────────────────────────── */
+
+export const portfolioMockupData = {
+  total: 284930,
+  positions: [
+    {symbol: 'PETR4', name: 'Petrobras PN', weight: 23.4, change: '+2,14%', up: true},
+    {symbol: 'ITUB4', name: 'Itaú Unibanco PN', weight: 14.8, change: '-0,42%', up: false},
+    {symbol: 'VALE3', name: 'Vale ON', weight: 12.1, change: '+1,37%', up: true},
+    {symbol: 'IVVB11', name: 'S&P 500 BDR', weight: 11.6, change: '+0,64%', up: true},
+    {symbol: 'WEGE3', name: 'WEG ON', weight: 9.2, change: '+3,08%', up: true},
+  ],
+};
+
+export const aiAlertMockupData = [
+  {
+    severity: 'alta' as const,
+    title: 'Concentração acima do limite',
+    detail: 'PETR4 representa 23,4% da carteira. Seu limite definido é 15%.',
+  },
+  {
+    severity: 'média' as const,
+    title: 'Dividendo parado em caixa',
+    detail: 'R$ 3.412 recebidos em proventos há 38 dias, ainda sem reaporte.',
+  },
+  {
+    severity: 'baixa' as const,
+    title: 'Exposição setorial subiu',
+    detail: 'Setor financeiro passou de 18% para 26% após o último aporte.',
+  },
+];
+
+export const taxMockupData = {
+  month: 'Março de 2026',
+  sales: 92400,
+  profit: 8320,
+  offset: 3480,
+  taxable: 4840,
+  darf: 1284.6,
+};
