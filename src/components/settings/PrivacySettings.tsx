@@ -10,7 +10,7 @@ import {useAppToast} from '@/hooks/use-app-toast';
 
 export const PrivacySettings = () => {
   const {consent, updateConsent} = useConsent();
-  const {toast} = useAppToast();
+  const toast = useAppToast();
   const [preferences, setPreferences] = useState({
     functional: true,
     analytics: false,
@@ -29,24 +29,24 @@ export const PrivacySettings = () => {
 
   const handleSave = () => {
     updateConsent(preferences);
-    toast({
-      title: 'Preferências salvas',
-      description: 'Suas preferências de privacidade foram atualizadas.',
-    });
+    toast.success(
+      'Preferências salvas',
+      'Suas preferências de privacidade foram atualizadas.',
+    );
   };
 
   const handleDownloadData = () => {
-    toast({
-      title: 'Solicitação enviada',
-      description: 'Você receberá um e-mail com seus dados em até 15 dias.',
-    });
+    toast.info(
+      'Solicitação enviada',
+      'Você receberá um e-mail com seus dados em até 15 dias.',
+    );
   };
 
   const handleDeleteAccount = () => {
-    toast({
-      title: 'Funcionalidade em breve',
-      description: 'A exclusão de conta estará disponível em breve.',
-    });
+    toast.info(
+      'Funcionalidade em breve',
+      'A exclusão de conta estará disponível em breve.',
+    );
   };
 
   return (

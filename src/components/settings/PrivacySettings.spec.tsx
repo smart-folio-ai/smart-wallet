@@ -9,9 +9,15 @@ vi.mock('react-router-dom', () => ({
   Link: ({children, to, ...props}: any) => <a href={to} {...props}>{children}</a>,
 }));
 
+// Espelha o formato real de useAppToast: {success, error, warning, info}.
+// O mock anterior devolvia {toast}, que não existe no hook — por isso o
+// componente quebrava em runtime sem o teste acusar.
 vi.mock('@/hooks/use-app-toast', () => ({
   useAppToast: () => ({
-    toast: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
   }),
 }));
 

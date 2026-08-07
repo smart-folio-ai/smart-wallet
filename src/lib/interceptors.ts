@@ -1,5 +1,6 @@
 import axios from 'axios';
 import apiClient from '../server/api/api';
+import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
 
 let isRefreshing = false;
 let refreshSubscribers = [];
@@ -40,7 +41,7 @@ apiClient.interceptors.response.use(
     }
     const refreshToken = localStorage.getItem('refresh_token');
     const urlResponse =
-      import.meta.env.VITE_API_URL_DEVELOPMENT + '/auth/refresh-token';
+      (isDev ? apiUrlDevelopment : apiUrlProduction) + '/auth/refresh-token';
 
     if (
       error.response?.status === 401 &&
