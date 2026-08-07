@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {Button} from '@/components/ui/button';
-import trackerrLogo from '@/assets/logo.png';
+import {AppLogo} from '@/components/AppLogo';
 
 const navLinks = [
   {label: 'Produto', id: 'produto'},
@@ -32,11 +32,8 @@ export function LandingNav() {
           : 'border-b border-transparent'
       }`}>
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={trackerrLogo} alt="trackerr" className="h-8 w-auto" />
-          <span className="font-heading text-lg font-semibold tracking-tight text-on-surface">
-            trackerr
-          </span>
+        <Link to="/" className="text-on-surface">
+          <AppLogo size="md" />
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">

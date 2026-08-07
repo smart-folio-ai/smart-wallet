@@ -1,5 +1,5 @@
 import {Link} from 'react-router-dom';
-import trackerrLogo from '@/assets/logo.png';
+import {AppLogo} from '@/components/AppLogo';
 import {footerColumns} from '../landing-data';
 
 export function LandingFooter() {
@@ -10,11 +10,8 @@ export function LandingFooter() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-[1.5fr_repeat(3,1fr)]">
           <div>
-            <Link to="/" className="flex items-center gap-2">
-              <img src={trackerrLogo} alt="trackerr" className="h-8 w-auto" />
-              <span className="font-heading text-base font-semibold text-on-surface">
-                trackerr
-              </span>
+            <Link to="/" className="text-on-surface">
+              <AppLogo size="md" />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-on-surface-muted/45">
               Carteira consolidada, imposto calculado e IA apontando o que exige
