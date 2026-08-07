@@ -30,11 +30,21 @@ export function LandingFooter() {
               <ul className="mt-4 space-y-3">
                 {column.links.map((link) => (
                   <li key={link.label}>
-                    <Link
-                      to={link.to}
-                      className="text-sm text-on-surface-muted/50 transition-colors hover:text-on-surface">
-                      {link.label}
-                    </Link>
+                    {link.to.startsWith('#') ? (
+                      // Âncora in-page: usa plain <a> para permitir scroll nativo
+                      <a
+                        href={link.to}
+                        className="text-sm text-on-surface-muted/50 transition-colors hover:text-on-surface">
+                        {link.label}
+                      </a>
+                    ) : (
+                      // Rota de aplicação: usa Link do react-router
+                      <Link
+                        to={link.to}
+                        className="text-sm text-on-surface-muted/50 transition-colors hover:text-on-surface">
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

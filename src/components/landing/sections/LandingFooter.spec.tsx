@@ -20,6 +20,21 @@ describe('LandingFooter', () => {
       screen.getByText(/não constituem recomendação de investimento/i),
     ).toBeInTheDocument();
   });
+
+  it('renderiza âncoras in-page com plain <a> e rotas com Link', () => {
+    wrap(<LandingFooter />);
+
+    // Verifica que "Como funciona" é uma âncora plain <a> com href="#como-funciona"
+    const comoFuncionaLink = screen.getByRole('link', {name: /como funciona/i});
+    expect(comoFuncionaLink.tagName).toBe('A');
+    expect(comoFuncionaLink).toHaveAttribute('href', '#como-funciona');
+
+    // Verifica que "Política de privacidade" é um Link react-router com href="/privacidade"
+    const privacidadeLink = screen.getByRole('link', {
+      name: /política de privacidade/i,
+    });
+    expect(privacidadeLink).toHaveAttribute('href', '/privacidade');
+  });
 });
 
 describe('FinalCtaSection', () => {
