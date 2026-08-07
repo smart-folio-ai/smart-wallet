@@ -13,11 +13,6 @@ export function ensureScrollTrigger(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return false;
   }
-  // Em ambientes jsdom (testes), ScrollTrigger não funciona como esperado
-  // e ativa imediatamente. Desativamos para não quebrar animations em testes.
-  if (typeof window.navigator !== 'undefined' && window.navigator.userAgent?.includes('jsdom')) {
-    return false;
-  }
   if (!scrollTriggerRegistered) {
     gsap.registerPlugin(ScrollTrigger);
     scrollTriggerRegistered = true;
