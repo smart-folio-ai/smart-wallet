@@ -36,8 +36,11 @@ export function ProductSection() {
       </div>
 
       <div ref={rootRef} className="mt-16 lg:grid lg:grid-cols-2 lg:gap-16">
-        {/* coluna de texto: rola normalmente */}
-        <div className="space-y-16 lg:space-y-[70vh]">
+        {/* coluna de texto: rola normalmente. O espaçamento de 70vh existe
+            só para dar "tempo de tela" ao pin do desktop; sem motion (ou
+            sem o pin) ele vira vazio literal, então recolhe para o ritmo
+            normal. */}
+        <div className="space-y-16 lg:space-y-[70vh] motion-reduce:lg:space-y-16">
           {productCopy.blocks.map((block, index) => {
             const Mockup = mockupById[block.id];
 
@@ -55,9 +58,12 @@ export function ProductSection() {
                   {block.description}
                 </p>
 
-                {/* Em mobile o mockup acompanha seu texto. Escondido no
-                    desktop, onde a coluna pinada assume. */}
-                <div className="mt-8 lg:hidden">
+                {/* Três estados: mobile mostra sempre; desktop com motion
+                    esconde (a coluna pinada assume); desktop sem motion
+                    (prefers-reduced-motion) volta a mostrar, porque o pin
+                    nunca roda e os três mockups ficariam empilhados e
+                    ilegíveis na coluna fixa abaixo. */}
+                <div className="mt-8 lg:hidden motion-reduce:lg:block">
                   <Mockup />
                 </div>
               </div>
@@ -65,8 +71,12 @@ export function ProductSection() {
           })}
         </div>
 
-        {/* coluna pinada: só desktop */}
-        <div data-pin-target className="hidden lg:block">
+        {/* coluna pinada: só desktop e só com motion permitido. Sob
+            prefers-reduced-motion o usePinnedSequence nunca roda
+            gsap.set(panels, {opacity: 0}), então os três painéis
+            ficariam sobrepostos em um único box de 520px — por isso
+            essa coluna é escondida explicitamente aqui via CSS. */}
+        <div data-pin-target className="hidden lg:block motion-reduce:lg:hidden">
           <div className="relative h-[520px]">
             {productCopy.blocks.map((block) => {
               const Mockup = mockupById[block.id];

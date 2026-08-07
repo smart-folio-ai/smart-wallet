@@ -55,19 +55,14 @@ describe('Landing', () => {
       (el) => el.id,
     );
 
-    expect(ids).toEqual(
-      expect.arrayContaining([
-        'inicio',
-        'problema',
-        'produto',
-        'como-funciona',
-        'planos',
-        'faq',
-      ]),
-    );
-    expect(ids.indexOf('problema')).toBeLessThan(ids.indexOf('produto'));
-    expect(ids.indexOf('produto')).toBeLessThan(ids.indexOf('planos'));
-    expect(ids.indexOf('planos')).toBeLessThan(ids.indexOf('faq'));
+    expect(ids).toEqual([
+      'inicio',
+      'problema',
+      'produto',
+      'como-funciona',
+      'planos',
+      'faq',
+    ]);
   });
 
   it('mostra prova de mercado, produto e credibilidade', () => {

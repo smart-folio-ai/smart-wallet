@@ -60,6 +60,13 @@ export function useGsapReveal<T extends HTMLElement>() {
             duration: 0.7,
             delay,
             ease: 'power2.out',
+            // GSAP escreve `transform` inline e nunca limpa: sem isso, o
+            // inline `translate(0px, 0px)` final vence permanentemente
+            // qualquer transform de classe (ex.: lg:-translate-y-2 no card
+            // Premium). Como y termina em 0 — a posição natural — soltar o
+            // inline aqui é visualmente idêntico, só devolve o controle ao
+            // CSS.
+            clearProps: 'transform',
             scrollTrigger: {
               trigger: el,
               start: 'top 85%',

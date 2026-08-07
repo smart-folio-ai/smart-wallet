@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react';
+import {useLayoutEffect, useRef} from 'react';
 import {Link} from 'react-router-dom';
 import gsap from 'gsap';
 import {ArrowRight} from 'lucide-react';
@@ -26,7 +26,10 @@ export function HeroSection() {
 
   // Timeline de entrada. Não usa ScrollTrigger: o hero já está na viewport
   // no primeiro paint, então a cascata roda no mount.
-  useEffect(() => {
+  // useLayoutEffect (não useEffect) para aplicar o estado "from" (opacity:0)
+  // antes do browser pintar — senão o hero pisca um frame já totalmente
+  // visível antes de ser resetado e reanimado.
+  useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function')
@@ -133,7 +136,7 @@ export function HeroSection() {
               </div>
               <span className="flex items-center gap-2 rounded-full border border-positive/20 bg-positive/10 px-3 py-1 text-xs font-medium text-positive">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-positive opacity-75" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-positive opacity-75 motion-reduce:animate-none" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-positive" />
                 </span>
                 ao vivo

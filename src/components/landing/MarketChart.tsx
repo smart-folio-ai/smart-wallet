@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react';
+import {useLayoutEffect, useRef} from 'react';
 import gsap from 'gsap';
 
 /**
@@ -16,7 +16,10 @@ export function MarketChart() {
     'M0,214 L62,198 L124,206 L186,170 L248,178 L310,138 L372,150 L434,104 L496,116 L558,64 L620,42';
   const area = `${line} L620,260 L0,260 Z`;
 
-  useEffect(() => {
+  // useLayoutEffect (não useEffect) para zerar o strokeDashoffset antes do
+  // primeiro paint — senão a linha completa pisca um frame antes de ser
+  // resetada e redesenhada do zero.
+  useLayoutEffect(() => {
     const path = pathRef.current;
     const areaEl = areaRef.current;
     if (!path) return;

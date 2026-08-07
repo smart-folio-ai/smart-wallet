@@ -57,7 +57,10 @@ export function PortfolioMockup() {
             <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-hairline/[0.06]">
               <div
                 className="h-full rounded-full bg-brand/70"
-                style={{width: `${position.weight * 3}%`}}
+                // Fator de escala 3x para exagerar visualmente a barra;
+                // acima de ~33.3% de peso isso estouraria 100%, então
+                // limitamos aqui.
+                style={{width: `${Math.min(position.weight * 3, 100)}%`}}
               />
             </div>
           </li>
