@@ -52,12 +52,6 @@ export default {
           from: {opacity: '0', transform: 'scale(0.95)'},
           to: {opacity: '1', transform: 'scale(1)'},
         },
-        // Marquee da fita de cotações: a lista é duplicada no DOM e o
-        // trilho anda -50%, então o loop reinicia sem salto visível.
-        ticker: {
-          from: {transform: 'translateX(0)'},
-          to: {transform: 'translateX(-50%)'},
-        },
       },
       animation: {
         float: 'float 3s ease-in-out infinite',
@@ -67,7 +61,6 @@ export default {
         'fade-in': 'fade-in 0.3s ease-out',
         'fade-out': 'fade-out 0.3s ease-out',
         'scale-in': 'scale-in 0.2s ease-out',
-        ticker: 'ticker 32s linear infinite',
       },
       colors: {
         border: 'hsl(var(--border))',
