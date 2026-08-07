@@ -1,34 +1,38 @@
-import {CtaSection} from '@/components/landing/CtaSection';
-import {HeroSection} from '@/components/landing/sections/HeroSection';
-import {LandingFooter} from '@/components/landing/LandingFooter';
 import {LandingNav} from '@/components/landing/sections/LandingNav';
+import {HeroSection} from '@/components/landing/sections/HeroSection';
 import {MarketTape} from '@/components/landing/sections/MarketTape';
-import {PricingSection} from '@/components/landing/PricingSection';
-import {ValueSection} from '@/components/landing/ValueSection';
-import {WorkflowSection} from '@/components/landing/WorkflowSection';
+import {ProblemSection} from '@/components/landing/sections/ProblemSection';
+import {ProductSection} from '@/components/landing/sections/ProductSection';
+import {HowItWorksSection} from '@/components/landing/sections/HowItWorksSection';
+import {TrustSection} from '@/components/landing/sections/TrustSection';
+import {PricingSection} from '@/components/landing/sections/PricingSection';
+import {FaqSection} from '@/components/landing/sections/FaqSection';
+import {FinalCtaSection} from '@/components/landing/sections/FinalCtaSection';
+import {LandingFooter} from '@/components/landing/sections/LandingFooter';
 import {useGsapReveal} from '@/components/landing/motion/useGsapReveal';
 
+/**
+ * A classe .landing-root escopa as superfícies escurecidas do redesign.
+ * Sem ela, a landing herdaria os tokens globais — que continuam servindo as
+ * páginas de autenticação e não devem mudar nesta etapa.
+ */
 export default function Landing() {
-  // Anima tudo que estiver marcado com [data-reveal] nas seções abaixo.
   const containerRef = useGsapReveal<HTMLDivElement>();
 
   return (
-    <div
-      ref={containerRef}
-      className="min-h-screen font-body"
-      style={{
-        background:
-          'radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--brand) / 0.14) 0%, transparent 60%), linear-gradient(180deg, hsl(var(--surface-base)) 0%, hsl(var(--surface-panel)) 100%)',
-      }}>
+    <div ref={containerRef} className="landing-root min-h-screen font-body">
       <LandingNav />
 
       <main>
         <HeroSection />
         <MarketTape />
-        <WorkflowSection />
-        <ValueSection />
+        <ProblemSection />
+        <ProductSection />
+        <HowItWorksSection />
+        <TrustSection />
         <PricingSection />
-        <CtaSection />
+        <FaqSection />
+        <FinalCtaSection />
       </main>
 
       <LandingFooter />
