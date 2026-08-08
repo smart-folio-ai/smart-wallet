@@ -64,7 +64,8 @@ describe('AppTopbar', () => {
 
   it('shows the current plan name for a subscribed user instead of Upgrade', () => {
     mockUseSubscription.mockReturnValue({
-      planName: 'Investidor Pro',
+      planName: 'investidor pro',
+      displayPlanName: 'Investidor Pro',
       isSubscribed: true,
       isLoading: false,
     });
@@ -78,5 +79,18 @@ describe('AppTopbar', () => {
   it('does not render the old static "SaaS Preview" badge', () => {
     renderTopbar();
     expect(screen.queryByText('SaaS Preview')).not.toBeInTheDocument();
+  });
+
+  it('does not flash the Upgrade CTA while the subscription query is loading', () => {
+    mockUseSubscription.mockReturnValue({
+      planName: null,
+      displayPlanName: null,
+      isSubscribed: false,
+      isLoading: true,
+    });
+    renderTopbar();
+    expect(
+      screen.queryByRole('button', {name: /upgrade/i}),
+    ).not.toBeInTheDocument();
   });
 });

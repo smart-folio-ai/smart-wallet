@@ -1,6 +1,7 @@
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Bell, Search, Settings, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -86,7 +87,7 @@ export function AppTopbar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const meta = getPageMeta(pathname);
-  const { planName, isSubscribed } = useSubscription();
+  const { displayPlanName, isSubscribed, isLoading } = useSubscription();
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/95 backdrop-blur-xl">
@@ -112,7 +113,9 @@ export function AppTopbar() {
             Buscar ativos
           </Button>
 
-          {isSubscribed ? (
+          {isLoading ? (
+            <Skeleton className="h-8 w-20 rounded-full" />
+          ) : isSubscribed ? (
             <Button
               type="button"
               variant="outline"
@@ -120,7 +123,7 @@ export function AppTopbar() {
               className="hidden sm:flex"
               onClick={() => navigate('/subscription')}
             >
-              {planName || 'Assinatura'}
+              {displayPlanName || 'Assinatura'}
             </Button>
           ) : (
             <Button
