@@ -980,6 +980,51 @@ const Dashboard = () => {
         </Select>
       </div>
 
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Patrimônio total
+          </p>
+          <p className="mt-1 text-2xl font-bold">
+            {formatCurrency(summary.totalValue || 0)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            P&L do período
+          </p>
+          <p
+            className={`mt-1 text-2xl font-bold ${
+              (summary.totalPnl || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'
+            }`}>
+            {summary.totalPnl >= 0 ? '+' : '-'}
+            {formatCurrency(Math.abs(summary.totalPnl || 0))}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {summary.totalPnlPercentage >= 0 ? '+' : '-'}
+            {Math.abs(summary.totalPnlPercentage || 0).toFixed(2)}%
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Dividendos no ano
+          </p>
+          <p className="mt-1 text-2xl font-bold">
+            {formatCurrency(totalDividendsYear)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Yield estimado
+          </p>
+          <p className="mt-1 text-2xl font-bold">
+            {estimatedDividendYieldPct !== null
+              ? `${estimatedDividendYieldPct.toFixed(2)}%`
+              : '—'}
+          </p>
+        </div>
+      </div>
+
       <FeatureTourModal
         open={openFeatureTour}
         onOpenChange={setOpenFeatureTour}
@@ -1028,11 +1073,11 @@ const Dashboard = () => {
         }}
       />
 
-      <Card className="mb-8 overflow-hidden rounded-2xl border border-emerald-300/40 bg-gradient-to-r from-emerald-50 via-white to-cyan-50 dark:border-emerald-400/20 dark:from-emerald-950/40 dark:via-slate-950 dark:to-cyan-950/20">
+      <Card className="mb-8 overflow-hidden rounded-2xl border border-border bg-card">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-emerald-700 dark:text-emerald-300">
+              <CardTitle>
                 Otimizador Fiscal
               </CardTitle>
               <CardDescription>
@@ -1087,7 +1132,7 @@ const Dashboard = () => {
       </Card>
 
       <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-2 rounded-2xl bg-gradient-to-br from-card to-card/60 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+        <Card className="xl:col-span-2 rounded-2xl border-border bg-card overflow-hidden">
           <CardHeader className="pb-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -1133,29 +1178,29 @@ const Dashboard = () => {
                   {Math.abs(summary.totalPnlPercentage || 0).toFixed(2)}%)
                 </p>
 
-                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="mb-5 flex flex-wrap gap-2">
                   {marketComparatorCards.map((item) => (
                     <div
                       key={item.key}
-                      className="rounded-xl border border-border/50 bg-background/60 p-3">
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                      className="flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs">
+                      <span className="font-medium text-muted-foreground">
                         {item.label}
-                      </p>
-                      <p className={`text-sm font-semibold ${item.colorClass}`}>
+                      </span>
+                      <span className={`font-semibold ${item.colorClass}`}>
                         {formatComparatorValue(item)}
-                      </p>
-                      <p
-                        className={`text-xs ${
+                      </span>
+                      <span
+                        className={
                           (item.variationPct || 0) > 0
                             ? 'text-emerald-500'
                             : (item.variationPct || 0) < 0
                               ? 'text-rose-500'
                               : 'text-muted-foreground'
-                        }`}>
+                        }>
                         {item.variationPct !== null
                           ? `${item.variationPct >= 0 ? '+' : ''}${item.variationPct.toFixed(2)}%`
-                          : 'Sem variação disponível'}
-                      </p>
+                          : '—'}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1346,11 +1391,11 @@ const Dashboard = () => {
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Card className="rounded-2xl border border-sky-300/40 bg-gradient-to-r from-sky-50 via-white to-indigo-50 dark:border-sky-400/20 dark:from-blue-950/40 dark:via-slate-950 dark:to-indigo-950/30">
+        <Card className="rounded-2xl border border-border bg-card">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle className="flex items-center gap-2 text-sky-700 dark:text-sky-300">
+                <CardTitle className="flex items-center gap-2">
                   <Brain className="h-5 w-5 text-primary" />
                   Trackerr IA Hoje
                 </CardTitle>
@@ -1454,8 +1499,8 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="rounded-2xl border border-primary/10 bg-card/50 shadow-sm">
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card className="rounded-xl border border-border bg-card p-1">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-primary" />
@@ -1492,7 +1537,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-primary/10 bg-card/50 shadow-sm">
+        <Card className="rounded-xl border border-border bg-card p-1">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4 text-primary" />
@@ -1522,7 +1567,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-primary/10 bg-card/50 shadow-sm">
+        <Card className="rounded-xl border border-border bg-card p-1">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
@@ -1553,7 +1598,7 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+      <Card className="mb-8 rounded-2xl border-border bg-card overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Dividendos</CardTitle>
           <CardDescription>
@@ -1634,7 +1679,7 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+      <Card className="mb-8 rounded-2xl border-border bg-card overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Ativos em foco</CardTitle>
           <CardDescription>
