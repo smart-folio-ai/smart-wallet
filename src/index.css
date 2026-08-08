@@ -88,40 +88,6 @@
     --chart-3: 32 90% 34%;
     --chart-4: 280 55% 45%;
     --chart-5: 351 72% 42%;
-
-    /* ──────────────────────────────────────────────────────────────
-     * PONTE TEMPORÁRIA. Os aliases --auth-* costumavam derivar de
-     * --surface-*. Agora que --surface-* reage ao tema, essa derivação
-     * deixaria as telas de autenticação claras — elas foram desenhadas
-     * para fundo escuro. Até que as cinco telas sejam convertidas para
-     * classes Tailwind, os aliases apontam para literais escuros.
-     * Este bloco inteiro sai na última task do plano.
-     * ────────────────────────────────────────────────────────────── */
-    --auth-bg: hsl(224 30% 6%);
-    --auth-panel: hsl(224 28% 8%);
-    --auth-surface: hsl(223 24% 11%);
-    --auth-input: hsl(225 20% 18%);
-    --auth-brand: hsl(230 100% 62%);
-    --auth-brand-strong: hsl(230 90% 54%);
-    --auth-brand-soft-05: hsl(230 100% 62% / 0.05);
-    --auth-brand-soft-10: hsl(230 100% 62% / 0.1);
-    --auth-brand-soft-20: hsl(230 100% 62% / 0.2);
-    --auth-brand-soft-40: hsl(230 100% 62% / 0.4);
-    --auth-brand-soft-50: hsl(230 100% 62% / 0.5);
-    --auth-text-main: hsl(228 90% 93%);
-    --auth-text-main-alt: hsl(228 90% 93%);
-    --auth-text-accent: hsl(228 100% 86%);
-    --auth-text-muted: hsl(228 18% 72% / 0.6);
-    --auth-text-body: hsl(228 18% 72% / 0.75);
-    --auth-text-body-strong: hsl(228 18% 72% / 0.7);
-    --auth-text-soft: hsl(228 18% 72% / 0.4);
-    --auth-text-secondary: hsl(228 12% 55%);
-    --auth-highlight: hsl(230 100% 62% / 0.12);
-    --auth-highlight-soft: hsl(230 100% 62% / 0.08);
-    --auth-highlight-mid: hsl(230 100% 62% / 0.07);
-    --auth-highlight-subtle: hsl(230 100% 62% / 0.05);
-    --auth-success-soft: hsl(158 84% 45% / 0.08);
-    --auth-danger-soft: hsl(351 83% 61% / 0.12);
   }
 
   .dark {
@@ -188,33 +154,6 @@
     --chart-3: 40 95% 60%;
     --chart-4: 280 65% 65%;
     --chart-5: 351 83% 61%;
-
-    /* Ponte temporária — ver o comentário em :root. Sai na Task 7. */
-    --auth-bg: hsl(224 30% 6%);
-    --auth-panel: hsl(224 28% 8%);
-    --auth-surface: hsl(223 24% 11%);
-    --auth-input: hsl(225 20% 18%);
-    --auth-brand: hsl(230 100% 62%);
-    --auth-brand-strong: hsl(230 90% 54%);
-    --auth-brand-soft-05: hsl(230 100% 62% / 0.05);
-    --auth-brand-soft-10: hsl(230 100% 62% / 0.1);
-    --auth-brand-soft-20: hsl(230 100% 62% / 0.2);
-    --auth-brand-soft-40: hsl(230 100% 62% / 0.4);
-    --auth-brand-soft-50: hsl(230 100% 62% / 0.5);
-    --auth-text-main: hsl(228 90% 93%);
-    --auth-text-main-alt: hsl(228 90% 93%);
-    --auth-text-accent: hsl(228 100% 86%);
-    --auth-text-muted: hsl(228 18% 72% / 0.6);
-    --auth-text-body: hsl(228 18% 72% / 0.75);
-    --auth-text-body-strong: hsl(228 18% 72% / 0.7);
-    --auth-text-soft: hsl(228 18% 72% / 0.4);
-    --auth-text-secondary: hsl(228 12% 55%);
-    --auth-highlight: hsl(230 100% 62% / 0.12);
-    --auth-highlight-soft: hsl(230 100% 62% / 0.08);
-    --auth-highlight-mid: hsl(230 100% 62% / 0.07);
-    --auth-highlight-subtle: hsl(230 100% 62% / 0.05);
-    --auth-success-soft: hsl(158 84% 45% / 0.08);
-    --auth-danger-soft: hsl(351 83% 61% / 0.12);
   }
 }
 
