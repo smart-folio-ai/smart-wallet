@@ -1073,11 +1073,11 @@ const Dashboard = () => {
         }}
       />
 
-      <Card className="mb-8 overflow-hidden rounded-2xl border border-emerald-300/40 bg-gradient-to-r from-emerald-50 via-white to-cyan-50 dark:border-emerald-400/20 dark:from-emerald-950/40 dark:via-slate-950 dark:to-cyan-950/20">
+      <Card className="mb-8 overflow-hidden rounded-2xl border border-border bg-card">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-emerald-700 dark:text-emerald-300">
+              <CardTitle>
                 Otimizador Fiscal
               </CardTitle>
               <CardDescription>
@@ -1132,7 +1132,7 @@ const Dashboard = () => {
       </Card>
 
       <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-2 rounded-2xl bg-gradient-to-br from-card to-card/60 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+        <Card className="xl:col-span-2 rounded-2xl border-border bg-card overflow-hidden">
           <CardHeader className="pb-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -1391,11 +1391,11 @@ const Dashboard = () => {
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Card className="rounded-2xl border border-sky-300/40 bg-gradient-to-r from-sky-50 via-white to-indigo-50 dark:border-sky-400/20 dark:from-blue-950/40 dark:via-slate-950 dark:to-indigo-950/30">
+        <Card className="rounded-2xl border border-border bg-card">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle className="flex items-center gap-2 text-sky-700 dark:text-sky-300">
+                <CardTitle className="flex items-center gap-2">
                   <Brain className="h-5 w-5 text-primary" />
                   Trackerr IA Hoje
                 </CardTitle>
@@ -1499,8 +1499,8 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="rounded-2xl border border-primary/10 bg-card/50 shadow-sm">
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card className="rounded-xl border border-border bg-card p-1">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-primary" />
@@ -1537,7 +1537,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-primary/10 bg-card/50 shadow-sm">
+        <Card className="rounded-xl border border-border bg-card p-1">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4 text-primary" />
@@ -1567,7 +1567,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-primary/10 bg-card/50 shadow-sm">
+        <Card className="rounded-xl border border-border bg-card p-1">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
@@ -1598,7 +1598,7 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+      <Card className="mb-8 rounded-2xl border-border bg-card overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Dividendos</CardTitle>
           <CardDescription>
@@ -1679,7 +1679,7 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      <Card className="mb-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+      <Card className="mb-8 rounded-2xl border-border bg-card overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Ativos em foco</CardTitle>
           <CardDescription>

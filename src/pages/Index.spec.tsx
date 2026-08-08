@@ -62,3 +62,22 @@ describe('Dashboard KPI strip', () => {
     expect(screen.getAllByText('Yield estimado').length).toBeGreaterThan(0);
   });
 });
+
+describe('Dashboard neutral card styling', () => {
+  it('does not render gradient background classes on insight cards', async () => {
+    const {container} = renderDashboard();
+    await screen.findByText('Patrimônio total');
+    // Use exact class-token matching rather than a CSS substring selector:
+    // `[class*="from-amber-50"]` would also match unrelated Tailwind variant
+    // classes such as `hover:from-amber-500` (e.g. the pre-existing,
+    // out-of-scope PremiumBlur upgrade CTA), producing a false positive.
+    const gradientTokens = ['from-emerald-50', 'from-sky-50', 'from-amber-50'];
+    const gradientCards = Array.from(
+      container.querySelectorAll('[class]'),
+    ).filter((el) => {
+      const classes = (el.getAttribute('class') || '').split(/\s+/);
+      return gradientTokens.some((token) => classes.includes(token));
+    });
+    expect(gradientCards.length).toBe(0);
+  });
+});
