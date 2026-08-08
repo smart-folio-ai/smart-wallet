@@ -980,6 +980,51 @@ const Dashboard = () => {
         </Select>
       </div>
 
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Patrimônio total
+          </p>
+          <p className="mt-1 text-2xl font-bold">
+            {formatCurrency(summary.totalValue || 0)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            P&L do período
+          </p>
+          <p
+            className={`mt-1 text-2xl font-bold ${
+              (summary.totalPnl || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'
+            }`}>
+            {summary.totalPnl >= 0 ? '+' : '-'}
+            {formatCurrency(Math.abs(summary.totalPnl || 0))}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {summary.totalPnlPercentage >= 0 ? '+' : '-'}
+            {Math.abs(summary.totalPnlPercentage || 0).toFixed(2)}%
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Dividendos no ano
+          </p>
+          <p className="mt-1 text-2xl font-bold">
+            {formatCurrency(totalDividendsYear)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Yield estimado
+          </p>
+          <p className="mt-1 text-2xl font-bold">
+            {estimatedDividendYieldPct !== null
+              ? `${estimatedDividendYieldPct.toFixed(2)}%`
+              : '—'}
+          </p>
+        </div>
+      </div>
+
       <FeatureTourModal
         open={openFeatureTour}
         onOpenChange={setOpenFeatureTour}
@@ -1133,29 +1178,29 @@ const Dashboard = () => {
                   {Math.abs(summary.totalPnlPercentage || 0).toFixed(2)}%)
                 </p>
 
-                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="mb-5 flex flex-wrap gap-2">
                   {marketComparatorCards.map((item) => (
                     <div
                       key={item.key}
-                      className="rounded-xl border border-border/50 bg-background/60 p-3">
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                      className="flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs">
+                      <span className="font-medium text-muted-foreground">
                         {item.label}
-                      </p>
-                      <p className={`text-sm font-semibold ${item.colorClass}`}>
+                      </span>
+                      <span className={`font-semibold ${item.colorClass}`}>
                         {formatComparatorValue(item)}
-                      </p>
-                      <p
-                        className={`text-xs ${
+                      </span>
+                      <span
+                        className={
                           (item.variationPct || 0) > 0
                             ? 'text-emerald-500'
                             : (item.variationPct || 0) < 0
                               ? 'text-rose-500'
                               : 'text-muted-foreground'
-                        }`}>
+                        }>
                         {item.variationPct !== null
                           ? `${item.variationPct >= 0 ? '+' : ''}${item.variationPct.toFixed(2)}%`
-                          : 'Sem variação disponível'}
-                      </p>
+                          : '—'}
+                      </span>
                     </div>
                   ))}
                 </div>
