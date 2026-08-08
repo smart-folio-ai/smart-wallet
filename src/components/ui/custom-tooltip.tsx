@@ -35,7 +35,7 @@ export const CustomTooltip = React.forwardRef<
         boxShadow: '0 14px 28px rgba(2, 6, 23, 0.45)',
       }}>
       {label && (
-        <p className="mb-2 border-b border-surface-hairline/10 pb-2 text-base font-semibold text-popover-foreground">
+        <p className="mb-2 border-b border-surface-hairline/10 pb-2 text-base font-semibold text-slate-100">
           {labelFormatter ? labelFormatter(label) : label}
         </p>
       )}
@@ -58,7 +58,7 @@ export const CustomTooltip = React.forwardRef<
                   {formattedName}
                 </span>
               </div>
-              <span className="font-semibold text-popover-foreground">
+              <span className="font-semibold text-slate-100">
                 {formattedValue}
               </span>
             </div>

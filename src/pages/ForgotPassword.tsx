@@ -177,7 +177,7 @@ export default function ForgotPassword() {
               <button
                 id="forgot-password-back"
                 onClick={() => navigate('/')}
-                className="flex items-center gap-2 mb-8 text-sm font-medium transition-colors hover:text-brand text-on-surface-subtle">
+                className="flex items-center gap-2 mb-8 text-sm font-medium transition-colors hover:text-brand text-slate-500">
                 <ArrowLeft className="h-4 w-4" />
                 Voltar para o login
               </button>
@@ -196,7 +196,7 @@ export default function ForgotPassword() {
                   }}>
                   Esqueceu a senha?
                 </h2>
-                <p className="text-on-surface-subtle" style={{fontSize: '0.9rem'}}>
+                <p className="text-slate-500" style={{fontSize: '0.9rem'}}>
                   Não se preocupe, vamos te ajudar a recuperar o acesso ao seu
                   terminal financeiro.
                 </p>
@@ -215,7 +215,7 @@ export default function ForgotPassword() {
                       <FormItem>
                         <FormLabel
                           htmlFor="forgot-password-email"
-                          className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
+                          className="uppercase tracking-widest text-xs font-bold text-slate-500"
                           style={{
                             letterSpacing: '0.1em',
                           }}>
@@ -271,7 +271,7 @@ export default function ForgotPassword() {
                 }}>
                 E-mail enviado!
               </h2>
-              <p className="mb-8 text-on-surface-subtle" style={{lineHeight: '1.6'}}>
+              <p className="mb-8 text-slate-500" style={{lineHeight: '1.6'}}>
                 Enviamos as instruções de recuperação para{' '}
                 <span className="font-semibold text-surface-panel">
                   {form.getValues().email}
@@ -282,7 +282,7 @@ export default function ForgotPassword() {
               <div
                 className="rounded-xl p-4 mb-8 text-left border border-slate-100"
                 style={{backgroundColor: '#f8fafc'}}>
-                <p className="text-xs leading-relaxed text-on-surface-subtle">
+                <p className="text-xs leading-relaxed text-slate-500">
                   <strong>Aviso:</strong> O link de recuperação enviado expira
                   em 30 minutos por motivos de segurança.
                 </p>
@@ -298,7 +298,7 @@ export default function ForgotPassword() {
 
               <button
                 onClick={() => navigate('/')}
-                className="mt-6 text-sm font-medium transition-colors hover:text-brand text-on-surface-subtle">
+                className="mt-6 text-sm font-medium transition-colors hover:text-brand text-slate-500">
                 Voltar para o login
               </button>
             </div>

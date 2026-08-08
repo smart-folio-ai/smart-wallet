@@ -238,7 +238,7 @@ export default function Register() {
               }}>
               Criar conta
             </h2>
-            <p className="text-on-surface-subtle" style={{fontSize: '0.9rem'}}>
+            <p className="text-slate-500" style={{fontSize: '0.9rem'}}>
               Já possui uma conta?{' '}
               <button
                 id="register-goto-signin"
@@ -262,7 +262,7 @@ export default function Register() {
                   render={({field}) => (
                     <FormItem>
                       <FormLabel
-                        className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
+                        className="uppercase tracking-widest text-xs font-bold text-slate-500"
                         style={{
                           letterSpacing: '0.1em',
                         }}>
@@ -286,7 +286,7 @@ export default function Register() {
                   render={({field}) => (
                     <FormItem>
                       <FormLabel
-                        className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
+                        className="uppercase tracking-widest text-xs font-bold text-slate-500"
                         style={{
                           letterSpacing: '0.1em',
                         }}>
@@ -312,7 +312,7 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
+                      className="uppercase tracking-widest text-xs font-bold text-slate-500"
                       style={{
                         letterSpacing: '0.1em',
                       }}>
@@ -337,7 +337,7 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
+                      className="uppercase tracking-widest text-xs font-bold text-slate-500"
                       style={{
                         letterSpacing: '0.1em',
                       }}>
@@ -381,7 +381,7 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
+                      className="uppercase tracking-widest text-xs font-bold text-slate-500"
                       style={{
                         letterSpacing: '0.1em',
                       }}>

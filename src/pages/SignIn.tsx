@@ -264,7 +264,7 @@ export default function SignIn() {
                 Entrar no Terminal
               </h2>
               <p
-                className="text-on-surface-subtle"
+                className="text-slate-500"
                 style={{
                   fontSize: '0.9rem',
                 }}>
@@ -291,7 +291,7 @@ export default function SignIn() {
                     <FormItem>
                       <FormLabel
                         htmlFor="signin-email"
-                        className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
+                        className="uppercase tracking-widest text-xs font-bold text-slate-500"
                         style={{
                           letterSpacing: '0.1em',
                         }}>
@@ -319,7 +319,7 @@ export default function SignIn() {
                       <div className="flex items-center justify-between">
                         <FormLabel
                           htmlFor="signin-password"
-                          className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
+                          className="uppercase tracking-widest text-xs font-bold text-slate-500"
                           style={{
                             letterSpacing: '0.1em',
                           }}>
