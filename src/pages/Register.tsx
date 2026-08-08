@@ -119,18 +119,16 @@ export default function Register() {
   return (
     <div
       id="register-page"
-      className="min-h-screen flex"
+      className="dark min-h-screen flex"
       style={{fontFamily: 'var(--font-body)'}}>
       {/* Painel esquerdo - editorial */}
-      <div
-        className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-        style={{backgroundColor: 'var(--auth-panel)'}}>
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14 bg-surface-panel">
         {/* Glow ambiental */}
         <div
           className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
           style={{
             background:
-              'radial-gradient(circle, var(--auth-highlight-mid) 0%, transparent 70%)',
+              'radial-gradient(circle, hsl(var(--brand) / 0.07) 0%, transparent 70%)',
           }}
         />
 
@@ -143,10 +141,8 @@ export default function Register() {
         <div className="relative z-10 flex-1 flex flex-col justify-center">
           <div className="mb-6 inline-flex">
             <span
-              className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full"
+              className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full text-on-surface-accent bg-brand/[0.12]"
               style={{
-                color: 'var(--auth-text-accent)',
-                backgroundColor: 'var(--auth-highlight)',
                 fontFamily: 'var(--font-body)',
                 letterSpacing: '0.12em',
               }}>
@@ -154,9 +150,8 @@ export default function Register() {
             </span>
           </div>
           <h1
-            className="font-bold leading-tight mb-5"
+            className="font-bold leading-tight mb-5 text-on-surface"
             style={{
-              color: 'var(--auth-text-main)',
               fontSize: '2.75rem',
               fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
@@ -164,9 +159,8 @@ export default function Register() {
             Comece sua jornada de investimentos hoje.
           </h1>
           <p
-            className="leading-relaxed"
+            className="leading-relaxed text-on-surface-muted/75"
             style={{
-              color: 'var(--auth-text-body)',
               fontSize: '1rem',
               lineHeight: '1.7',
             }}>
@@ -196,28 +190,19 @@ export default function Register() {
             ].map((item, index) => (
               <div
                 key={index}
-                className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-[#1a253d]"
-                style={{backgroundColor: 'var(--auth-surface)'}}>
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center"
-                  style={{
-                    backgroundColor: 'var(--auth-brand-soft-10)',
-                    color: 'var(--auth-brand)',
-                  }}>
+                className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-[#1a253d] bg-surface-raised">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-brand/10 text-brand">
                   {item.icon}
                 </div>
                 <div>
                   <div
-                    className="font-semibold text-sm mb-0.5"
+                    className="font-semibold text-sm mb-0.5 text-on-surface"
                     style={{
-                      color: 'var(--auth-text-main)',
                       fontFamily: 'var(--font-heading)',
                     }}>
                     {item.title}
                   </div>
-                  <div
-                    className="text-xs"
-                    style={{color: 'var(--auth-text-muted)'}}>
+                  <div className="text-xs text-on-surface-muted/60">
                     {item.desc}
                   </div>
                 </div>
@@ -227,9 +212,7 @@ export default function Register() {
         </div>
 
         {/* Rodapé */}
-        <p
-          className="text-xs relative z-10"
-          style={{color: 'var(--auth-text-soft)'}}>
+        <p className="text-xs relative z-10 text-on-surface-muted/40">
           © 2025 Trackerr. Plataforma de análise de investimentos.
         </p>
       </div>
@@ -247,23 +230,20 @@ export default function Register() {
           {/* Cabeçalho do form */}
           <div className="mb-8">
             <h2
-              className="font-bold mb-2"
+              className="font-bold mb-2 text-surface-panel"
               style={{
-                color: 'var(--auth-panel)',
                 fontSize: '1.875rem',
                 fontFamily: 'var(--font-heading)',
                 letterSpacing: '-0.02em',
               }}>
               Criar conta
             </h2>
-            <p
-              style={{color: 'var(--auth-text-secondary)', fontSize: '0.9rem'}}>
+            <p className="text-on-surface-subtle" style={{fontSize: '0.9rem'}}>
               Já possui uma conta?{' '}
               <button
                 id="register-goto-signin"
                 onClick={() => navigate('/signin')}
-                className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline"
-                style={{color: 'var(--auth-brand)'}}>
+                className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline text-brand">
                 Faça login
               </button>
             </p>
@@ -282,9 +262,8 @@ export default function Register() {
                   render={({field}) => (
                     <FormItem>
                       <FormLabel
-                        className="uppercase tracking-widest text-xs font-bold"
+                        className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
                         style={{
-                          color: 'var(--auth-text-secondary)',
                           letterSpacing: '0.1em',
                         }}>
                         Nome
@@ -294,8 +273,7 @@ export default function Register() {
                           id="register-firstname"
                           placeholder="João"
                           {...field}
-                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
-                          style={{color: 'var(--auth-panel)'}}
+                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
                         />
                       </FormControl>
                       <FormMessage />
@@ -308,9 +286,8 @@ export default function Register() {
                   render={({field}) => (
                     <FormItem>
                       <FormLabel
-                        className="uppercase tracking-widest text-xs font-bold"
+                        className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
                         style={{
-                          color: 'var(--auth-text-secondary)',
                           letterSpacing: '0.1em',
                         }}>
                         Sobrenome
@@ -320,8 +297,7 @@ export default function Register() {
                           id="register-lastname"
                           placeholder="Silva"
                           {...field}
-                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
-                          style={{color: 'var(--auth-panel)'}}
+                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
                         />
                       </FormControl>
                       <FormMessage />
@@ -336,9 +312,8 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold"
+                      className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
                       style={{
-                        color: 'var(--auth-text-secondary)',
                         letterSpacing: '0.1em',
                       }}>
                       E-mail
@@ -348,8 +323,7 @@ export default function Register() {
                         id="register-email"
                         placeholder="seu@email.com"
                         {...field}
-                        className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
-                        style={{color: 'var(--auth-panel)'}}
+                        className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
                       />
                     </FormControl>
                     <FormMessage />
@@ -363,9 +337,8 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold"
+                      className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
                       style={{
-                        color: 'var(--auth-text-secondary)',
                         letterSpacing: '0.1em',
                       }}>
                       Senha
@@ -377,8 +350,7 @@ export default function Register() {
                           type={showPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           {...field}
-                          className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
-                          style={{color: 'var(--auth-panel)'}}
+                          className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
                         />
                       </FormControl>
                       <Button
@@ -409,9 +381,8 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold"
+                      className="uppercase tracking-widest text-xs font-bold text-on-surface-subtle"
                       style={{
-                        color: 'var(--auth-text-secondary)',
                         letterSpacing: '0.1em',
                       }}>
                       Confirmar Senha
@@ -423,8 +394,7 @@ export default function Register() {
                           type={showConfirmPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           {...field}
-                          className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)] bg-slate-50/50"
-                          style={{color: 'var(--auth-panel)'}}
+                          className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
                         />
                       </FormControl>
                       <Button
@@ -503,7 +473,7 @@ export default function Register() {
                         id="register-accept-terms"
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        className="mt-0.5 border-slate-300 data-[state=checked]:bg-[var(--auth-brand)] data-[state=checked]:border-[var(--auth-brand)]"
+                        className="mt-0.5 border-slate-300 data-[state=checked]:bg-brand data-[state=checked]:border-brand"
                         required
                       />
                     </FormControl>
@@ -513,13 +483,13 @@ export default function Register() {
                       Eu li e concordo com os{' '}
                       <a
                         href="#"
-                        className="font-semibold text-[var(--auth-brand)] hover:underline underline-offset-4 decoration-primary/30 transition-colors">
+                        className="font-semibold text-brand hover:underline underline-offset-4 decoration-primary/30 transition-colors">
                         Termos de Uso
                       </a>{' '}
                       e{' '}
                       <a
                         href="#"
-                        className="font-semibold text-[var(--auth-brand)] hover:underline underline-offset-4 decoration-primary/30 transition-colors">
+                        className="font-semibold text-brand hover:underline underline-offset-4 decoration-primary/30 transition-colors">
                         Política de Privacidade
                       </a>
                     </FormLabel>
@@ -537,10 +507,8 @@ export default function Register() {
               <Button
                 id="register-submit"
                 type="submit"
-                className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20"
+                className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))]"
                 style={{
-                  background:
-                    'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                   color: '#f9f7ff',
                 }}
                 disabled={loading}>
