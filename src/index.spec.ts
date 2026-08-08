@@ -33,17 +33,36 @@ function extrairTokens(css: string, seletor: string): string[] {
     .sort();
 }
 
+/**
+ * Tokens que não mudam entre os temas: uma pilha de fontes e um raio de canto
+ * são os mesmos no claro e no escuro. Declarados uma vez em :root, a cascata
+ * os entrega aos dois — duplicá-los em .dark criaria duas fontes de verdade
+ * que ninguém garante sincronizadas.
+ */
+const INVARIANTES = ['--font-body', '--font-heading', '--radius'];
+
 describe('paridade de tokens entre os temas', () => {
   const css = readFileSync(resolve(__dirname, 'index.css'), 'utf8');
 
-  it(':root e .dark declaram exatamente o mesmo conjunto de tokens', () => {
-    const claro = extrairTokens(css, ':root {');
-    const escuro = extrairTokens(css, '.dark {');
+  it(':root e .dark declaram exatamente o mesmo conjunto de tokens de cor', () => {
+    const claro = extrairTokens(css, ':root {').filter(
+      (t) => !INVARIANTES.includes(t),
+    );
+    const escuro = extrairTokens(css, '.dark {').filter(
+      (t) => !INVARIANTES.includes(t),
+    );
 
     const soNoClaro = claro.filter((t) => !escuro.includes(t));
     const soNoEscuro = escuro.filter((t) => !claro.includes(t));
 
     expect({soNoClaro, soNoEscuro}).toEqual({soNoClaro: [], soNoEscuro: []});
+  });
+
+  it('os tokens invariantes existem em :root, de onde a cascata os entrega', () => {
+    const claro = extrairTokens(css, ':root {');
+    for (const token of INVARIANTES) {
+      expect(claro).toContain(token);
+    }
   });
 
   it('define os tokens canônicos de superfície e texto', () => {

@@ -125,13 +125,6 @@
   }
 
   .dark {
-    /* Tokens invariantes por tema, repetidos aqui apenas para que o
-       teste de paridade veja o mesmo conjunto de nomes nos dois blocos
-       — o valor é idêntico em claro e escuro, então não há repaint. */
-    --font-body: 'Inter', 'Segoe UI', Arial, sans-serif;
-    --font-heading: 'Manrope', 'Inter', 'Segoe UI', sans-serif;
-    --radius: 0.5rem;
-
     /* ──────────────────────────────────────────────────────────────
      * PALETA ESCURA — a mesma da landing. Preto-azulado quase neutro,
      * para o azul da marca virar acento raro em vez de banho de cor.
