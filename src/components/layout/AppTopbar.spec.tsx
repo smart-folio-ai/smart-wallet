@@ -1,4 +1,4 @@
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {SidebarProvider} from '@/components/ui/sidebar';
@@ -9,6 +9,22 @@ const mockUseSubscription = vi.fn();
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => mockUseSubscription(),
 }));
+
+beforeAll(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+});
 
 function renderTopbar() {
   return render(
