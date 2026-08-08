@@ -389,7 +389,7 @@ export default function SignIn() {
                 <Button
                   id="signin-submit"
                   type="submit"
-                  className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-gradient-to-br from-brand to-brand-strong"
+                  className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))]"
                   style={{
                     color: '#f9f7ff',
                   }}
