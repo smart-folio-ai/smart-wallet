@@ -77,12 +77,12 @@ export function FeatureTourModal({
 
           <AlertDialogFooter className="mt-6 border-t border-slate-700 pt-4">
             <AlertDialogCancel
-              className="border-slate-500 bg-transparent text-white hover:bg-slate-700"
+              className="border-surface-hairline/20 bg-transparent text-on-surface hover:bg-surface-hairline/10"
               onClick={onExit}>
               Sair
             </AlertDialogCancel>
             <AlertDialogCancel
-              className="border-slate-500 bg-transparent text-white hover:bg-slate-700"
+              className="border-surface-hairline/20 bg-transparent text-on-surface hover:bg-surface-hairline/10"
               onClick={onSkip}>
               Pular tutorial
             </AlertDialogCancel>

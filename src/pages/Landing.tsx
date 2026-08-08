@@ -12,15 +12,16 @@ import {LandingFooter} from '@/components/landing/sections/LandingFooter';
 import {useGsapReveal} from '@/components/landing/motion/useGsapReveal';
 
 /**
- * A classe .landing-root escopa as superfícies escurecidas do redesign.
- * Sem ela, a landing herdaria os tokens globais — que continuam servindo as
- * páginas de autenticação e não devem mudar nesta etapa.
+ * A classe `dark` mantém a landing escura independentemente do tema escolhido
+ * no app. Antes isso era feito por um escopo próprio (.landing-root) que
+ * redefinia as superfícies; agora "escuro" é um tema global e a landing apenas
+ * o declara.
  */
 export default function Landing() {
   const containerRef = useGsapReveal<HTMLDivElement>();
 
   return (
-    <div ref={containerRef} className="landing-root min-h-screen font-body">
+    <div ref={containerRef} className="dark min-h-screen bg-surface font-body">
       <LandingNav />
 
       <main>

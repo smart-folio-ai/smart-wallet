@@ -218,20 +218,6 @@
   }
 }
 
-/* ──────────────────────────────────────────────────────────────────
- * Superfícies escurecidas do redesign, escopadas à landing.
- * Ficam fora de :root de propósito: os aliases --auth-* derivam dos
- * tokens globais e as páginas de autenticação não devem mudar agora.
- * ────────────────────────────────────────────────────────────────── */
-.landing-root {
-  --surface-base: 224 30% 6%;
-  --surface-panel: 224 28% 8%;
-  --surface-raised: 223 24% 11%;
-
-  background-color: hsl(var(--surface-base));
-  color: hsl(var(--on-surface));
-}
-
 @layer base {
   * {
     @apply border-border;
