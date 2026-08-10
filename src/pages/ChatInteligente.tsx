@@ -1,8 +1,8 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
-import {Input} from '@/components/ui/input';
 import {Badge} from '@/components/ui/badge';
+import {ChatMentionInput} from '@/components/chat/ChatMentionInput';
 import {MessageSquare, Send, AlertTriangle, Bot, User2, Sparkles, RotateCcw} from 'lucide-react';
 import {useSubscription} from '@/hooks/useSubscription';
 import {PremiumBlur} from '@/components/ui/premium-blur';
@@ -664,17 +664,12 @@ export default function ChatInteligente() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Input
+                <ChatMentionInput
                   value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      sendQuestion(question);
-                    }
-                  }}
-                  placeholder="Pergunte sobre carteira, comparação, imposto, risco ou encaixe..."
-                  aria-label="Pergunta do chat"
+                  onValueChange={setQuestion}
+                  onEnter={() => sendQuestion(question)}
+                  placeholder="Pergunte sobre carteira, comparação, imposto, risco ou encaixe... (use @ para mencionar um ativo)"
+                  disabled={sending || !hasProOrHigher}
                 />
                 <Button type="button" onClick={() => sendQuestion(question)} disabled={!canSend}>
                   <Send className="h-4 w-4 mr-2" />
