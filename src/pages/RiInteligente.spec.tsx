@@ -309,4 +309,54 @@ describe('RiInteligente', () => {
       expect(screen.queryByText(/ri_no_documents_found/i)).toBeNull();
     });
   });
+
+  it('shows an animated spinner (not just static text) while a search is loading', async () => {
+    // Mock search to never resolve, keeping the component in loading state
+    searchRiDocumentsMock.mockImplementation(
+      () => new Promise(() => {
+        // Never resolves
+      }),
+    );
+
+    renderPage();
+    await executeSearch();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('ri-loading-spinner')).toBeDefined();
+    });
+  });
+
+  it(
+    'shows a "may take a while" notice after 15 seconds of loading',
+    async () => {
+      // Mock search to never resolve, keeping the component in loading state
+      searchRiDocumentsMock.mockImplementation(
+        () => new Promise(() => {
+          // Never resolves
+        }),
+      );
+
+      renderPage();
+      await executeSearch();
+
+      // Spinner should be visible immediately
+      await waitFor(() => {
+        expect(screen.getByTestId('ri-loading-spinner')).toBeDefined();
+      });
+
+      // Slow-notice should NOT be visible yet
+      expect(
+        screen.queryByText(/pode levar até um minuto/i),
+      ).toBeNull();
+
+      // Wait for the timer to fire (15 seconds)
+      await waitFor(
+        () => {
+          expect(screen.getByText(/pode levar até um minuto/i)).toBeDefined();
+        },
+        {timeout: 20000},
+      );
+    },
+    25000,
+  );
 });
