@@ -41,6 +41,8 @@ export function ChatMentionInput({
   const [suggestions, setSuggestions] = useState<RiAssetSuggestion[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [mentionStart, setMentionStart] = useState<number | null>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [focusPending, setFocusPending] = useState(false);
 
   // Keep the local, immediately-editable text in sync with the controlled
   // `value` prop whenever the parent updates it (including externally, e.g.
@@ -80,6 +82,7 @@ export function ChatMentionInput({
       if (requestId !== requestSeqRef.current) return;
       setSuggestions(results);
       setShowDropdown(results.length > 0);
+      setHighlightedIndex(0);
     });
   }
 
@@ -93,7 +96,19 @@ export function ChatMentionInput({
     setText(updated);
     onValueChange(updated);
     setShowDropdown(false);
+    setFocusPending(true);
   }
+
+  // Return focus to the input after a suggestion selection closes the
+  // dropdown and the input re-renders with the updated value.
+  useEffect(() => {
+    if (!focusPending) return;
+    const frame = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      setFocusPending(false);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusPending]);
 
   return (
     <div ref={containerRef} className="relative flex-1">
@@ -104,9 +119,31 @@ export function ChatMentionInput({
         disabled={disabled}
         onChange={handleChange}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && !showDropdown) {
+          if (e.key === 'ArrowDown' && showDropdown) {
+            e.preventDefault();
+            setHighlightedIndex((current) =>
+              Math.min(current + 1, suggestions.length - 1),
+            );
+            return;
+          }
+          if (e.key === 'ArrowUp' && showDropdown) {
+            e.preventDefault();
+            setHighlightedIndex((current) => Math.max(current - 1, 0));
+            return;
+          }
+          if (e.key === 'Enter') {
+            const highlighted = showDropdown ? suggestions[highlightedIndex] : undefined;
+            if (highlighted) {
+              e.preventDefault();
+              selectSuggestion(highlighted);
+              return;
+            }
+            // Either the dropdown is closed, or it's open with no
+            // suggestion highlighted (e.g. empty list) — fall back to the
+            // default Enter behavior of sending the message.
             e.preventDefault();
             onEnter();
+            return;
           }
           if (e.key === 'Escape') {
             setShowDropdown(false);
@@ -116,11 +153,14 @@ export function ChatMentionInput({
       />
       {showDropdown && (
         <div className="absolute bottom-full left-0 z-10 mb-1 w-72 rounded-md border border-border bg-popover shadow-md">
-          {suggestions.map((suggestion) => (
+          {suggestions.map((suggestion, index) => (
             <button
               key={suggestion.ticker}
               type="button"
-              className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent"
+              className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent ${
+                index === highlightedIndex ? 'bg-accent' : ''
+              }`}
+              onMouseEnter={() => setHighlightedIndex(index)}
               onClick={() => selectSuggestion(suggestion)}>
               <span className="font-medium">{suggestion.ticker}</span>
               <span className="ml-2 truncate text-xs text-muted-foreground">
