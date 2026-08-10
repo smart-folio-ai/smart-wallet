@@ -53,18 +53,17 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
           return;
         }
 
-        if (result.requiresTwoFactor) {
-          sessionStorage.setItem('2fa_temp_token', result.tempToken);
+        if (result.requires2FA) {
           navigate('/2fa-verify');
           return;
         }
 
-        localStorage.setItem('access_token', result.accessToken);
-        localStorage.setItem('refresh_token', result.refreshToken);
-        if (keepConnected) {
-          localStorage.setItem('keepConnected', 'true');
-        }
-        window.dispatchEvent(new Event('auth:login'));
+        // AuthenticationService.authenticateWithGoogle already persisted
+        // access_token/refresh_token/keepConnected to localStorage and
+        // dispatched 'auth:login' internally on success (see
+        // src/services/authentication/index.ts). Writing them again here
+        // (previously with undefined values) clobbered the real tokens —
+        // do not duplicate that write.
         navigate('/dashboard');
       } catch (error: any) {
         showError(

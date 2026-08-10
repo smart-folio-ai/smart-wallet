@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {GoogleLoginButton} from './GoogleLoginButton';
 import AuthenticationService from '@/services/authentication';
@@ -76,11 +76,17 @@ describe('GoogleLoginButton', () => {
     vi.restoreAllMocks();
   });
 
-  it('stores tokens and navigates to /dashboard on successful login', async () => {
+  it('does not clobber the token the service already stored, and navigates to /dashboard on successful login', async () => {
+    // Real AuthenticationService.authenticateWithGoogle contract: on success
+    // it writes access_token/refresh_token to localStorage ITSELF and
+    // returns only {success: true} (no accessToken/refreshToken in the
+    // returned object). Simulate that prior write here, then assert the
+    // component does not overwrite it with "undefined".
+    localStorage.setItem('access_token', 'pre-existing-real-token');
+    localStorage.setItem('refresh_token', 'pre-existing-real-refresh');
+
     (AuthenticationService.authenticateWithGoogle as any).mockResolvedValue({
       success: true,
-      accessToken: 'real-token',
-      refreshToken: 'real-refresh',
     });
 
     renderButton();
@@ -93,10 +99,10 @@ describe('GoogleLoginButton', () => {
     await initializeCall.callback({credential: 'fake-id-token'});
 
     await waitFor(() => {
-      expect(localStorage.getItem('access_token')).toBe('real-token');
-      expect(localStorage.getItem('refresh_token')).toBe('real-refresh');
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     });
+    expect(localStorage.getItem('access_token')).toBe('pre-existing-real-token');
+    expect(localStorage.getItem('refresh_token')).toBe('pre-existing-real-refresh');
   });
 
   it('does not store tokens or navigate when authentication fails, and shows an error', async () => {
@@ -120,11 +126,14 @@ describe('GoogleLoginButton', () => {
     });
   });
 
-  it('routes to 2FA verification without touching tokens when requiresTwoFactor is true', async () => {
+  it('routes to 2FA verification without touching tokens when requires2FA is true', async () => {
+    // Real contract: on the 2FA branch the service already wrote
+    // 2fa_temp_token to sessionStorage internally and returns
+    // {success: true, requires2FA: true} — no tempToken field on the
+    // returned object.
     (AuthenticationService.authenticateWithGoogle as any).mockResolvedValue({
       success: true,
-      requiresTwoFactor: true,
-      tempToken: 'temp-123',
+      requires2FA: true,
     });
 
     renderButton();
@@ -137,7 +146,6 @@ describe('GoogleLoginButton', () => {
     await initializeCall.callback({credential: 'fake-id-token'});
 
     await waitFor(() => {
-      expect(sessionStorage.getItem('2fa_temp_token')).toBe('temp-123');
       expect(mockNavigate).toHaveBeenCalledWith('/2fa-verify');
     });
     expect(localStorage.getItem('access_token')).toBeNull();
