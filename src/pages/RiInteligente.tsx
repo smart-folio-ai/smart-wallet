@@ -1,8 +1,9 @@
-import {useMemo, useState} from 'react';
+import {useMemo, useState, useEffect} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {
   FileSearch,
   FileText,
+  Loader2,
   RefreshCcw,
   Search,
   Sparkles,
@@ -190,6 +191,7 @@ const RiInteligente = () => {
     useState<RiDocumentListItem | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summary, setSummary] = useState<RiDocumentSummaryOutput | null>(null);
+  const [showSlowNotice, setShowSlowNotice] = useState(false);
 
   const {planName, isSubscribed} = useSubscription();
   const canUseAiSummary = isPremiumOrGlobal(planName, isSubscribed);
@@ -243,6 +245,15 @@ const RiInteligente = () => {
       fallback.suggestedFilters,
     ],
   );
+
+  useEffect(() => {
+    if (!isLoading) {
+      setShowSlowNotice(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowSlowNotice(true), 15000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   const handleOpenDocument = (document: RiDocumentListItem) => {
     if (!document.source?.value) return;
@@ -434,8 +445,14 @@ const RiInteligente = () => {
               Type a ticker (e.g. PETR4) and click search.
             </div>
           ) : isLoading ? (
-            <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-              Carregando documentos...
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" data-testid="ri-loading-spinner" />
+              <span>Carregando documentos...</span>
+              {showSlowNotice && (
+                <span className="text-xs text-amber-300">
+                  Isso pode levar até um minuto — estamos consultando múltiplas fontes oficiais.
+                </span>
+              )}
             </div>
           ) : documents.length === 0 ? (
             <div
