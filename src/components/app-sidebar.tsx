@@ -25,7 +25,6 @@ import {
   Plus,
   ShieldCheck,
   Search,
-  Settings,
   Star,
   Users,
   Wallet,
@@ -47,35 +46,25 @@ type NavSection = {
 
 const sections: NavSection[] = [
   {
-    label: 'Visão Geral',
+    label: 'Investir',
     items: [
       {to: '/dashboard', label: 'Dashboard', icon: BarChart3},
+      {to: '/portfolio', label: 'Portfólio', icon: Layers},
+      {to: '/add-asset', label: 'Adicionar Ativo', icon: Plus},
+      {to: '/dividends', label: 'Dividendos', icon: Wallet},
+      {to: '/transactions', label: 'Transações', icon: Wallet},
       {to: '/planning', label: 'Planejamento', icon: Calculator},
       {to: '/comparator', label: 'Comparador', icon: GitCompare},
-      {to: '/transactions', label: 'Transações', icon: Wallet},
-      {to: '/fiscal', label: 'Fiscal', icon: FileSpreadsheet},
-      {to: '/ri-inteligente', label: 'RI Inteligente', icon: FileText},
     ],
   },
   {
-    label: 'Análise',
+    label: 'Inteligência',
     items: [
       {to: '/ai-insights', label: 'IA Insights', icon: Star},
       {to: '/chat-inteligente', label: 'Chat Inteligente', icon: MessageSquare},
       {to: '/asset-search', label: 'Buscar Ativos', icon: Search},
-    ],
-  },
-  {
-    label: 'Carteira',
-    items: [
-      {to: '/portfolio', label: 'Portfólio', icon: Layers},
-      {to: '/add-asset', label: 'Adicionar Ativo', icon: Plus},
-      {to: '/dividends', label: 'Dividendos', icon: Wallet},
-    ],
-  },
-  {
-    label: 'Conectar',
-    items: [
+      {to: '/ri-inteligente', label: 'RI Inteligente', icon: FileText},
+      {to: '/fiscal', label: 'Fiscal', icon: FileSpreadsheet},
       {
         to: '/sync-accounts',
         label: 'Sincronizar Contas',
@@ -85,11 +74,7 @@ const sections: NavSection[] = [
   },
 ];
 
-const footerItems: NavItem[] = [
-  {to: '/settings', label: 'Configurações', icon: Settings},
-  {to: '/subscription', label: 'Assinatura', icon: Users},
-  {to: '/signout', label: 'Sair', icon: LogOut},
-];
+const footerItems: NavItem[] = [{to: '/signout', label: 'Sair', icon: LogOut}];
 
 function SidebarLink({to, label, icon: Icon}: NavItem) {
   return (

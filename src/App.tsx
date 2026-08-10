@@ -1,6 +1,6 @@
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {BrowserRouter, Routes, Route, useLocation} from 'react-router-dom';
-import {useEffect} from 'react';
+import {lazy, Suspense, useEffect} from 'react';
 import {Toaster} from '@/components/ui/toaster';
 import {Toaster as Sonner} from '@/components/ui/sonner';
 import {TooltipProvider} from '@/components/ui/tooltip';
@@ -12,7 +12,9 @@ import {ConsentProvider} from '@/contexts/ConsentContext';
 import {CookieConsentBanner} from '@/components/CookieConsentBanner';
 
 import Index from './pages/Index';
-import Landing from './pages/Landing';
+// Carregada sob demanda: só a landing usa GSAP, então o bundle do app
+// autenticado não paga por essa dependência.
+const Landing = lazy(() => import('./pages/Landing'));
 import SyncAccounts from './pages/SyncAccounts';
 import AIInsights from './pages/AIInsights';
 import ChatInteligente from './pages/ChatInteligente';
@@ -77,7 +79,20 @@ const App = () => (
         <CookieConsentBanner />
         <ScrollToTopOnRouteChange />
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route
+            path="/"
+            element={
+              <Suspense
+                fallback={
+                  <div
+                    className="min-h-screen"
+                    style={{background: 'hsl(var(--surface-base))'}}
+                  />
+                }>
+                <Landing />
+              </Suspense>
+            }
+          />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

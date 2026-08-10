@@ -276,7 +276,7 @@ export default function Settings() {
       // (ajustando para um POST ou PUT no /address associando ao user)
       const tokenLocal = localStorage.getItem('access_token');
       await api.post(
-        '/address/create',
+        '/addresses',
         {
           userId,
           street: data.address.street,
@@ -1267,16 +1267,16 @@ export default function Settings() {
             </CardFooter>
           </Card>
         </TabsContent>
-      </Tabs>
 
-      {/* ── Privacidade ── */}
-      <TabsContent value="privacy" className="space-y-6">
-        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-          <CardContent className="pt-6">
-            <PrivacySettings />
-          </CardContent>
-        </Card>
-      </TabsContent>
+        {/* ── Privacidade ── */}
+        <TabsContent value="privacy" className="space-y-6">
+          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
+            <CardContent className="pt-6">
+              <PrivacySettings />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

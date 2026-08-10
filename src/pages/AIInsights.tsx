@@ -536,7 +536,7 @@ const AIInsights: React.FC = () => {
                       </span>
                     </span>
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">
-                      <ArrowRight className="h-4 w-4 text-primary group-hover:text-white transition-colors" />
+                      <ArrowRight className="h-4 w-4 text-primary group-hover:text-primary-foreground transition-colors" />
                     </div>
                   </div>
                 </div>

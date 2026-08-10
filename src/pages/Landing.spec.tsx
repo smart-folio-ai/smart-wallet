@@ -34,7 +34,7 @@ describe('Landing', () => {
   it('abre com a promessa central e o caminho de conversão', () => {
     renderLanding();
 
-    expect(screen.getAllByAltText('trackerr').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Trackerr').length).toBeGreaterThan(0);
     expect(screen.getByText(/sua carteira inteira/i)).toBeInTheDocument();
     expect(
       screen.getByText(/sem planilha, sem surpresa no ir/i),

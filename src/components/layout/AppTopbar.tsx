@@ -1,9 +1,10 @@
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Bell, Search } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Bell, Search, Settings, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': {
@@ -86,6 +87,7 @@ export function AppTopbar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const meta = getPageMeta(pathname);
+  const { displayPlanName, isSubscribed, isLoading } = useSubscription();
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/95 backdrop-blur-xl">
@@ -111,7 +113,42 @@ export function AppTopbar() {
             Buscar ativos
           </Button>
 
-          <Badge variant="secondary" className="hidden sm:inline-flex">SaaS Preview</Badge>
+          {isLoading ? (
+            <Skeleton className="h-8 w-20 rounded-full" />
+          ) : isSubscribed ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="hidden sm:flex"
+              onClick={() => navigate('/subscription')}
+            >
+              {displayPlanName || 'Assinatura'}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              className="bg-primary text-primary-foreground shadow-sm hover:brightness-110"
+              onClick={() => navigate('/subscription')}
+            >
+              <Sparkles className="mr-2 h-3.5 w-3.5" />
+              Upgrade
+            </Button>
+          )}
+
+          <Separator orientation="vertical" className="hidden h-6 sm:block" />
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => navigate('/settings')}
+          >
+            <Settings className="h-4 w-4" />
+            <span className="sr-only">Configurações</span>
+          </Button>
 
           <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
             <Bell className="h-4 w-4" />

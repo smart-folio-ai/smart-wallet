@@ -58,14 +58,10 @@ function LoadingState() {
     <div
       id="reset-password-loading"
       data-testid="reset-password-loading"
-      className="min-h-screen flex items-center justify-center"
-      style={{backgroundColor: 'var(--auth-bg)'}}>
+      className="dark min-h-screen flex items-center justify-center bg-surface">
       <div className="flex flex-col items-center gap-4">
-        <Loader2
-          className="w-10 h-10 animate-spin"
-          style={{color: 'var(--auth-brand)'}}
-        />
-        <p className="text-sm" style={{color: 'var(--auth-text-muted)'}}>
+        <Loader2 className="w-10 h-10 animate-spin text-brand" />
+        <p className="text-sm text-on-surface-muted/60">
           Validando link de recuperação...
         </p>
       </div>
@@ -88,18 +84,14 @@ function InvalidTokenState({
     <div
       id="reset-password-invalid"
       data-testid="reset-password-invalid"
-      className="min-h-screen flex items-center justify-center p-8"
-      style={{backgroundColor: 'var(--auth-bg)'}}>
+      className="dark min-h-screen flex items-center justify-center p-8 bg-surface">
       <div className="w-full max-w-md text-center">
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-          style={{backgroundColor: 'var(--auth-danger-soft)'}}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 bg-negative/[0.12]">
           <AlertCircle className="w-8 h-8" style={{color: '#ffb59a'}} />
         </div>
         <h2
-          className="font-bold mb-3"
+          className="font-bold mb-3 text-on-surface"
           style={{
-            color: 'var(--auth-text-main)',
             fontSize: '1.75rem',
             fontFamily: 'var(--font-heading)',
             letterSpacing: '-0.02em',
@@ -107,17 +99,15 @@ function InvalidTokenState({
           {title}
         </h2>
         <p
-          className="mb-8 leading-relaxed"
-          style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem'}}>
+          className="mb-8 leading-relaxed text-on-surface-muted/60"
+          style={{fontSize: '0.9rem'}}>
           {description}
         </p>
         <Button
           id="reset-password-request-new"
           onClick={onRetry}
-          className="w-full h-12 font-semibold text-sm"
+          className="w-full h-12 font-semibold text-sm bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))]"
           style={{
-            background:
-              'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
             color: '#f9f7ff',
           }}>
           Solicitar novo link
@@ -243,20 +233,17 @@ export default function ResetPassword() {
   return (
     <div
       id="reset-password-page"
-      className="min-h-screen flex"
+      className="dark min-h-screen flex bg-surface"
       style={{
-        backgroundColor: 'var(--auth-bg)',
         fontFamily: 'var(--font-body)',
       }}>
       {/* Painel esquerdo */}
-      <div
-        className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-        style={{backgroundColor: 'var(--auth-panel)'}}>
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14 bg-surface-panel">
         <div
           className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
           style={{
             background:
-              'radial-gradient(circle, var(--auth-highlight-soft) 0%, transparent 70%)',
+              'radial-gradient(circle, hsl(var(--brand) / 0.08) 0%, transparent 70%)',
           }}
         />
 
@@ -269,10 +256,8 @@ export default function ResetPassword() {
         <div className="relative z-10 flex-1 flex flex-col justify-center">
           <div className="mb-6 inline-flex">
             <span
-              className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full"
+              className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full text-on-surface-accent bg-brand/[0.12]"
               style={{
-                color: 'var(--auth-text-accent)',
-                backgroundColor: 'var(--auth-highlight)',
                 fontFamily: 'var(--font-body)',
                 letterSpacing: '0.12em',
               }}>
@@ -280,9 +265,8 @@ export default function ResetPassword() {
             </span>
           </div>
           <h1
-            className="font-bold leading-tight mb-5"
+            className="font-bold leading-tight mb-5 text-on-surface"
             style={{
-              color: 'var(--auth-text-main)',
               fontSize: '2.75rem',
               fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
@@ -290,9 +274,8 @@ export default function ResetPassword() {
             Quase lá. Crie uma nova senha segura.
           </h1>
           <p
-            className="leading-relaxed"
+            className="leading-relaxed text-on-surface-muted/75"
             style={{
-              color: 'var(--auth-text-body)',
               fontSize: '1rem',
               lineHeight: '1.7',
             }}>
@@ -309,15 +292,9 @@ export default function ResetPassword() {
             ].map((tip) => (
               <div
                 key={tip}
-                className="flex items-center gap-3 rounded-xl p-4"
-                style={{backgroundColor: 'var(--auth-surface)'}}>
-                <ShieldCheck
-                  className="w-4 h-4 flex-shrink-0"
-                  style={{color: 'var(--auth-brand)'}}
-                />
-                <span
-                  className="text-sm"
-                  style={{color: 'var(--auth-text-body-strong)'}}>
+                className="flex items-center gap-3 rounded-xl p-4 bg-surface-raised">
+                <ShieldCheck className="w-4 h-4 flex-shrink-0 text-brand" />
+                <span className="text-sm text-on-surface-muted/70">
                   {tip}
                 </span>
               </div>
@@ -325,17 +302,13 @@ export default function ResetPassword() {
           </div>
         </div>
 
-        <p
-          className="text-xs relative z-10"
-          style={{color: 'var(--auth-text-soft)'}}>
+        <p className="text-xs relative z-10 text-on-surface-muted/40">
           © 2025 Trackerr. Plataforma de análise de investimentos.
         </p>
       </div>
 
       {/* Painel direito */}
-      <div
-        className="flex-1 flex items-center justify-center p-8"
-        style={{backgroundColor: 'var(--auth-bg)'}}>
+      <div className="flex-1 flex items-center justify-center p-8 bg-surface">
         <div className="w-full max-w-md">
           {/* Logo mobile */}
           <div className="mb-8 flex justify-center lg:hidden">
@@ -347,12 +320,12 @@ export default function ResetPassword() {
             id="reset-password-back"
             onClick={() => navigate('/signin')}
             className="flex items-center gap-2 mb-8 text-sm transition-colors"
-            style={{color: 'var(--auth-text-muted)'}}
+            style={{color: 'hsl(var(--on-surface-muted) / 0.6)'}}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.color = 'var(--auth-text-accent)')
+              (e.currentTarget.style.color = 'hsl(var(--on-surface-accent))')
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.color = 'var(--auth-text-muted)')
+              (e.currentTarget.style.color = 'hsl(var(--on-surface-muted) / 0.6)')
             }>
             <ArrowLeft className="h-4 w-4" />
             Voltar para o login
@@ -363,18 +336,12 @@ export default function ResetPassword() {
             <div
               id="reset-password-success"
               data-testid="reset-password-success">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{backgroundColor: 'var(--auth-highlight)'}}>
-                <CheckCircle2
-                  className="h-6 w-6"
-                  style={{color: 'var(--auth-text-accent)'}}
-                />
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-brand/[0.12]">
+                <CheckCircle2 className="h-6 w-6 text-on-surface-accent" />
               </div>
               <h2
-                className="font-bold mb-2"
+                className="font-bold mb-2 text-on-surface"
                 style={{
-                  color: 'var(--auth-text-main)',
                   fontSize: '1.875rem',
                   fontFamily: 'var(--font-heading)',
                   letterSpacing: '-0.02em',
@@ -382,9 +349,8 @@ export default function ResetPassword() {
                 Senha redefinida!
               </h2>
               <p
-                className="mb-8"
+                className="mb-8 text-on-surface-muted/60"
                 style={{
-                  color: 'var(--auth-text-muted)',
                   fontSize: '0.9rem',
                   lineHeight: '1.6',
                 }}>
@@ -394,10 +360,8 @@ export default function ResetPassword() {
               <Button
                 id="reset-password-goto-login"
                 onClick={() => navigate('/')}
-                className="w-full h-12 font-semibold text-sm"
+                className="w-full h-12 font-semibold text-sm bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))]"
                 style={{
-                  background:
-                    'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                   color: '#f9f7ff',
                 }}>
                 Ir para o Login
@@ -407,18 +371,12 @@ export default function ResetPassword() {
             /* ── Formulário ── */
             <>
               <div className="mb-8">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{backgroundColor: 'var(--auth-highlight)'}}>
-                  <KeyRound
-                    className="h-6 w-6"
-                    style={{color: 'var(--auth-brand)'}}
-                  />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-brand/[0.12]">
+                  <KeyRound className="h-6 w-6 text-brand" />
                 </div>
                 <h2
-                  className="font-bold mb-2"
+                  className="font-bold mb-2 text-on-surface"
                   style={{
-                    color: 'var(--auth-text-main)',
                     fontSize: '1.875rem',
                     fontFamily: 'var(--font-heading)',
                     letterSpacing: '-0.02em',
@@ -426,7 +384,8 @@ export default function ResetPassword() {
                   Nova senha
                 </h2>
                 <p
-                  style={{color: 'var(--auth-text-muted)', fontSize: '0.9rem'}}>
+                  className="text-on-surface-muted/60"
+                  style={{fontSize: '0.9rem'}}>
                   Digite sua nova senha abaixo.
                   {requiresMfa &&
                     ' Você também precisará informar seu código de Autenticação em Duas Etapas (2FA).'}
@@ -446,9 +405,8 @@ export default function ResetPassword() {
                       render={({field}) => (
                         <FormItem>
                           <FormLabel
-                            className="uppercase tracking-widest text-xs"
+                            className="uppercase tracking-widest text-xs text-on-surface-muted/70"
                             style={{
-                              color: 'var(--auth-text-body-strong)',
                               letterSpacing: '0.1em',
                             }}>
                             Código de Autenticação (2FA)
@@ -460,11 +418,7 @@ export default function ResetPassword() {
                                   <InputOTPSlot
                                     key={index}
                                     index={index}
-                                    className="w-11 h-13 text-base border-0 rounded-lg focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)]"
-                                    style={{
-                                      backgroundColor: 'var(--auth-input)',
-                                      color: 'var(--auth-text-main)',
-                                    }}
+                                    className="w-11 h-13 text-base border-0 rounded-lg focus-visible:ring-1 focus-visible:ring-brand bg-surface-input text-on-surface"
                                   />
                                 ))}
                               </InputOTPGroup>
@@ -483,9 +437,8 @@ export default function ResetPassword() {
                     render={({field}) => (
                       <FormItem>
                         <FormLabel
-                          className="uppercase tracking-widest text-xs"
+                          className="uppercase tracking-widest text-xs text-on-surface-muted/70"
                           style={{
-                            color: 'var(--auth-text-body-strong)',
                             letterSpacing: '0.1em',
                           }}>
                           Nova Senha
@@ -497,19 +450,14 @@ export default function ResetPassword() {
                               type={showPassword ? 'text' : 'password'}
                               placeholder="••••••••"
                               {...field}
-                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)]"
-                              style={{
-                                backgroundColor: 'var(--auth-input)',
-                                color: 'var(--auth-text-main)',
-                              }}
+                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-surface-input text-on-surface"
                             />
                           </FormControl>
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
-                            style={{color: 'var(--auth-text-muted)'}}
+                            className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent text-on-surface-muted/60"
                             onClick={() => setShowPassword(!showPassword)}>
                             {showPassword ? (
                               <EyeOff className="h-4 w-4" />
@@ -533,9 +481,8 @@ export default function ResetPassword() {
                     render={({field}) => (
                       <FormItem>
                         <FormLabel
-                          className="uppercase tracking-widest text-xs"
+                          className="uppercase tracking-widest text-xs text-on-surface-muted/70"
                           style={{
-                            color: 'var(--auth-text-body-strong)',
                             letterSpacing: '0.1em',
                           }}>
                           Confirmar Nova Senha
@@ -547,19 +494,14 @@ export default function ResetPassword() {
                               type={showConfirmPassword ? 'text' : 'password'}
                               placeholder="••••••••"
                               {...field}
-                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-[var(--auth-brand)]"
-                              style={{
-                                backgroundColor: 'var(--auth-input)',
-                                color: 'var(--auth-text-main)',
-                              }}
+                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-surface-input text-on-surface"
                             />
                           </FormControl>
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
-                            style={{color: 'var(--auth-text-muted)'}}
+                            className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent text-on-surface-muted/60"
                             onClick={() =>
                               setShowConfirmPassword(!showConfirmPassword)
                             }>
@@ -580,16 +522,8 @@ export default function ResetPassword() {
                     )}
                   />
 
-                  <div
-                    className="rounded-xl border p-3 text-xs"
-                    style={{
-                      backgroundColor: 'var(--auth-surface)',
-                      borderColor: 'var(--auth-highlight)',
-                      color: 'var(--auth-text-muted)',
-                    }}>
-                    <p
-                      className="mb-2 font-semibold"
-                      style={{color: 'var(--auth-text-body-strong)'}}>
+                  <div className="rounded-xl border p-3 text-xs bg-surface-raised border-brand/[0.12] text-on-surface-muted/60">
+                    <p className="mb-2 font-semibold text-on-surface-muted/70">
                       Regras para criar a senha
                     </p>
                     <div className="space-y-1.5">
@@ -598,7 +532,7 @@ export default function ResetPassword() {
                         style={{
                           color: hasMinLength
                             ? '#34d399'
-                            : 'var(--auth-text-muted)',
+                            : 'hsl(var(--on-surface-muted) / 0.6)',
                         }}>
                         {hasMinLength ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -612,7 +546,7 @@ export default function ResetPassword() {
                         style={{
                           color: hasUppercase
                             ? '#34d399'
-                            : 'var(--auth-text-muted)',
+                            : 'hsl(var(--on-surface-muted) / 0.6)',
                         }}>
                         {hasUppercase ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -626,7 +560,7 @@ export default function ResetPassword() {
                         style={{
                           color: hasLowercase
                             ? '#34d399'
-                            : 'var(--auth-text-muted)',
+                            : 'hsl(var(--on-surface-muted) / 0.6)',
                         }}>
                         {hasLowercase ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -640,7 +574,7 @@ export default function ResetPassword() {
                         style={{
                           color: hasNumber
                             ? '#34d399'
-                            : 'var(--auth-text-muted)',
+                            : 'hsl(var(--on-surface-muted) / 0.6)',
                         }}>
                         {hasNumber ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -654,7 +588,7 @@ export default function ResetPassword() {
                         style={{
                           color: hasSpecial
                             ? '#34d399'
-                            : 'var(--auth-text-muted)',
+                            : 'hsl(var(--on-surface-muted) / 0.6)',
                         }}>
                         {hasSpecial ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -668,7 +602,7 @@ export default function ResetPassword() {
                         style={{
                           color: passwordsMatch
                             ? '#34d399'
-                            : 'var(--auth-text-muted)',
+                            : 'hsl(var(--on-surface-muted) / 0.6)',
                         }}>
                         {passwordsMatch ? (
                           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -684,10 +618,8 @@ export default function ResetPassword() {
                     id="reset-password-submit"
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200"
+                    className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))]"
                     style={{
-                      background:
-                        'linear-gradient(135deg, var(--auth-brand), var(--auth-brand-strong))',
                       color: '#f9f7ff',
                     }}>
                     {isSubmitting ? (

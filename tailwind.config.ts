@@ -138,7 +138,7 @@ export default {
           DEFAULT: 'hsl(var(--on-surface) / <alpha-value>)',
           accent: 'hsl(var(--on-surface-accent) / <alpha-value>)',
           muted: 'hsl(var(--on-surface-muted) / <alpha-value>)',
-          secondary: 'hsl(var(--on-surface-secondary) / <alpha-value>)',
+          subtle: 'hsl(var(--on-surface-subtle) / <alpha-value>)',
         },
         // Sinal de variação financeira. Substitui os emerald-400/rose-400
         // hardcoded que existiam nos componentes da landing.
