@@ -44,6 +44,15 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
         const idToken = response.credential;
         const result = await AuthenticationService.authenticateWithGoogle(idToken, keepConnected);
 
+        if (!result || !result.success) {
+          showError(
+            'Erro ao entrar com Google',
+            'Não foi possível concluir o login. Tente novamente.'
+          );
+          setIsLoading(false);
+          return;
+        }
+
         if (result.requiresTwoFactor) {
           sessionStorage.setItem('2fa_temp_token', result.tempToken);
           navigate('/2fa-verify');
