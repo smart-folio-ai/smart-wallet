@@ -1,5 +1,5 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import Landing from './Landing';
@@ -87,9 +87,13 @@ describe('Landing', () => {
   });
 
   it('fecha com planos, dúvidas e o aviso de que não há recomendação', () => {
-    renderLanding();
+    const {container} = renderLanding();
 
-    expect(screen.getByText('Básico')).toBeInTheDocument();
+    const pricingSection = container.querySelector('#planos');
+    expect(pricingSection).not.toBeNull();
+    expect(
+      within(pricingSection as HTMLElement).getByText('Planos'),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /meus dados ficam seguros/i}),
     ).toBeInTheDocument();
@@ -100,11 +104,15 @@ describe('Landing', () => {
 
   it('com prefers-reduced-motion o conteúdo continua visível', () => {
     stubMatchMedia(true);
-    renderLanding();
+    const {container} = renderLanding();
 
     const headline = screen.getByText(/sua carteira inteira/i);
     expect(headline).toBeInTheDocument();
     expect(headline).toBeVisible();
-    expect(screen.getByText('Básico')).toBeVisible();
+
+    const pricingSection = container.querySelector('#planos');
+    expect(
+      within(pricingSection as HTMLElement).getByText('Planos'),
+    ).toBeVisible();
   });
 });

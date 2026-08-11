@@ -9,8 +9,10 @@ import {GlassPanel} from '../ui/GlassPanel';
 import {PurchaseIntentModal} from '../PurchaseIntentModal';
 import SubscriptionService from '@/services/subscription';
 import {normalizePlanPricing} from '@/utils/planPricing';
+import {formatCurrency} from '@/utils/formatters';
 
 type LandingPlan = {
+  id: string;
   name: string;
   price: string;
   period?: string;
@@ -18,29 +20,19 @@ type LandingPlan = {
   aiPillar: string;
   cta: string;
   href?: string;
+  isFree: boolean;
   featured: boolean;
   benefits: string[];
 };
 
-const BASICO_PLAN: LandingPlan = {
-  name: 'Básico',
-  price: 'Grátis',
-  period: undefined,
-  detail: 'Para organizar a carteira e enxergar o conjunto',
-  aiPillar: 'Consolidação completa, sem limite de corretoras',
-  cta: 'Começar grátis',
-  href: '/register',
-  featured: false,
-  benefits: [
-    'Até 10 ativos',
-    'Consolidação de todas as corretoras',
-    'Alocação por ativo, setor e classe',
-    'Acompanhamento de proventos',
-  ],
+const GRID_COLUMNS_BY_COUNT: Record<number, string> = {
+  1: 'md:grid-cols-2',
+  2: 'md:grid-cols-2',
+  3: 'lg:grid-cols-3',
 };
 
-function formatCurrency(value: number): string {
-  return `R$ ${value.toFixed(2).replace('.', ',')}`;
+function gridColumnsFor(count: number): string {
+  return GRID_COLUMNS_BY_COUNT[count] ?? 'md:grid-cols-2 xl:grid-cols-4';
 }
 
 export function PricingSection() {
@@ -57,25 +49,37 @@ export function PricingSection() {
     retry: false,
   });
 
-  const paidPlans: LandingPlan[] = (plans ?? [])
+  const sortedPlans = [...(plans ?? [])]
     .filter((plan) => plan.isActive)
-    .map((plan) => {
-      const {monthlyPrice} = normalizePlanPricing(plan);
-      return {
-        name: plan.name,
-        price: formatCurrency(monthlyPrice),
-        period: '/mês',
-        detail: plan.description,
-        aiPillar: plan.features[0] ?? '',
-        cta: `Assinar ${plan.name}`,
-        featured: plan.name === 'Investidor Pro',
-        benefits: plan.features,
-      };
-    });
+    .sort((a, b) => a.price - b.price);
+
+  const featuredIndex = sortedPlans.findIndex(
+    (plan) => plan.isFeatured === true,
+  );
+
+  const landingPlans: LandingPlan[] = sortedPlans.map((plan, index) => {
+    const {monthlyPrice} = normalizePlanPricing(plan);
+    const isFree = monthlyPrice === 0;
+    const [highlight, ...restBenefits] = plan.features;
+
+    return {
+      id: plan._id,
+      name: plan.name,
+      price: isFree ? 'Grátis' : formatCurrency(monthlyPrice),
+      period: isFree ? undefined : '/mês',
+      detail: plan.description,
+      aiPillar: highlight ?? '',
+      cta: isFree ? 'Começar grátis' : `Assinar ${plan.name}`,
+      href: isFree ? '/register' : undefined,
+      isFree,
+      featured: index === featuredIndex,
+      benefits: restBenefits,
+    };
+  });
 
   const renderPlanCard = (plan: LandingPlan, index: number) => (
     <GlassPanel
-      key={plan.name}
+      key={plan.id}
       data-reveal
       data-reveal-delay={String(index * 0.1)}
       className={`relative flex flex-col p-7 transition-transform duration-300 ${
@@ -122,7 +126,7 @@ export function PricingSection() {
         ))}
       </ul>
 
-      {plan.name === BASICO_PLAN.name ? (
+      {plan.isFree ? (
         <Button
           asChild
           size="lg"
@@ -131,7 +135,7 @@ export function PricingSection() {
               ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
               : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
           }`}>
-          <Link to={BASICO_PLAN.href}>{plan.cta}</Link>
+          <Link to={plan.href ?? '/register'}>{plan.cta}</Link>
         </Button>
       ) : (
         <Button
@@ -169,13 +173,14 @@ export function PricingSection() {
         </p>
       </div>
 
-      <div className="mt-16 grid items-start gap-5 lg:grid-cols-3">
-        {renderPlanCard(BASICO_PLAN, 0)}
-
+      <div
+        className={`mt-16 grid items-start gap-5 ${gridColumnsFor(
+          landingPlans.length,
+        )}`}>
         {isLoading && (
           <div
             data-testid="pricing-plans-loading"
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-surface-hairline/[0.07] bg-surface-hairline/[0.03] p-7 text-center lg:col-span-2">
+            className="col-span-full flex flex-col items-center justify-center gap-2 rounded-2xl border border-surface-hairline/[0.07] bg-surface-hairline/[0.03] p-7 text-center">
             <p className="text-sm text-on-surface-muted/70">
               Carregando planos...
             </p>
@@ -185,9 +190,9 @@ export function PricingSection() {
         {!isLoading && isError && (
           <div
             data-testid="pricing-plans-error"
-            className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-surface-hairline/[0.07] bg-surface-hairline/[0.03] p-7 text-center lg:col-span-2">
+            className="col-span-full flex flex-col items-center justify-center gap-3 rounded-2xl border border-surface-hairline/[0.07] bg-surface-hairline/[0.03] p-7 text-center">
             <p className="text-sm text-on-surface-muted/70">
-              Não foi possível carregar os planos pagos agora.
+              Não foi possível carregar os planos agora.
             </p>
             <Button
               type="button"
@@ -201,7 +206,7 @@ export function PricingSection() {
 
         {!isLoading &&
           !isError &&
-          paidPlans.map((plan, index) => renderPlanCard(plan, index + 1))}
+          landingPlans.map((plan, index) => renderPlanCard(plan, index))}
       </div>
 
       <PurchaseIntentModal
