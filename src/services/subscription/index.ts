@@ -47,12 +47,14 @@ class SubscriptionService implements SubscriptionInterface {
     userId: string,
     successUrl: string,
     cancelUrl: string,
+    billingInterval: 'monthly' | 'annual' = 'monthly',
   ): Promise<{url: string}> {
     const response = await subscriptionService.createCheckoutSession(
       planId,
       userId,
       successUrl,
       cancelUrl,
+      billingInterval,
     );
     return response.data;
   }

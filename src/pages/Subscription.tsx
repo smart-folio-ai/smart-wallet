@@ -13,6 +13,7 @@ import {Calendar, CircleDollarSign, Star} from 'lucide-react';
 import {configUrlStripePaymentSuccessOrCancel, styleToast} from '@/utils';
 import {SeletorPrice} from '@/components/plans/SeletorPrice';
 import {cancelUrl, successUrl} from '@/utils/env';
+import {normalizePlanPricing} from '@/utils/planPricing';
 
 type PricingPeriod = 'monthly' | 'annual';
 
@@ -24,6 +25,7 @@ interface IFeature {
 export interface IPlanWithFeatures extends Omit<ISubscription, 'features'> {
   monthlyPrice: number;
   annualPrice: number;
+  hasRealAnnualPrice: boolean;
   badge?: string;
   comingSoon?: boolean;
   features: IFeature[];
@@ -59,6 +61,7 @@ export default function Subscriptions() {
         user._id,
         successCheckoutUrl,
         cancelCheckoutUrl,
+        pricingPeriod,
       );
       return createCheckout;
     } catch (error) {
@@ -89,7 +92,8 @@ export default function Subscriptions() {
 
     return rawPlans.map((plan) => {
       const planId = plan._id;
-      const annualPrice = plan.price * 12 * 0.7;
+      const {monthlyPrice, annualPrice, hasRealAnnualPrice} =
+        normalizePlanPricing(plan);
       const normalizedName = plan.name.toLowerCase().replace(/\s+/g, '');
       const isGlobalInvestor =
         normalizedName.includes('globalinvestor') ||
@@ -98,8 +102,9 @@ export default function Subscriptions() {
       return {
         ...plan,
         id: planId,
-        monthlyPrice: plan.price,
+        monthlyPrice,
         annualPrice,
+        hasRealAnnualPrice,
         comingSoon: isGlobalInvestor,
         badge: plan.name === 'Investidor Pro' ? 'Popular' : undefined,
         features: plan.features.map((name) => ({

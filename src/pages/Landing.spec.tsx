@@ -1,7 +1,11 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import Landing from './Landing';
+import SubscriptionService from '@/services/subscription';
+
+vi.mock('@/services/subscription');
 
 const stubMatchMedia = (matches: boolean) => {
   vi.stubGlobal(
@@ -19,16 +23,24 @@ const stubMatchMedia = (matches: boolean) => {
   );
 };
 
-const renderLanding = () =>
-  render(
-    <MemoryRouter>
-      <Landing />
-    </MemoryRouter>,
+const renderLanding = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {queries: {retry: false}},
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <Landing />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
+};
 
 describe('Landing', () => {
   beforeEach(() => {
     stubMatchMedia(false);
+    vi.clearAllMocks();
+    (SubscriptionService.getPlans as any).mockResolvedValue([]);
   });
 
   it('abre com a promessa central e o caminho de conversão', () => {
@@ -77,7 +89,7 @@ describe('Landing', () => {
   it('fecha com planos, dúvidas e o aviso de que não há recomendação', () => {
     renderLanding();
 
-    expect(screen.getByText('Premium')).toBeInTheDocument();
+    expect(screen.getByText('Básico')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /meus dados ficam seguros/i}),
     ).toBeInTheDocument();
@@ -93,6 +105,6 @@ describe('Landing', () => {
     const headline = screen.getByText(/sua carteira inteira/i);
     expect(headline).toBeInTheDocument();
     expect(headline).toBeVisible();
-    expect(screen.getByText('Premium')).toBeVisible();
+    expect(screen.getByText('Básico')).toBeVisible();
   });
 });
