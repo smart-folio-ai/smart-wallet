@@ -4,6 +4,7 @@ import {toast} from 'sonner';
 import {AdminPlan} from '@/interface/admin';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Checkbox} from '@/components/ui/checkbox';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Textarea} from '@/components/ui/textarea';
@@ -27,6 +28,8 @@ type PlanFormState = {
   features: string;
   annualPrice: string;
   annualStripePriceId: string;
+  isFeatured: boolean;
+  isComingSoon: boolean;
 };
 
 const initialForm: PlanFormState = {
@@ -39,6 +42,8 @@ const initialForm: PlanFormState = {
   features: '',
   annualPrice: '',
   annualStripePriceId: '',
+  isFeatured: false,
+  isComingSoon: false,
 };
 
 function mapPlanToForm(plan: AdminPlan): PlanFormState {
@@ -52,6 +57,8 @@ function mapPlanToForm(plan: AdminPlan): PlanFormState {
     features: (plan.features || []).join('\n'),
     annualPrice: plan.annualPrice != null ? String(plan.annualPrice) : '',
     annualStripePriceId: plan.annualStripePriceId || '',
+    isFeatured: plan.isFeatured ?? false,
+    isComingSoon: plan.isComingSoon ?? false,
   };
 }
 
@@ -89,6 +96,8 @@ export default function AdminPlans() {
         ...(form.annualStripePriceId.trim() !== ''
           ? {annualStripePriceId: form.annualStripePriceId.trim()}
           : {}),
+        isFeatured: form.isFeatured,
+        isComingSoon: form.isComingSoon,
       };
 
       if (editingPlan) {
@@ -247,6 +256,35 @@ export default function AdminPlans() {
                     }))
                   }
                 />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="plan-is-featured"
+                  checked={form.isFeatured}
+                  onCheckedChange={(checked) =>
+                    setForm((prev) => ({...prev, isFeatured: checked === true}))
+                  }
+                />
+                <Label htmlFor="plan-is-featured">Destacar na landing</Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="plan-is-coming-soon"
+                  checked={form.isComingSoon}
+                  onCheckedChange={(checked) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      isComingSoon: checked === true,
+                    }))
+                  }
+                />
+                <Label htmlFor="plan-is-coming-soon">
+                  Exibir como "em breve"
+                </Label>
               </div>
             </div>
 

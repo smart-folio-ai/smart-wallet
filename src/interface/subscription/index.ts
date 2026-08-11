@@ -23,6 +23,8 @@ export interface ISubscription {
   stripeProductId: string;
   annualPrice?: number;
   annualStripePriceId?: string;
+  isFeatured?: boolean;
+  isComingSoon?: boolean;
   isActive: boolean;
   features: string[];
   createdAt: string;
@@ -37,6 +39,8 @@ export interface ICreateSubscription {
   interval: string;
   intervalCount: number;
   features: string[];
+  isFeatured?: boolean;
+  isComingSoon?: boolean;
 }
 
 export interface IUpdateSubscription {
@@ -50,6 +54,8 @@ export interface IUpdateSubscription {
   stripeProductId?: string;
   annualPrice?: number;
   annualStripePriceId?: string;
+  isFeatured?: boolean;
+  isComingSoon?: boolean;
 }
 
 export interface IUpdateSubscriptionFeature {
