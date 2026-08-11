@@ -11,7 +11,7 @@ import {
 } from '@/interface/admin';
 
 import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
-import axios from 'axios';
+import axios, {AxiosPromise} from 'axios';
 
 const apiClient = axios.create({
   baseURL: isDev ? apiUrlDevelopment : apiUrlProduction,
@@ -206,7 +206,7 @@ export const fiscalService = {
 };
 
 export const leadsService = {
-  capturePurchaseIntent: (email: string, planName: string) =>
+  capturePurchaseIntent: (email: string, planName: string): AxiosPromise<{ success: boolean }> =>
     apiClient.post('/leads/purchase-intent', {email, planName}),
 };
 
