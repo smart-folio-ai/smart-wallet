@@ -1,17 +1,61 @@
 import {useState} from 'react';
 import {Link} from 'react-router-dom';
+import {useQuery} from '@tanstack/react-query';
 import {Check} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Section} from '../ui/Section';
 import {Eyebrow} from '../ui/Eyebrow';
 import {GlassPanel} from '../ui/GlassPanel';
-import {planItems} from '../landing-data';
 import {PurchaseIntentModal} from '../PurchaseIntentModal';
+import SubscriptionService from '@/services/subscription';
+import {normalizePlanPricing} from '@/utils/planPricing';
 
-const DIRECT_SIGNUP_PLAN_NAME = 'Básico';
+const BASICO_PLAN = {
+  name: 'Básico',
+  price: 'Grátis',
+  detail: 'Para organizar a carteira e enxergar o conjunto',
+  aiPillar: 'Consolidação completa, sem limite de corretoras',
+  cta: 'Começar grátis',
+  href: '/register',
+  featured: false,
+  benefits: [
+    'Até 10 ativos',
+    'Consolidação de todas as corretoras',
+    'Alocação por ativo, setor e classe',
+    'Acompanhamento de proventos',
+  ],
+};
+
+function formatCurrency(value: number): string {
+  return `R$ ${value.toFixed(2).replace('.', ',')}`;
+}
 
 export function PricingSection() {
   const [modalPlanName, setModalPlanName] = useState<string | null>(null);
+
+  const {data: plans} = useQuery({
+    queryKey: ['landing-plans'],
+    queryFn: () => SubscriptionService.getPlans(),
+    retry: false,
+  });
+
+  const paidPlans = (plans ?? [])
+    .filter((plan) => plan.isActive)
+    .map((plan, index) => {
+      const {monthlyPrice} = normalizePlanPricing(plan);
+      return {
+        name: plan.name,
+        price: formatCurrency(monthlyPrice),
+        period: '/mês',
+        detail: plan.description,
+        aiPillar: plan.features[0] ?? '',
+        cta: `Assinar ${plan.name}`,
+        featured: index === 0,
+        benefits: plan.features,
+      };
+    });
+
+  const allPlans = [BASICO_PLAN, ...paidPlans];
 
   return (
     <Section id="planos">
@@ -34,7 +78,7 @@ export function PricingSection() {
       </div>
 
       <div className="mt-16 grid items-start gap-5 lg:grid-cols-3">
-        {planItems.map((plan, index) => (
+        {allPlans.map((plan, index) => (
           <GlassPanel
             key={plan.name}
             data-reveal
@@ -83,7 +127,7 @@ export function PricingSection() {
               ))}
             </ul>
 
-            {plan.name === DIRECT_SIGNUP_PLAN_NAME ? (
+            {plan.name === BASICO_PLAN.name ? (
               <Button
                 asChild
                 size="lg"
@@ -92,7 +136,7 @@ export function PricingSection() {
                     ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
                     : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
                 }`}>
-                <Link to={plan.href}>{plan.cta}</Link>
+                <Link to={BASICO_PLAN.href}>{plan.cta}</Link>
               </Button>
             ) : (
               <Button
