@@ -111,4 +111,45 @@ describe('Subscription page — real annual pricing', () => {
       );
     });
   });
+
+  it('renders the same price for Mensal and Anual when the plan has no real annual price', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([
+      {
+        _id: 'plan_1',
+        name: 'Investidor Pro',
+        description: 'desc',
+        price: 49,
+        // annualPrice intentionally omitted — plan has no real annual price configured.
+        currency: 'BRL',
+        interval: 'month',
+        intervalCount: 1,
+        stripePriceId: 'price_1',
+        stripeProductId: 'prod_1',
+        isActive: true,
+        features: ['Feature A'],
+        createdAt: '',
+        updatedAt: '',
+      },
+    ]);
+
+    renderWithQueryClient(<Subscriptions />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Investidor Pro')).toBeInTheDocument();
+    });
+
+    // Capture the Mensal (default) displayed price.
+    const monthlyPriceMatch = screen.getByText(/49,00/);
+    expect(monthlyPriceMatch).toBeInTheDocument();
+
+    // Switch to the annual pricing view via the SeletorPrice "Anual" button.
+    fireEvent.click(screen.getByRole('button', {name: /Anual/i}));
+
+    // Without a real annualPrice, the fallback must show the SAME price
+    // as Mensal — never a fabricated 30% discount (which would be 411,60).
+    await waitFor(() => {
+      expect(screen.getByText(/49,00/)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/411,60/)).not.toBeInTheDocument();
+  });
 });
