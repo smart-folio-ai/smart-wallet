@@ -48,6 +48,8 @@ export interface IUpdateSubscription {
   intervalCount?: number;
   stripePriceId?: string;
   stripeProductId?: string;
+  annualPrice?: number;
+  annualStripePriceId?: string;
 }
 
 export interface IUpdateSubscriptionFeature {

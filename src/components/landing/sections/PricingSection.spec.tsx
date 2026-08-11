@@ -90,11 +90,30 @@ describe('PricingSection', () => {
     expect(screen.getByText(/Quero o plano Investidor Pro/i)).toBeInTheDocument();
   });
 
-  it('não quebra a renderização quando a API de planos falha', async () => {
+  it('não quebra a renderização quando a API de planos falha, e mostra um estado de erro distinto para os planos pagos', async () => {
     (SubscriptionService.getPlans as any).mockRejectedValue(new Error('network error'));
     const {container} = renderSection();
 
     expect(container.querySelector('#planos')).not.toBeNull();
     expect(screen.getByText('Básico')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pricing-plans-error')).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole('button', {name: /tentar novamente/i}),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Investidor Pro')).not.toBeInTheDocument();
+  });
+
+  it('mostra um estado de carregamento para os planos pagos enquanto a API não responde', () => {
+    (SubscriptionService.getPlans as any).mockImplementation(
+      () => new Promise(() => {}),
+    );
+    renderSection();
+
+    expect(screen.getByText('Básico')).toBeInTheDocument();
+    expect(screen.getByTestId('pricing-plans-loading')).toBeInTheDocument();
+    expect(screen.getByText(/carregando planos/i)).toBeInTheDocument();
   });
 });

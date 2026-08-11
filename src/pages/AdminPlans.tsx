@@ -25,6 +25,8 @@ type PlanFormState = {
   interval: 'month' | 'year' | 'week' | 'day';
   intervalCount: string;
   features: string;
+  annualPrice: string;
+  annualStripePriceId: string;
 };
 
 const initialForm: PlanFormState = {
@@ -35,6 +37,8 @@ const initialForm: PlanFormState = {
   interval: 'month',
   intervalCount: '1',
   features: '',
+  annualPrice: '',
+  annualStripePriceId: '',
 };
 
 function mapPlanToForm(plan: AdminPlan): PlanFormState {
@@ -46,6 +50,8 @@ function mapPlanToForm(plan: AdminPlan): PlanFormState {
     interval: (plan.interval as PlanFormState['interval']) || 'month',
     intervalCount: String(plan.intervalCount || 1),
     features: (plan.features || []).join('\n'),
+    annualPrice: plan.annualPrice != null ? String(plan.annualPrice) : '',
+    annualStripePriceId: plan.annualStripePriceId || '',
   };
 }
 
@@ -77,6 +83,12 @@ export default function AdminPlans() {
           .split('\n')
           .map((item) => item.trim())
           .filter(Boolean),
+        ...(form.annualPrice.trim() !== ''
+          ? {annualPrice: Number(form.annualPrice)}
+          : {}),
+        ...(form.annualStripePriceId.trim() !== ''
+          ? {annualStripePriceId: form.annualStripePriceId.trim()}
+          : {}),
       };
 
       if (editingPlan) {
@@ -197,6 +209,43 @@ export default function AdminPlans() {
                   value={form.intervalCount}
                   onChange={(event) => setForm((prev) => ({...prev, intervalCount: event.target.value}))}
                   required
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="plan-annual-price">
+                  Preço anual (opcional)
+                </Label>
+                <Input
+                  id="plan-annual-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.annualPrice}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      annualPrice: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="plan-annual-stripe-price-id">
+                  Stripe Price ID anual (opcional)
+                </Label>
+                <Input
+                  id="plan-annual-stripe-price-id"
+                  value={form.annualStripePriceId}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      annualStripePriceId: event.target.value,
+                    }))
+                  }
                 />
               </div>
             </div>

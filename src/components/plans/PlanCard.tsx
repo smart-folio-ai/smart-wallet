@@ -79,14 +79,19 @@ export const PlanCard: React.FC<PlanCardProps> = ({
           <div className="flex items-baseline mb-6 border-b border-border/50 pb-6">
             {!plan.comingSoon && plan.price !== null ? (
               <>
+                {/* When the plan has no real annual price, always show the
+                    monthly amount with a monthly label — never imply an
+                    annual billing cycle that doesn't actually exist. */}
                 <span className="text-4xl font-heading font-extrabold tracking-tight text-foreground">
                   R${' '}
-                  {pricingPeriod === 'monthly'
+                  {pricingPeriod === 'monthly' || !plan.hasRealAnnualPrice
                     ? plan.monthlyPrice.toFixed(2).replace('.', ',')
                     : plan.annualPrice.toFixed(2).replace('.', ',')}
                 </span>
                 <span className="text-sm font-medium text-muted-foreground ml-2">
-                  {pricingPeriod === 'monthly' ? '/mês' : '/ano'}
+                  {pricingPeriod === 'monthly' || !plan.hasRealAnnualPrice
+                    ? '/mês'
+                    : '/ano'}
                 </span>
               </>
             ) : (

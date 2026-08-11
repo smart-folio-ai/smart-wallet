@@ -10,9 +10,22 @@ import {PurchaseIntentModal} from '../PurchaseIntentModal';
 import SubscriptionService from '@/services/subscription';
 import {normalizePlanPricing} from '@/utils/planPricing';
 
-const BASICO_PLAN = {
+type LandingPlan = {
+  name: string;
+  price: string;
+  period?: string;
+  detail: string;
+  aiPillar: string;
+  cta: string;
+  href?: string;
+  featured: boolean;
+  benefits: string[];
+};
+
+const BASICO_PLAN: LandingPlan = {
   name: 'Básico',
   price: 'Grátis',
+  period: undefined,
   detail: 'Para organizar a carteira e enxergar o conjunto',
   aiPillar: 'Consolidação completa, sem limite de corretoras',
   cta: 'Começar grátis',
@@ -33,15 +46,20 @@ function formatCurrency(value: number): string {
 export function PricingSection() {
   const [modalPlanName, setModalPlanName] = useState<string | null>(null);
 
-  const {data: plans} = useQuery({
+  const {
+    data: plans,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['landing-plans'],
     queryFn: () => SubscriptionService.getPlans(),
     retry: false,
   });
 
-  const paidPlans = (plans ?? [])
+  const paidPlans: LandingPlan[] = (plans ?? [])
     .filter((plan) => plan.isActive)
-    .map((plan, index) => {
+    .map((plan) => {
       const {monthlyPrice} = normalizePlanPricing(plan);
       return {
         name: plan.name,
@@ -50,12 +68,86 @@ export function PricingSection() {
         detail: plan.description,
         aiPillar: plan.features[0] ?? '',
         cta: `Assinar ${plan.name}`,
-        featured: index === 0,
+        featured: plan.name === 'Investidor Pro',
         benefits: plan.features,
       };
     });
 
-  const allPlans = [BASICO_PLAN, ...paidPlans];
+  const renderPlanCard = (plan: LandingPlan, index: number) => (
+    <GlassPanel
+      key={plan.name}
+      data-reveal
+      data-reveal-delay={String(index * 0.1)}
+      className={`relative flex flex-col p-7 transition-transform duration-300 ${
+        plan.featured
+          ? 'border-brand/30 lg:-translate-y-2'
+          : 'hover:-translate-y-1'
+      }`}>
+      {plan.featured && (
+        <span className="absolute -top-3 left-7 rounded-full bg-brand px-3 py-1 text-xs font-semibold text-brand-foreground">
+          Mais escolhido
+        </span>
+      )}
+
+      <h3 className="font-heading text-base font-semibold text-on-surface">
+        {plan.name}
+      </h3>
+      <p className="mt-2 min-h-[40px] text-sm leading-relaxed text-on-surface-muted/55">
+        {plan.detail}
+      </p>
+
+      <div className="mt-6 flex items-baseline gap-1">
+        <span className="font-heading text-4xl font-bold tracking-[-0.02em] tabular-nums text-on-surface">
+          {plan.price}
+        </span>
+        {plan.period && (
+          <span className="text-sm text-on-surface-muted/50">
+            {plan.period}
+          </span>
+        )}
+      </div>
+
+      <p className="mt-6 rounded-xl border border-surface-hairline/[0.07] bg-surface-hairline/[0.03] px-4 py-3 text-xs leading-relaxed text-on-surface-muted/70">
+        {plan.aiPillar}
+      </p>
+
+      <ul className="mt-6 flex-1 space-y-3">
+        {plan.benefits.map((benefit) => (
+          <li key={benefit} className="flex items-start gap-2.5">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-positive" />
+            <span className="text-sm leading-relaxed text-on-surface-muted/65">
+              {benefit}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      {plan.name === BASICO_PLAN.name ? (
+        <Button
+          asChild
+          size="lg"
+          className={`mt-8 w-full ${
+            plan.featured
+              ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
+              : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
+          }`}>
+          <Link to={BASICO_PLAN.href}>{plan.cta}</Link>
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          size="lg"
+          onClick={() => setModalPlanName(plan.name)}
+          className={`mt-8 w-full ${
+            plan.featured
+              ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
+              : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
+          }`}>
+          {plan.cta}
+        </Button>
+      )}
+    </GlassPanel>
+  );
 
   return (
     <Section id="planos">
@@ -78,81 +170,38 @@ export function PricingSection() {
       </div>
 
       <div className="mt-16 grid items-start gap-5 lg:grid-cols-3">
-        {allPlans.map((plan, index) => (
-          <GlassPanel
-            key={plan.name}
-            data-reveal
-            data-reveal-delay={String(index * 0.1)}
-            className={`relative flex flex-col p-7 transition-transform duration-300 ${
-              plan.featured
-                ? 'border-brand/30 lg:-translate-y-2'
-                : 'hover:-translate-y-1'
-            }`}>
-            {plan.featured && (
-              <span className="absolute -top-3 left-7 rounded-full bg-brand px-3 py-1 text-xs font-semibold text-brand-foreground">
-                Mais escolhido
-              </span>
-            )}
+        {renderPlanCard(BASICO_PLAN, 0)}
 
-            <h3 className="font-heading text-base font-semibold text-on-surface">
-              {plan.name}
-            </h3>
-            <p className="mt-2 min-h-[40px] text-sm leading-relaxed text-on-surface-muted/55">
-              {plan.detail}
+        {isLoading && (
+          <div
+            data-testid="pricing-plans-loading"
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-surface-hairline/[0.07] bg-surface-hairline/[0.03] p-7 text-center lg:col-span-2">
+            <p className="text-sm text-on-surface-muted/70">
+              Carregando planos...
             </p>
+          </div>
+        )}
 
-            <div className="mt-6 flex items-baseline gap-1">
-              <span className="font-heading text-4xl font-bold tracking-[-0.02em] tabular-nums text-on-surface">
-                {plan.price}
-              </span>
-              {plan.period && (
-                <span className="text-sm text-on-surface-muted/50">
-                  {plan.period}
-                </span>
-              )}
-            </div>
-
-            <p className="mt-6 rounded-xl border border-surface-hairline/[0.07] bg-surface-hairline/[0.03] px-4 py-3 text-xs leading-relaxed text-on-surface-muted/70">
-              {plan.aiPillar}
+        {!isLoading && isError && (
+          <div
+            data-testid="pricing-plans-error"
+            className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-surface-hairline/[0.07] bg-surface-hairline/[0.03] p-7 text-center lg:col-span-2">
+            <p className="text-sm text-on-surface-muted/70">
+              Não foi possível carregar os planos pagos agora.
             </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}>
+              Tentar novamente
+            </Button>
+          </div>
+        )}
 
-            <ul className="mt-6 flex-1 space-y-3">
-              {plan.benefits.map((benefit) => (
-                <li key={benefit} className="flex items-start gap-2.5">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-positive" />
-                  <span className="text-sm leading-relaxed text-on-surface-muted/65">
-                    {benefit}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            {plan.name === BASICO_PLAN.name ? (
-              <Button
-                asChild
-                size="lg"
-                className={`mt-8 w-full ${
-                  plan.featured
-                    ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
-                    : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
-                }`}>
-                <Link to={BASICO_PLAN.href}>{plan.cta}</Link>
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                size="lg"
-                onClick={() => setModalPlanName(plan.name)}
-                className={`mt-8 w-full ${
-                  plan.featured
-                    ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
-                    : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
-                }`}>
-                {plan.cta}
-              </Button>
-            )}
-          </GlassPanel>
-        ))}
+        {!isLoading &&
+          !isError &&
+          paidPlans.map((plan, index) => renderPlanCard(plan, index + 1))}
       </div>
 
       <PurchaseIntentModal

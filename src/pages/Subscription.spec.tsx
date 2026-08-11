@@ -112,7 +112,7 @@ describe('Subscription page — real annual pricing', () => {
     });
   });
 
-  it('renders the same price for Mensal and Anual when the plan has no real annual price', async () => {
+  it('keeps showing the monthly price with a "/mês" label (never "/ano") when the plan has no real annual price, even after switching to Anual', async () => {
     (SubscriptionService.getPlans as any).mockResolvedValue([
       {
         _id: 'plan_1',
@@ -141,15 +141,20 @@ describe('Subscription page — real annual pricing', () => {
     // Capture the Mensal (default) displayed price.
     const monthlyPriceMatch = screen.getByText(/49,00/);
     expect(monthlyPriceMatch).toBeInTheDocument();
+    expect(screen.getByText('/mês')).toBeInTheDocument();
 
     // Switch to the annual pricing view via the SeletorPrice "Anual" button.
     fireEvent.click(screen.getByRole('button', {name: /Anual/i}));
 
     // Without a real annualPrice, the fallback must show the SAME price
-    // as Mensal — never a fabricated 30% discount (which would be 411,60).
+    // as Mensal — never a fabricated 30% discount (which would be 411,60) —
+    // AND must never claim it's an annual price via a "/ano" label, since
+    // the backend silently charges monthly in this case.
     await waitFor(() => {
       expect(screen.getByText(/49,00/)).toBeInTheDocument();
     });
     expect(screen.queryByText(/411,60/)).not.toBeInTheDocument();
+    expect(screen.getByText('/mês')).toBeInTheDocument();
+    expect(screen.queryByText('/ano')).not.toBeInTheDocument();
   });
 });

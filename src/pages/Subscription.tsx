@@ -25,6 +25,7 @@ interface IFeature {
 export interface IPlanWithFeatures extends Omit<ISubscription, 'features'> {
   monthlyPrice: number;
   annualPrice: number;
+  hasRealAnnualPrice: boolean;
   badge?: string;
   comingSoon?: boolean;
   features: IFeature[];
@@ -91,7 +92,8 @@ export default function Subscriptions() {
 
     return rawPlans.map((plan) => {
       const planId = plan._id;
-      const {monthlyPrice, annualPrice} = normalizePlanPricing(plan);
+      const {monthlyPrice, annualPrice, hasRealAnnualPrice} =
+        normalizePlanPricing(plan);
       const normalizedName = plan.name.toLowerCase().replace(/\s+/g, '');
       const isGlobalInvestor =
         normalizedName.includes('globalinvestor') ||
@@ -102,6 +104,7 @@ export default function Subscriptions() {
         id: planId,
         monthlyPrice,
         annualPrice,
+        hasRealAnnualPrice,
         comingSoon: isGlobalInvestor,
         badge: plan.name === 'Investidor Pro' ? 'Popular' : undefined,
         features: plan.features.map((name) => ({
