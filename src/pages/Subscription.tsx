@@ -13,6 +13,7 @@ import {Calendar, CircleDollarSign, Star} from 'lucide-react';
 import {configUrlStripePaymentSuccessOrCancel, styleToast} from '@/utils';
 import {SeletorPrice} from '@/components/plans/SeletorPrice';
 import {cancelUrl, successUrl} from '@/utils/env';
+import {normalizePlanPricing} from '@/utils/planPricing';
 
 type PricingPeriod = 'monthly' | 'annual';
 
@@ -59,6 +60,7 @@ export default function Subscriptions() {
         user._id,
         successCheckoutUrl,
         cancelCheckoutUrl,
+        pricingPeriod,
       );
       return createCheckout;
     } catch (error) {
@@ -89,7 +91,7 @@ export default function Subscriptions() {
 
     return rawPlans.map((plan) => {
       const planId = plan._id;
-      const annualPrice = plan.price * 12 * 0.7;
+      const {monthlyPrice, annualPrice} = normalizePlanPricing(plan);
       const normalizedName = plan.name.toLowerCase().replace(/\s+/g, '');
       const isGlobalInvestor =
         normalizedName.includes('globalinvestor') ||
@@ -98,7 +100,7 @@ export default function Subscriptions() {
       return {
         ...plan,
         id: planId,
-        monthlyPrice: plan.price,
+        monthlyPrice,
         annualPrice,
         comingSoon: isGlobalInvestor,
         badge: plan.name === 'Investidor Pro' ? 'Popular' : undefined,

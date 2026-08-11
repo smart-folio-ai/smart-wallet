@@ -125,11 +125,13 @@ export const subscriptionService = {
     userId: string,
     successUrl: string,
     cancelUrl: string,
+    billingInterval: 'monthly' | 'annual' = 'monthly',
   ) =>
     apiClient.post(`/subscription/${planId}/checkout`, {
       userId,
       successUrl,
       cancelUrl,
+      billingInterval,
     }),
   cancelSubscription: (userId: string) =>
     apiClient.post('/subscription/cancel', {userId}),

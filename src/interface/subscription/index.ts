@@ -7,6 +7,7 @@ export interface SubscriptionInterface {
     userId: string,
     successUrl: string,
     cancelUrl: string,
+    billingInterval?: 'monthly' | 'annual',
   ): Promise<{url: string}>;
 }
 
@@ -20,6 +21,8 @@ export interface ISubscription {
   intervalCount: number;
   stripePriceId: string;
   stripeProductId: string;
+  annualPrice?: number;
+  annualStripePriceId?: string;
   isActive: boolean;
   features: string[];
   createdAt: string;
