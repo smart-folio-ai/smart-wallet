@@ -205,5 +205,10 @@ export const fiscalService = {
     }),
 };
 
+export const leadsService = {
+  capturePurchaseIntent: (email: string, planName: string) =>
+    apiClient.post('/leads/purchase-intent', {email, planName}),
+};
+
 export {apiClient as api};
 export default apiClient;
