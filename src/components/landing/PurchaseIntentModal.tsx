@@ -103,8 +103,8 @@ export function PurchaseIntentModal({
                 <Label
                   htmlFor="purchase-intent-consent"
                   className="text-xs font-normal leading-relaxed text-on-surface-muted">
-                  Concordo em ser contatado(a) pela equipe do Trakker sobre a
-                  liberação de acesso.
+                  Concordo em ser contatado(a) pelo endereço informado sobre a
+                  liberação do acesso ao Trakker.
                 </Label>
               </div>
               <Button className="w-full" disabled={!canSubmit} onClick={handleSubmit}>
