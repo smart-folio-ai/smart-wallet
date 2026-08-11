@@ -158,3 +158,98 @@ describe('Subscription page — real annual pricing', () => {
     expect(screen.queryByText('/ano')).not.toBeInTheDocument();
   });
 });
+
+describe('Subscription page — flags drive badge and coming-soon', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.location.href = '';
+    (Profile.getProfile as any).mockResolvedValue({_id: 'user_1'});
+    (SubscriptionService.getCurrentPlan as any).mockResolvedValue({
+      plan: null,
+    });
+  });
+
+  it('marca como "em breve" o plano com isComingSoon, não pelo nome', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([
+      {
+        _id: 'plan_1',
+        name: 'Qualquer Nome',
+        description: 'desc',
+        price: 49,
+        currency: 'BRL',
+        interval: 'month',
+        intervalCount: 1,
+        stripePriceId: 'price_1',
+        stripeProductId: 'prod_1',
+        isActive: true,
+        isComingSoon: true,
+        features: ['Feature A'],
+        createdAt: '',
+        updatedAt: '',
+      },
+    ]);
+
+    renderWithQueryClient(<Subscriptions />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Qualquer Nome')).toBeInTheDocument();
+    });
+
+    expect(screen.getAllByText(/Em breve/i).length).toBeGreaterThan(0);
+  });
+
+  it('não marca "em breve" um plano chamado Global Investor sem a flag', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([
+      {
+        _id: 'plan_1',
+        name: 'Global Investor',
+        description: 'desc',
+        price: 49,
+        currency: 'BRL',
+        interval: 'month',
+        intervalCount: 1,
+        stripePriceId: 'price_1',
+        stripeProductId: 'prod_1',
+        isActive: true,
+        features: ['Feature A'],
+        createdAt: '',
+        updatedAt: '',
+      },
+    ]);
+
+    renderWithQueryClient(<Subscriptions />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Global Investor')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/Em breve/i)).not.toBeInTheDocument();
+  });
+
+  it('exibe o badge Popular no plano com isFeatured', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([
+      {
+        _id: 'plan_1',
+        name: 'Qualquer Nome',
+        description: 'desc',
+        price: 49,
+        currency: 'BRL',
+        interval: 'month',
+        intervalCount: 1,
+        stripePriceId: 'price_1',
+        stripeProductId: 'prod_1',
+        isActive: true,
+        isFeatured: true,
+        features: ['Feature A'],
+        createdAt: '',
+        updatedAt: '',
+      },
+    ]);
+
+    renderWithQueryClient(<Subscriptions />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Popular')).toBeInTheDocument();
+    });
+  });
+});
