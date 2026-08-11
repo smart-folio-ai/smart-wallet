@@ -19,7 +19,6 @@ type LandingPlan = {
   detail: string;
   aiPillar: string;
   cta: string;
-  href?: string;
   isFree: boolean;
   featured: boolean;
   benefits: string[];
@@ -70,7 +69,6 @@ export function PricingSection() {
       detail: plan.description,
       aiPillar: highlight ?? '',
       cta: isFree ? 'Começar grátis' : `Assinar ${plan.name}`,
-      href: isFree ? '/register' : undefined,
       isFree,
       featured: index === featuredIndex,
       benefits: restBenefits,
@@ -135,7 +133,7 @@ export function PricingSection() {
               ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
               : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
           }`}>
-          <Link to={plan.href ?? '/register'}>{plan.cta}</Link>
+          <Link to="/register">{plan.cta}</Link>
         </Button>
       ) : (
         <Button
@@ -201,6 +199,16 @@ export function PricingSection() {
               onClick={() => refetch()}>
               Tentar novamente
             </Button>
+          </div>
+        )}
+
+        {!isLoading && !isError && landingPlans.length === 0 && (
+          <div
+            data-testid="pricing-plans-empty"
+            className="col-span-full flex flex-col items-center justify-center gap-2 rounded-2xl border border-surface-hairline/[0.07] bg-surface-hairline/[0.03] p-7 text-center">
+            <p className="text-sm text-on-surface-muted/70">
+              Nenhum plano disponível no momento.
+            </p>
           </div>
         )}
 

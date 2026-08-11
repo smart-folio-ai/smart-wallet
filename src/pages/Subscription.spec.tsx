@@ -195,7 +195,9 @@ describe('Subscription page — flags drive badge and coming-soon', () => {
       expect(screen.getByText('Qualquer Nome')).toBeInTheDocument();
     });
 
-    expect(screen.getAllByText(/Em breve/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole('button', {name: /Em breve/i}),
+    ).toBeDisabled();
   });
 
   it('não marca "em breve" um plano chamado Global Investor sem a flag', async () => {

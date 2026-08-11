@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import {PricingSection} from './PricingSection';
@@ -122,6 +122,21 @@ describe('PricingSection', () => {
     await waitFor(() => expect(screen.getByText('Pro')).toBeInTheDocument());
 
     expect(screen.getAllByText('Mais escolhido')).toHaveLength(1);
+
+    // Plans display in price-ascending order (Free at R$0 before Pro at
+    // R$14,90), so the badge must land on Free's card — a findLastIndex-style
+    // bug would still pass the count assertion above while badging Pro.
+    const freeCard = screen
+      .getByRole('heading', {name: 'Free', level: 3})
+      .closest('div') as HTMLElement;
+    const proCard = screen
+      .getByRole('heading', {name: 'Pro', level: 3})
+      .closest('div') as HTMLElement;
+
+    expect(within(freeCard).getByText('Mais escolhido')).toBeInTheDocument();
+    expect(
+      within(proCard).queryByText('Mais escolhido'),
+    ).not.toBeInTheDocument();
   });
 
   it('não renderiza destaque quando nenhum plano está marcado', async () => {
@@ -150,5 +165,16 @@ describe('PricingSection', () => {
     renderSection();
 
     expect(screen.getByTestId('pricing-plans-loading')).toBeInTheDocument();
+  });
+
+  it('mostra estado vazio quando não há planos ativos, mantendo âncora e cabeçalho', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([]);
+    const {container} = renderSection();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pricing-plans-empty')).toBeInTheDocument(),
+    );
+    expect(container.querySelector('#planos')).not.toBeNull();
+    expect(screen.getByText('Planos')).toBeInTheDocument();
   });
 });

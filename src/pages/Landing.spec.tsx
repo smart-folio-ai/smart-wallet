@@ -51,8 +51,10 @@ describe('Landing', () => {
     expect(
       screen.getByText(/sem planilha, sem surpresa no ir/i),
     ).toBeInTheDocument();
-    // Existem dois CTAs com o texto "Começar grátis" (hero e plano Básico) —
-    // ambos legítimos e apontando para /register.
+    // O hero sempre expõe um CTA "Começar grátis" apontando para /register.
+    // Se a API de planos (mockada vazia neste teste) retornar um plano
+    // gratuito, a PricingSection renderiza outro CTA com o mesmo texto —
+    // por isso a asserção abaixo tolera um ou mais links, todos para /register.
     const ctaLinks = screen.getAllByRole('link', {name: /começar grátis/i});
     expect(ctaLinks.length).toBeGreaterThan(0);
     ctaLinks.forEach((link) =>
