@@ -1,4 +1,5 @@
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
+import {Link} from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -35,24 +36,46 @@ export function PurchaseIntentModal({
   const isEmailValid = EMAIL_REGEX.test(email.trim());
   const canSubmit = isEmailValid && consented && !submitting;
 
+  // Tracks the current "session" of the modal. It is bumped whenever the
+  // modal is (re)opened, closed, or a new submit is attempted, so that a
+  // late-resolving promise from an abandoned request can detect it is
+  // stale and avoid writing into a newer session's state.
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (open) {
+      requestIdRef.current += 1;
+      setEmail('');
+      setConsented(false);
+      setSubmitted(false);
+      setSubmitting(false);
+    }
+  }, [open]);
+
   async function handleSubmit() {
     if (!canSubmit) return;
+    const currentRequestId = ++requestIdRef.current;
     setSubmitting(true);
     try {
       await leadsService.capturePurchaseIntent(email.trim(), planName);
+      if (requestIdRef.current !== currentRequestId) return;
       setSubmitted(true);
     } catch {
+      if (requestIdRef.current !== currentRequestId) return;
       showError(
         'Não foi possível registrar seu interesse',
         'Verifique sua conexão e tente novamente.'
       );
     } finally {
-      setSubmitting(false);
+      if (requestIdRef.current === currentRequestId) {
+        setSubmitting(false);
+      }
     }
   }
 
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
+      requestIdRef.current += 1;
       setEmail('');
       setConsented(false);
       setSubmitted(false);
@@ -103,8 +126,15 @@ export function PurchaseIntentModal({
                 <Label
                   htmlFor="purchase-intent-consent"
                   className="text-xs font-normal leading-relaxed text-on-surface-muted">
-                  Concordo em ser contatado(a) pelo endereço informado sobre a
-                  liberação do acesso ao Trakker.
+                  Concordo em receber comunicações do Trackerr no endereço
+                  informado sobre a liberação do acesso e novidades do
+                  produto, conforme a{' '}
+                  <Link
+                    to="/privacidade"
+                    className="underline hover:text-on-surface">
+                    Política de Privacidade
+                  </Link>
+                  .
                 </Label>
               </div>
               <Button className="w-full" disabled={!canSubmit} onClick={handleSubmit}>
