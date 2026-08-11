@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import {Link} from 'react-router-dom';
 import {Check} from 'lucide-react';
 import {Button} from '@/components/ui/button';
@@ -5,8 +6,13 @@ import {Section} from '../ui/Section';
 import {Eyebrow} from '../ui/Eyebrow';
 import {GlassPanel} from '../ui/GlassPanel';
 import {planItems} from '../landing-data';
+import {PurchaseIntentModal} from '../PurchaseIntentModal';
+
+const DIRECT_SIGNUP_PLAN_NAME = 'Básico';
 
 export function PricingSection() {
+  const [modalPlanName, setModalPlanName] = useState<string | null>(null);
+
   return (
     <Section id="planos">
       <div className="mx-auto max-w-2xl text-center">
@@ -77,19 +83,41 @@ export function PricingSection() {
               ))}
             </ul>
 
-            <Button
-              asChild
-              size="lg"
-              className={`mt-8 w-full ${
-                plan.featured
-                  ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
-                  : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
-              }`}>
-              <Link to={plan.href}>{plan.cta}</Link>
-            </Button>
+            {plan.name === DIRECT_SIGNUP_PLAN_NAME ? (
+              <Button
+                asChild
+                size="lg"
+                className={`mt-8 w-full ${
+                  plan.featured
+                    ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
+                    : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
+                }`}>
+                <Link to={plan.href}>{plan.cta}</Link>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="lg"
+                onClick={() => setModalPlanName(plan.name)}
+                className={`mt-8 w-full ${
+                  plan.featured
+                    ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
+                    : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
+                }`}>
+                {plan.cta}
+              </Button>
+            )}
           </GlassPanel>
         ))}
       </div>
+
+      <PurchaseIntentModal
+        open={modalPlanName !== null}
+        onOpenChange={(open) => {
+          if (!open) setModalPlanName(null);
+        }}
+        planName={modalPlanName ?? ''}
+      />
     </Section>
   );
 }
