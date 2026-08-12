@@ -19,6 +19,12 @@ function escapeHtml(value: string): string {
 }
 
 function page(format: Format, body: string): string {
+  // Escalar a partir da menor dimensão, não da largura: nos formatos
+  // largos (linkedin, x) a altura é o lado apertado, e escalar pela
+  // largura estoura o corpo verticalmente (título cortado, rodapé some).
+  // Nos formatos verticais a largura já é o menor lado, então o resultado
+  // não muda.
+  const scale = Math.min(format.width, format.height);
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -35,7 +41,7 @@ function page(format: Format, body: string): string {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: ${Math.round(format.width * 0.08)}px;
+    padding: ${Math.round(scale * 0.08)}px;
     overflow: hidden;
   }
   .heading {
@@ -43,27 +49,27 @@ function page(format: Format, body: string): string {
     font-weight: 800;
     letter-spacing: -0.03em;
     line-height: 1.05;
-    font-size: ${Math.round(format.width * 0.072)}px;
+    font-size: ${Math.round(scale * 0.072)}px;
   }
   .accent { color: hsl(${BRAND.brand}); }
   .muted {
     color: hsl(${BRAND.onSurfaceMuted});
-    font-size: ${Math.round(format.width * 0.028)}px;
+    font-size: ${Math.round(scale * 0.028)}px;
     line-height: 1.5;
   }
-  .logo svg { width: ${Math.round(format.width * 0.18)}px; height: auto; }
-  .stack { display: flex; flex-direction: column; gap: ${Math.round(format.width * 0.035)}px; }
+  .logo svg { width: ${Math.round(scale * 0.18)}px; height: auto; }
+  .stack { display: flex; flex-direction: column; gap: ${Math.round(scale * 0.035)}px; }
   .item-title {
     font-family: Manrope, sans-serif;
     font-weight: 700;
-    font-size: ${Math.round(format.width * 0.038)}px;
+    font-size: ${Math.round(scale * 0.038)}px;
   }
   .price { font-family: Manrope, sans-serif; font-weight: 800; }
-  .price-value { font-size: ${Math.round(format.width * 0.06)}px; }
+  .price-value { font-size: ${Math.round(scale * 0.06)}px; }
   .rule {
     height: 1px;
     background: hsl(${BRAND.onSurfaceMuted} / 0.18);
-    margin: ${Math.round(format.width * 0.02)}px 0;
+    margin: ${Math.round(scale * 0.02)}px 0;
   }
 </style>
 </head>
