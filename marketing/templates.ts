@@ -9,6 +9,15 @@ function formatPrice(value: number): string {
   return value.toFixed(2).replace('.', ',');
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function page(format: Format, body: string): string {
   return `<!doctype html>
 <html lang="pt-BR">
@@ -71,9 +80,9 @@ export function renderHook(format: Format): string {
     format,
     `${logoBlock()}
 <div>
-  <h1 class="heading">${HOOK.line1}<br><span class="accent">${HOOK.line2}</span></h1>
+  <h1 class="heading">${escapeHtml(HOOK.line1)}<br><span class="accent">${escapeHtml(HOOK.line2)}</span></h1>
 </div>
-<p class="muted">${HOOK.footer}</p>`,
+<p class="muted">${escapeHtml(HOOK.footer)}</p>`,
   );
 }
 
@@ -81,7 +90,7 @@ function slideList(items: ReadonlyArray<{title: string; body: string}>): string 
   return `<div class="stack">${items
     .map(
       (item) =>
-        `<div><div class="item-title">${item.title}</div><div class="muted">${item.body}</div></div>`,
+        `<div><div class="item-title">${escapeHtml(item.title)}</div><div class="muted">${escapeHtml(item.body)}</div></div>`,
     )
     .join('')}</div>`;
 }
@@ -93,8 +102,8 @@ function priceSlide(plans: MarketingPlan[]): string {
   <div class="stack">${plans
     .map(
       (plan) =>
-        `<div class="price"><div class="item-title">${plan.name}</div>` +
-        `<div class="price-value accent">R$ ${formatPrice(plan.price)}<span class="muted">/mês</span></div></div>`,
+        `<div class="price"><div class="item-title">${escapeHtml(plan.name)}</div>` +
+        `<div class="price-value accent">R$ ${escapeHtml(formatPrice(plan.price))}<span class="muted">/mês</span></div></div>`,
     )
     .join('')}</div>
 </div>`;
@@ -112,11 +121,11 @@ export function renderCarouselSlide(
   }
 
   const slides = [
-    `${logoBlock()}<div><h1 class="heading">${HOOK.line1}<br><span class="accent">${HOOK.line2}</span></h1></div><p class="muted">Arrasta para o lado</p>`,
+    `${logoBlock()}<div><h1 class="heading">${escapeHtml(HOOK.line1)}<br><span class="accent">${escapeHtml(HOOK.line2)}</span></h1></div><p class="muted">Arrasta para o lado</p>`,
     `${logoBlock()}<div><h2 class="heading">Onde trava</h2><div class="rule"></div>${slideList(PAINS)}</div><p class="muted"></p>`,
     `${logoBlock()}<div><h2 class="heading">O que o Trackerr resolve</h2><div class="rule"></div>${slideList(PRODUCT)}</div><p class="muted"></p>`,
     `${logoBlock()}${priceSlide(plans)}<p class="muted">Grátis até 10 ativos, sem cartão.</p>`,
-    `${logoBlock()}<div><h1 class="heading">${CTA.title}<br><span class="accent">${CTA.body}</span></h1></div><p class="muted">${CTA.url}</p>`,
+    `${logoBlock()}<div><h1 class="heading">${escapeHtml(CTA.title)}<br><span class="accent">${escapeHtml(CTA.body)}</span></h1></div><p class="muted">${escapeHtml(CTA.url)}</p>`,
   ];
 
   return page(format, slides[index]);

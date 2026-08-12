@@ -55,4 +55,18 @@ describe('renderCarouselSlide', () => {
       /slide/i,
     );
   });
+
+  it('escapes html-unsafe characters in plan names sourced from the api', () => {
+    const html = renderCarouselSlide(3, FORMATS['instagram-feed'], [
+      {name: 'Pro & <Premium>', price: 9.9},
+    ]);
+    expect(html).toContain('Pro &amp; &lt;Premium&gt;');
+    expect(html).not.toContain('<Premium>');
+  });
+
+  it('renders plain plan names unchanged', () => {
+    const html = renderCarouselSlide(3, FORMATS['instagram-feed'], plans);
+    expect(html).toContain('Pro');
+    expect(html).toContain('Premium');
+  });
 });
