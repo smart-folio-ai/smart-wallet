@@ -1,4 +1,4 @@
-import {buildLandingUrl, type Channel} from './utm';
+import {buildLandingUrl, type Channel} from './utm.ts';
 
 export type CaptionEntry = {
   piece: string;

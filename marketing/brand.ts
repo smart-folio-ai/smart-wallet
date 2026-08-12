@@ -16,7 +16,7 @@ export const FONT_IMPORT_URL =
 
 export function readLogoSvg(): string {
   return readFileSync(
-    resolve(__dirname, '../src/assets/logo-lockup-dark-bg.svg'),
+    resolve(import.meta.dirname, '../src/assets/logo-lockup-dark-bg.svg'),
     'utf-8',
   );
 }

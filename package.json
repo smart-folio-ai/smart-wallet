@@ -13,7 +13,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "marketing": "bun run marketing/generate.ts",
+    "marketing": "node marketing/generate.ts",
     "test": "vitest run",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",

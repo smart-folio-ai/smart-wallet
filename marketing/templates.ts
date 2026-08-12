@@ -1,7 +1,7 @@
-import {BRAND, FONT_IMPORT_URL, readLogoSvg} from './brand';
-import type {Format} from './formats';
-import type {MarketingPlan} from './plans';
-import {HOOK, PAINS, PRODUCT, CTA} from './content';
+import {BRAND, FONT_IMPORT_URL, readLogoSvg} from './brand.ts';
+import type {Format} from './formats.ts';
+import type {MarketingPlan} from './plans.ts';
+import {HOOK, PAINS, PRODUCT, CTA} from './content.ts';
 
 export const CAROUSEL_SLIDE_COUNT = 5;
 
