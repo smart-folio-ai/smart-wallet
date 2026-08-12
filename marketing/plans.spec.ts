@@ -1,5 +1,5 @@
-import {describe, it, expect} from 'vitest';
-import {selectPaidPlans} from './plans';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {selectPaidPlans, fetchPaidPlans} from './plans';
 
 const plan = (name: string, price: number, isActive = true) => ({
   _id: `id-${name}`,
@@ -45,4 +45,30 @@ describe('selectPaidPlans', () => {
   it('throws when the payload is not an array', () => {
     expect(() => selectPaidPlans({error: 'nope'})).toThrow(/resposta/i);
   });
+});
+
+describe('fetchPaidPlans', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('rejects instead of hanging forever when the API never responds', async () => {
+    // Shorten the real timeout so the test doesn't actually wait 10s.
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(AbortSignal.timeout(20));
+
+    // Simulate a hanging request: it only ever settles if its signal aborts.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        });
+      }),
+    );
+
+    await expect(fetchPaidPlans()).rejects.toThrow(/trakkerwallet\.com\.br/i);
+  }, 2000);
 });

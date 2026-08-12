@@ -37,7 +37,7 @@ export function selectPaidPlans(raw: unknown): MarketingPlan[] {
 export async function fetchPaidPlans(): Promise<MarketingPlan[]> {
   let response: Response;
   try {
-    response = await fetch(PLANS_URL);
+    response = await fetch(PLANS_URL, {signal: AbortSignal.timeout(10_000)});
   } catch (error) {
     throw new Error(
       `Não foi possível alcançar ${PLANS_URL}: ${(error as Error).message}`,
