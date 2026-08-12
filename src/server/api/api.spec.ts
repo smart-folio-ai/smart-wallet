@@ -36,21 +36,40 @@ describe('leadsService.capturePurchaseIntent', () => {
     mock.reset();
   });
 
-  it('posts the email and plan name to /leads/purchase-intent', async () => {
+  it('posts the email and plan id to /leads/purchase-intent', async () => {
     mock.onPost('/leads/purchase-intent').reply(200, {success: true});
 
     const {leadsService} = await import('./api');
 
     const response = await leadsService.capturePurchaseIntent(
       'investidor@example.com',
-      'Premium',
+      'plan_premium',
     );
 
     expect(mock.history.post[0].url).toBe('/leads/purchase-intent');
     expect(JSON.parse(mock.history.post[0].data)).toEqual({
       email: 'investidor@example.com',
-      planName: 'Premium',
+      planId: 'plan_premium',
     });
     expect(response.data).toEqual({success: true});
+  });
+
+  it('spreads attribution fields into the payload when provided', async () => {
+    mock.onPost('/leads/purchase-intent').reply(200, {success: true});
+
+    const {leadsService} = await import('./api');
+
+    await leadsService.capturePurchaseIntent(
+      'investidor@example.com',
+      'plan_premium',
+      {utmSource: 'reddit', utmCampaign: 'validacao'},
+    );
+
+    expect(JSON.parse(mock.history.post[0].data)).toEqual({
+      email: 'investidor@example.com',
+      planId: 'plan_premium',
+      utmSource: 'reddit',
+      utmCampaign: 'validacao',
+    });
   });
 });

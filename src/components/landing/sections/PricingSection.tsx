@@ -35,7 +35,9 @@ function gridColumnsFor(count: number): string {
 }
 
 export function PricingSection() {
-  const [modalPlanName, setModalPlanName] = useState<string | null>(null);
+  const [modalPlan, setModalPlan] = useState<{id: string; name: string} | null>(
+    null,
+  );
 
   const {
     data: plans,
@@ -139,7 +141,7 @@ export function PricingSection() {
         <Button
           type="button"
           size="lg"
-          onClick={() => setModalPlanName(plan.name)}
+          onClick={() => setModalPlan({id: plan.id, name: plan.name})}
           className={`mt-8 w-full ${
             plan.featured
               ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
@@ -218,11 +220,12 @@ export function PricingSection() {
       </div>
 
       <PurchaseIntentModal
-        open={modalPlanName !== null}
+        open={modalPlan !== null}
         onOpenChange={(open) => {
-          if (!open) setModalPlanName(null);
+          if (!open) setModalPlan(null);
         }}
-        planName={modalPlanName ?? ''}
+        planId={modalPlan?.id ?? ''}
+        planName={modalPlan?.name ?? ''}
       />
     </Section>
   );

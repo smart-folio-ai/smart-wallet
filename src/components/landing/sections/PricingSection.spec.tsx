@@ -4,8 +4,15 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import {PricingSection} from './PricingSection';
 import SubscriptionService from '@/services/subscription';
+import {leadsService} from '@/server/api/api';
 
 vi.mock('@/services/subscription');
+
+vi.mock('@/server/api/api', () => ({
+  leadsService: {
+    capturePurchaseIntent: vi.fn(),
+  },
+}));
 
 const mockPlans = [
   {
@@ -105,6 +112,31 @@ describe('PricingSection', () => {
     fireEvent.click(screen.getByRole('button', {name: /Assinar Pro/i}));
 
     expect(screen.getByText(/Quero o plano Pro/i)).toBeInTheDocument();
+  });
+
+  it('envia o id do plano (não o nome) ao confirmar interesse no modal', async () => {
+    (leadsService.capturePurchaseIntent as any).mockResolvedValue({
+      data: {success: true},
+    });
+
+    renderSection();
+    await waitFor(() => expect(screen.getByText('Pro')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', {name: /Assinar Pro/i}));
+
+    fireEvent.change(screen.getByLabelText(/e-mail/i), {
+      target: {value: 'investidor@example.com'},
+    });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', {name: /Confirmar interesse/i}));
+
+    await waitFor(() => {
+      expect(leadsService.capturePurchaseIntent).toHaveBeenCalledWith(
+        'investidor@example.com',
+        'plan_pro',
+        expect.anything(),
+      );
+    });
   });
 
   it('destaca o plano marcado com isFeatured', async () => {

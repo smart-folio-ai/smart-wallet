@@ -208,8 +208,16 @@ export const fiscalService = {
 };
 
 export const leadsService = {
-  capturePurchaseIntent: (email: string, planName: string): AxiosPromise<{ success: boolean }> =>
-    apiClient.post('/leads/purchase-intent', {email, planName}),
+  capturePurchaseIntent: (
+    email: string,
+    planId: string,
+    attribution: {
+      utmSource?: string;
+      utmMedium?: string;
+      utmCampaign?: string;
+    } = {},
+  ): AxiosPromise<{success: boolean}> =>
+    apiClient.post('/leads/purchase-intent', {email, planId, ...attribution}),
 };
 
 export {apiClient as api};
