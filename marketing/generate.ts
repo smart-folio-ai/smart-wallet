@@ -1,5 +1,5 @@
 import {chromium, type Page} from '@playwright/test';
-import {mkdir, writeFile, rm, readFile} from 'node:fs/promises';
+import {mkdir, writeFile, rm} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {FORMATS, type Format, type FormatName} from './formats.ts';
 import {fetchPaidPlans} from './plans.ts';
@@ -9,6 +9,8 @@ import {assertValidUtmValue} from './utm.ts';
 
 const OUTPUT_DIR = resolve(import.meta.dirname, 'output');
 const FONT_TIMEOUT_MS = 15_000;
+
+type Shot = {file: string; buffer: Buffer};
 
 function parseCampaign(argv: string[]): string {
   const flag = argv.find((arg) => arg.startsWith('--campaign='));
@@ -20,8 +22,7 @@ function parseCampaign(argv: string[]): string {
 // Lê largura e altura do cabeçalho IHDR do PNG (bytes 16-24), sem
 // dependência nova. Confirma que a peça saiu no tamanho do formato — um
 // template que estoura o body produziria imagem de outro tamanho.
-async function readPngSize(path: string): Promise<Format> {
-  const buffer = await readFile(path);
+function readPngSize(buffer: Buffer): Format {
   return {
     width: buffer.readUInt32BE(16),
     height: buffer.readUInt32BE(20),
@@ -33,7 +34,7 @@ async function shoot(
   html: string,
   format: Format,
   file: string,
-): Promise<void> {
+): Promise<Shot> {
   await page.setViewportSize(format);
   await page.setContent(html, {waitUntil: 'load'});
 
@@ -44,67 +45,84 @@ async function shoot(
     timeout: FONT_TIMEOUT_MS,
   });
 
-  const path = resolve(OUTPUT_DIR, file);
-  await page.screenshot({path});
+  // Sem `path`: o screenshot fica só em memória. Escrever em disco aqui
+  // tornaria a checagem de tamanho abaixo tarde demais para evitar output
+  // parcial — o arquivo já estaria no diretório antes de qualquer chance
+  // de dar throw.
+  const buffer = await page.screenshot();
 
-  const written = await readPngSize(path);
+  const written = readPngSize(buffer);
   if (written.width !== format.width || written.height !== format.height) {
     throw new Error(
       `${file} saiu ${written.width}x${written.height}, ` +
         `esperava ${format.width}x${format.height}.`,
     );
   }
+
+  return {file, buffer};
 }
 
 async function main(): Promise<void> {
   const campaign = parseCampaign(process.argv.slice(2));
 
-  // Tudo que pode falhar acontece antes de qualquer escrita: uma geração
-  // parcial deixa PNGs velhos no diretório, indistinguíveis dos novos.
+  // Tudo que pode falhar — busca de planos, campanha inválida, launch do
+  // Chromium, cada screenshot, cada checagem de dimensão — acontece antes
+  // de qualquer escrita em marketing/output/. Os PNGs ficam em memória
+  // (buffers) até o fim; só depois que todos os nove saíram certos é que
+  // o diretório é apagado e recriado. Isso garante que uma falha a meio
+  // caminho nunca deixa o diretório num estado parcial nem destrói uma
+  // geração anterior válida.
   const plans = await fetchPaidPlans();
   const captions = renderCaptionsMarkdown(buildCaptions(campaign));
 
-  await rm(OUTPUT_DIR, {recursive: true, force: true});
-  await mkdir(OUTPUT_DIR, {recursive: true});
-
   const browser = await chromium.launch();
-  const written: string[] = [];
+  const shots: Shot[] = [];
 
   try {
     const page = await browser.newPage();
 
     for (const name of Object.keys(FORMATS) as FormatName[]) {
       const file = `gancho-${name}.png`;
-      await shoot(page, renderHook(FORMATS[name]), FORMATS[name], file);
-      written.push(file);
+      shots.push(await shoot(page, renderHook(FORMATS[name]), FORMATS[name], file));
     }
 
     const carouselFormat = FORMATS['instagram-feed'];
     for (let index = 0; index < CAROUSEL_SLIDE_COUNT; index += 1) {
       const file = `carrossel-${index + 1}.png`;
-      await shoot(
-        page,
-        renderCarouselSlide(index, carouselFormat, plans),
-        carouselFormat,
-        file,
+      shots.push(
+        await shoot(
+          page,
+          renderCarouselSlide(index, carouselFormat, plans),
+          carouselFormat,
+          file,
+        ),
       );
-      written.push(file);
     }
   } finally {
     await browser.close();
   }
 
-  await writeFile(resolve(OUTPUT_DIR, 'captions.md'), captions, 'utf-8');
-
+  // Reconciliação real antes de tocar no disco: se a contagem não bater,
+  // aborta aqui — nada foi apagado nem escrito ainda.
   const expected = Object.keys(FORMATS).length + CAROUSEL_SLIDE_COUNT;
-  if (written.length !== expected) {
+  if (shots.length !== expected) {
     throw new Error(
-      `Esperava ${expected} imagens, escrevi ${written.length}.`,
+      `Esperava ${expected} imagens, gerei ${shots.length} em memória.`,
     );
   }
 
+  // A partir daqui só há escrita de dados já validados — não há mais
+  // nada que possa falhar antes que o diretório novo esteja completo.
+  await rm(OUTPUT_DIR, {recursive: true, force: true});
+  await mkdir(OUTPUT_DIR, {recursive: true});
+
+  for (const shot of shots) {
+    await writeFile(resolve(OUTPUT_DIR, shot.file), shot.buffer);
+  }
+  await writeFile(resolve(OUTPUT_DIR, 'captions.md'), captions, 'utf-8');
+
   console.log(
-    `${written.length} imagens + captions.md em marketing/output/ ` +
+    `${shots.length} imagens + captions.md em marketing/output/ ` +
       `(campanha: ${campaign}, planos: ${plans
         .map((plan) => plan.name)
         .join(', ')})`,
