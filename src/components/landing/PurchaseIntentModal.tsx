@@ -13,10 +13,12 @@ import {Checkbox} from '@/components/ui/checkbox';
 import {Button} from '@/components/ui/button';
 import {useAppToast} from '@/hooks/use-app-toast';
 import {leadsService} from '@/server/api/api';
+import {getAttribution} from '@/utils/attribution';
 
 type PurchaseIntentModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  planId: string;
   planName: string;
 };
 
@@ -25,6 +27,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function PurchaseIntentModal({
   open,
   onOpenChange,
+  planId,
   planName,
 }: PurchaseIntentModalProps) {
   const {error: showError} = useAppToast();
@@ -57,7 +60,11 @@ export function PurchaseIntentModal({
     const currentRequestId = ++requestIdRef.current;
     setSubmitting(true);
     try {
-      await leadsService.capturePurchaseIntent(email.trim(), planName);
+      await leadsService.capturePurchaseIntent(
+        email.trim(),
+        planId,
+        getAttribution(),
+      );
       if (requestIdRef.current !== currentRequestId) return;
       setSubmitted(true);
     } catch {

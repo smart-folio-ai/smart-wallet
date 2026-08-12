@@ -1,3 +1,5 @@
+import {useEffect} from 'react';
+import {captureAttribution} from '@/utils/attribution';
 import {LandingNav} from '@/components/landing/sections/LandingNav';
 import {HeroSection} from '@/components/landing/sections/HeroSection';
 import {MarketTape} from '@/components/landing/sections/MarketTape';
@@ -19,6 +21,10 @@ import {useGsapReveal} from '@/components/landing/motion/useGsapReveal';
  */
 export default function Landing() {
   const containerRef = useGsapReveal<HTMLDivElement>();
+
+  useEffect(() => {
+    captureAttribution(window.location.search);
+  }, []);
 
   return (
     <div ref={containerRef} className="dark min-h-screen bg-surface font-body">

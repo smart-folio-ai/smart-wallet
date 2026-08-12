@@ -16,11 +16,17 @@ const wrap = (ui: React.ReactElement) =>
 describe('PurchaseIntentModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
   });
 
   it('renders the plan name and a disabled submit button until the form is valid', () => {
     wrap(
-      <PurchaseIntentModal open onOpenChange={() => {}} planName="Premium" />
+      <PurchaseIntentModal
+        open
+        onOpenChange={() => {}}
+        planId="plan_premium"
+        planName="Premium"
+      />
     );
 
     expect(screen.getByText(/Premium/i)).toBeInTheDocument();
@@ -29,7 +35,12 @@ describe('PurchaseIntentModal', () => {
 
   it('enables submit only after a valid email is entered and the consent checkbox is checked', () => {
     wrap(
-      <PurchaseIntentModal open onOpenChange={() => {}} planName="Premium" />
+      <PurchaseIntentModal
+        open
+        onOpenChange={() => {}}
+        planId="plan_premium"
+        planName="Premium"
+      />
     );
 
     fireEvent.change(screen.getByLabelText(/e-mail/i), {
@@ -43,7 +54,12 @@ describe('PurchaseIntentModal', () => {
 
   it('does not enable submit with an invalid email even if consent is checked', () => {
     wrap(
-      <PurchaseIntentModal open onOpenChange={() => {}} planName="Premium" />
+      <PurchaseIntentModal
+        open
+        onOpenChange={() => {}}
+        planId="plan_premium"
+        planName="Premium"
+      />
     );
 
     fireEvent.change(screen.getByLabelText(/e-mail/i), {
@@ -54,13 +70,18 @@ describe('PurchaseIntentModal', () => {
     expect(screen.getByRole('button', {name: /enviar|confirmar/i})).toBeDisabled();
   });
 
-  it('submits the email and plan name, then shows a confirmation message on success', async () => {
+  it('submits the email and plan id, then shows a confirmation message on success', async () => {
     (leadsService.capturePurchaseIntent as any).mockResolvedValue({
       data: {success: true},
     });
 
     wrap(
-      <PurchaseIntentModal open onOpenChange={() => {}} planName="Premium" />
+      <PurchaseIntentModal
+        open
+        onOpenChange={() => {}}
+        planId="plan_premium"
+        planName="Premium"
+      />
     );
 
     fireEvent.change(screen.getByLabelText(/e-mail/i), {
@@ -72,7 +93,8 @@ describe('PurchaseIntentModal', () => {
     await waitFor(() => {
       expect(leadsService.capturePurchaseIntent).toHaveBeenCalledWith(
         'investidor@example.com',
-        'Premium'
+        'plan_premium',
+        {}
       );
     });
     await waitFor(() => {
@@ -88,7 +110,12 @@ describe('PurchaseIntentModal', () => {
     );
 
     wrap(
-      <PurchaseIntentModal open onOpenChange={() => {}} planName="Premium" />
+      <PurchaseIntentModal
+        open
+        onOpenChange={() => {}}
+        planId="plan_premium"
+        planName="Premium"
+      />
     );
 
     fireEvent.change(screen.getByLabelText(/e-mail/i), {
@@ -122,6 +149,7 @@ describe('PurchaseIntentModal', () => {
         <PurchaseIntentModal
           open
           onOpenChange={onOpenChange}
+          planId="plan_premium"
           planName="Premium"
         />
       </MemoryRouter>
@@ -136,7 +164,8 @@ describe('PurchaseIntentModal', () => {
     await waitFor(() => {
       expect(leadsService.capturePurchaseIntent).toHaveBeenCalledWith(
         'investidor@example.com',
-        'Premium'
+        'plan_premium',
+        {}
       );
     });
 
@@ -147,6 +176,7 @@ describe('PurchaseIntentModal', () => {
         <PurchaseIntentModal
           open={false}
           onOpenChange={onOpenChange}
+          planId="plan_premium"
           planName="Premium"
         />
       </MemoryRouter>
@@ -158,6 +188,7 @@ describe('PurchaseIntentModal', () => {
         <PurchaseIntentModal
           open
           onOpenChange={onOpenChange}
+          planId="plan_global"
           planName="Global Investor"
         />
       </MemoryRouter>
@@ -177,5 +208,60 @@ describe('PurchaseIntentModal', () => {
     ).not.toBeInTheDocument();
     expect(screen.getByLabelText(/e-mail/i)).toBeInTheDocument();
     expect(screen.getByText(/Global Investor/i)).toBeInTheDocument();
+  });
+
+  it('envia o id do plano e a atribuição armazenada', async () => {
+    sessionStorage.setItem(
+      'trackerr:attribution',
+      JSON.stringify({utmSource: 'reddit', utmCampaign: 'validacao'}),
+    );
+
+    wrap(
+      <PurchaseIntentModal
+        open
+        onOpenChange={() => {}}
+        planId="plan_pro"
+        planName="Pro"
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/e-mail/i), {
+      target: {value: 'investidor@example.com'},
+    });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', {name: /enviar|confirmar/i}));
+
+    await waitFor(() => {
+      expect(leadsService.capturePurchaseIntent).toHaveBeenCalledWith(
+        'investidor@example.com',
+        'plan_pro',
+        {utmSource: 'reddit', utmCampaign: 'validacao'},
+      );
+    });
+  });
+
+  it('envia um objeto de atribuição vazio quando não há utm', async () => {
+    wrap(
+      <PurchaseIntentModal
+        open
+        onOpenChange={() => {}}
+        planId="plan_pro"
+        planName="Pro"
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/e-mail/i), {
+      target: {value: 'investidor@example.com'},
+    });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', {name: /enviar|confirmar/i}));
+
+    await waitFor(() => {
+      expect(leadsService.capturePurchaseIntent).toHaveBeenCalledWith(
+        'investidor@example.com',
+        'plan_pro',
+        {},
+      );
+    });
   });
 });
