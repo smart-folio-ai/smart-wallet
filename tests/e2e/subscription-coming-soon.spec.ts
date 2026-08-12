@@ -57,6 +57,7 @@ test.describe('Subscription Coming Soon', () => {
             stripePriceId: 'price_global',
             stripeProductId: 'prod_global',
             isActive: true,
+            isComingSoon: true,
             features: ['Feature X', 'Feature Y'],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

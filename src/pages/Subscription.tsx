@@ -94,10 +94,6 @@ export default function Subscriptions() {
       const planId = plan._id;
       const {monthlyPrice, annualPrice, hasRealAnnualPrice} =
         normalizePlanPricing(plan);
-      const normalizedName = plan.name.toLowerCase().replace(/\s+/g, '');
-      const isGlobalInvestor =
-        normalizedName.includes('globalinvestor') ||
-        normalizedName.includes('investidorglobal');
 
       return {
         ...plan,
@@ -105,8 +101,8 @@ export default function Subscriptions() {
         monthlyPrice,
         annualPrice,
         hasRealAnnualPrice,
-        comingSoon: isGlobalInvestor,
-        badge: plan.name === 'Investidor Pro' ? 'Popular' : undefined,
+        comingSoon: plan.isComingSoon === true,
+        badge: plan.isFeatured === true ? 'Popular' : undefined,
         features: plan.features.map((name) => ({
           name,
           included: true,
@@ -123,7 +119,7 @@ export default function Subscriptions() {
     }
 
     if (plan.comingSoon) {
-      toast.info('Plano GlobalInvestor em breve.');
+      toast.info('Este plano estará disponível em breve.');
       return;
     }
 

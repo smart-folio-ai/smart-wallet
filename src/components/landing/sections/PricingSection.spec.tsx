@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import {PricingSection} from './PricingSection';
@@ -10,32 +10,32 @@ vi.mock('@/services/subscription');
 const mockPlans = [
   {
     _id: 'plan_pro',
-    name: 'Investidor Pro',
-    description: 'Para quem já tem carteira formada',
-    price: 49,
-    annualPrice: 399,
-    currency: 'BRL',
-    interval: 'month',
-    intervalCount: 1,
-    stripePriceId: 'price_1',
-    stripeProductId: 'prod_1',
-    isActive: true,
-    features: ['Ativos ilimitados', 'Alertas de risco com IA'],
-    createdAt: '',
-    updatedAt: '',
-  },
-  {
-    _id: 'plan_global',
-    name: 'Global Investor',
-    description: 'Para operação maior',
-    price: 199,
-    currency: 'BRL',
+    name: 'Pro',
+    description: 'Para investidores iniciantes',
+    price: 14.9,
+    currency: 'brl',
     interval: 'month',
     intervalCount: 1,
     stripePriceId: 'price_2',
     stripeProductId: 'prod_2',
     isActive: true,
-    features: ['Tudo do Pro', 'Multiportfólio'],
+    isFeatured: true,
+    features: ['Ativos ilimitados', 'Alertas de risco com IA'],
+    createdAt: '',
+    updatedAt: '',
+  },
+  {
+    _id: 'plan_free',
+    name: 'Free',
+    description: 'Para quem está começando',
+    price: 0,
+    currency: 'brl',
+    interval: 'month',
+    intervalCount: 1,
+    stripePriceId: 'price_1',
+    stripeProductId: 'prod_1',
+    isActive: true,
+    features: ['Até 10 ativos', 'Consolidação de corretoras'],
     createdAt: '',
     updatedAt: '',
   },
@@ -60,60 +60,121 @@ describe('PricingSection', () => {
     (SubscriptionService.getPlans as any).mockResolvedValue(mockPlans);
   });
 
-  it('ancora em #planos e mostra o plano Básico gratuito sempre, mesmo antes de carregar', () => {
+  it('mantém a âncora #planos e o cabeçalho mesmo antes de carregar', () => {
     const {container} = renderSection();
     expect(container.querySelector('#planos')).not.toBeNull();
-    expect(screen.getByText('Básico')).toBeInTheDocument();
+    expect(screen.getByText('Planos')).toBeInTheDocument();
   });
 
-  it('mostra os planos pagos reais vindos da API', async () => {
+  it('renderiza todos os planos ativos vindos da API, inclusive o gratuito', async () => {
     renderSection();
     await waitFor(() => {
-      expect(screen.getByText('Investidor Pro')).toBeInTheDocument();
-      expect(screen.getByText('Global Investor')).toBeInTheDocument();
+      expect(screen.getByText('Free')).toBeInTheDocument();
+      expect(screen.getByText('Pro')).toBeInTheDocument();
     });
   });
 
-  it('mantém o CTA do plano Básico como link direto para /register', () => {
+  it('exibe o plano gratuito como "Grátis", sem sufixo de período', async () => {
     renderSection();
-    const basicoCta = screen.getByRole('link', {name: /começar grátis/i});
-    expect(basicoCta).toHaveAttribute('href', '/register');
+    await waitFor(() => expect(screen.getByText('Free')).toBeInTheDocument());
+
+    expect(screen.getByText('Grátis')).toBeInTheDocument();
+    expect(screen.queryByText('R$ 0,00')).not.toBeInTheDocument();
   });
 
-  it('abre o modal de captura ao clicar no CTA de um plano pago, em vez de navegar', async () => {
+  it('ordena os planos por preço crescente', async () => {
     renderSection();
-    await waitFor(() => screen.getByText('Investidor Pro'));
+    await waitFor(() => expect(screen.getByText('Free')).toBeInTheDocument());
 
-    const proCta = screen.getByRole('button', {name: 'Assinar Investidor Pro'});
-    fireEvent.click(proCta);
-
-    expect(screen.getByText(/Quero o plano Investidor Pro/i)).toBeInTheDocument();
+    const names = screen.getAllByRole('heading', {level: 3}).map((h) => h.textContent);
+    expect(names).toEqual(['Free', 'Pro']);
   });
 
-  it('não quebra a renderização quando a API de planos falha, e mostra um estado de erro distinto para os planos pagos', async () => {
-    (SubscriptionService.getPlans as any).mockRejectedValue(new Error('network error'));
-    const {container} = renderSection();
+  it('usa link direto para /register no CTA do plano gratuito', async () => {
+    renderSection();
+    await waitFor(() => expect(screen.getByText('Free')).toBeInTheDocument());
 
-    expect(container.querySelector('#planos')).not.toBeNull();
-    expect(screen.getByText('Básico')).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(screen.getByTestId('pricing-plans-error')).toBeInTheDocument();
-    });
-    expect(
-      screen.getByRole('button', {name: /tentar novamente/i}),
-    ).toBeInTheDocument();
-    expect(screen.queryByText('Investidor Pro')).not.toBeInTheDocument();
+    const freeCta = screen.getByRole('link', {name: /Começar grátis/i});
+    expect(freeCta).toHaveAttribute('href', '/register');
   });
 
-  it('mostra um estado de carregamento para os planos pagos enquanto a API não responde', () => {
-    (SubscriptionService.getPlans as any).mockImplementation(
-      () => new Promise(() => {}),
+  it('abre o modal de captura ao clicar no CTA de um plano pago', async () => {
+    renderSection();
+    await waitFor(() => expect(screen.getByText('Pro')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', {name: /Assinar Pro/i}));
+
+    expect(screen.getByText(/Quero o plano Pro/i)).toBeInTheDocument();
+  });
+
+  it('destaca o plano marcado com isFeatured', async () => {
+    renderSection();
+    await waitFor(() => expect(screen.getByText('Pro')).toBeInTheDocument());
+
+    expect(screen.getByText('Mais escolhido')).toBeInTheDocument();
+  });
+
+  it('destaca apenas o primeiro plano quando mais de um tem isFeatured', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue(
+      mockPlans.map((plan) => ({...plan, isFeatured: true})),
     );
     renderSection();
+    await waitFor(() => expect(screen.getByText('Pro')).toBeInTheDocument());
 
-    expect(screen.getByText('Básico')).toBeInTheDocument();
+    expect(screen.getAllByText('Mais escolhido')).toHaveLength(1);
+
+    // Plans display in price-ascending order (Free at R$0 before Pro at
+    // R$14,90), so the badge must land on Free's card — a findLastIndex-style
+    // bug would still pass the count assertion above while badging Pro.
+    const freeCard = screen
+      .getByRole('heading', {name: 'Free', level: 3})
+      .closest('div') as HTMLElement;
+    const proCard = screen
+      .getByRole('heading', {name: 'Pro', level: 3})
+      .closest('div') as HTMLElement;
+
+    expect(within(freeCard).getByText('Mais escolhido')).toBeInTheDocument();
+    expect(
+      within(proCard).queryByText('Mais escolhido'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('não renderiza destaque quando nenhum plano está marcado', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue(
+      mockPlans.map((plan) => ({...plan, isFeatured: false})),
+    );
+    renderSection();
+    await waitFor(() => expect(screen.getByText('Pro')).toBeInTheDocument());
+
+    expect(screen.queryByText('Mais escolhido')).not.toBeInTheDocument();
+  });
+
+  it('não quebra a renderização quando a API falha, e oferece retry', async () => {
+    (SubscriptionService.getPlans as any).mockRejectedValue(new Error('network'));
+    const {container} = renderSection();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pricing-plans-error')).toBeInTheDocument(),
+    );
+    expect(container.querySelector('#planos')).not.toBeNull();
+    expect(screen.getByRole('button', {name: /Tentar novamente/i})).toBeInTheDocument();
+  });
+
+  it('mostra estado de carregamento enquanto a API não responde', () => {
+    (SubscriptionService.getPlans as any).mockReturnValue(new Promise(() => {}));
+    renderSection();
+
     expect(screen.getByTestId('pricing-plans-loading')).toBeInTheDocument();
-    expect(screen.getByText(/carregando planos/i)).toBeInTheDocument();
+  });
+
+  it('mostra estado vazio quando não há planos ativos, mantendo âncora e cabeçalho', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([]);
+    const {container} = renderSection();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pricing-plans-empty')).toBeInTheDocument(),
+    );
+    expect(container.querySelector('#planos')).not.toBeNull();
+    expect(screen.getByText('Planos')).toBeInTheDocument();
   });
 });
