@@ -27,5 +27,5 @@ jobs:
       - name: Run TypeScript check
         run: bun run type-check
 
-      - name: Run tests (if available)
-        run: bunx vitest run src/**/*.spec.ts
+      - name: Run unit tests
+        run: bun run test:unit
