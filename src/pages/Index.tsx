@@ -53,6 +53,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {getAveragePrice, computePnl} from '@/pages/dashboard-summary.utils';
 
 interface Asset {
   id: string;
@@ -70,8 +71,8 @@ interface Asset {
 
 interface PortfolioSummary {
   totalValue: number;
-  totalPnl: number;
-  totalPnlPercentage: number;
+  totalPnl: number | null;
+  totalPnlPercentage: number | null;
   totalDividends: number;
   distribution: {
     stocks: number;
@@ -150,9 +151,6 @@ const formatHistoryDate = (value: unknown): string => {
       })
     : '-';
 };
-
-const getAveragePrice = (asset: any): number =>
-  Number(asset?.averagePrice ?? asset?.average_price ?? 0);
 
 const computeDailyVolatility = (
   history: {date: string; value: number}[],
@@ -372,9 +370,10 @@ const Dashboard = () => {
       0,
     );
 
-    const profitLoss = totalValue - totalCost;
-    const profitLossPercentage =
-      totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
+    const {pnl: profitLoss, pnlPercentage: profitLossPercentage} = computePnl(
+      totalValue,
+      totalCost,
+    );
 
     const calculateAllocation = (type: string) => {
       if (totalValue === 0) return 0;
@@ -682,7 +681,10 @@ const Dashboard = () => {
   const actionableInsights = useMemo<ActionableInsight[]>(() => {
     const insights: ActionableInsight[] = [];
 
-    if ((summary.totalPnlPercentage || 0) < -0.5) {
+    if (
+      summary.totalPnlPercentage !== null &&
+      summary.totalPnlPercentage < -0.5
+    ) {
       const biggestDrop = topLosers[0];
       insights.push({
         priority: 'Alta',
@@ -993,17 +995,29 @@ const Dashboard = () => {
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             P&L do período
           </p>
-          <p
-            className={`mt-1 text-2xl font-bold ${
-              (summary.totalPnl || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'
-            }`}>
-            {summary.totalPnl >= 0 ? '+' : '-'}
-            {formatCurrency(Math.abs(summary.totalPnl || 0))}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {summary.totalPnlPercentage >= 0 ? '+' : '-'}
-            {Math.abs(summary.totalPnlPercentage || 0).toFixed(2)}%
-          </p>
+          {summary.totalPnl === null ||
+          summary.totalPnlPercentage === null ? (
+            <>
+              <p className="mt-1 text-2xl font-bold">—</p>
+              <p className="text-xs text-muted-foreground">
+                custo médio indisponível
+              </p>
+            </>
+          ) : (
+            <>
+              <p
+                className={`mt-1 text-2xl font-bold ${
+                  summary.totalPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                }`}>
+                {summary.totalPnl >= 0 ? '+' : '-'}
+                {formatCurrency(Math.abs(summary.totalPnl))}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {summary.totalPnlPercentage >= 0 ? '+' : '-'}
+                {Math.abs(summary.totalPnlPercentage).toFixed(2)}%
+              </p>
+            </>
+          )}
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -1172,10 +1186,22 @@ const Dashboard = () => {
                   {formatCurrency(summary.totalValue || 0)}
                 </h3>
                 <p className="mb-4 text-sm text-muted-foreground">
-                  P&L acumulado: {summary.totalPnl >= 0 ? '+' : '-'}
-                  {formatCurrency(Math.abs(summary.totalPnl || 0))} (
-                  {summary.totalPnlPercentage >= 0 ? '+' : '-'}
-                  {Math.abs(summary.totalPnlPercentage || 0).toFixed(2)}%)
+                  {summary.totalPnl === null ||
+                  summary.totalPnlPercentage === null ? (
+                    <>
+                      P&L acumulado: —{' '}
+                      <span className="text-xs">
+                        (custo médio indisponível)
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      P&L acumulado: {summary.totalPnl >= 0 ? '+' : '-'}
+                      {formatCurrency(Math.abs(summary.totalPnl))} (
+                      {summary.totalPnlPercentage >= 0 ? '+' : '-'}
+                      {Math.abs(summary.totalPnlPercentage).toFixed(2)}%)
+                    </>
+                  )}
                 </p>
 
                 <div className="mb-5 flex flex-wrap gap-2">
