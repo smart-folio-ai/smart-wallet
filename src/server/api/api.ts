@@ -57,6 +57,8 @@ export const stockServices = {
   getGlobalStock: (query: string) =>
     apiClient.get(`/stocks/global/quote?symbol=${query}`),
   getCdiRate: () => apiClient.get('/stocks/macro/cdi'),
+  getCdiSeries: (from: string, to: string) =>
+    apiClient.get(`/stocks/macro/cdi/series?from=${from}&to=${to}`),
   getAllNationalStocks: (search = '') =>
     apiClient.get(`/stocks/all/national${search ? `?search=${encodeURIComponent(search)}&limit=30` : '?limit=100'}`),
   getNationalStock: (

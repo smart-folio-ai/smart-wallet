@@ -53,13 +53,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  getAveragePrice,
+  computePnl,
+  computeReturnSinceAvgPrice,
+} from '@/pages/dashboard-summary.utils';
+import {accumulateCdi} from '@/pages/cdi-performance.utils';
 
 interface Asset {
   id: string;
   symbol: string;
   name: string;
   price: number;
-  change24h: number;
+  // Retorno desde o preço médio de compra — não é variação diária.
+  returnSinceAvgPrice: number;
   amount: number;
   value: number;
   allocation: number;
@@ -70,8 +77,8 @@ interface Asset {
 
 interface PortfolioSummary {
   totalValue: number;
-  totalPnl: number;
-  totalPnlPercentage: number;
+  totalPnl: number | null;
+  totalPnlPercentage: number | null;
   totalDividends: number;
   distribution: {
     stocks: number;
@@ -150,9 +157,6 @@ const formatHistoryDate = (value: unknown): string => {
       })
     : '-';
 };
-
-const getAveragePrice = (asset: any): number =>
-  Number(asset?.averagePrice ?? asset?.average_price ?? 0);
 
 const computeDailyVolatility = (
   history: {date: string; value: number}[],
@@ -311,10 +315,29 @@ const Dashboard = () => {
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const range = PERIOD_TO_BRAPI_RANGE[selectedPeriod] || '1mo';
-      const [ibovHistoryResponse, btcHistoryResponse] =
+
+      // Mesma janela de dias usada por `historyByPeriod` para o gráfico da
+      // carteira, para que o CDI cubra o mesmo período comparado.
+      const daysMap: Record<string, number> = {
+        '7D': 7,
+        '1M': 30,
+        '3M': 90,
+        '6M': 180,
+        '1A': 365,
+        '5A': 1825,
+      };
+      const limitDays = daysMap[selectedPeriod] || 30;
+      const toDate = new Date();
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - limitDays);
+      const toIso = toDate.toISOString().slice(0, 10);
+      const fromIso = fromDate.toISOString().slice(0, 10);
+
+      const [ibovHistoryResponse, btcHistoryResponse, cdiHistoryResponse] =
         await Promise.allSettled([
           stockServices.getNationalStock('^BVSP', {range, interval: '1d'}),
           stockServices.getNationalStock('BTC-USD', {range, interval: '1d'}),
+          stockServices.getCdiSeries(fromIso, toIso),
         ]);
 
       const parseHistory = (payload: any) => {
@@ -334,6 +357,11 @@ const Dashboard = () => {
           );
       };
 
+      const cdiSeries =
+        cdiHistoryResponse.status === 'fulfilled'
+          ? cdiHistoryResponse.value.data?.series
+          : null;
+
       return {
         ibov:
           ibovHistoryResponse.status === 'fulfilled'
@@ -343,6 +371,7 @@ const Dashboard = () => {
           btcHistoryResponse.status === 'fulfilled'
             ? parseHistory(btcHistoryResponse.value.data)
             : [],
+        cdi: Array.isArray(cdiSeries) ? cdiSeries : [],
       };
     },
   });
@@ -372,9 +401,10 @@ const Dashboard = () => {
       0,
     );
 
-    const profitLoss = totalValue - totalCost;
-    const profitLossPercentage =
-      totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
+    const {pnl: profitLoss, pnlPercentage: profitLossPercentage} = computePnl(
+      totalValue,
+      totalCost,
+    );
 
     const calculateAllocation = (type: string) => {
       if (totalValue === 0) return 0;
@@ -444,17 +474,15 @@ const Dashboard = () => {
   const assets = useMemo<Asset[]>(() => {
     const totalValue = summary.totalValue;
     return apiAssets.map((a: any) => {
-      const cost = getAveragePrice(a) * Number(a.quantity || 0);
       const val = a.total || 0;
-      const pnl = val - cost;
-      const pnlPerc = cost > 0 ? (pnl / cost) * 100 : 0;
+      const returnSinceAvgPrice = computeReturnSinceAvgPrice(a, val);
 
       return {
         id: a.id || a._id,
         symbol: a.symbol,
         name: a.name || a.longName || a.symbol,
         price: a.price,
-        change24h: pnlPerc,
+        returnSinceAvgPrice,
         amount: a.quantity,
         value: val,
         allocation:
@@ -565,16 +593,16 @@ const Dashboard = () => {
   const topGainers = useMemo(
     () =>
       [...assets]
-        .filter((item) => item.change24h > 0)
-        .sort((a, b) => b.change24h - a.change24h)
+        .filter((item) => item.returnSinceAvgPrice > 0)
+        .sort((a, b) => b.returnSinceAvgPrice - a.returnSinceAvgPrice)
         .slice(0, 3),
     [assets],
   );
   const topLosers = useMemo(
     () =>
       [...assets]
-        .filter((item) => item.change24h < 0)
-        .sort((a, b) => a.change24h - b.change24h)
+        .filter((item) => item.returnSinceAvgPrice < 0)
+        .sort((a, b) => a.returnSinceAvgPrice - b.returnSinceAvgPrice)
         .slice(0, 3),
     [assets],
   );
@@ -682,13 +710,16 @@ const Dashboard = () => {
   const actionableInsights = useMemo<ActionableInsight[]>(() => {
     const insights: ActionableInsight[] = [];
 
-    if ((summary.totalPnlPercentage || 0) < -0.5) {
+    if (
+      summary.totalPnlPercentage !== null &&
+      summary.totalPnlPercentage < -0.5
+    ) {
       const biggestDrop = topLosers[0];
       insights.push({
         priority: 'Alta',
         title: 'Queda relevante na carteira hoje',
         description: biggestDrop
-          ? `A carteira está abaixo do custo médio em ${Math.abs(summary.totalPnlPercentage).toFixed(2)}%, com destaque para ${biggestDrop.symbol} (${biggestDrop.change24h.toFixed(2)}%).`
+          ? `A carteira está abaixo do custo médio em ${Math.abs(summary.totalPnlPercentage).toFixed(2)}%, com destaque para ${biggestDrop.symbol} (${biggestDrop.returnSinceAvgPrice.toFixed(2)}% desde o preço médio).`
           : `A carteira está abaixo do custo médio em ${Math.abs(summary.totalPnlPercentage).toFixed(2)}%.`,
       });
     }
@@ -764,14 +795,14 @@ const Dashboard = () => {
     if (topLosers.length > 0) {
       actions.push({
         title: `Reavaliar posição em ${topLosers[0].symbol}`,
-        reason: `Queda de ${Math.abs(topLosers[0].change24h).toFixed(2)}% no período.`,
+        reason: `Queda de ${Math.abs(topLosers[0].returnSinceAvgPrice).toFixed(2)}% desde o preço médio.`,
       });
     }
 
     if (topGainers.length > 0) {
       actions.push({
         title: `Atualizar plano para ${topGainers[0].symbol}`,
-        reason: `Alta de ${topGainers[0].change24h.toFixed(2)}% no período.`,
+        reason: `Alta de ${topGainers[0].returnSinceAvgPrice.toFixed(2)}% desde o preço médio.`,
       });
     }
 
@@ -854,6 +885,7 @@ const Dashboard = () => {
         Number(point.value),
       ]),
     );
+    const cdiMap = accumulateCdi(benchmarkHistory?.cdi || []);
 
     const firstIbovComparablePoint = sortedPortfolio.find((point) => {
       const isoDate = toIsoDate(point.date);
@@ -877,12 +909,24 @@ const Dashboard = () => {
     const firstIbovValue = firstIbovDate ? ibovMap.get(firstIbovDate) : null;
     const firstBtcValue = firstBtcDate ? btcMap.get(firstBtcDate) : null;
 
+    const firstCdiComparablePoint = sortedPortfolio.find((point) => {
+      const isoDate = toIsoDate(point.date);
+      if (!isoDate) return false;
+      const cdiValue = cdiMap.get(isoDate);
+      return Number.isFinite(Number(cdiValue));
+    });
+    const firstCdiDate = firstCdiComparablePoint
+      ? toIsoDate(firstCdiComparablePoint.date)
+      : null;
+    const firstCdiValue = firstCdiDate ? cdiMap.get(firstCdiDate) : null;
+
     return sortedPortfolio.map((point) => {
       const isoDate = toIsoDate(point.date);
       const portfolioPerformance =
         (Number(point.value) / portfolioBase - 1) * 100;
       const ibovValue = isoDate ? ibovMap.get(isoDate) : undefined;
       const btcValue = isoDate ? btcMap.get(isoDate) : undefined;
+      const cdiValue = isoDate ? cdiMap.get(isoDate) : undefined;
 
       return {
         date: point.date,
@@ -897,9 +941,22 @@ const Dashboard = () => {
           firstBtcValue && btcValue && btcValue > 0
             ? (btcValue / firstBtcValue - 1) * 100
             : null,
+        cdiPerformance:
+          Number.isFinite(Number(firstCdiValue)) &&
+          Number.isFinite(Number(cdiValue))
+            ? ((1 + Number(cdiValue) / 100) /
+                (1 + Number(firstCdiValue) / 100) -
+                1) *
+              100
+            : null,
       };
     });
-  }, [benchmarkHistory?.btc, benchmarkHistory?.ibov, historyByPeriod]);
+  }, [
+    benchmarkHistory?.btc,
+    benchmarkHistory?.cdi,
+    benchmarkHistory?.ibov,
+    historyByPeriod,
+  ]);
 
   const comparisonAvailability = useMemo(
     () => ({
@@ -908,6 +965,9 @@ const Dashboard = () => {
       ),
       hasBtc: comparisonChartData.some(
         (point) => point.btcPerformance !== null,
+      ),
+      hasCdi: comparisonChartData.some(
+        (point) => point.cdiPerformance !== null,
       ),
     }),
     [comparisonChartData],
@@ -993,17 +1053,29 @@ const Dashboard = () => {
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             P&L do período
           </p>
-          <p
-            className={`mt-1 text-2xl font-bold ${
-              (summary.totalPnl || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'
-            }`}>
-            {summary.totalPnl >= 0 ? '+' : '-'}
-            {formatCurrency(Math.abs(summary.totalPnl || 0))}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {summary.totalPnlPercentage >= 0 ? '+' : '-'}
-            {Math.abs(summary.totalPnlPercentage || 0).toFixed(2)}%
-          </p>
+          {summary.totalPnl === null ||
+          summary.totalPnlPercentage === null ? (
+            <>
+              <p className="mt-1 text-2xl font-bold">—</p>
+              <p className="text-xs text-muted-foreground">
+                custo médio indisponível
+              </p>
+            </>
+          ) : (
+            <>
+              <p
+                className={`mt-1 text-2xl font-bold ${
+                  summary.totalPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                }`}>
+                {summary.totalPnl >= 0 ? '+' : '-'}
+                {formatCurrency(Math.abs(summary.totalPnl))}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {summary.totalPnlPercentage >= 0 ? '+' : '-'}
+                {Math.abs(summary.totalPnlPercentage).toFixed(2)}%
+              </p>
+            </>
+          )}
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -1172,10 +1244,22 @@ const Dashboard = () => {
                   {formatCurrency(summary.totalValue || 0)}
                 </h3>
                 <p className="mb-4 text-sm text-muted-foreground">
-                  P&L acumulado: {summary.totalPnl >= 0 ? '+' : '-'}
-                  {formatCurrency(Math.abs(summary.totalPnl || 0))} (
-                  {summary.totalPnlPercentage >= 0 ? '+' : '-'}
-                  {Math.abs(summary.totalPnlPercentage || 0).toFixed(2)}%)
+                  {summary.totalPnl === null ||
+                  summary.totalPnlPercentage === null ? (
+                    <>
+                      P&L acumulado: —{' '}
+                      <span className="text-xs">
+                        (custo médio indisponível)
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      P&L acumulado: {summary.totalPnl >= 0 ? '+' : '-'}
+                      {formatCurrency(Math.abs(summary.totalPnl))} (
+                      {summary.totalPnlPercentage >= 0 ? '+' : '-'}
+                      {Math.abs(summary.totalPnlPercentage).toFixed(2)}%)
+                    </>
+                  )}
                 </p>
 
                 <div className="mb-5 flex flex-wrap gap-2">
@@ -1239,7 +1323,10 @@ const Dashboard = () => {
                             ? 'IBOV (indisponível no período)'
                             : value === 'BTC' && !comparisonAvailability.hasBtc
                               ? 'BTC (indisponível no período)'
-                              : value
+                              : value === 'CDI' &&
+                                  !comparisonAvailability.hasCdi
+                                ? 'CDI (indisponível no período)'
+                                : value
                         }
                       />
                       <Area
@@ -1270,6 +1357,15 @@ const Dashboard = () => {
                         dot={false}
                         connectNulls
                       />
+                      <Line
+                        type="monotone"
+                        dataKey="cdiPerformance"
+                        name="CDI"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -1281,13 +1377,17 @@ const Dashboard = () => {
                 )}
                 {comparisonChartData.length >= 2 &&
                   (!comparisonAvailability.hasIbov ||
-                    !comparisonAvailability.hasBtc) && (
+                    !comparisonAvailability.hasBtc ||
+                    !comparisonAvailability.hasCdi) && (
                     <p className="mt-2 text-xs text-muted-foreground">
                       {!comparisonAvailability.hasIbov
                         ? 'IBOV sem histórico comparável neste período. '
                         : ''}
                       {!comparisonAvailability.hasBtc
-                        ? 'BTC sem histórico comparável neste período.'
+                        ? 'BTC sem histórico comparável neste período. '
+                        : ''}
+                      {!comparisonAvailability.hasCdi
+                        ? 'CDI sem histórico comparável neste período.'
                         : ''}
                     </p>
                   )}
@@ -1714,10 +1814,12 @@ const Dashboard = () => {
           </div>
 
           <div className="rounded-xl border border-border/40 p-3">
-            <h4 className="mb-2 text-sm font-semibold">Top 3 maiores altas</h4>
+            <h4 className="mb-2 text-sm font-semibold">
+              Top 3 maiores altas desde o preço médio
+            </h4>
             {topGainers.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Sem altas no período.
+                Sem altas desde o preço médio.
               </p>
             ) : (
               <div className="space-y-2">
@@ -1727,7 +1829,7 @@ const Dashboard = () => {
                     className="flex items-center justify-between text-sm">
                     <span>{asset.symbol}</span>
                     <span className="font-semibold text-emerald-500">
-                      +{asset.change24h.toFixed(2)}%
+                      +{asset.returnSinceAvgPrice.toFixed(2)}%
                     </span>
                   </p>
                 ))}
@@ -1736,10 +1838,12 @@ const Dashboard = () => {
           </div>
 
           <div className="rounded-xl border border-border/40 p-3">
-            <h4 className="mb-2 text-sm font-semibold">Top 3 maiores quedas</h4>
+            <h4 className="mb-2 text-sm font-semibold">
+              Top 3 maiores quedas desde o preço médio
+            </h4>
             {topLosers.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Sem quedas no período.
+                Sem quedas desde o preço médio.
               </p>
             ) : (
               <div className="space-y-2">
@@ -1749,7 +1853,7 @@ const Dashboard = () => {
                     className="flex items-center justify-between text-sm">
                     <span>{asset.symbol}</span>
                     <span className="font-semibold text-rose-500">
-                      {asset.change24h.toFixed(2)}%
+                      {asset.returnSinceAvgPrice.toFixed(2)}%
                     </span>
                   </p>
                 ))}
@@ -1799,7 +1903,7 @@ const Dashboard = () => {
               Lucro acumulado
             </p>
             <p className="text-sm font-semibold">
-              {formatCurrency(summary.totalPnl || 0)}
+              {summary.totalPnl === null ? '—' : formatCurrency(summary.totalPnl)}
             </p>
           </div>
           <div className="rounded-lg border border-border/40 p-3">

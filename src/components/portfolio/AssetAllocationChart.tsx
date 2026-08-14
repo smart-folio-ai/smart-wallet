@@ -7,6 +7,20 @@ interface AssetAllocationChartProps {
   assets: Asset[];
 }
 
+/**
+ * Formata o tooltip do treemap. Recharts' `Treemap` não promove `name` para
+ * o topo do payload da tooltip — ele permanece em `entry.payload.name` — por
+ * isso o valor precisa ser lido de lá, e não do argumento `name`.
+ */
+export const treemapTooltipFormatter = (
+  value: string | number,
+  _name: string,
+  entry: {payload?: Record<string, unknown>},
+): [string, string] => [
+  `${formatCurrency(Number(value))}`,
+  String((entry?.payload as any)?.name ?? ''),
+];
+
 const TREEMAP_COLORS = [
   '#22c55e',
   '#3b82f6',
@@ -143,12 +157,7 @@ export const AssetAllocationChart = ({assets}: AssetAllocationChartProps) => {
             content={<TreemapCell />}>
             <Tooltip
               content={
-                <CustomTooltip
-                  formatter={(value, name) => [
-                    `${formatCurrency(Number(value))}`,
-                    String(name),
-                  ]}
-                />
+                <CustomTooltip formatter={treemapTooltipFormatter} />
               }
             />
           </Treemap>

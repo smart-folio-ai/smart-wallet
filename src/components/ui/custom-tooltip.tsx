@@ -8,10 +8,15 @@ interface CustomTooltipProps {
     name?: string;
     dataKey?: string;
     color?: string;
+    payload?: Record<string, unknown>;
   }>;
   label?: string;
   className?: string;
-  formatter?: (value: string | number, name: string) => [string, string];
+  formatter?: (
+    value: string | number,
+    name: string,
+    entry: {payload?: Record<string, unknown>},
+  ) => [string, string];
   labelFormatter?: (label: string) => string;
 }
 
@@ -27,8 +32,7 @@ export const CustomTooltip = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        'relative min-w-[170px] rounded-2xl border border-surface-hairline/10 bg-slate-900/88 px-4 py-3 text-sm font-medium text-slate-100 shadow-2xl backdrop-blur-xl',
-        'before:absolute before:left-1/2 before:top-full before:-translate-x-1/2 before:border-[7px] before:border-transparent before:border-t-slate-900/85',
+        'min-w-[170px] rounded-2xl border border-surface-hairline/10 bg-slate-900/88 px-4 py-3 text-sm font-medium text-slate-100 shadow-2xl backdrop-blur-xl',
         className
       )}
       style={{
@@ -42,7 +46,7 @@ export const CustomTooltip = React.forwardRef<
       <div className="space-y-1">
         {payload.map((entry, index) => {
           const [formattedValue, formattedName] = formatter
-            ? formatter(entry.value, entry.name || entry.dataKey)
+            ? formatter(entry.value, entry.name || entry.dataKey || '', entry)
             : [entry.value, entry.name || entry.dataKey];
 
           return (

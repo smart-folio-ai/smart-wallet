@@ -695,7 +695,7 @@ export default function AssetDetail() {
                   <CardTitle className="text-xl font-bold">Cotação</CardTitle>
                 </div>
                 <div className="flex gap-1 p-1 bg-muted rounded-xl">
-                  {['7d', '1mo', '3mo', '6mo', '1y', '5y'].map((p) => (
+                  {['5d', '1mo', '3mo', '6mo', '1y', '5y'].map((p) => (
                     <Button
                       key={p}
                       variant={period === p ? 'default' : 'ghost'}
