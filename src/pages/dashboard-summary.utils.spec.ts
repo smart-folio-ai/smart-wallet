@@ -1,5 +1,9 @@
 import {describe, it, expect} from 'vitest';
-import {getAveragePrice, computePnl} from './dashboard-summary.utils';
+import {
+  getAveragePrice,
+  computePnl,
+  computeReturnSinceAvgPrice,
+} from './dashboard-summary.utils';
 
 describe('getAveragePrice', () => {
   it('reads avgPrice, the field the backend actually returns', () => {
@@ -43,5 +47,28 @@ describe('computePnl', () => {
 
   it('returns null rather than treating a negative cost as valid', () => {
     expect(computePnl(100, -5)).toEqual({pnl: null, pnlPercentage: null});
+  });
+});
+
+describe('computeReturnSinceAvgPrice', () => {
+  it('computes the return since average cost for a single asset, not a period change', () => {
+    // 10 shares bought at avgPrice 20 -> cost basis 200; now worth 250.
+    expect(
+      computeReturnSinceAvgPrice({avgPrice: 20, quantity: 10}, 250),
+    ).toBe(25);
+  });
+
+  it('handles a loss relative to the average price', () => {
+    expect(computeReturnSinceAvgPrice({avgPrice: 20, quantity: 10}, 150)).toBe(
+      -25,
+    );
+  });
+
+  it('returns 0 when there is no cost basis', () => {
+    expect(computeReturnSinceAvgPrice({avgPrice: 0, quantity: 10}, 100)).toBe(
+      0,
+    );
+    expect(computeReturnSinceAvgPrice(null, 100)).toBe(0);
+    expect(computeReturnSinceAvgPrice(undefined, 100)).toBe(0);
   });
 });

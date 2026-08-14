@@ -24,3 +24,23 @@ export function computePnl(
   const pnl = totalValue - totalCost;
   return {pnl, pnlPercentage: (pnl / totalCost) * 100};
 }
+
+// Retorno de um único ativo desde o preço médio de compra — não é variação
+// diária. `currentValue` é o valor atual da posição (preço * quantidade).
+export function computeReturnSinceAvgPrice(
+  asset:
+    | {
+        avgPrice?: number;
+        averagePrice?: number;
+        average_price?: number;
+        quantity?: number;
+      }
+    | null
+    | undefined,
+  currentValue: number,
+): number {
+  const cost = getAveragePrice(asset) * Number(asset?.quantity || 0);
+  if (!(cost > 0)) return 0;
+  const pnl = currentValue - cost;
+  return (pnl / cost) * 100;
+}

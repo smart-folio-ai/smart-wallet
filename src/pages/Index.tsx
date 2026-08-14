@@ -53,7 +53,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {getAveragePrice, computePnl} from '@/pages/dashboard-summary.utils';
+import {
+  getAveragePrice,
+  computePnl,
+  computeReturnSinceAvgPrice,
+} from '@/pages/dashboard-summary.utils';
 import {accumulateCdi} from '@/pages/cdi-performance.utils';
 
 interface Asset {
@@ -61,7 +65,8 @@ interface Asset {
   symbol: string;
   name: string;
   price: number;
-  change24h: number;
+  // Retorno desde o preço médio de compra — não é variação diária.
+  returnSinceAvgPrice: number;
   amount: number;
   value: number;
   allocation: number;
@@ -469,17 +474,15 @@ const Dashboard = () => {
   const assets = useMemo<Asset[]>(() => {
     const totalValue = summary.totalValue;
     return apiAssets.map((a: any) => {
-      const cost = getAveragePrice(a) * Number(a.quantity || 0);
       const val = a.total || 0;
-      const pnl = val - cost;
-      const pnlPerc = cost > 0 ? (pnl / cost) * 100 : 0;
+      const returnSinceAvgPrice = computeReturnSinceAvgPrice(a, val);
 
       return {
         id: a.id || a._id,
         symbol: a.symbol,
         name: a.name || a.longName || a.symbol,
         price: a.price,
-        change24h: pnlPerc,
+        returnSinceAvgPrice,
         amount: a.quantity,
         value: val,
         allocation:
@@ -590,16 +593,16 @@ const Dashboard = () => {
   const topGainers = useMemo(
     () =>
       [...assets]
-        .filter((item) => item.change24h > 0)
-        .sort((a, b) => b.change24h - a.change24h)
+        .filter((item) => item.returnSinceAvgPrice > 0)
+        .sort((a, b) => b.returnSinceAvgPrice - a.returnSinceAvgPrice)
         .slice(0, 3),
     [assets],
   );
   const topLosers = useMemo(
     () =>
       [...assets]
-        .filter((item) => item.change24h < 0)
-        .sort((a, b) => a.change24h - b.change24h)
+        .filter((item) => item.returnSinceAvgPrice < 0)
+        .sort((a, b) => a.returnSinceAvgPrice - b.returnSinceAvgPrice)
         .slice(0, 3),
     [assets],
   );
@@ -716,7 +719,7 @@ const Dashboard = () => {
         priority: 'Alta',
         title: 'Queda relevante na carteira hoje',
         description: biggestDrop
-          ? `A carteira está abaixo do custo médio em ${Math.abs(summary.totalPnlPercentage).toFixed(2)}%, com destaque para ${biggestDrop.symbol} (${biggestDrop.change24h.toFixed(2)}%).`
+          ? `A carteira está abaixo do custo médio em ${Math.abs(summary.totalPnlPercentage).toFixed(2)}%, com destaque para ${biggestDrop.symbol} (${biggestDrop.returnSinceAvgPrice.toFixed(2)}% desde o preço médio).`
           : `A carteira está abaixo do custo médio em ${Math.abs(summary.totalPnlPercentage).toFixed(2)}%.`,
       });
     }
@@ -792,14 +795,14 @@ const Dashboard = () => {
     if (topLosers.length > 0) {
       actions.push({
         title: `Reavaliar posição em ${topLosers[0].symbol}`,
-        reason: `Queda de ${Math.abs(topLosers[0].change24h).toFixed(2)}% no período.`,
+        reason: `Queda de ${Math.abs(topLosers[0].returnSinceAvgPrice).toFixed(2)}% desde o preço médio.`,
       });
     }
 
     if (topGainers.length > 0) {
       actions.push({
         title: `Atualizar plano para ${topGainers[0].symbol}`,
-        reason: `Alta de ${topGainers[0].change24h.toFixed(2)}% no período.`,
+        reason: `Alta de ${topGainers[0].returnSinceAvgPrice.toFixed(2)}% desde o preço médio.`,
       });
     }
 
@@ -1811,10 +1814,12 @@ const Dashboard = () => {
           </div>
 
           <div className="rounded-xl border border-border/40 p-3">
-            <h4 className="mb-2 text-sm font-semibold">Top 3 maiores altas</h4>
+            <h4 className="mb-2 text-sm font-semibold">
+              Top 3 maiores altas desde o preço médio
+            </h4>
             {topGainers.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Sem altas no período.
+                Sem altas desde o preço médio.
               </p>
             ) : (
               <div className="space-y-2">
@@ -1824,7 +1829,7 @@ const Dashboard = () => {
                     className="flex items-center justify-between text-sm">
                     <span>{asset.symbol}</span>
                     <span className="font-semibold text-emerald-500">
-                      +{asset.change24h.toFixed(2)}%
+                      +{asset.returnSinceAvgPrice.toFixed(2)}%
                     </span>
                   </p>
                 ))}
@@ -1833,10 +1838,12 @@ const Dashboard = () => {
           </div>
 
           <div className="rounded-xl border border-border/40 p-3">
-            <h4 className="mb-2 text-sm font-semibold">Top 3 maiores quedas</h4>
+            <h4 className="mb-2 text-sm font-semibold">
+              Top 3 maiores quedas desde o preço médio
+            </h4>
             {topLosers.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Sem quedas no período.
+                Sem quedas desde o preço médio.
               </p>
             ) : (
               <div className="space-y-2">
@@ -1846,7 +1853,7 @@ const Dashboard = () => {
                     className="flex items-center justify-between text-sm">
                     <span>{asset.symbol}</span>
                     <span className="font-semibold text-rose-500">
-                      {asset.change24h.toFixed(2)}%
+                      {asset.returnSinceAvgPrice.toFixed(2)}%
                     </span>
                   </p>
                 ))}
