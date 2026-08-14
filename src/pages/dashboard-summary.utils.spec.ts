@@ -13,6 +13,9 @@ describe('getAveragePrice', () => {
 
   it('prefers avgPrice when more than one is present', () => {
     expect(getAveragePrice({avgPrice: 12.5, averagePrice: 9})).toBe(12.5);
+    expect(
+      getAveragePrice({avgPrice: 12.5, averagePrice: 9, average_price: 8}),
+    ).toBe(12.5);
   });
 
   it('returns 0 for a missing or malformed asset', () => {

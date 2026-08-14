@@ -1825,7 +1825,7 @@ const Dashboard = () => {
               Lucro acumulado
             </p>
             <p className="text-sm font-semibold">
-              {formatCurrency(summary.totalPnl || 0)}
+              {summary.totalPnl === null ? '—' : formatCurrency(summary.totalPnl)}
             </p>
           </div>
           <div className="rounded-lg border border-border/40 p-3">
