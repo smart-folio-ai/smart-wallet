@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {getAveragePrice, computePnl} from '@/pages/dashboard-summary.utils';
+import {accumulateCdi} from '@/pages/cdi-performance.utils';
 
 interface Asset {
   id: string;
@@ -309,10 +310,29 @@ const Dashboard = () => {
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const range = PERIOD_TO_BRAPI_RANGE[selectedPeriod] || '1mo';
-      const [ibovHistoryResponse, btcHistoryResponse] =
+
+      // Mesma janela de dias usada por `historyByPeriod` para o gráfico da
+      // carteira, para que o CDI cubra o mesmo período comparado.
+      const daysMap: Record<string, number> = {
+        '7D': 7,
+        '1M': 30,
+        '3M': 90,
+        '6M': 180,
+        '1A': 365,
+        '5A': 1825,
+      };
+      const limitDays = daysMap[selectedPeriod] || 30;
+      const toDate = new Date();
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - limitDays);
+      const toIso = toDate.toISOString().slice(0, 10);
+      const fromIso = fromDate.toISOString().slice(0, 10);
+
+      const [ibovHistoryResponse, btcHistoryResponse, cdiHistoryResponse] =
         await Promise.allSettled([
           stockServices.getNationalStock('^BVSP', {range, interval: '1d'}),
           stockServices.getNationalStock('BTC-USD', {range, interval: '1d'}),
+          stockServices.getCdiSeries(fromIso, toIso),
         ]);
 
       const parseHistory = (payload: any) => {
@@ -332,6 +352,11 @@ const Dashboard = () => {
           );
       };
 
+      const cdiSeries =
+        cdiHistoryResponse.status === 'fulfilled'
+          ? cdiHistoryResponse.value.data?.series
+          : null;
+
       return {
         ibov:
           ibovHistoryResponse.status === 'fulfilled'
@@ -341,6 +366,7 @@ const Dashboard = () => {
           btcHistoryResponse.status === 'fulfilled'
             ? parseHistory(btcHistoryResponse.value.data)
             : [],
+        cdi: Array.isArray(cdiSeries) ? cdiSeries : [],
       };
     },
   });
@@ -856,6 +882,7 @@ const Dashboard = () => {
         Number(point.value),
       ]),
     );
+    const cdiMap = accumulateCdi(benchmarkHistory?.cdi || []);
 
     const firstIbovComparablePoint = sortedPortfolio.find((point) => {
       const isoDate = toIsoDate(point.date);
@@ -879,12 +906,24 @@ const Dashboard = () => {
     const firstIbovValue = firstIbovDate ? ibovMap.get(firstIbovDate) : null;
     const firstBtcValue = firstBtcDate ? btcMap.get(firstBtcDate) : null;
 
+    const firstCdiComparablePoint = sortedPortfolio.find((point) => {
+      const isoDate = toIsoDate(point.date);
+      if (!isoDate) return false;
+      const cdiValue = cdiMap.get(isoDate);
+      return Number.isFinite(Number(cdiValue));
+    });
+    const firstCdiDate = firstCdiComparablePoint
+      ? toIsoDate(firstCdiComparablePoint.date)
+      : null;
+    const firstCdiValue = firstCdiDate ? cdiMap.get(firstCdiDate) : null;
+
     return sortedPortfolio.map((point) => {
       const isoDate = toIsoDate(point.date);
       const portfolioPerformance =
         (Number(point.value) / portfolioBase - 1) * 100;
       const ibovValue = isoDate ? ibovMap.get(isoDate) : undefined;
       const btcValue = isoDate ? btcMap.get(isoDate) : undefined;
+      const cdiValue = isoDate ? cdiMap.get(isoDate) : undefined;
 
       return {
         date: point.date,
@@ -899,9 +938,22 @@ const Dashboard = () => {
           firstBtcValue && btcValue && btcValue > 0
             ? (btcValue / firstBtcValue - 1) * 100
             : null,
+        cdiPerformance:
+          Number.isFinite(Number(firstCdiValue)) &&
+          Number.isFinite(Number(cdiValue))
+            ? ((1 + Number(cdiValue) / 100) /
+                (1 + Number(firstCdiValue) / 100) -
+                1) *
+              100
+            : null,
       };
     });
-  }, [benchmarkHistory?.btc, benchmarkHistory?.ibov, historyByPeriod]);
+  }, [
+    benchmarkHistory?.btc,
+    benchmarkHistory?.cdi,
+    benchmarkHistory?.ibov,
+    historyByPeriod,
+  ]);
 
   const comparisonAvailability = useMemo(
     () => ({
@@ -910,6 +962,9 @@ const Dashboard = () => {
       ),
       hasBtc: comparisonChartData.some(
         (point) => point.btcPerformance !== null,
+      ),
+      hasCdi: comparisonChartData.some(
+        (point) => point.cdiPerformance !== null,
       ),
     }),
     [comparisonChartData],
@@ -1265,7 +1320,10 @@ const Dashboard = () => {
                             ? 'IBOV (indisponível no período)'
                             : value === 'BTC' && !comparisonAvailability.hasBtc
                               ? 'BTC (indisponível no período)'
-                              : value
+                              : value === 'CDI' &&
+                                  !comparisonAvailability.hasCdi
+                                ? 'CDI (indisponível no período)'
+                                : value
                         }
                       />
                       <Area
@@ -1296,6 +1354,15 @@ const Dashboard = () => {
                         dot={false}
                         connectNulls
                       />
+                      <Line
+                        type="monotone"
+                        dataKey="cdiPerformance"
+                        name="CDI"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -1307,13 +1374,17 @@ const Dashboard = () => {
                 )}
                 {comparisonChartData.length >= 2 &&
                   (!comparisonAvailability.hasIbov ||
-                    !comparisonAvailability.hasBtc) && (
+                    !comparisonAvailability.hasBtc ||
+                    !comparisonAvailability.hasCdi) && (
                     <p className="mt-2 text-xs text-muted-foreground">
                       {!comparisonAvailability.hasIbov
                         ? 'IBOV sem histórico comparável neste período. '
                         : ''}
                       {!comparisonAvailability.hasBtc
-                        ? 'BTC sem histórico comparável neste período.'
+                        ? 'BTC sem histórico comparável neste período. '
+                        : ''}
+                      {!comparisonAvailability.hasCdi
+                        ? 'CDI sem histórico comparável neste período.'
                         : ''}
                     </p>
                   )}
