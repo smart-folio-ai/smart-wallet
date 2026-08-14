@@ -144,9 +144,9 @@ export const AssetAllocationChart = ({assets}: AssetAllocationChartProps) => {
             <Tooltip
               content={
                 <CustomTooltip
-                  formatter={(value, name) => [
+                  formatter={(value, _name, entry) => [
                     `${formatCurrency(Number(value))}`,
-                    String(name),
+                    String((entry?.payload as any)?.name ?? ''),
                   ]}
                 />
               }
