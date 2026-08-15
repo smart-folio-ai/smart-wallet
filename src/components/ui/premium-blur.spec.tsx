@@ -13,6 +13,16 @@ function renderBlur(props: Partial<React.ComponentProps<typeof PremiumBlur>> = {
   );
 }
 
+// O conteúdo bloqueado precisa ficar borrado E inerte. Só o blur é
+// decoração: sem `pointer-events-none` o usuário free ainda clica na UI
+// paga em telas que não têm segunda guarda em runtime (Comparator,
+// MyAssetDetail, Index).
+function expectBlockedAndInert(container: HTMLElement) {
+  const blurred = container.querySelector('.blur-sm');
+  expect(blurred).not.toBeNull();
+  expect(blurred?.classList.contains('pointer-events-none')).toBe(true);
+}
+
 describe('PremiumBlur', () => {
   beforeEach(() => {
     sessionStorage.clear();
@@ -23,17 +33,17 @@ describe('PremiumBlur', () => {
 
     expect(screen.getByText('Recurso X')).toBeInTheDocument();
     expect(screen.getByText('conteúdo bloqueado')).toBeInTheDocument();
-    expect(container.querySelector('.blur-sm')).not.toBeNull();
+    expectBlockedAndInert(container);
   });
 
-  it('some ao fechar, mantendo o conteúdo borrado', () => {
+  it('some ao fechar, mantendo o conteúdo borrado e sem interação', () => {
     const {container} = renderBlur();
 
     fireEvent.click(screen.getByRole('button', {name: /fechar/i}));
 
     expect(screen.queryByText('Recurso X')).not.toBeInTheDocument();
     expect(screen.getByText('conteúdo bloqueado')).toBeInTheDocument();
-    expect(container.querySelector('.blur-sm')).not.toBeNull();
+    expectBlockedAndInert(container);
   });
 
   it('não reaparece na mesma sessão depois de fechada', () => {
@@ -56,12 +66,13 @@ describe('PremiumBlur', () => {
     expect(screen.getByText('Recurso Y')).toBeInTheDocument();
   });
 
-  it('com locked=false não borra nem mostra faixa', () => {
+  it('com locked=false não borra, não trava interação nem mostra faixa', () => {
     const {container} = renderBlur({locked: false});
 
     expect(screen.getByText('conteúdo bloqueado')).toBeInTheDocument();
     expect(screen.queryByText('Recurso X')).not.toBeInTheDocument();
     expect(container.querySelector('.blur-sm')).toBeNull();
+    expect(container.querySelector('.pointer-events-none')).toBeNull();
   });
 
   it('renderiza normalmente quando sessionStorage lança', () => {

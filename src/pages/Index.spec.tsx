@@ -3,6 +3,7 @@ import {render, screen} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import Dashboard from './Index';
+import {AI_GENERATED_NOTICE_TEXT} from '@/components/ui/ai-generated-notice';
 
 vi.mock('@/services/portfolio', () => ({
   default: {
@@ -85,5 +86,23 @@ describe('Dashboard neutral card styling', () => {
       return gradientTokens.some((token) => classes.includes(token));
     });
     expect(gradientCards.length).toBe(0);
+  });
+});
+
+// TRA-26: o card "Trackerr IA Hoje" é montado por `actionableInsights`, um
+// cálculo local sobre a carteira. Nenhum modelo escreve esse texto, então o
+// aviso de conteúdo gerado por IA foi removido dali. Este teste impede que ele
+// volte — em qualquer plano, já que o conteúdo é o mesmo borrado ou não.
+describe('Dashboard sem aviso de IA no card determinístico', () => {
+  it.each([
+    ['free', {planName: null, isSubscribed: false, isLoading: false}],
+    ['pro', {planName: 'pro', isSubscribed: true, isLoading: false}],
+  ])('não exibe o aviso de IA no plano %s', async (_plan, subscription) => {
+    useSubscriptionMock.mockReturnValue(subscription);
+
+    renderDashboard();
+    await screen.findByText('Trackerr IA Hoje');
+
+    expect(screen.queryByText(AI_GENERATED_NOTICE_TEXT)).not.toBeInTheDocument();
   });
 });
