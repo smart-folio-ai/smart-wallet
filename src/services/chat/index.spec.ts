@@ -57,6 +57,12 @@ describe('chat service adapter', () => {
     expect(normalized.message).toBe('Resposta textual simples');
   });
 
+  it('não inventa texto quando a resposta legada vem vazia', () => {
+    const normalized = normalizeChatResponse({answer: ''});
+
+    expect(normalized.message).toBe('');
+  });
+
   it('askStructuredChat delega ao endpoint inteligente e retorna estrutura normalizada', async () => {
     chatMock.mockResolvedValueOnce({
       intent: 'portfolio_summary',

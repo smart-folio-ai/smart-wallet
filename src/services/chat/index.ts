@@ -93,7 +93,10 @@ export function normalizeChatResponse(raw: AiChatResponse | any): StructuredChat
       llmEligible: true,
       reason: 'legacy_plain_text_response',
     },
-    message: answer || 'Sem resposta disponível no momento.',
+    // Sem substituto local aqui: um literal do cliente nesta posição chega à
+    // UI indistinguível de texto do modelo e acaba anunciado como gerado por
+    // IA. A página já tem o próprio texto de vazio, e sabe que não é do modelo.
+    message: answer,
     data: {},
     unavailable: [],
     warnings: [],
