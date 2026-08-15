@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {PremiumBlur} from '@/components/ui/premium-blur';
+import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {useSubscription} from '@/hooks/useSubscription';
 import {
   RiAssetSuggestion,
@@ -584,6 +585,10 @@ const RiInteligente = () => {
                   <div className="rounded-md border border-amber-400/40 bg-amber-50/40 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/20 dark:text-amber-300">
                     Limitações: {summary.summary.limitations.join(', ')}
                   </div>
+                )}
+
+                {summary.summary.sourceLabel === 'ai_summary' && (
+                  <AiGeneratedNotice />
                 )}
               </div>
             )}

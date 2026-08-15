@@ -1,7 +1,6 @@
 import React from 'react';
 import {Button} from '@/components/ui/button';
-import {Card, CardContent} from '@/components/ui/card';
-import {Crown, Zap} from 'lucide-react';
+import {Crown, X, Zap} from 'lucide-react';
 import {useNavigate} from 'react-router-dom';
 
 interface PremiumBlurProps {
@@ -13,6 +12,26 @@ interface PremiumBlurProps {
   className?: string;
 }
 
+const DISMISS_PREFIX = 'trackerr:premium-blur-dismissed:';
+
+function readDismissed(title: string): boolean {
+  try {
+    return sessionStorage.getItem(DISMISS_PREFIX + title) === '1';
+  } catch {
+    // Navegação privada e storage desabilitado caem aqui. A dispensa é
+    // conveniência; nunca deve impedir a página de renderizar.
+    return false;
+  }
+}
+
+function writeDismissed(title: string): void {
+  try {
+    sessionStorage.setItem(DISMISS_PREFIX + title, '1');
+  } catch {
+    // Sem persistência a faixa reaparece na próxima montagem. Aceitável.
+  }
+}
+
 export const PremiumBlur = ({
   children,
   locked = true,
@@ -21,46 +40,50 @@ export const PremiumBlur = ({
   className = '',
 }: PremiumBlurProps) => {
   const navigate = useNavigate();
+  const [dismissed, setDismissed] = React.useState(() => readDismissed(title));
 
-  // Se o usuário tem o plano, renderiza normalmente sem blur
   if (!locked) {
     return <div className={className}>{children}</div>;
   }
 
+  const dismiss = () => {
+    writeDismissed(title);
+    setDismissed(true);
+  };
+
   return (
-    <div className={`relative ${className}`}>
-      {/* Conteúdo com blur */}
+    <div className={className}>
+      {!dismissed && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <Crown className="h-4 w-4 text-primary" />
+          </div>
+
+          <div className="min-w-[140px] flex-1">
+            <p className="text-sm font-semibold text-foreground">{title}</p>
+            <p className="text-xs text-muted-foreground">{description}</p>
+          </div>
+
+          <Button size="sm" onClick={() => navigate('/subscription')}>
+            <Zap className="mr-1.5 h-3.5 w-3.5" />
+            Fazer upgrade
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Fechar aviso de upgrade"
+            onClick={dismiss}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* O conteúdo segue borrado e sem interação: a pessoa enxerga a
+          estrutura do que está bloqueado, o que convida melhor que um
+          retângulo opaco. */}
       <div className="filter blur-sm pointer-events-none select-none">
         {children}
-      </div>
-
-      {/* Overlay premium */}
-      <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-        <Card className="w-full max-w-md mx-4 border-2 border-primary/20 shadow-lg">
-          <CardContent className="p-6 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="p-3 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full">
-                <Crown className="h-8 w-8 text-white" />
-              </div>
-            </div>
-
-            <h3 className="text-xl font-bold mb-2 text-primary">{title}</h3>
-            <p className="text-muted-foreground mb-6 text-sm">{description}</p>
-
-            <div className="space-y-3">
-              <Button
-                onClick={() => navigate('/subscription')}
-                className="w-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-semibold">
-                <Zap className="mr-2 h-4 w-4" />
-                Fazer Upgrade
-              </Button>
-
-              <p className="text-xs text-muted-foreground">
-                Acesse análises avançadas, insights de IA e muito mais!
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

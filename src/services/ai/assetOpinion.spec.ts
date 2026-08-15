@@ -27,6 +27,7 @@ describe('assetOpinion service', () => {
       strength: 'Caixa forte',
       attention: 'Dívida alta',
       tags: ['atenção', 'volatilidade'],
+      source: 'ai',
     });
   });
 
@@ -60,6 +61,19 @@ describe('assetOpinion service', () => {
     expect(opinion.summary).toContain('score');
     expect(opinion.summary).toContain('AMER3');
     expect(opinion.tags).toContain('venda');
+    expect(opinion.source).toBe('deterministic');
+  });
+
+  it('marca como determinístico quando a IA responde fora do formato', async () => {
+    chatMock.mockResolvedValueOnce({answer: 'texto livre sem JSON'});
+
+    const opinion = await getAssetOpinion({
+      symbol: 'AMER3',
+      indicators: {roe: 0.02},
+    });
+
+    expect(opinion.source).toBe('deterministic');
+    expect(opinion.summary).toContain('AMER3');
   });
 
   it('usa resultado parseado quando a IA responde corretamente', async () => {
@@ -77,6 +91,7 @@ describe('assetOpinion service', () => {
     expect(opinion.strength).toBe('Melhora operacional recente');
     expect(opinion.attention).toBe('Alavancagem elevada');
     expect(opinion.tags).toEqual(['alavancagem', 'turnaround']);
+    expect(opinion.source).toBe('ai');
     expect(chatMock).toHaveBeenCalledTimes(1);
   });
 });

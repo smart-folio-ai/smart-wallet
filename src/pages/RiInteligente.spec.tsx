@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import RiInteligente from './RiInteligente';
+import {AI_GENERATED_NOTICE_TEXT} from '@/components/ui/ai-generated-notice';
 
 const searchRiDocumentsMock = vi.fn();
 const autocompleteRiAssetsMock = vi.fn();
@@ -195,6 +196,81 @@ describe('RiInteligente', () => {
       expect(screen.getByText(/Receita em alta/i)).toBeDefined();
       expect(screen.getByText(/Fonte: ai_summary/i)).toBeDefined();
     });
+  });
+
+  it('mostra o aviso de conteúdo gerado por IA no resumo do release', async () => {
+    summarizeRiDocumentMock.mockResolvedValueOnce({
+      document: {
+        id: 'doc-1',
+        ticker: 'BBDC4',
+        company: 'Bradesco',
+        documentType: 'earnings_release',
+        period: '4T25',
+        publishedAt: '2026-02-10T00:00:00.000Z',
+      },
+      summary: {
+        status: 'ai_generated',
+        highlights: ['Receita em alta', 'Lucro cresceu'],
+        narrative: null,
+        limitations: [],
+        sourceLabel: 'ai_summary',
+      },
+      structuredSignals: {},
+      cache: {key: 'x', hit: false, ttlSeconds: 1800},
+      cost: {aiCalls: 1, tokenUsageEstimate: 200},
+    });
+
+    renderPage();
+    await executeSearch();
+
+    await waitFor(() => {
+      expect(screen.getByText(/BBDC4 · Bradesco/i)).toBeDefined();
+    });
+
+    await userEvent.click(screen.getByRole('button', {name: /Selecionar/i}));
+    await userEvent.click(screen.getByTestId('ri-generate-summary'));
+
+    await waitFor(() => {
+      expect(screen.getByText(AI_GENERATED_NOTICE_TEXT)).toBeInTheDocument();
+    });
+  });
+
+  it('não mostra o aviso de conteúdo gerado por IA quando o resumo é um fallback estruturado', async () => {
+    summarizeRiDocumentMock.mockResolvedValueOnce({
+      document: {
+        id: 'doc-1',
+        ticker: 'BBDC4',
+        company: 'Bradesco',
+        documentType: 'earnings_release',
+        period: '4T25',
+        publishedAt: '2026-02-10T00:00:00.000Z',
+      },
+      summary: {
+        status: 'ai_failed',
+        highlights: [],
+        narrative: null,
+        limitations: ['ri_ai_summary_failed'],
+        sourceLabel: 'structured_fallback',
+      },
+      structuredSignals: {},
+      cache: {key: null, hit: false, ttlSeconds: null},
+      cost: {aiCalls: 1, tokenUsageEstimate: 0},
+    });
+
+    renderPage();
+    await executeSearch();
+
+    await waitFor(() => {
+      expect(screen.getByText(/BBDC4 · Bradesco/i)).toBeDefined();
+    });
+
+    await userEvent.click(screen.getByRole('button', {name: /Selecionar/i}));
+    await userEvent.click(screen.getByTestId('ri-generate-summary'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Limitações: ri_ai_summary_failed/i)).toBeDefined();
+    });
+    expect(screen.queryByText(AI_GENERATED_NOTICE_TEXT)).not.toBeInTheDocument();
   });
 
   it('applies plan gating for free users', async () => {

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import ChatInteligente from './ChatInteligente';
+import {AI_GENERATED_NOTICE_TEXT} from '@/components/ui/ai-generated-notice';
 
 const askStructuredChatMock = vi.fn();
 const askStructuredCopilotChatMock = vi.fn();
@@ -274,5 +275,107 @@ describe('ChatInteligente', () => {
       expect(screen.getByText(/Riscos críticos/i)).toBeDefined();
       expect(screen.getByText(/Plano da semana/i)).toBeDefined();
     });
+  });
+
+  it('mostra o aviso de conteúdo gerado por IA quando o modelo sintetizou a resposta', async () => {
+    askStructuredChatMock.mockResolvedValueOnce({
+      intent: 'portfolio_summary',
+      deterministic: false,
+      route: {
+        type: 'synthesis_required',
+        llmEligible: true,
+        reason: 'summary_needs_synthesis',
+      },
+      message: 'Resumo pronto.',
+      data: {portfolioSummary: {totalValue: 1000}},
+      warnings: [],
+      unavailable: [],
+      assumptions: [],
+    });
+
+    renderPage();
+    await userEvent.type(screen.getByLabelText('Pergunta do chat'), 'Resumo');
+    await userEvent.click(screen.getByRole('button', {name: /Enviar/i}));
+
+    await waitFor(() => {
+      expect(screen.getByText(AI_GENERATED_NOTICE_TEXT)).toBeInTheDocument();
+    });
+  });
+
+  // Os dois sinais de proveniência são checados de forma independente: se o
+  // backend divergir e marcar só um deles, o aviso ainda precisa sumir.
+  it.each([
+    [
+      'flag deterministic',
+      {
+        deterministic: true,
+        route: {
+          type: 'deterministic_no_llm' as const,
+          llmEligible: false,
+          reason: 'pure_calculation',
+        },
+      },
+    ],
+    [
+      'rota deterministic_no_llm sem a flag',
+      {
+        deterministic: false,
+        route: {
+          type: 'deterministic_no_llm' as const,
+          llmEligible: false,
+          reason: 'pure_calculation',
+        },
+      },
+    ],
+    ['apenas a flag deterministic', {deterministic: true}],
+  ])('não mostra o aviso de IA em resposta determinística (%s)', async (_case, provenance) => {
+    askStructuredChatMock.mockResolvedValueOnce({
+      intent: 'portfolio_summary',
+      ...provenance,
+      message: 'Resumo pronto.',
+      data: {portfolioSummary: {totalValue: 1000}},
+      warnings: [],
+      unavailable: [],
+      assumptions: [],
+    });
+
+    renderPage();
+    await userEvent.type(screen.getByLabelText('Pergunta do chat'), 'Resumo');
+    await userEvent.click(screen.getByRole('button', {name: /Enviar/i}));
+
+    await waitFor(() => {
+      expect(screen.getByText('Resumo pronto.')).toBeInTheDocument();
+    });
+    expect(screen.queryByText(AI_GENERATED_NOTICE_TEXT)).not.toBeInTheDocument();
+  });
+
+  it('não mostra o aviso de IA quando o resumo é o literal do cliente', async () => {
+    askStructuredChatMock.mockResolvedValueOnce({
+      intent: 'portfolio_summary',
+      deterministic: false,
+      route: {
+        type: 'synthesis_required',
+        llmEligible: true,
+        reason: 'summary_needs_synthesis',
+      },
+      message: '   ',
+      data: {portfolioSummary: {totalValue: 1000}},
+      warnings: [],
+      unavailable: [],
+      assumptions: [],
+    });
+
+    renderPage();
+    await userEvent.type(screen.getByLabelText('Pergunta do chat'), 'Resumo');
+    await userEvent.click(screen.getByRole('button', {name: /Enviar/i}));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Análise estruturada concluída com base nos dados disponíveis.',
+        ),
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByText(AI_GENERATED_NOTICE_TEXT)).not.toBeInTheDocument();
   });
 });
