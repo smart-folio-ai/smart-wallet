@@ -17,6 +17,12 @@ type ChatMessage = {
   status?: 'ok' | 'error';
   retryQuestion?: string;
   payload?: StructuredChatResponse;
+  /**
+   * True apenas quando o texto exibido em `text` veio do modelo. Respostas
+   * determinísticas e os literais de fallback do cliente são escritos aqui,
+   * não pelo LLM, e não podem exibir o aviso de conteúdo gerado por IA.
+   */
+  aiGenerated?: boolean;
 };
 
 const QUICK_PROMPTS = [
@@ -460,9 +466,17 @@ export default function ChatInteligente() {
             copilotFlow: options.copilotFlow,
           })
         : await askStructuredChat(trimmed);
+      const modelText = response.message?.trim() || '';
       const assistantText =
-        response.message?.trim() ||
-        'Análise estruturada concluída com base nos dados disponíveis.';
+        modelText || 'Análise estruturada concluída com base nos dados disponíveis.';
+      // Sem texto do modelo, o resumo acima é literal do cliente. Com
+      // `deterministic` ou rota `deterministic_no_llm`, o backend calculou a
+      // resposta sem LLM — é o mesmo sinal que alimenta o selo "Cálculo
+      // determinístico" logo abaixo da bolha.
+      const aiGenerated =
+        Boolean(modelText) &&
+        !response.deterministic &&
+        response.route?.type !== 'deterministic_no_llm';
       setMessages((prev) => [
         ...prev,
         {
@@ -471,6 +485,7 @@ export default function ChatInteligente() {
           text: assistantText,
           status: 'ok',
           payload: response,
+          aiGenerated,
         },
       ]);
     } catch {
@@ -614,7 +629,7 @@ export default function ChatInteligente() {
 
                       {isAssistant && message.payload && <AssistantStructuredBlocks payload={message.payload} />}
 
-                      {isAssistant && message.status !== 'error' && (
+                      {isAssistant && message.status !== 'error' && message.aiGenerated && (
                         <div className="mt-2">
                           <AiGeneratedNotice />
                         </div>
