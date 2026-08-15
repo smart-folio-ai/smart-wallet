@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import ChatInteligente from './ChatInteligente';
+import {AI_GENERATED_NOTICE_TEXT} from '@/components/ui/ai-generated-notice';
 
 const askStructuredChatMock = vi.fn();
 const askStructuredCopilotChatMock = vi.fn();
@@ -273,6 +274,26 @@ describe('ChatInteligente', () => {
       expect(screen.getByText(/Motivos \(itens para evitar\)/i)).toBeDefined();
       expect(screen.getByText(/Riscos críticos/i)).toBeDefined();
       expect(screen.getByText(/Plano da semana/i)).toBeDefined();
+    });
+  });
+
+  it('mostra o aviso de conteúdo gerado por IA na resposta do assistente', async () => {
+    askStructuredChatMock.mockResolvedValueOnce({
+      intent: 'portfolio_summary',
+      deterministic: true,
+      message: 'Resumo pronto.',
+      data: {portfolioSummary: {totalValue: 1000}},
+      warnings: [],
+      unavailable: [],
+      assumptions: [],
+    });
+
+    renderPage();
+    await userEvent.type(screen.getByLabelText('Pergunta do chat'), 'Resumo');
+    await userEvent.click(screen.getByRole('button', {name: /Enviar/i}));
+
+    await waitFor(() => {
+      expect(screen.getByText(AI_GENERATED_NOTICE_TEXT)).toBeInTheDocument();
     });
   });
 });

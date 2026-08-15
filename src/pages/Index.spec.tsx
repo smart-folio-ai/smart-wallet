@@ -1,8 +1,9 @@
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import Dashboard from './Index';
+import {AI_GENERATED_NOTICE_TEXT} from '@/components/ui/ai-generated-notice';
 
 vi.mock('@/services/portfolio', () => ({
   default: {
@@ -30,13 +31,19 @@ vi.mock('@/server/api/api', () => ({
   },
 }));
 
+const useSubscriptionMock = vi.fn();
+
 vi.mock('@/hooks/useSubscription', () => ({
-  useSubscription: () => ({
+  useSubscription: () => useSubscriptionMock(),
+}));
+
+beforeEach(() => {
+  useSubscriptionMock.mockReturnValue({
     planName: null,
     isSubscribed: false,
     isLoading: false,
-  }),
-}));
+  });
+});
 
 function renderDashboard() {
   const queryClient = new QueryClient({
@@ -79,5 +86,20 @@ describe('Dashboard neutral card styling', () => {
       return gradientTokens.some((token) => classes.includes(token));
     });
     expect(gradientCards.length).toBe(0);
+  });
+});
+
+describe('Dashboard AI insights disclosure', () => {
+  it('mostra o aviso de conteúdo gerado por IA no bloco Trackerr IA Hoje', async () => {
+    useSubscriptionMock.mockReturnValue({
+      planName: 'pro',
+      isSubscribed: true,
+      isLoading: false,
+    });
+
+    renderDashboard();
+    await screen.findByText('Patrimônio total');
+
+    expect(screen.getByText(AI_GENERATED_NOTICE_TEXT)).toBeInTheDocument();
   });
 });

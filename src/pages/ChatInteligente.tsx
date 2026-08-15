@@ -6,6 +6,7 @@ import {ChatMentionInput} from '@/components/chat/ChatMentionInput';
 import {MessageSquare, Send, AlertTriangle, Bot, User2, Sparkles, RotateCcw} from 'lucide-react';
 import {useSubscription} from '@/hooks/useSubscription';
 import {PremiumBlur} from '@/components/ui/premium-blur';
+import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {isProOrHigherPlan} from '@/services/ai/trakkerAi';
 import {askStructuredCopilotChat, askStructuredChat, StructuredChatResponse} from '@/services/chat';
 
@@ -612,6 +613,12 @@ export default function ChatInteligente() {
                       {isAssistant && <ResponseEvidence payload={message.payload} />}
 
                       {isAssistant && message.payload && <AssistantStructuredBlocks payload={message.payload} />}
+
+                      {isAssistant && message.status !== 'error' && (
+                        <div className="mt-2">
+                          <AiGeneratedNotice />
+                        </div>
+                      )}
 
                       {message.status === 'error' && message.retryQuestion && (
                         <div className="mt-3">
