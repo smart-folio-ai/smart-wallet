@@ -15,7 +15,6 @@ import {
   Clock,
   ExternalLink,
   Zap,
-  MessageSquare,
 } from 'lucide-react';
 import {
   Card,
@@ -26,6 +25,8 @@ import {
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
+import {RobotIcon} from '@/components/ui/robot-icon';
+import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {
   AreaChart,
@@ -787,7 +788,7 @@ export default function AssetDetail() {
               locked={!hasAiInsights}
               title="Opinião Trackerr IA é Premium"
               description="Faça upgrade para acessar análise contextual com IA no detalhe do ativo.">
-              <Card className="border-none shadow-lg bg-gradient-to-br from-indigo-600/10 to-primary/5 relative overflow-hidden ring-1 ring-primary/20">
+              <Card className="border-none shadow-sm bg-white dark:bg-card">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -808,7 +809,7 @@ export default function AssetDetail() {
                 <CardContent className="pt-4 space-y-6">
                   <div className="flex gap-4 p-4 rounded-2xl bg-white/50 dark:bg-card/50 border border-primary/10">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <MessageSquare className="h-5 w-5 text-primary" />
+                      <RobotIcon className="h-5 w-5 text-primary" />
                     </div>
                     <div className="space-y-2">
                       <p className="text-sm font-medium leading-relaxed">
@@ -859,8 +860,8 @@ export default function AssetDetail() {
                       </p>
                     </div>
                   </div>
+                  <AiGeneratedNotice />
                 </CardContent>
-                <div className="absolute -bottom-6 -right-6 h-24 w-24 bg-primary/5 rounded-full blur-2xl" />
               </Card>
             </PremiumBlur>
           </div>
