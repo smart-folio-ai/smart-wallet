@@ -26,6 +26,13 @@ export interface AssetOpinion {
   strength: string;
   attention: string;
   tags: string[];
+  /**
+   * Quem escreveu o texto acima. 'ai' só quando o modelo respondeu e a
+   * resposta foi parseada com sucesso; 'deterministic' quando o texto veio
+   * de aritmética local sobre o benchmark. A UI usa isso para decidir se o
+   * aviso de conteúdo gerado por IA é verdadeiro naquela renderização.
+   */
+  source: 'ai' | 'deterministic';
 }
 
 type BenchmarkRating = 'TOP' | 'BOM' | 'EVITAR';
@@ -74,7 +81,7 @@ export function parseAssetOpinion(rawAnswer: string): AssetOpinion | null {
 
     if (!summary || !strength || !attention) return null;
 
-    return {summary, strength, attention, tags};
+    return {summary, strength, attention, tags, source: 'ai'};
   } catch {
     return null;
   }
@@ -191,7 +198,7 @@ function buildDeterministicOpinion(
     benchmark.recommendation.toLowerCase(),
   ];
 
-  return {summary, strength, attention, tags};
+  return {summary, strength, attention, tags, source: 'deterministic'};
 }
 
 export async function getAssetOpinion(

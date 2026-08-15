@@ -7,6 +7,7 @@ import {AI_GENERATED_NOTICE_TEXT} from '@/components/ui/ai-generated-notice';
 
 const getNationalStockMock = vi.fn();
 const useSubscriptionMock = vi.fn();
+const getAssetOpinionMock = vi.fn();
 
 vi.mock('@/services/stocks', () => ({
   default: {
@@ -16,6 +17,10 @@ vi.mock('@/services/stocks', () => ({
 
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => useSubscriptionMock(),
+}));
+
+vi.mock('@/services/ai/assetOpinion', () => ({
+  getAssetOpinion: (...args: unknown[]) => getAssetOpinionMock(...args),
 }));
 
 const renderAssetDetail = () => {
@@ -76,7 +81,57 @@ describe('AssetDetail — card de Opinião IA', () => {
     expect(card.className).not.toContain('ring-1');
   });
 
-  it('exibe o aviso de conteúdo gerado por IA', async () => {
+  it('não exibe o aviso de IA para quem não tem acesso (texto local)', async () => {
+    renderAssetDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText('Opinião Trackerr IA')).toBeInTheDocument();
+    });
+
+    expect(getAssetOpinionMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByText('Análise contextual indisponível no momento.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(AI_GENERATED_NOTICE_TEXT),
+    ).not.toBeInTheDocument();
+  });
+
+  it('não exibe o aviso de IA quando o texto é o fallback determinístico', async () => {
+    useSubscriptionMock.mockReturnValue({hasAiInsights: true});
+    getAssetOpinionMock.mockResolvedValue({
+      summary: 'BBDC4 apresenta qualidade intermediária no padrão Trackerr.',
+      strength: 'ROE > 15%',
+      attention: 'A relação risco-retorno pede cautela.',
+      tags: ['score_50'],
+      source: 'deterministic',
+    });
+
+    renderAssetDetail();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'BBDC4 apresenta qualidade intermediária no padrão Trackerr.',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    expect(
+      screen.queryByText(AI_GENERATED_NOTICE_TEXT),
+    ).not.toBeInTheDocument();
+  });
+
+  it('exibe o aviso de IA quando o modelo escreveu o texto', async () => {
+    useSubscriptionMock.mockReturnValue({hasAiInsights: true});
+    getAssetOpinionMock.mockResolvedValue({
+      summary: 'Resumo escrito pelo modelo.',
+      strength: 'Ponto forte do modelo.',
+      attention: 'Ponto de atenção do modelo.',
+      tags: ['qualidade'],
+      source: 'ai',
+    });
+
     renderAssetDetail();
 
     await waitFor(() => {

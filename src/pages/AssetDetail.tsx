@@ -860,7 +860,11 @@ export default function AssetDetail() {
                       </p>
                     </div>
                   </div>
-                  <AiGeneratedNotice />
+                  {/* Só quando o modelo escreveu de fato. Fallback
+                      determinístico, estado de carregamento e os literais de
+                      indisponibilidade são texto local — anunciá-los como IA
+                      seria uma afirmação falsa. */}
+                  {assetOpinion?.source === 'ai' && <AiGeneratedNotice />}
                 </CardContent>
               </Card>
             </PremiumBlur>
