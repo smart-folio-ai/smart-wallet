@@ -448,22 +448,6 @@ export default function AssetDetail() {
       return `M ${startX} ${startY} A ${radius} ${radius} 0 0 0 ${endX} ${endY}`;
     };
 
-    const segmentLabels = [
-      {label: 'Sobre', color: '#f43f5e', angle: 157.5},
-      {label: 'Atencao', color: '#facc15', angle: 112.5},
-      {label: 'Neutra', color: '#3b82f6', angle: 67.5},
-      {label: 'Oportun.', color: '#22c55e', angle: 22.5},
-    ];
-
-    const labelPoint = (angle: number) => {
-      const r = 98;
-      const rad = (angle * Math.PI) / 180;
-      return {
-        x: cx + r * Math.cos(rad),
-        y: cy - r * Math.sin(rad),
-      };
-    };
-
     return (
       <div className="relative flex flex-col items-center">
         <div className="relative h-[112px] w-full flex items-end justify-center sm:h-[130px]">
@@ -505,24 +489,6 @@ export default function AssetDetail() {
               fill="none"
               strokeLinecap="butt"
             />
-            {segmentLabels.map((item) => {
-              const point = labelPoint(item.angle);
-              return (
-                <text
-                  key={item.label}
-                  x={point.x}
-                  y={point.y}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fill={item.color}
-                  fontSize="7.5"
-                  className="sm:[font-size:8.5px]"
-                  fontWeight="800"
-                  letterSpacing="0.2">
-                  {item.label}
-                </text>
-              );
-            })}
           </svg>
           <div
             className="absolute bottom-0 left-1/2 h-[90px] w-[3px] bg-slate-800 dark:bg-white origin-bottom rounded-full transition-transform duration-700"
