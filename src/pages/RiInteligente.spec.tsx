@@ -235,6 +235,44 @@ describe('RiInteligente', () => {
     });
   });
 
+  it('não mostra o aviso de conteúdo gerado por IA quando o resumo é um fallback estruturado', async () => {
+    summarizeRiDocumentMock.mockResolvedValueOnce({
+      document: {
+        id: 'doc-1',
+        ticker: 'BBDC4',
+        company: 'Bradesco',
+        documentType: 'earnings_release',
+        period: '4T25',
+        publishedAt: '2026-02-10T00:00:00.000Z',
+      },
+      summary: {
+        status: 'ai_failed',
+        highlights: [],
+        narrative: null,
+        limitations: ['ri_ai_summary_failed'],
+        sourceLabel: 'structured_fallback',
+      },
+      structuredSignals: {},
+      cache: {key: null, hit: false, ttlSeconds: null},
+      cost: {aiCalls: 1, tokenUsageEstimate: 0},
+    });
+
+    renderPage();
+    await executeSearch();
+
+    await waitFor(() => {
+      expect(screen.getByText(/BBDC4 · Bradesco/i)).toBeDefined();
+    });
+
+    await userEvent.click(screen.getByRole('button', {name: /Selecionar/i}));
+    await userEvent.click(screen.getByTestId('ri-generate-summary'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Limitações: ri_ai_summary_failed/i)).toBeDefined();
+    });
+    expect(screen.queryByText(AI_GENERATED_NOTICE_TEXT)).not.toBeInTheDocument();
+  });
+
   it('applies plan gating for free users', async () => {
     useSubscriptionMock.mockReturnValue({
       planName: 'free',

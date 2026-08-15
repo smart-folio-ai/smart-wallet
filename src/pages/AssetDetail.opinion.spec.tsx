@@ -3,6 +3,7 @@ import {render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import AssetDetail from './AssetDetail';
+import {AI_GENERATED_NOTICE_TEXT} from '@/components/ui/ai-generated-notice';
 
 const getNationalStockMock = vi.fn();
 const useSubscriptionMock = vi.fn();
@@ -79,11 +80,7 @@ describe('AssetDetail — card de Opinião IA', () => {
     renderAssetDetail();
 
     await waitFor(() => {
-      expect(
-        screen.getByText(
-          'Esse texto foi gerado com o auxílio de inteligência artificial.',
-        ),
-      ).toBeInTheDocument();
+      expect(screen.getByText(AI_GENERATED_NOTICE_TEXT)).toBeInTheDocument();
     });
   });
 });

@@ -587,7 +587,9 @@ const RiInteligente = () => {
                   </div>
                 )}
 
-                <AiGeneratedNotice />
+                {summary.summary.sourceLabel === 'ai_summary' && (
+                  <AiGeneratedNotice />
+                )}
               </div>
             )}
 
