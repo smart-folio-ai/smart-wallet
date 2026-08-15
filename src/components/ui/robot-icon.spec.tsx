@@ -20,11 +20,10 @@ describe('RobotIcon', () => {
 
   it('não declara animação', () => {
     const {container} = render(<RobotIcon />);
+    const svg = container.querySelector('svg');
 
     expect(container.querySelector('animate')).toBeNull();
     expect(container.querySelector('animateTransform')).toBeNull();
-    expect((container.firstElementChild as HTMLElement).className).not.toContain(
-      'animate-',
-    );
+    expect(svg?.getAttribute('class') ?? '').not.toContain('animate-');
   });
 });
