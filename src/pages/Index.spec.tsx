@@ -3,7 +3,6 @@ import {render, screen} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import Dashboard from './Index';
-import {AI_GENERATED_NOTICE_TEXT} from '@/components/ui/ai-generated-notice';
 
 vi.mock('@/services/portfolio', () => ({
   default: {
@@ -86,20 +85,5 @@ describe('Dashboard neutral card styling', () => {
       return gradientTokens.some((token) => classes.includes(token));
     });
     expect(gradientCards.length).toBe(0);
-  });
-});
-
-describe('Dashboard AI insights disclosure', () => {
-  it('mostra o aviso de conteúdo gerado por IA no bloco Trackerr IA Hoje', async () => {
-    useSubscriptionMock.mockReturnValue({
-      planName: 'pro',
-      isSubscribed: true,
-      isLoading: false,
-    });
-
-    renderDashboard();
-    await screen.findByText('Patrimônio total');
-
-    expect(screen.getByText(AI_GENERATED_NOTICE_TEXT)).toBeInTheDocument();
   });
 });

@@ -37,7 +37,6 @@ import {
 import {formatCurrency} from '@/utils';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
 import {PremiumBlur} from '@/components/ui/premium-blur';
-import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {useSubscription} from '@/hooks/useSubscription';
 import {
   buildAiCacheSignature,
@@ -1561,7 +1560,6 @@ const Dashboard = () => {
                       </div>
                     </div>
                   )}
-                  <AiGeneratedNotice />
                 </div>
               </PremiumBlur>
             )}
