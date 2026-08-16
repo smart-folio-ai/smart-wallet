@@ -6,6 +6,19 @@ export const INDICATOR_NOT_APPLICABLE_TEXT = 'Não se aplica';
 
 export type IndicatorStatus = 'ok' | 'unavailable' | 'not_applicable';
 
+/**
+ * `derived` nao e uma fonte de dado, e um calculo nosso — e "derived" e
+ * jargao em ingles numa UI em portugues. Os outros tres sao nomes proprios
+ * das fontes e ficam como estao.
+ */
+const SOURCE_LABELS: Record<string, string> = {
+  derived: 'estimado',
+};
+
+function sourceLabel(source: string): string {
+  return SOURCE_LABELS[source] ?? source;
+}
+
 export interface IndicatorItemProps {
   label: string;
   status: IndicatorStatus;
@@ -56,7 +69,7 @@ export function IndicatorItem({
         </span>
         {hasValue && source && (
           <span className="text-[10px] uppercase text-muted-foreground/60">
-            {source}
+            {sourceLabel(source)}
           </span>
         )}
       </div>

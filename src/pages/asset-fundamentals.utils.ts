@@ -1,5 +1,21 @@
 import type {IndicatorStatus} from '@/components/asset/indicator-item';
 
+/**
+ * Espelha `FundamentalKey` do server
+ * (`server/src/stocks/fundamentals/fundamentals.types.ts`). Manter os dois
+ * lados iguais: uma chave errada aqui vira erro de compilacao, e nao uma
+ * linha silenciosamente vazia na tela.
+ */
+export type FundamentalKey =
+  | 'roic'
+  | 'netMargin'
+  | 'netDebt'
+  | 'payout'
+  | 'priceEarnings'
+  | 'priceToBook'
+  | 'evEbitda'
+  | 'returnOnEquity';
+
 export interface IndicatorView {
   status: IndicatorStatus;
   value: number | null;
@@ -12,7 +28,7 @@ const KNOWN_STATUSES: IndicatorStatus[] = ['ok', 'unavailable', 'not_applicable'
 
 export function readIndicator(
   fundamentals: unknown,
-  key: string,
+  key: FundamentalKey,
 ): IndicatorView {
   const values = (fundamentals as any)?.values;
   const entry = values?.[key];

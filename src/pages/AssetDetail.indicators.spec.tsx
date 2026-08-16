@@ -24,9 +24,11 @@ vi.mock('@/hooks/useSubscription', () => ({
 const renderAssetDetailWith = ({
   symbol,
   fundamentals,
+  restrictedData,
 }: {
   symbol: string;
   fundamentals: unknown;
+  restrictedData?: string[];
 }) => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -49,6 +51,7 @@ const renderAssetDetailWith = ({
         historicalDataPrice: [],
         dividendsData: {cashDividends: []},
         fundamentals,
+        restrictedData,
       },
     ],
   });
@@ -150,7 +153,83 @@ describe('AssetDetail — card de Indicadores', () => {
     });
 
     const card = await screen.findByTestId('indicators-card');
-    expect(within(card).getByText('DÍVIDA LÍQUIDA')).toBeInTheDocument();
+    const linha = within(card).getByText('DÍVIDA LÍQUIDA').closest('div')
+      ?.parentElement as HTMLElement;
+
     expect(within(card).queryByText(/DÍVIDA LÍQ \/ EBITDA/)).not.toBeInTheDocument();
+    // Moeda, nao razao: um `.toFixed(2)` renderizaria "-3734800000.00".
+    expect(within(linha).getByText(/R\$/)).toBeInTheDocument();
+    expect(within(linha).queryByText('-3734800000.00')).not.toBeInTheDocument();
+  });
+
+  it('mostra o dado da cascata mesmo quando o brapi restringe o modulo fundamental', async () => {
+    renderAssetDetailWith({
+      symbol: 'WEGE3',
+      restrictedData: ['fundamental'],
+      fundamentals: {
+        symbol: 'WEGE3',
+        sector: 'Máquinas e Equipamentos',
+        mixed: false,
+        values: {
+          roic: {status: 'ok', value: 24.3, source: 'fundamentus'},
+        },
+      },
+    });
+
+    const card = await screen.findByTestId('indicators-card');
+    const linha = within(card).getByText('ROIC').closest('div')
+      ?.parentElement as HTMLElement;
+
+    expect(within(linha).getByText(/24,3|24\.3/)).toBeInTheDocument();
+    expect(within(linha).queryByText('EM BREVE')).not.toBeInTheDocument();
+  });
+
+  it('mostra o payout da cascata mesmo quando o brapi restringe dividendos', async () => {
+    renderAssetDetailWith({
+      symbol: 'WEGE3',
+      restrictedData: ['dividends'],
+      fundamentals: {
+        symbol: 'WEGE3',
+        sector: 'Máquinas e Equipamentos',
+        mixed: false,
+        values: {
+          payout: {status: 'ok', value: 31.2, source: 'derived'},
+        },
+      },
+    });
+
+    const card = await screen.findByTestId('indicators-card');
+    const linha = within(card).getByText('PAYOUT').closest('div')
+      ?.parentElement as HTMLElement;
+
+    expect(within(linha).getByText(/31,2|31\.2/)).toBeInTheDocument();
+    expect(within(linha).queryByText('EM BREVE')).not.toBeInTheDocument();
+  });
+
+  it('cada linha mostra o numero da propria chave, nunca o de outro indicador', async () => {
+    renderAssetDetailWith({
+      symbol: 'WEGE3',
+      fundamentals: {
+        symbol: 'WEGE3',
+        sector: 'Máquinas e Equipamentos',
+        mixed: false,
+        values: {
+          roic: {status: 'ok', value: 24.3, source: 'fundamentus'},
+          netMargin: {status: 'ok', value: 11.7, source: 'yahoo'},
+        },
+      },
+    });
+
+    const card = await screen.findByTestId('indicators-card');
+    const margem = within(card).getByText('MARGEM LÍQUIDA').closest('div')
+      ?.parentElement as HTMLElement;
+    const roic = within(card).getByText('ROIC').closest('div')
+      ?.parentElement as HTMLElement;
+
+    expect(within(margem).getByText(/11,7|11\.7/)).toBeInTheDocument();
+    expect(within(margem).queryByText(/24,3|24\.3/)).not.toBeInTheDocument();
+    expect(within(margem).getByText(/yahoo/i)).toBeInTheDocument();
+    expect(within(roic).getByText(/24,3|24\.3/)).toBeInTheDocument();
+    expect(within(roic).getByText(/fundamentus/i)).toBeInTheDocument();
   });
 });

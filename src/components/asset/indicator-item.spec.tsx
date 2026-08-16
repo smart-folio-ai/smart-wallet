@@ -60,6 +60,33 @@ describe('IndicatorItem', () => {
     expect(screen.queryByText(/fundamentus/i)).not.toBeInTheDocument();
   });
 
+  it('traduz a origem "derived" em vez de exibir o enum em ingles', () => {
+    render(
+      <IndicatorItem
+        label="PAYOUT"
+        status="ok"
+        value={31.2}
+        source="derived"
+        formatter={(v) => `${v.toFixed(1)}%`}
+      />,
+    );
+    expect(screen.getByText('estimado')).toBeInTheDocument();
+    expect(screen.queryByText(/derived/i)).not.toBeInTheDocument();
+  });
+
+  it('mantem as fontes reais sem traducao', () => {
+    render(
+      <IndicatorItem
+        label="ROIC"
+        status="ok"
+        value={24.3}
+        source="fundamentus"
+        formatter={(v) => `${v.toFixed(1)}%`}
+      />,
+    );
+    expect(screen.getByText('fundamentus')).toBeInTheDocument();
+  });
+
   it('o estado restrito vence os demais', () => {
     render(
       <IndicatorItem label="ROIC" status="ok" value={24.3} isRestricted />,

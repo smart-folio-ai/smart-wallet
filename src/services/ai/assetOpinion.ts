@@ -6,14 +6,19 @@ export interface AssetOpinionInput {
   price?: number;
   change24h?: number;
   sector?: string;
+  /**
+   * `null` significa "sem dado" e nao "zero medido". `evaluateStockByBenchmark`
+   * ja trata assim: `null ?? NaN` cai em `NaN`, que reprova
+   * `Number.isFinite` e faz o check ser PULADO em vez de contado como falha.
+   */
   indicators?: {
-    dividendYield?: number;
-    pe?: number;
-    pvp?: number;
-    roe?: number;
-    roic?: number;
-    netMargin?: number;
-    debtEbitda?: number;
+    dividendYield?: number | null;
+    pe?: number | null;
+    pvp?: number | null;
+    roe?: number | null;
+    roic?: number | null;
+    netMargin?: number | null;
+    debtEbitda?: number | null;
   };
   valuation?: {
     grahamValue?: number;
