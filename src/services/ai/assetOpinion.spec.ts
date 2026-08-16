@@ -64,6 +64,40 @@ describe('assetOpinion service', () => {
     expect(opinion.source).toBe('deterministic');
   });
 
+  it('pula o check quando o indicador é null, em vez de reprová-lo como um zero real', async () => {
+    chatMock.mockRejectedValue(new Error('timeout'));
+
+    const semDado = await getAssetOpinion({
+      symbol: 'BBAS3',
+      indicators: {roe: null, dividendYield: 0.08},
+    });
+
+    const zeroReal = await getAssetOpinion({
+      symbol: 'BBAS3',
+      indicators: {roe: 0, dividendYield: 0.08},
+    });
+
+    // `null` = sem dado: só o DY entra na conta, e ele passa -> 100.
+    expect(semDado.tags).toContain('score_100');
+    // `0` = medição real: o ROE entra e reprova -> a nota cai.
+    expect(zeroReal.tags).toContain('score_43');
+    expect(semDado.tags).not.toEqual(zeroReal.tags);
+  });
+
+  it('null não vira 0 no contexto enviado para a IA', async () => {
+    chatMock.mockResolvedValueOnce({answer: 'texto livre'});
+
+    await getAssetOpinion({
+      symbol: 'BBAS3',
+      indicators: {roic: null, netMargin: null, roe: 0.2},
+    });
+
+    const context = chatMock.mock.calls[0][0].context as any;
+    expect(context.asset.indicators.roic).toBeNull();
+    expect(context.asset.indicators.netMargin).toBeNull();
+    expect(context.asset.indicators.roic).not.toBe(0);
+  });
+
   it('marca como determinístico quando a IA responde fora do formato', async () => {
     chatMock.mockResolvedValueOnce({answer: 'texto livre sem JSON'});
 

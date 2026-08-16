@@ -47,6 +47,43 @@ import {useQuery} from '@tanstack/react-query';
 import Stock from '@/services/stocks';
 import {useSubscription} from '@/hooks/useSubscription';
 import {getAssetOpinion} from '@/services/ai/assetOpinion';
+import {IndicatorItem as FundamentalIndicatorItem} from '@/components/asset/indicator-item';
+import {readIndicator} from '@/pages/asset-fundamentals.utils';
+import type {FundamentalKey} from '@/pages/asset-fundamentals.utils';
+
+/**
+ * Le a cascata UMA vez por linha e distribui status/value/source do mesmo
+ * resultado. Nao existe um segundo literal de chave capaz de divergir do
+ * primeiro, entao a linha nunca mostra o numero de um indicador sob o
+ * rotulo/status de outro.
+ *
+ * Tambem nao aceita `isRestricted`: o gate de restricao do brapi nao governa
+ * estes valores, que vem da cascata do server. A honestidade da linha vem dos
+ * proprios estados `unavailable`/`not_applicable`.
+ */
+function FundamentalRow({
+  label,
+  fundamentals,
+  indicatorKey,
+  formatter,
+}: {
+  label: string;
+  fundamentals: unknown;
+  indicatorKey: FundamentalKey;
+  formatter?: (value: number) => string;
+}) {
+  const {status, value, source} = readIndicator(fundamentals, indicatorKey);
+
+  return (
+    <FundamentalIndicatorItem
+      label={label}
+      status={status}
+      value={value}
+      source={source}
+      formatter={formatter}
+    />
+  );
+}
 
 export default function AssetDetail() {
   const {symbol} = useParams<{symbol: string}>();
@@ -102,30 +139,37 @@ export default function AssetDetail() {
               value: d.rate,
             }))
           : [],
+        /**
+         * Ausencia vira `null`, nunca `0`. Este bloco alimenta o payload da
+         * Opiniao IA; um `0` fabricado seria lido como medicao real e
+         * reprovaria um check de benchmark que deveria ser apenas pulado —
+         * fazendo a IA contradizer o card de Indicadores, que ja declara
+         * ausencia com honestidade.
+         */
         indicators: {
           valuation: {
-            pe: s.priceEarnings ?? 0,
-            pb: s.priceToBook ?? 0,
-            pvp: s.priceToBook ?? 0,
-            ev_ebitda: s.enterpriseValueEbitda ?? 0,
-            price_sales: s.priceSales ?? 0,
+            pe: s.priceEarnings ?? null,
+            pb: s.priceToBook ?? null,
+            pvp: s.priceToBook ?? null,
+            ev_ebitda: s.enterpriseValueEbitda ?? null,
+            price_sales: s.priceSales ?? null,
           },
           debt: {
-            debt_equity: s.debtToEquity ?? 0,
-            current_ratio: s.currentRatio ?? 0,
-            quick_ratio: s.quickRatio ?? 0,
-            debt_ebitda: s.totalDebtToEbitda ?? 0,
+            debt_equity: s.debtToEquity ?? null,
+            current_ratio: s.currentRatio ?? null,
+            quick_ratio: s.quickRatio ?? null,
+            debt_ebitda: s.totalDebtToEbitda ?? null,
           },
           efficiency: {
-            roe: s.returnOnEquity ?? 0,
-            roa: s.returnOnAssets ?? 0,
-            roic: s.returnOnInvestedCapital ?? 0,
-            gross_margin: s.grossMargins ?? 0,
-            net_margin: s.netMargin ?? 0,
+            roe: s.returnOnEquity ?? null,
+            roa: s.returnOnAssets ?? null,
+            roic: s.returnOnInvestedCapital ?? null,
+            gross_margin: s.grossMargins ?? null,
+            net_margin: s.netMargin ?? null,
           },
           profitability: {
-            revenue_growth: s.revenueGrowth ?? 0,
-            earnings_growth: s.earningsGrowth ?? 0,
+            revenue_growth: s.revenueGrowth ?? null,
+            earnings_growth: s.earningsGrowth ?? null,
             dividend_growth: 0,
             book_value_growth: 0,
           },
@@ -148,6 +192,8 @@ export default function AssetDetail() {
         },
       }
     : null;
+
+  const fundamentals = s?.fundamentals ?? null;
 
   const calculateGrahamValue = () => {
     if (!asset || isFundamentalRestricted) return 0;
@@ -872,13 +918,12 @@ export default function AssetDetail() {
 
           {/* Right Column: Indicators */}
           <div className="space-y-6">
-            <Card className="border-none shadow-sm bg-white dark:bg-card">
+            <Card
+              className="border-none shadow-sm bg-white dark:bg-card"
+              data-testid="indicators-card">
               <CardHeader className="pb-3 border-b border-border/50">
-                <CardTitle className="text-lg font-black flex items-center justify-between">
+                <CardTitle className="text-lg font-black">
                   Indicadores
-                  <Badge variant="outline" className="text-[10px] font-bold">
-                    REAL-TIME
-                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-8">
@@ -894,23 +939,23 @@ export default function AssetDetail() {
                       isRestricted={isDividendsRestricted}
                       formatter={formatPercentage}
                     />
-                    <IndicatorItem
+                    <FundamentalRow
                       label="P/L (PREÇO/LUCRO)"
-                      value={asset.indicators.valuation.pe}
-                      isRestricted={isFundamentalRestricted}
-                      formatter={(v: any) => v.toFixed(2)}
+                      fundamentals={fundamentals}
+                      indicatorKey="priceEarnings"
+                      formatter={(v: number) => v.toFixed(2)}
                     />
-                    <IndicatorItem
+                    <FundamentalRow
                       label="P/VP"
-                      value={asset.indicators.valuation.pb}
-                      isRestricted={isFundamentalRestricted}
-                      formatter={(v: any) => v.toFixed(2)}
+                      fundamentals={fundamentals}
+                      indicatorKey="priceToBook"
+                      formatter={(v: number) => v.toFixed(2)}
                     />
-                    <IndicatorItem
+                    <FundamentalRow
                       label="EV/EBITDA"
-                      value={asset.indicators.valuation.ev_ebitda}
-                      isRestricted={isFundamentalRestricted}
-                      formatter={(v: any) => v.toFixed(2)}
+                      fundamentals={fundamentals}
+                      indicatorKey="evEbitda"
+                      formatter={(v: number) => v.toFixed(2)}
                     />
                   </div>
                 </div>
@@ -921,29 +966,29 @@ export default function AssetDetail() {
                     Eficiência & Rentabilidade
                   </h4>
                   <div className="space-y-1">
-                    <IndicatorItem
+                    <FundamentalRow
                       label="ROE"
-                      value={asset.indicators.efficiency.roe}
-                      isRestricted={isFundamentalRestricted}
+                      fundamentals={fundamentals}
+                      indicatorKey="returnOnEquity"
                       formatter={formatPercentage}
                     />
-                    <IndicatorItem
+                    <FundamentalRow
                       label="ROIC"
-                      value={asset.indicators.efficiency.roic}
-                      isRestricted={isFundamentalRestricted}
+                      fundamentals={fundamentals}
+                      indicatorKey="roic"
                       formatter={formatPercentage}
                     />
-                    <IndicatorItem
+                    <FundamentalRow
                       label="MARGEM LÍQUIDA"
-                      value={asset.indicators.efficiency.net_margin}
-                      isRestricted={isFundamentalRestricted}
+                      fundamentals={fundamentals}
+                      indicatorKey="netMargin"
                       formatter={formatPercentage}
                     />
-                    <IndicatorItem
-                      label="DÍVIDA LÍQ / EBITDA"
-                      value={asset.indicators.debt.debt_ebitda}
-                      isRestricted={isFundamentalRestricted}
-                      formatter={(v: any) => v.toFixed(2)}
+                    <FundamentalRow
+                      label="DÍVIDA LÍQUIDA"
+                      fundamentals={fundamentals}
+                      indicatorKey="netDebt"
+                      formatter={formatCurrency}
                     />
                   </div>
                 </div>
@@ -960,10 +1005,10 @@ export default function AssetDetail() {
                       isRestricted={isDividendsRestricted}
                       formatter={formatCurrency}
                     />
-                    <IndicatorItem
+                    <FundamentalRow
                       label="PAYOUT"
-                      value={0.65}
-                      isRestricted={isDividendsRestricted}
+                      fundamentals={fundamentals}
+                      indicatorKey="payout"
                       formatter={formatPercentage}
                     />
                   </div>

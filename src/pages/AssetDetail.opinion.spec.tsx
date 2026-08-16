@@ -66,6 +66,30 @@ describe('AssetDetail — card de Opinião IA', () => {
     });
   });
 
+  it('envia null (nao 0) para o indicador ausente na resposta da API', async () => {
+    useSubscriptionMock.mockReturnValue({hasAiInsights: true});
+    getAssetOpinionMock.mockResolvedValue({
+      summary: 'S',
+      strength: 'F',
+      attention: 'A',
+      tags: [],
+      source: 'deterministic',
+    });
+
+    renderAssetDetail();
+
+    await waitFor(() => {
+      expect(getAssetOpinionMock).toHaveBeenCalled();
+    });
+
+    // A resposta mockada nao traz returnOnInvestedCapital nem netMargin.
+    const payload = getAssetOpinionMock.mock.calls[0][0] as any;
+    expect(payload.indicators.roic).toBeNull();
+    expect(payload.indicators.roic).not.toBe(0);
+    expect(payload.indicators.netMargin).toBeNull();
+    expect(payload.indicators.netMargin).not.toBe(0);
+  });
+
   it('não usa mais gradiente nem anel de destaque', async () => {
     renderAssetDetail();
 
