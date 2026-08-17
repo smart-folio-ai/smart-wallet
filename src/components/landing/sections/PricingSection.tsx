@@ -21,6 +21,7 @@ type LandingPlan = {
   cta: string;
   isFree: boolean;
   featured: boolean;
+  comingSoon: boolean;
   benefits: string[];
 };
 
@@ -61,18 +62,24 @@ export function PricingSection() {
   const landingPlans: LandingPlan[] = sortedPlans.map((plan, index) => {
     const {monthlyPrice} = normalizePlanPricing(plan);
     const isFree = monthlyPrice === 0;
+    const comingSoon = plan.isComingSoon === true;
     const [highlight, ...restBenefits] = plan.features;
 
     return {
       id: plan._id,
       name: plan.name,
-      price: isFree ? 'Grátis' : formatCurrency(monthlyPrice),
+      price: isFree ? 'Grátis' : formatCurrency(monthlyPrice, plan.currency),
       period: isFree ? undefined : '/mês',
       detail: plan.description,
       aiPillar: highlight ?? '',
-      cta: isFree ? 'Começar grátis' : `Assinar ${plan.name}`,
+      cta: comingSoon
+        ? 'Em breve'
+        : isFree
+          ? 'Começar grátis'
+          : `Assinar ${plan.name}`,
       isFree,
       featured: index === featuredIndex,
+      comingSoon,
       benefits: restBenefits,
     };
   });
@@ -126,7 +133,15 @@ export function PricingSection() {
         ))}
       </ul>
 
-      {plan.isFree ? (
+      {plan.comingSoon ? (
+        <Button
+          type="button"
+          size="lg"
+          disabled
+          className="mt-8 w-full border border-surface-hairline/[0.12] bg-transparent text-on-surface-muted/50">
+          {plan.cta}
+        </Button>
+      ) : plan.isFree ? (
         <Button
           asChild
           size="lg"

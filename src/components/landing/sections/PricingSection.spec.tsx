@@ -171,6 +171,56 @@ describe('PricingSection', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('marca um plano isComingSoon como "Em breve", desabilitado, sem abrir o modal de compra', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([
+      ...mockPlans,
+      {
+        _id: 'plan_global',
+        name: 'Global Investor',
+        description: 'Para operação maior',
+        price: 199,
+        currency: 'brl',
+        interval: 'month',
+        intervalCount: 1,
+        stripePriceId: 'price_3',
+        stripeProductId: 'prod_3',
+        isActive: true,
+        isComingSoon: true,
+        features: ['Tudo do Premium'],
+        createdAt: '',
+        updatedAt: '',
+      },
+    ]);
+
+    renderSection();
+    await waitFor(() =>
+      expect(screen.getByText('Global Investor')).toBeInTheDocument(),
+    );
+
+    const cta = screen.getByRole('button', {name: /Em breve/i});
+    expect(cta).toBeDisabled();
+
+    fireEvent.click(cta);
+    expect(screen.queryByText(/Quero o plano Global Investor/i)).not.toBeInTheDocument();
+  });
+
+  it('formata o preço usando plan.currency, não sempre BRL', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([
+      {
+        ...mockPlans[0],
+        _id: 'plan_usd',
+        name: 'Global USD',
+        price: 20,
+        currency: 'usd',
+      },
+    ]);
+
+    renderSection();
+    await waitFor(() => expect(screen.getByText('Global USD')).toBeInTheDocument());
+
+    expect(screen.getByText('US$ 20,00')).toBeInTheDocument();
+  });
+
   it('não renderiza destaque quando nenhum plano está marcado', async () => {
     (SubscriptionService.getPlans as any).mockResolvedValue(
       mockPlans.map((plan) => ({...plan, isFeatured: false})),

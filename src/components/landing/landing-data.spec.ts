@@ -4,7 +4,6 @@ import {
   problemCopy,
   productCopy,
   faqItems,
-  planItems,
   footerColumns,
 } from './landing-data';
 
@@ -38,11 +37,6 @@ describe('landing-data', () => {
     expect(perguntas).toMatch(/corretora/i);
     expect(perguntas).toMatch(/cancel/i);
     expect(perguntas).toMatch(/gr[áa]tis|gratuito/i);
-  });
-
-  it('mantém três planos com o Premium destacado', () => {
-    expect(planItems).toHaveLength(3);
-    expect(planItems.filter((p) => p.featured)).toHaveLength(1);
   });
 
   it('o rodapé tem colunas com links', () => {

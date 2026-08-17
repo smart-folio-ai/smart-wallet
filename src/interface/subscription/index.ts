@@ -39,6 +39,8 @@ export interface ICreateSubscription {
   interval: string;
   intervalCount: number;
   features: string[];
+  annualPrice?: number;
+  annualStripePriceId?: string;
   isFeatured?: boolean;
   isComingSoon?: boolean;
 }
