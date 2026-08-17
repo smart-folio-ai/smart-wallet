@@ -15,7 +15,7 @@ export const SeletorPrice: React.FC<SeletorPriceProps> = ({
   setPricingPeriod,
   leftSeletorName,
   rightSeletorName,
-  badgeName = 'Economize 30%',
+  badgeName,
 }) => {
   return (
     <div className="flex items-center justify-center bg-secondary/60 backdrop-blur-sm p-1.5 rounded-2xl w-fit mx-auto mb-8 border border-border shadow-inner">

@@ -157,6 +157,65 @@ describe('Subscription page — real annual pricing', () => {
     expect(screen.getByText('/mês')).toBeInTheDocument();
     expect(screen.queryByText('/ano')).not.toBeInTheDocument();
   });
+
+  it('shows a discount badge computed from the real annual price, not a hardcoded percentage', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([
+      {
+        _id: 'plan_1',
+        name: 'Investidor Pro',
+        description: 'desc',
+        // Monthly * 12 = 588. Annual = 499 => 100 - round(499/588*100) = 15% off.
+        price: 49,
+        annualPrice: 499,
+        currency: 'BRL',
+        interval: 'month',
+        intervalCount: 1,
+        stripePriceId: 'price_1',
+        stripeProductId: 'prod_1',
+        isActive: true,
+        features: ['Feature A'],
+        createdAt: '',
+        updatedAt: '',
+      },
+    ]);
+
+    renderWithQueryClient(<Subscriptions />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Investidor Pro')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Economize 15%')).toBeInTheDocument();
+    expect(screen.queryByText('Economize 30%')).not.toBeInTheDocument();
+  });
+
+  it('hides the discount badge entirely when no plan has a real annual price', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([
+      {
+        _id: 'plan_1',
+        name: 'Investidor Pro',
+        description: 'desc',
+        price: 49,
+        currency: 'BRL',
+        interval: 'month',
+        intervalCount: 1,
+        stripePriceId: 'price_1',
+        stripeProductId: 'prod_1',
+        isActive: true,
+        features: ['Feature A'],
+        createdAt: '',
+        updatedAt: '',
+      },
+    ]);
+
+    renderWithQueryClient(<Subscriptions />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Investidor Pro')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/Economize/)).not.toBeInTheDocument();
+  });
 });
 
 describe('Subscription page — flags drive badge and coming-soon', () => {
