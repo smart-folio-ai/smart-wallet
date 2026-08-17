@@ -1,4 +1,5 @@
 import {Page} from '@playwright/test';
+import {createFakeAccessToken} from './fake-jwt';
 
 type SubscriptionPayload = {
   hasSubscription: boolean;
@@ -21,10 +22,11 @@ export async function mockAuthenticatedSession(
   const planName = options?.planName || 'Premium';
   const features = options?.features || ['ai_insights', 'comparator'];
 
-  await page.addInitScript(() => {
-    localStorage.setItem('access_token', 'e2e-access-token');
+  const accessToken = createFakeAccessToken();
+  await page.addInitScript((token: string) => {
+    localStorage.setItem('access_token', token);
     localStorage.setItem('refresh_token', 'e2e-refresh-token');
-  });
+  }, accessToken);
 
   await page.route('**/subscription/current', async (route) => {
     const payload: SubscriptionPayload = {

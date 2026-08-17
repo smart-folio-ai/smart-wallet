@@ -1,13 +1,16 @@
-import {expect, test} from '@playwright/test';
+import {expect, test} from './helpers/base-test';
+import {createFakeAccessToken} from './helpers/fake-jwt';
 
 test.describe('Auth Success Flow', () => {
   test('realiza login com sucesso e entra no dashboard', async ({page}) => {
+    const accessToken = createFakeAccessToken();
+
     await page.route('**/auth/signin', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          accessToken: 'token-auth-success',
+          accessToken,
           refreshToken: 'refresh-auth-success',
         }),
       });
@@ -39,6 +42,6 @@ test.describe('Auth Success Flow', () => {
     const storedToken = await page.evaluate(() =>
       localStorage.getItem('access_token'),
     );
-    await expect(storedToken).toBe('token-auth-success');
+    await expect(storedToken).toBe(accessToken);
   });
 });

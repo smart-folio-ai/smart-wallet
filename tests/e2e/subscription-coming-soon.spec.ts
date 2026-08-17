@@ -1,10 +1,12 @@
-import {expect, test} from '@playwright/test';
+import {expect, test} from './helpers/base-test';
+import {createFakeAccessToken} from './helpers/fake-jwt';
 
 test.describe('Subscription Coming Soon', () => {
   test('exibe GlobalInvestor como em breve e bloqueado', async ({page}) => {
-    await page.addInitScript(() => {
-      localStorage.setItem('access_token', 'fake-token');
-    });
+    const accessToken = createFakeAccessToken();
+    await page.addInitScript((token: string) => {
+      localStorage.setItem('access_token', token);
+    }, accessToken);
 
     await page.route('**/subscription/current', async (route) => {
       if (route.request().resourceType() === 'document') {
