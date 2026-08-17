@@ -31,18 +31,9 @@ jobs:
       - name: Build project
         run: bun run build
 
-  # A suíte e2e está quebrada desde o redesign da landing e a introdução do
-  # banner LGPD: 15 dos 28 testes falham por seletores desatualizados e pelo
-  # banner de consentimento cobrindo a UI. Ninguém percebeu porque este job
-  # nunca chegou a executar — o `working-directory: web` inexistente o
-  # derrubava no install, e depois o script `test:e2e` não existia.
-  #
-  # Roda sem bloquear até a suíte ser reparada (TRA-22). Um job que falha
-  # sempre não é sinal, é ruído — e treina todo mundo a ignorar o CI.
   e2e-playwright:
     runs-on: ubuntu-latest
     needs: build
-    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

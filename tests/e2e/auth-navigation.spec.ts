@@ -1,11 +1,11 @@
-import {expect, test} from '@playwright/test';
+import {expect, test} from './helpers/base-test';
 
 test.describe('Auth Navigation And Validation', () => {
   test('volta de recuperar senha para login', async ({page}) => {
     await page.goto('/forgot-password');
     await page.locator('#forgot-password-back').click();
     await expect(page).toHaveURL(/\/?$/);
-    await expect(page.getByRole('button', {name: /Entrar/i}).first()).toBeVisible();
+    await expect(page.getByRole('link', {name: /Entrar/i}).first()).toBeVisible();
   });
 
   test('volta de cadastro para login', async ({page}) => {
@@ -35,6 +35,16 @@ test.describe('Auth Navigation And Validation', () => {
   });
 
   test('redefine senha com token inválido e abre solicitar novo link', async ({page}) => {
+    // Sem mock, essa validação bate no backend real por trás do proxy do
+    // dev server — dependência de rede desnecessária que já flakou em CI.
+    await page.route('**/auth/reset-password/token-invalido', async (route) => {
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({message: 'Token inválido'}),
+      });
+    });
+
     await page.goto('/reset-password?token=token-invalido');
     await expect(page.locator('#reset-password-invalid')).toBeVisible();
     await expect(page.getByText(/Link inválido/i)).toBeVisible();

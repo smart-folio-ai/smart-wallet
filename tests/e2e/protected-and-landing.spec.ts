@@ -1,4 +1,4 @@
-import {expect, test} from '@playwright/test';
+import {expect, test} from './helpers/base-test';
 
 test.describe('Landing And Protected Routes', () => {
   test('redireciona para landing quando rota protegida é acessada sem token', async ({
@@ -7,7 +7,7 @@ test.describe('Landing And Protected Routes', () => {
     await page.goto('/chat-inteligente');
     await expect(page).toHaveURL(/\/$/);
     await expect(
-      page.getByRole('button', {name: /Entrar/i}).first(),
+      page.getByRole('link', {name: /Entrar/i}).first(),
     ).toBeVisible();
   });
 
@@ -16,11 +16,11 @@ test.describe('Landing And Protected Routes', () => {
   }) => {
     await page.goto('/');
 
-    await page.getByRole('button', {name: 'Entrar'}).first().click();
+    await page.getByRole('link', {name: 'Entrar'}).first().click();
     await expect(page).toHaveURL(/\/signin$/);
 
     await page.goto('/');
-    await page.getByRole('button', {name: /Criar Conta/i}).first().click();
+    await page.getByRole('link', {name: /Criar Conta/i}).first().click();
     await expect(page).toHaveURL(/\/register$/);
   });
 });

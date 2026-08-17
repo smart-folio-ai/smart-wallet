@@ -26,5 +26,15 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
     },
+  },
+  {
+    // Playwright fixtures take a `use` callback (test.extend({..., async
+    // (fixtures, use) => {...}})) — react-hooks treats any `use*` call as a
+    // hook invocation and flags it. These files aren't React, so the rule
+    // is a false positive here.
+    files: ['tests/e2e/**/*.ts'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+    },
   }
 );
