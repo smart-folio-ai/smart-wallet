@@ -35,6 +35,16 @@ test.describe('Auth Navigation And Validation', () => {
   });
 
   test('redefine senha com token inválido e abre solicitar novo link', async ({page}) => {
+    // Sem mock, essa validação bate no backend real por trás do proxy do
+    // dev server — dependência de rede desnecessária que já flakou em CI.
+    await page.route('**/auth/reset-password/token-invalido', async (route) => {
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({message: 'Token inválido'}),
+      });
+    });
+
     await page.goto('/reset-password?token=token-invalido');
     await expect(page.locator('#reset-password-invalid')).toBeVisible();
     await expect(page.getByText(/Link inválido/i)).toBeVisible();
