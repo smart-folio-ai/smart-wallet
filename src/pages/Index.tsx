@@ -37,6 +37,7 @@ import {
 import {formatCurrency} from '@/utils';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
 import {PremiumBlur} from '@/components/ui/premium-blur';
+import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {useSubscription} from '@/hooks/useSubscription';
 import {
   buildAiCacheSignature,
@@ -577,6 +578,14 @@ const Dashboard = () => {
         analysis: dashboardAiAnalysis || null,
       }).slice(0, 3),
     [apiAssets, dashboardAiAnalysis, summary],
+  );
+  const aiDashboardHighlights = useMemo(
+    () => dashboardHighlights.filter((item) => item.source === 'ai'),
+    [dashboardHighlights],
+  );
+  const derivedDashboardHighlights = useMemo(
+    () => dashboardHighlights.filter((item) => item.source === 'derived'),
+    [dashboardHighlights],
   );
 
   const aiOpportunities = useMemo(
@@ -1519,13 +1528,30 @@ const Dashboard = () => {
                       </p>
                     </div>
                   ))}
-                  {dashboardHighlights.length > 0 && (
+                  {aiDashboardHighlights.length > 0 && (
+                    <div className="rounded-lg border border-border/40 bg-background/70 p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Sinais do Trackerr IA
+                      </p>
+                      <div className="space-y-1">
+                        {aiDashboardHighlights.map((item, idx) => (
+                          <p
+                            key={`${item.title}-${idx}`}
+                            className="text-xs text-muted-foreground">
+                            {item.title}
+                          </p>
+                        ))}
+                      </div>
+                      <AiGeneratedNotice className="mt-2" />
+                    </div>
+                  )}
+                  {derivedDashboardHighlights.length > 0 && (
                     <div className="rounded-lg border border-border/40 bg-background/70 p-3">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Sinais de watchlist e cenário
                       </p>
                       <div className="space-y-1">
-                        {dashboardHighlights.map((item, idx) => (
+                        {derivedDashboardHighlights.map((item, idx) => (
                           <p
                             key={`${item.title}-${idx}`}
                             className="text-xs text-muted-foreground">

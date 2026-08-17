@@ -89,14 +89,17 @@ describe('Dashboard neutral card styling', () => {
   });
 });
 
-// TRA-26: o card "Trackerr IA Hoje" é montado por `actionableInsights`, um
-// cálculo local sobre a carteira. Nenhum modelo escreve esse texto, então o
-// aviso de conteúdo gerado por IA foi removido dali. Este teste impede que ele
-// volte — em qualquer plano, já que o conteúdo é o mesmo borrado ou não.
-describe('Dashboard sem aviso de IA no card determinístico', () => {
+// TRA-26: o card "Trackerr IA Hoje" mistura `actionableInsights` (cálculo
+// local, nunca passa por modelo) com `dashboardHighlights` (source: 'ai' para
+// smart_feed, 'derived' para o resto). Sem carteira/plano PRO+ a query de
+// análise nunca dispara, então dashboardHighlights fica vazio e o aviso não
+// tem onde aparecer — é esse caminho vazio que este teste cobre. O caminho
+// com smart_feed populado tem cobertura própria e mais direta em
+// trakkerAi.spec.ts (deriveDashboardHighlights marca source: 'ai').
+describe('Dashboard sem aviso de IA quando não há highlights de IA', () => {
   it.each([
     ['free', {planName: null, isSubscribed: false, isLoading: false}],
-    ['pro', {planName: 'pro', isSubscribed: true, isLoading: false}],
+    ['pro sem carteira', {planName: 'pro', isSubscribed: true, isLoading: false}],
   ])('não exibe o aviso de IA no plano %s', async (_plan, subscription) => {
     useSubscriptionMock.mockReturnValue(subscription);
 
