@@ -111,6 +111,20 @@ export default function Subscriptions() {
     });
   }, [rawPlans]);
 
+  const annualDiscountBadge = React.useMemo(() => {
+    const discounts = plans
+      .filter((plan) => plan.hasRealAnnualPrice && plan.monthlyPrice > 0)
+      .map((plan) => 1 - plan.annualPrice / (plan.monthlyPrice * 12));
+
+    if (discounts.length === 0) return undefined;
+
+    const maxDiscount = Math.max(...discounts);
+    const discountPercent = Math.round(maxDiscount * 100);
+    if (discountPercent <= 0) return undefined;
+
+    return `Economize ${discountPercent}%`;
+  }, [plans]);
+
   const handleSubscribe = async (planId: string) => {
     const plan = plans.find((p) => p._id === planId);
     if (!plan) {
@@ -183,7 +197,7 @@ export default function Subscriptions() {
             setPricingPeriod={setPricingPeriod}
             leftSeletorName="Mensal"
             rightSeletorName="Anual"
-            badgeName="Economize 30%"
+            badgeName={annualDiscountBadge}
           />
         </div>
         <div className="container px-0 md:px-4 pb-12">
