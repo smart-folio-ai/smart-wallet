@@ -1,4 +1,4 @@
-import {expect, test} from '@playwright/test';
+import {expect, test} from './helpers/base-test';
 import {mockAuthenticatedSession} from './helpers/mock-session';
 
 test.describe('Chat Inteligente', () => {
