@@ -75,6 +75,17 @@ describe('PremiumBlur', () => {
     expect(container.querySelector('.pointer-events-none')).toBeNull();
   });
 
+  it('usa dismissKey em vez do title quando fornecido, evitando colisão entre titles iguais', () => {
+    const {unmount} = renderBlur({title: 'Recurso Igual', dismissKey: 'feature-a'});
+    fireEvent.click(screen.getByRole('button', {name: /fechar/i}));
+    unmount();
+
+    // Mesmo title, dismissKey diferente: não deve herdar a dispensa.
+    renderBlur({title: 'Recurso Igual', dismissKey: 'feature-b'});
+
+    expect(screen.getByText('Recurso Igual')).toBeInTheDocument();
+  });
+
   it('renderiza normalmente quando sessionStorage lança', () => {
     const getItem = vi
       .spyOn(Storage.prototype, 'getItem')
