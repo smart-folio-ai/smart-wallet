@@ -15,6 +15,7 @@ import {
   Clock,
   ExternalLink,
   Zap,
+  Landmark,
 } from 'lucide-react';
 import {
   Card,
@@ -50,6 +51,8 @@ import {getAssetOpinion} from '@/services/ai/assetOpinion';
 import {IndicatorItem as FundamentalIndicatorItem} from '@/components/asset/indicator-item';
 import {readIndicator} from '@/pages/asset-fundamentals.utils';
 import type {FundamentalKey} from '@/pages/asset-fundamentals.utils';
+import {CapitalRatioGauge} from '@/components/asset/capital-ratio-gauge';
+import {buildBankCapitalSummary, formatBankCapitalPeriod} from './bank-capital-summary';
 
 /**
  * Le a cascata UMA vez por linha e distribui status/value/source do mesmo
@@ -194,6 +197,15 @@ export default function AssetDetail() {
     : null;
 
   const fundamentals = s?.fundamentals ?? null;
+
+  const bankCapital = s?.bankCapital ?? null;
+  const bankCapitalSummary = bankCapital
+    ? buildBankCapitalSummary({
+        basileia: bankCapital.basileia,
+        imobilizacao: bankCapital.imobilizacao,
+      })
+    : null;
+  const bankCapitalPeriod = bankCapital ? formatBankCapitalPeriod(bankCapital.period) : null;
 
   const calculateGrahamValue = () => {
     if (!asset || isFundamentalRestricted) return 0;
@@ -1085,6 +1097,44 @@ export default function AssetDetail() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {bankCapital && (
+                  <div className="pt-6 border-t border-border">
+                    <Card
+                      data-testid="bank-capital-card"
+                      className="border-none bg-gradient-to-br from-white to-primary/5 dark:from-card dark:to-primary/10 shadow-lg overflow-hidden ring-1 ring-primary/20">
+                      <CardHeader className="pb-2 border-b border-border/10 bg-primary/5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                            Capital Regulatório — {bankCapital.bankName}
+                            {bankCapitalPeriod && ` · ${bankCapitalPeriod}`}
+                          </span>
+                          <Landmark className="h-4 w-4 text-primary" />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-8 space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <CapitalRatioGauge
+                            label="ÍNDICE DE BASILEIA"
+                            value={bankCapital.basileia}
+                            maxScale={30}
+                          />
+                          <CapitalRatioGauge
+                            label="ÍNDICE DE IMOBILIZAÇÃO"
+                            value={bankCapital.imobilizacao}
+                            maxScale={60}
+                            dangerAbove={50}
+                          />
+                        </div>
+                        {bankCapitalSummary && (
+                          <p className="text-xs text-center text-muted-foreground">
+                            {bankCapitalSummary}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
