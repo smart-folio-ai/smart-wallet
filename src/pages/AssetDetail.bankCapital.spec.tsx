@@ -88,6 +88,35 @@ describe('AssetDetail — card de indicadores de capital bancario', () => {
     expect(within(card).getByText(/20,50%/)).toBeInTheDocument();
   });
 
+  it('mostra o trimestre de referencia no cabecalho do card', async () => {
+    renderAssetDetailWith({symbol: 'BBAS3', bankCapital: BANK_CAPITAL});
+
+    const card = await screen.findByTestId('bank-capital-card');
+    expect(within(card).getByText(/1º tri\/2026/)).toBeInTheDocument();
+  });
+
+  it('mostra o trimestre mesmo quando os dois indices estao ausentes', async () => {
+    renderAssetDetailWith({
+      symbol: 'BBAS3',
+      bankCapital: {...BANK_CAPITAL, basileia: null, imobilizacao: null},
+    });
+
+    const card = await screen.findByTestId('bank-capital-card');
+    expect(within(card).queryByText(/Índice de Basileia de/)).not.toBeInTheDocument();
+    expect(within(card).getByText(/1º tri\/2026/)).toBeInTheDocument();
+  });
+
+  it('nao quebra a pagina quando o payload chega parcial, com undefined', async () => {
+    renderAssetDetailWith({
+      symbol: 'BBAS3',
+      bankCapital: {symbol: 'BBAS3', bankName: 'Banco do Brasil', period: '2026-03'},
+    });
+
+    const card = await screen.findByTestId('bank-capital-card');
+    expect(within(card).getAllByText('—')).toHaveLength(2);
+    expect(screen.getByTestId('indicators-card')).toBeInTheDocument();
+  });
+
   it('nao renderiza o card quando bankCapital e null', async () => {
     renderAssetDetailWith({symbol: 'PETR4', bankCapital: null});
 

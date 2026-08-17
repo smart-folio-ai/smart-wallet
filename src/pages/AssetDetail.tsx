@@ -52,7 +52,7 @@ import {IndicatorItem as FundamentalIndicatorItem} from '@/components/asset/indi
 import {readIndicator} from '@/pages/asset-fundamentals.utils';
 import type {FundamentalKey} from '@/pages/asset-fundamentals.utils';
 import {CapitalRatioGauge} from '@/components/asset/capital-ratio-gauge';
-import {buildBankCapitalSummary} from './bank-capital-summary';
+import {buildBankCapitalSummary, formatBankCapitalPeriod} from './bank-capital-summary';
 
 /**
  * Le a cascata UMA vez por linha e distribui status/value/source do mesmo
@@ -205,6 +205,7 @@ export default function AssetDetail() {
         imobilizacao: bankCapital.imobilizacao,
       })
     : null;
+  const bankCapitalPeriod = bankCapital ? formatBankCapitalPeriod(bankCapital.period) : null;
 
   const calculateGrahamValue = () => {
     if (!asset || isFundamentalRestricted) return 0;
@@ -1106,6 +1107,7 @@ export default function AssetDetail() {
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-black uppercase tracking-widest text-primary">
                             Capital Regulatório — {bankCapital.bankName}
+                            {bankCapitalPeriod && ` · ${bankCapitalPeriod}`}
                           </span>
                           <Landmark className="h-4 w-4 text-primary" />
                         </div>
