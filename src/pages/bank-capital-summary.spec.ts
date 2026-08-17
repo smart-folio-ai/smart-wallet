@@ -31,6 +31,14 @@ describe('buildBankCapitalSummary', () => {
     expect(buildBankCapitalSummary({basileia: null, imobilizacao: null})).toBeNull();
   });
 
+  it('trata undefined como ausencia, igual a null', () => {
+    const input = {basileia: undefined, imobilizacao: undefined} as unknown as {
+      basileia: number | null;
+      imobilizacao: number | null;
+    };
+    expect(buildBankCapitalSummary(input)).toBeNull();
+  });
+
   it('nunca produz a string "0%" para um indicador ausente', () => {
     const result = buildBankCapitalSummary({basileia: null, imobilizacao: 16.47});
     expect(result).not.toContain('Basileia de 0%');

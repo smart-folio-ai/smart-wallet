@@ -12,11 +12,13 @@ function formatOnePlace(value: number): string {
 export function buildBankCapitalSummary(input: BankCapitalSummaryInput): string | null {
   const parts: string[] = [];
 
-  if (input.basileia !== null) {
+  // `!=` proposital: ver capital-ratio-gauge.tsx. `undefined` vindo de um payload
+  // parcial precisa ser tratado como ausencia, nao formatado como numero.
+  if (input.basileia != null) {
     parts.push(`Índice de Basileia de ${formatOnePlace(input.basileia)}%.`);
   }
 
-  if (input.imobilizacao !== null) {
+  if (input.imobilizacao != null) {
     const qualifier =
       input.imobilizacao <= IMOBILIZACAO_LIMIT
         ? `dentro do limite regulatório de ${IMOBILIZACAO_LIMIT}%`

@@ -9,6 +9,18 @@ describe('CapitalRatioGauge', () => {
     expect(document.querySelector('svg')).not.toBeInTheDocument();
   });
 
+  it('trata undefined como ausencia, sem quebrar a renderizacao', () => {
+    render(
+      <CapitalRatioGauge
+        label="ÍNDICE DE BASILEIA"
+        value={undefined as unknown as number | null}
+        maxScale={30}
+      />,
+    );
+    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(document.querySelector('svg')).not.toBeInTheDocument();
+  });
+
   it('renderiza o valor real formatado', () => {
     render(<CapitalRatioGauge label="ÍNDICE DE BASILEIA" value={14.23} maxScale={30} />);
     expect(screen.getByText('14,23%')).toBeInTheDocument();

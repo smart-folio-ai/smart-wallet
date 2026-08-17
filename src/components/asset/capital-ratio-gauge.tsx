@@ -19,7 +19,10 @@ function arcPath(cx: number, cy: number, radius: number, startDeg: number, endDe
 }
 
 export function CapitalRatioGauge({label, value, maxScale, dangerAbove}: CapitalRatioGaugeProps) {
-  if (value === null) {
+  // `==` proposital: o payload da API nao e tipado, entao `undefined` (campo
+  // renomeado, objeto parcial de cache/proxy) precisa cair na mesma via de ausencia
+  // que `null`, em vez de vazar para o caminho numerico e quebrar a pagina inteira.
+  if (value == null) {
     return (
       <div className="flex flex-col items-center gap-2">
         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
