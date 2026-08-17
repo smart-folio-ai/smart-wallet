@@ -88,6 +88,10 @@ describe('AssetDetail — card de Opinião IA', () => {
     expect(payload.indicators.roic).not.toBe(0);
     expect(payload.indicators.netMargin).toBeNull();
     expect(payload.indicators.netMargin).not.toBe(0);
+    // A resposta mockada tambem nao traz dividendYield — mesma classe de bug
+    // do PR #72, mas fora do bloco `indicators` (TRA-49).
+    expect(payload.indicators.dividendYield).toBeNull();
+    expect(payload.indicators.dividendYield).not.toBe(0);
   });
 
   it('não usa mais gradiente nem anel de destaque', async () => {
