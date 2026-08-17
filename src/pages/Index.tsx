@@ -717,7 +717,7 @@ const Dashboard = () => {
       const biggestDrop = topLosers[0];
       insights.push({
         priority: 'Alta',
-        title: 'Queda relevante na carteira hoje',
+        title: 'Carteira abaixo do custo médio',
         description: biggestDrop
           ? `A carteira está abaixo do custo médio em ${Math.abs(summary.totalPnlPercentage).toFixed(2)}%, com destaque para ${biggestDrop.symbol} (${biggestDrop.returnSinceAvgPrice.toFixed(2)}% desde o preço médio).`
           : `A carteira está abaixo do custo médio em ${Math.abs(summary.totalPnlPercentage).toFixed(2)}%.`,
