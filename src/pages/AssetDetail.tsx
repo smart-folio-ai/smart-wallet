@@ -127,7 +127,7 @@ export default function AssetDetail() {
         value: 0,
         allocation: 0,
         type: 'stock' as const,
-        dividendYield: s.dividendYield ?? 0,
+        dividendYield: s.dividendYield ?? null,
         lastDividend: s.lastDividendValue ?? 0,
         sector: s.sector ?? '',
         history: s.historicalDataPrice
@@ -617,7 +617,12 @@ export default function AssetDetail() {
     isRestricted,
     formatter = (v: any) => v,
   }: any) => {
-    if (isRestricted || value === 0 || value === undefined)
+    if (
+      isRestricted ||
+      value === 0 ||
+      value === undefined ||
+      value === null
+    )
       return renderRestricted(label);
     return (
       <div className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
