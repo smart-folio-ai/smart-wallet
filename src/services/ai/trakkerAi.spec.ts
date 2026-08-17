@@ -118,6 +118,46 @@ describe('trakkerAi service helpers', () => {
     ).toBe(true);
   });
 
+  // TRA-26: o card do dashboard só pode anexar o aviso de conteúdo gerado
+  // por IA na parte que veio do smart_feed do modelo — o resto é aritmética
+  // local com frase fixa. Sem essa marcação o card confunde as duas coisas.
+  it('marca smart_feed como source ai e o resto como source derived', () => {
+    const highlights = deriveDashboardHighlights({
+      rawAssets: [
+        {
+          symbol: 'ITUB4',
+          sector: 'Bancos',
+          type: 'stock',
+          quantity: 100,
+          current_price: 30,
+        },
+      ],
+      summary: {
+        change24h: 487,
+        totalDividends: 3744,
+      },
+      analysis: {
+        smart_feed: [
+          {
+            title: 'Ativo da watchlist em oportunidade',
+            content: 'WEGE3 tocou alvo de preço hoje',
+            impact: 'positive',
+          },
+        ],
+      } as any,
+    });
+
+    const aiItems = highlights.filter((item) => item.source === 'ai');
+    const derivedItems = highlights.filter((item) => item.source === 'derived');
+
+    expect(aiItems).toHaveLength(1);
+    expect(aiItems[0].title).toBe('Ativo da watchlist em oportunidade');
+    expect(derivedItems.length).toBeGreaterThan(0);
+    expect(
+      derivedItems.every((item) => item.title !== 'Ativo da watchlist em oportunidade'),
+    ).toBe(true);
+  });
+
   it('assinatura de cache é determinística', () => {
     const a = buildAiCacheSignature([
       {symbol: 'VALE3', quantity: 2, price: 10, current_price: 11, type: 'stock'},

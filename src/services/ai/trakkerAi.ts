@@ -20,6 +20,11 @@ export type HighlightItem = {
   title: string;
   content: string;
   impact: 'positive' | 'negative' | 'neutral';
+  /** 'ai': texto vindo do smart_feed do modelo. 'derived': aritmética local
+   * com frase fixa — nenhum modelo participou. O card no dashboard usa isso
+   * pra só anexar o aviso de conteúdo gerado por IA na parte que é IA de
+   * verdade (TRA-26). */
+  source: 'ai' | 'derived';
 };
 
 export type AssetRecommendation = 'buy' | 'hold' | 'sell';
@@ -162,6 +167,7 @@ export function deriveDashboardHighlights(params: {
       title: item.title,
       content: item.content,
       impact: item.impact || 'neutral',
+      source: 'ai',
     });
   }
 
@@ -188,6 +194,7 @@ export function deriveDashboardHighlights(params: {
         title: `Você tem ${concentration.toFixed(0)}% da carteira em ${topSector}.`,
         content: `Isso aumenta seu risco de concentração setorial.`,
         impact: 'negative',
+        source: 'derived',
       });
     }
 
@@ -209,6 +216,7 @@ export function deriveDashboardHighlights(params: {
         title: 'Seu portfólio não possui exposição internacional suficiente.',
         content: `Hoje sua exposição estimada está em ${internationalPct.toFixed(1)}%.`,
         impact: 'negative',
+        source: 'derived',
       });
     }
   }
@@ -221,6 +229,7 @@ export function deriveDashboardHighlights(params: {
         : `Hoje sua carteira caiu ${formatMoney(Math.abs(summary.change24h))}.`,
       content: 'Variação consolidada no período de 24 horas.',
       impact: positive ? 'positive' : 'negative',
+      source: 'derived',
     });
   }
 
@@ -230,6 +239,7 @@ export function deriveDashboardHighlights(params: {
       title: `Dividendos previstos este mês: ${formatMoney(monthlyProjection)}.`,
       content: 'Estimativa proporcional baseada nos dividendos acumulados.',
       impact: 'positive',
+      source: 'derived',
     });
   }
 
