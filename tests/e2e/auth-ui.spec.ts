@@ -1,4 +1,4 @@
-import {expect, test} from '@playwright/test';
+import {expect, test} from './helpers/base-test';
 
 test.describe('Auth UI — Telas de Autenticação', () => {
   // ── Login ─────────────────────────────────────────────────────────────────

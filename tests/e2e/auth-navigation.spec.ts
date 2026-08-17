@@ -1,11 +1,11 @@
-import {expect, test} from '@playwright/test';
+import {expect, test} from './helpers/base-test';
 
 test.describe('Auth Navigation And Validation', () => {
   test('volta de recuperar senha para login', async ({page}) => {
     await page.goto('/forgot-password');
     await page.locator('#forgot-password-back').click();
     await expect(page).toHaveURL(/\/?$/);
-    await expect(page.getByRole('button', {name: /Entrar/i}).first()).toBeVisible();
+    await expect(page.getByRole('link', {name: /Entrar/i}).first()).toBeVisible();
   });
 
   test('volta de cadastro para login', async ({page}) => {
