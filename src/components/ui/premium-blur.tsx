@@ -7,9 +7,15 @@ interface PremiumBlurProps {
   children: React.ReactNode;
   /** Se false, exibe o conteúdo normalmente sem blur. Default: true (bloqueado) */
   locked?: boolean;
-  title?: string;
+  title: string;
   description?: string;
   className?: string;
+  /**
+   * Chave da dispensa em sessionStorage. Default: `title`. Dois call sites
+   * com o mesmo `title` (ou o mesmo `dismissKey`) compartilham a dispensa —
+   * passe uma chave própria se o título puder mudar ou colidir.
+   */
+  dismissKey?: string;
 }
 
 const DISMISS_PREFIX = 'trackerr:premium-blur-dismissed:';
@@ -35,19 +41,21 @@ function writeDismissed(title: string): void {
 export const PremiumBlur = ({
   children,
   locked = true,
-  title = 'Recurso Premium',
+  title,
   description = 'Faça upgrade para acessar este recurso',
   className = '',
+  dismissKey,
 }: PremiumBlurProps) => {
   const navigate = useNavigate();
-  const [dismissed, setDismissed] = React.useState(() => readDismissed(title));
+  const key = dismissKey ?? title;
+  const [dismissed, setDismissed] = React.useState(() => readDismissed(key));
 
   if (!locked) {
     return <div className={className}>{children}</div>;
   }
 
   const dismiss = () => {
-    writeDismissed(title);
+    writeDismissed(key);
     setDismissed(true);
   };
 
