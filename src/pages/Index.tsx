@@ -59,6 +59,12 @@ import {
   computeReturnSinceAvgPrice,
 } from '@/pages/dashboard-summary.utils';
 import {accumulateCdi} from '@/pages/cdi-performance.utils';
+import {
+  parseHistoryDate,
+  filterHistoryByPeriod,
+  brapiRangeForDays,
+  getEffectiveHistoryWindow,
+} from '@/pages/benchmark-window.utils';
 
 interface Asset {
   id: string;
@@ -141,12 +147,6 @@ const ALLOCATION_COLORS = {
   other: '#f59e0b',
 };
 
-const parseHistoryDate = (value: unknown): Date | null => {
-  if (!value) return null;
-  const date = new Date(String(value));
-  return Number.isNaN(date.getTime()) ? null : date;
-};
-
 const formatHistoryDate = (value: unknown): string => {
   const parsed = parseHistoryDate(value);
   return parsed
@@ -211,14 +211,6 @@ const toIsoDate = (value: unknown): string | null => {
   return parsed.toISOString().slice(0, 10);
 };
 
-const PERIOD_TO_BRAPI_RANGE: Record<string, string> = {
-  '7D': '5d',
-  '1M': '1mo',
-  '3M': '3mo',
-  '6M': '6mo',
-  '1A': '1y',
-  '5A': '5y',
-};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -306,72 +298,6 @@ const Dashboard = () => {
                 };
               })()
             : {value: null, unit: 'daily_percent', variationPct: null},
-      };
-    },
-  });
-
-  const {data: benchmarkHistory} = useQuery({
-    queryKey: ['dashboard-benchmark-history', selectedPeriod],
-    staleTime: 10 * 60 * 1000,
-    queryFn: async () => {
-      const range = PERIOD_TO_BRAPI_RANGE[selectedPeriod] || '1mo';
-
-      // Mesma janela de dias usada por `historyByPeriod` para o gráfico da
-      // carteira, para que o CDI cubra o mesmo período comparado.
-      const daysMap: Record<string, number> = {
-        '7D': 7,
-        '1M': 30,
-        '3M': 90,
-        '6M': 180,
-        '1A': 365,
-        '5A': 1825,
-      };
-      const limitDays = daysMap[selectedPeriod] || 30;
-      const toDate = new Date();
-      const fromDate = new Date();
-      fromDate.setDate(fromDate.getDate() - limitDays);
-      const toIso = toDate.toISOString().slice(0, 10);
-      const fromIso = fromDate.toISOString().slice(0, 10);
-
-      const [ibovHistoryResponse, btcHistoryResponse, cdiHistoryResponse] =
-        await Promise.allSettled([
-          stockServices.getNationalStock('^BVSP', {range, interval: '1d'}),
-          stockServices.getNationalStock('BTC-USD', {range, interval: '1d'}),
-          stockServices.getCdiSeries(fromIso, toIso),
-        ]);
-
-      const parseHistory = (payload: any) => {
-        const series = payload?.results?.[0]?.historicalDataPrice;
-        if (!Array.isArray(series)) return [];
-        return series
-          .map((point: any) => ({
-            date:
-              typeof point?.date === 'number'
-                ? new Date(point.date * 1000).toISOString().slice(0, 10)
-                : null,
-            value: Number(point?.close),
-          }))
-          .filter((point: any) => point.date && Number.isFinite(point.value))
-          .sort((a: any, b: any) =>
-            String(a.date).localeCompare(String(b.date)),
-          );
-      };
-
-      const cdiSeries =
-        cdiHistoryResponse.status === 'fulfilled'
-          ? cdiHistoryResponse.value.data?.series
-          : null;
-
-      return {
-        ibov:
-          ibovHistoryResponse.status === 'fulfilled'
-            ? parseHistory(ibovHistoryResponse.value.data)
-            : [],
-        btc:
-          btcHistoryResponse.status === 'fulfilled'
-            ? parseHistory(btcHistoryResponse.value.data)
-            : [],
-        cdi: Array.isArray(cdiSeries) ? cdiSeries : [],
       };
     },
   });
@@ -843,25 +769,74 @@ const Dashboard = () => {
     [marketComparators, summary.totalPnlPercentage, summary.totalValue],
   );
 
-  const historyByPeriod = useMemo(() => {
-    const history = summary.history || [];
-    const daysMap: Record<string, number> = {
-      '7D': 7,
-      '1M': 30,
-      '3M': 90,
-      '6M': 180,
-      '1A': 365,
-      '5A': 1825,
-    };
-    const limitDays = daysMap[selectedPeriod] || 30;
-    const threshold = new Date();
-    threshold.setDate(threshold.getDate() - limitDays);
-    const filtered = history.filter((item) => {
-      const parsed = parseHistoryDate(item.date);
-      return parsed ? parsed >= threshold : false;
-    });
-    return filtered.length > 1 ? filtered : history;
-  }, [selectedPeriod, summary.history]);
+  const historyByPeriod = useMemo(
+    () => filterHistoryByPeriod(summary.history || [], selectedPeriod),
+    [selectedPeriod, summary.history],
+  );
+
+  // Janela real coberta por `historyByPeriod` (já com o fallback de "período
+  // sem pontos suficientes usa o histórico inteiro" aplicado) — não o
+  // período nominal. As três séries de benchmark seguem essa janela para
+  // nunca cobrir um span menor que o que o gráfico de fato plota.
+  const effectiveHistoryWindow = useMemo(
+    () => getEffectiveHistoryWindow(historyByPeriod),
+    [historyByPeriod],
+  );
+
+  const {data: benchmarkHistory} = useQuery({
+    queryKey: [
+      'dashboard-benchmark-history',
+      effectiveHistoryWindow?.fromIso,
+      effectiveHistoryWindow?.toIso,
+    ],
+    enabled: Boolean(effectiveHistoryWindow),
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const window = effectiveHistoryWindow!;
+      const range = brapiRangeForDays(window.days);
+
+      const [ibovHistoryResponse, btcHistoryResponse, cdiHistoryResponse] =
+        await Promise.allSettled([
+          stockServices.getNationalStock('^BVSP', {range, interval: '1d'}),
+          stockServices.getNationalStock('BTC-USD', {range, interval: '1d'}),
+          stockServices.getCdiSeries(window.fromIso, window.toIso),
+        ]);
+
+      const parseHistory = (payload: any) => {
+        const series = payload?.results?.[0]?.historicalDataPrice;
+        if (!Array.isArray(series)) return [];
+        return series
+          .map((point: any) => ({
+            date:
+              typeof point?.date === 'number'
+                ? new Date(point.date * 1000).toISOString().slice(0, 10)
+                : null,
+            value: Number(point?.close),
+          }))
+          .filter((point: any) => point.date && Number.isFinite(point.value))
+          .sort((a: any, b: any) =>
+            String(a.date).localeCompare(String(b.date)),
+          );
+      };
+
+      const cdiSeries =
+        cdiHistoryResponse.status === 'fulfilled'
+          ? cdiHistoryResponse.value.data?.series
+          : null;
+
+      return {
+        ibov:
+          ibovHistoryResponse.status === 'fulfilled'
+            ? parseHistory(ibovHistoryResponse.value.data)
+            : [],
+        btc:
+          btcHistoryResponse.status === 'fulfilled'
+            ? parseHistory(btcHistoryResponse.value.data)
+            : [],
+        cdi: Array.isArray(cdiSeries) ? cdiSeries : [],
+      };
+    },
+  });
 
   const comparisonChartData = useMemo(() => {
     if (!historyByPeriod || historyByPeriod.length < 2) return [];
