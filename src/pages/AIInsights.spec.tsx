@@ -1,11 +1,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import AIInsights from './AIInsights';
 
 const portfolioScoreMock = vi.fn();
 const errorRadarMock = vi.fn();
-const simulateMock = vi.fn();
+const futureSimulatorMock = vi.fn();
 const getOrCreateAiAnalysisMock = vi.fn();
 const useSubscriptionMock = vi.fn();
 
@@ -13,7 +13,7 @@ vi.mock('@/services/ai', () => ({
   aiAnalysisService: {
     portfolioScore: (...args: unknown[]) => portfolioScoreMock(...args),
     errorRadar: (...args: unknown[]) => errorRadarMock(...args),
-    simulate: (...args: unknown[]) => simulateMock(...args),
+    futureSimulator: (...args: unknown[]) => futureSimulatorMock(...args),
   },
 }));
 
@@ -209,6 +209,84 @@ describe('AIInsights — score da carteira', () => {
       expect(
         screen.queryByText(/Nenhum alerta no momento/),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Simulador de Futuro', () => {
+    const okSimulation = {
+      modelVersion: 'future_simulator_v1',
+      horizon: '10y',
+      months: 120,
+      currentPortfolioValue: 5000,
+      monthlyContribution: 1000,
+      scenarios: {
+        pessimistic: {
+          label: 'pessimistic',
+          annualReturnPct: 0.02,
+          projectedValue: 140000,
+          range: {lower: 130000, upper: 150000},
+          projectedDividendFlow: {monthly: 50, annual: 600},
+        },
+        base: {
+          label: 'base',
+          annualReturnPct: 0.08,
+          projectedValue: 200000,
+          range: {lower: 180000, upper: 220000},
+          projectedDividendFlow: {monthly: 80, annual: 960},
+        },
+        optimistic: {
+          label: 'optimistic',
+          annualReturnPct: 0.14,
+          projectedValue: 260000,
+          range: {lower: 240000, upper: 280000},
+          projectedDividendFlow: {monthly: 110, annual: 1320},
+        },
+      },
+      assumptions: {
+        contributionFrequency: 'monthly',
+        scenarioReturnsAnnualPct: {pessimistic: 0.02, base: 0.08, optimistic: 0.14},
+      },
+      dividendProjection: {current: {monthly: 40, annual: 480}},
+      limitations: [],
+      confidence: 'high',
+    };
+
+    it('chama futureSimulator com o horizonte selecionado e o aporte mensal, exibindo o cenário base', async () => {
+      futureSimulatorMock.mockResolvedValue(okSimulation);
+
+      renderPage();
+      await waitFor(() => expect(screen.getByText('72.5')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', {name: '5 anos'}));
+      fireEvent.click(
+        screen.getByRole('button', {name: /Calcular Projeção IA/}),
+      );
+
+      await waitFor(() => {
+        expect(futureSimulatorMock).toHaveBeenCalledWith({
+          horizon: '5y',
+          monthlyContribution: 1000,
+        });
+      });
+      expect(screen.getByText('R$ 200.000,00')).toBeInTheDocument();
+    });
+
+    it('mostra erro quando a simulação falha, sem quebrar a página', async () => {
+      futureSimulatorMock.mockRejectedValue(new Error('500'));
+
+      renderPage();
+      await waitFor(() => expect(screen.getByText('72.5')).toBeInTheDocument());
+
+      fireEvent.click(
+        screen.getByRole('button', {name: /Calcular Projeção IA/}),
+      );
+
+      await waitFor(() => {
+        expect(futureSimulatorMock).toHaveBeenCalled();
+      });
+      expect(
+        screen.getByText(/Ajuste os aportes e simule/),
+      ).toBeInTheDocument();
     });
   });
 });
