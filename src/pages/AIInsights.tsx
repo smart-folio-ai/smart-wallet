@@ -32,6 +32,8 @@ import {
   PortfolioScoreResponse,
   PortfolioErrorRadarResponse,
   PortfolioErrorRadarAlertType,
+  FutureSimulatorHorizon,
+  FutureSimulatorResponse,
 } from '@/services/ai';
 import {portfolioService} from '@/server/api/api';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
@@ -43,18 +45,21 @@ import {
   isProOrHigherPlan,
 } from '@/services/ai/trakkerAi';
 
-/**
- * Valor usado na projeção quando a carteira ainda está vazia, para que os
- * sliders tenham o que simular. Não representa a carteira de ninguém.
- */
-const DEMO_PORTFOLIO_VALUE = 10000;
-
 const ERROR_RADAR_TYPE_LABEL: Record<PortfolioErrorRadarAlertType, string> = {
   concentration: 'Concentração',
   diversification: 'Diversificação',
   volatility: 'Volatilidade',
   other: 'Risco',
 };
+
+// POST /ai/future-simulator só aceita estes quatro horizontes — não é um
+// range livre. Selecionável, não deslizante.
+const HORIZON_OPTIONS: {value: FutureSimulatorHorizon; label: string}[] = [
+  {value: '6m', label: '6 meses'},
+  {value: '1y', label: '1 ano'},
+  {value: '5y', label: '5 anos'},
+  {value: '10y', label: '10 anos'},
+];
 
 const AIInsights: React.FC = () => {
   const {planName, isSubscribed, isLoading: subLoading} = useSubscription();
@@ -70,9 +75,10 @@ const AIInsights: React.FC = () => {
 
   // Estados para Simulação
   const [monthlyInvest, setMonthlyInvest] = useState(1000);
-  const [years, setYears] = useState(10);
-  const [totalValue, setTotalValue] = useState(0);
-  const [simulation, setSimulation] = useState<any>(null);
+  const [horizon, setHorizon] = useState<FutureSimulatorHorizon>('10y');
+  const [simulation, setSimulation] = useState<FutureSimulatorResponse | null>(
+    null,
+  );
   const [simLoading, setSimLoading] = useState(false);
 
   const hasProOrHigher = isProOrHigherPlan(planName, isSubscribed);
@@ -105,12 +111,6 @@ const AIInsights: React.FC = () => {
 
       // Usa 'premium' por padrão para sempre acionar a análise com IA
       const plan = (localStorage.getItem('user_plan') as any) || 'premium';
-      const tValue = assets.reduce(
-        (sum: number, a: any) =>
-          sum + (a.value || a.current_price * a.quantity || 0),
-        0,
-      );
-      setTotalValue(tValue);
 
       // Score de carteira e radar de erro vêm do backend determinístico e são
       // independentes entre si e da análise do LLM: se o trackerr-ia estiver
@@ -152,18 +152,13 @@ const AIInsights: React.FC = () => {
   const handleSimulate = async () => {
     setSimLoading(true);
     try {
-      // `totalValue` é a soma real das posições, calculada em fetchData.
-      // A versão anterior lia `ai_analysis.total_value`, campo que a resposta
-      // do LLM nunca traz (`total_value` existe no request enviado ao
-      // trackerr-ia, não no retorno), então caía sempre no default de 10000 —
-      // toda projeção era calculada sobre uma carteira de R$ 10 mil.
-      const currentVal = totalValue > 0 ? totalValue : DEMO_PORTFOLIO_VALUE;
-
-      const res = await aiAnalysisService.simulate({
-        monthly_investment: monthlyInvest,
-        years,
-        current_portfolio_value: currentVal,
-        expected_annual_return: 0.1,
+      // POST /ai/future-simulator busca a carteira do usuário autenticado
+      // por conta própria — não recebe valor de carteira nem taxa de retorno
+      // esperada como entrada (os cenários pessimista/base/otimista são
+      // fixos no server e vêm de volta em `assumptions`, não configuráveis).
+      const res = await aiAnalysisService.futureSimulator({
+        horizon,
+        monthlyContribution: monthlyInvest > 0 ? monthlyInvest : undefined,
       });
       setSimulation(res);
     } catch (err) {
@@ -507,19 +502,23 @@ const AIInsights: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-4">
-                    <div className="flex justify-between text-sm">
-                      <label className="font-bold">Prazo (Anos)</label>
-                      <span className="font-bold font-mono text-primary">
-                        {years} anos
-                      </span>
+                    <label className="font-bold text-sm">Horizonte</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {HORIZON_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setHorizon(option.value)}
+                          className={cn(
+                            'rounded-xl py-2 text-xs font-bold border transition-colors',
+                            horizon === option.value
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'border-primary/10 text-muted-foreground hover:bg-primary/5',
+                          )}>
+                          {option.label}
+                        </button>
+                      ))}
                     </div>
-                    <Slider
-                      value={[years]}
-                      onValueChange={(v) => setYears(v[0])}
-                      max={35}
-                      step={1}
-                      className="py-4"
-                    />
                   </div>
                   <Button
                     className="w-full h-12 rounded-2xl font-bold text-lg"
@@ -541,8 +540,13 @@ const AIInsights: React.FC = () => {
                           Patrimônio Esperado
                         </p>
                         <h2 className="text-5xl font-black text-primary tracking-tighter">
-                          {formatCurrency(simulation.scenarios.neutral)}
+                          {formatCurrency(simulation.scenarios.base.projectedValue)}
                         </h2>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Faixa estimada: {formatCurrency(simulation.scenarios.base.range.lower)}
+                          {' – '}
+                          {formatCurrency(simulation.scenarios.base.range.upper)}
+                        </p>
                       </div>
                       <div className="grid grid-cols-2 gap-8 pt-6 border-t border-primary/10">
                         <div>
@@ -550,7 +554,9 @@ const AIInsights: React.FC = () => {
                             Pessimista
                           </span>
                           <span className="font-black text-rose-500 text-lg">
-                            {formatCurrency(simulation.scenarios.pessimistic)}
+                            {formatCurrency(
+                              simulation.scenarios.pessimistic.projectedValue,
+                            )}
                           </span>
                         </div>
                         <div>
@@ -558,10 +564,17 @@ const AIInsights: React.FC = () => {
                             Otimista
                           </span>
                           <span className="font-black text-emerald-500 text-lg">
-                            {formatCurrency(simulation.scenarios.optimistic)}
+                            {formatCurrency(
+                              simulation.scenarios.optimistic.projectedValue,
+                            )}
                           </span>
                         </div>
                       </div>
+                      {simulation.limitations.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground/70 pt-2">
+                          Projeção com dados parciais da carteira.
+                        </p>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">

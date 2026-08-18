@@ -113,6 +113,49 @@ export interface PortfolioErrorRadarResponse {
   positionsCount: number;
 }
 
+/** Espelha FutureSimulatorHorizon do server. */
+export type FutureSimulatorHorizon = '6m' | '1y' | '5y' | '10y';
+
+export interface FutureSimulatorScenario {
+  label: 'pessimistic' | 'base' | 'optimistic';
+  annualReturnPct: number;
+  projectedValue: number;
+  range: {lower: number; upper: number};
+  projectedDividendFlow: {monthly: number; annual: number};
+}
+
+/**
+ * Espelha FutureSimulatorOutput do server (POST /ai/future-simulator).
+ * Cenários de retorno (2%/8%/14% ao ano) são fixos no server, não
+ * parâmetro de entrada — vêm expostos em `assumptions` pra transparência,
+ * não pra configuração pelo usuário.
+ */
+export interface FutureSimulatorResponse {
+  modelVersion: 'future_simulator_v1';
+  horizon: FutureSimulatorHorizon;
+  months: number;
+  currentPortfolioValue: number;
+  monthlyContribution: number;
+  scenarios: {
+    pessimistic: FutureSimulatorScenario;
+    base: FutureSimulatorScenario;
+    optimistic: FutureSimulatorScenario;
+  };
+  assumptions: {
+    contributionFrequency: 'monthly';
+    scenarioReturnsAnnualPct: {
+      pessimistic: number;
+      base: number;
+      optimistic: number;
+    };
+  };
+  dividendProjection: {
+    current: {monthly: number; annual: number};
+  };
+  limitations: string[];
+  confidence: 'high' | 'medium' | 'low';
+}
+
 export interface ErrorDetection {
   type: 'correlation' | 'concentration' | 'overvalued' | 'other';
   severity: 'low' | 'medium' | 'high';
@@ -187,23 +230,6 @@ export interface AiAnalysisPayload {
   risk_profile: 'conservative' | 'moderate' | 'aggressive';
 }
 
-export interface SimulationRequest {
-  monthly_investment: number;
-  years: number;
-  current_portfolio_value: number;
-  expected_annual_return?: number;
-}
-
-export interface SimulationResponse {
-  total_invested: number;
-  scenarios: {
-    optimistic: number;
-    neutral: number;
-    pessimistic: number;
-  };
-  message: string;
-}
-
 export interface AiChatRequest {
   question: string;
   profile_plan?: 'free' | 'premium' | 'pro';
@@ -272,11 +298,6 @@ class AiAnalysisService {
     return response.data;
   }
 
-  async simulate(payload: SimulationRequest): Promise<SimulationResponse> {
-    const response = await aiService.simulate(payload);
-    return response.data;
-  }
-
   async chat(payload: AiChatRequest): Promise<AiChatResponse> {
     const response = await aiService.chat(payload);
     return response.data;
@@ -309,6 +330,14 @@ class AiAnalysisService {
 
   async errorRadar(): Promise<PortfolioErrorRadarResponse> {
     const response = await aiService.errorRadar();
+    return response.data;
+  }
+
+  async futureSimulator(payload: {
+    horizon: FutureSimulatorHorizon;
+    monthlyContribution?: number;
+  }): Promise<FutureSimulatorResponse> {
+    const response = await aiService.futureSimulator(payload);
     return response.data;
   }
 }

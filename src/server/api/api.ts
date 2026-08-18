@@ -47,7 +47,6 @@ export const profileService = {
 
 export const aiService = {
   analyze: (payload: any) => apiClient.post('/ai/analyze', payload),
-  simulate: (payload: any) => apiClient.post('/ai/simulate', payload),
   chat: (payload: any) => apiClient.post('/ai/chat', payload),
   intelligentChat: (payload: any) => apiClient.post('/ai/chat/intelligent', payload),
   trackerrScore: (payload: any) => apiClient.post('/ai/trackerr-score', payload),
@@ -55,6 +54,10 @@ export const aiService = {
   assetOpinion: (symbol: string) =>
     apiClient.post('/ai/asset-opinion', {symbol}),
   errorRadar: () => apiClient.get('/ai/error-radar'),
+  futureSimulator: (payload: {
+    horizon: '6m' | '1y' | '5y' | '10y';
+    monthlyContribution?: number;
+  }) => apiClient.post('/ai/future-simulator', payload),
 };
 
 export const stockServices = {
