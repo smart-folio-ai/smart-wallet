@@ -41,7 +41,7 @@ const renderAssetDetail = () => {
   );
 };
 
-describe('AssetDetail — card de Opinião IA', () => {
+describe('AssetDetail — card de Opinião Trackerr', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useSubscriptionMock.mockReturnValue({
@@ -66,32 +66,23 @@ describe('AssetDetail — card de Opinião IA', () => {
     });
   });
 
-  it('envia null (nao 0) para o indicador ausente na resposta da API', async () => {
+  it('chama getAssetOpinion só com o symbol — o server busca o resto sozinho', async () => {
     useSubscriptionMock.mockReturnValue({hasAiInsights: true});
     getAssetOpinionMock.mockResolvedValue({
+      symbol: 'BBDC4',
       summary: 'S',
       strength: 'F',
       attention: 'A',
       tags: [],
-      source: 'deterministic',
+      scoreOverall: 50,
+      status: 'ok',
     });
 
     renderAssetDetail();
 
     await waitFor(() => {
-      expect(getAssetOpinionMock).toHaveBeenCalled();
+      expect(getAssetOpinionMock).toHaveBeenCalledWith('BBDC4');
     });
-
-    // A resposta mockada nao traz returnOnInvestedCapital nem netMargin.
-    const payload = getAssetOpinionMock.mock.calls[0][0] as any;
-    expect(payload.indicators.roic).toBeNull();
-    expect(payload.indicators.roic).not.toBe(0);
-    expect(payload.indicators.netMargin).toBeNull();
-    expect(payload.indicators.netMargin).not.toBe(0);
-    // A resposta mockada tambem nao traz dividendYield — mesma classe de bug
-    // do PR #72, mas fora do bloco `indicators` (TRA-49).
-    expect(payload.indicators.dividendYield).toBeNull();
-    expect(payload.indicators.dividendYield).not.toBe(0);
   });
 
   it('não usa mais gradiente nem anel de destaque', async () => {
@@ -125,14 +116,20 @@ describe('AssetDetail — card de Opinião IA', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('não exibe o aviso de IA quando o texto é o fallback determinístico', async () => {
+  // AssetOpinionService (server) é determinístico — não existe mais
+  // caminho, mockado ou real, em que o texto vem de um modelo (TRA-9).
+  // Este teste trava a ausência do aviso em qualquer resposta que o
+  // endpoint possa devolver hoje, não só no caso "sem acesso" acima.
+  it('nunca exibe o aviso de conteúdo gerado por IA, com acesso e resposta ok', async () => {
     useSubscriptionMock.mockReturnValue({hasAiInsights: true});
     getAssetOpinionMock.mockResolvedValue({
-      summary: 'BBDC4 apresenta qualidade intermediária no padrão Trackerr.',
-      strength: 'ROE > 15%',
-      attention: 'A relação risco-retorno pede cautela.',
-      tags: ['score_50'],
-      source: 'deterministic',
+      symbol: 'BBDC4',
+      summary: 'BBDC4 apresenta qualidade sólida no padrão Trackerr (score 72/100).',
+      strength: 'ROE acima de 15%',
+      attention: 'Concentração acima do limite',
+      tags: ['score_72', 'qualidade'],
+      scoreOverall: 72,
+      status: 'ok',
     });
 
     renderAssetDetail();
@@ -140,7 +137,7 @@ describe('AssetDetail — card de Opinião IA', () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          'BBDC4 apresenta qualidade intermediária no padrão Trackerr.',
+          'BBDC4 apresenta qualidade sólida no padrão Trackerr (score 72/100).',
         ),
       ).toBeInTheDocument();
     });
@@ -148,22 +145,5 @@ describe('AssetDetail — card de Opinião IA', () => {
     expect(
       screen.queryByText(AI_GENERATED_NOTICE_TEXT),
     ).not.toBeInTheDocument();
-  });
-
-  it('exibe o aviso de IA quando o modelo escreveu o texto', async () => {
-    useSubscriptionMock.mockReturnValue({hasAiInsights: true});
-    getAssetOpinionMock.mockResolvedValue({
-      summary: 'Resumo escrito pelo modelo.',
-      strength: 'Ponto forte do modelo.',
-      attention: 'Ponto de atenção do modelo.',
-      tags: ['qualidade'],
-      source: 'ai',
-    });
-
-    renderAssetDetail();
-
-    await waitFor(() => {
-      expect(screen.getByText(AI_GENERATED_NOTICE_TEXT)).toBeInTheDocument();
-    });
   });
 });

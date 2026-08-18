@@ -71,6 +71,21 @@ export interface PortfolioScoreResponse {
   positionsCount: number;
 }
 
+/**
+ * Espelha `AssetOpinionOutput` do server (POST /ai/asset-opinion).
+ * Determinístico — sem campo `source`, porque nenhum caminho hoje produz
+ * texto de modelo. Volta se/quando a narrativa por IA validada existir.
+ */
+export interface AssetOpinionResponse {
+  symbol: string;
+  summary: string;
+  strength: string;
+  attention: string;
+  tags: string[];
+  scoreOverall: number;
+  status: 'ok' | 'degraded';
+}
+
 export interface ErrorDetection {
   type: 'correlation' | 'concentration' | 'overvalued' | 'other';
   severity: 'low' | 'medium' | 'high';
@@ -257,6 +272,11 @@ class AiAnalysisService {
 
   async portfolioScore(): Promise<PortfolioScoreResponse> {
     const response = await aiService.portfolioScore();
+    return response.data;
+  }
+
+  async assetOpinion(symbol: string): Promise<AssetOpinionResponse> {
+    const response = await aiService.assetOpinion(symbol);
     return response.data;
   }
 }
