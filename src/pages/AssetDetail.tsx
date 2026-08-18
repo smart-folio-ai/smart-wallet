@@ -27,7 +27,6 @@ import {
 import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
 import {RobotIcon} from '@/components/ui/robot-icon';
-import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {
   AreaChart,
@@ -223,40 +222,12 @@ export default function AssetDetail() {
     asset && grahamValue > 0 ? (grahamValue / asset.price - 1) * 100 : 0;
   const isUndervalued = asset && grahamValue > asset.price;
   const {data: assetOpinion, isFetching: isLoadingAssetOpinion} = useQuery({
-    queryKey: [
-      'asset-opinion',
-      symbol,
-      s?.regularMarketPrice,
-      s?.regularMarketChangePercent,
-      s?.priceEarnings,
-      s?.priceToBook,
-      s?.returnOnEquity,
-      s?.returnOnInvestedCapital,
-      s?.netMargin,
-      s?.debtToEbitda,
-      s?.dividendYield,
-    ],
-    queryFn: async () =>
-      getAssetOpinion({
-        symbol: asset?.symbol || symbol || '',
-        name: asset?.name,
-        price: asset?.price,
-        change24h: asset?.change24h,
-        sector: asset?.sector,
-        indicators: {
-          dividendYield: asset?.dividendYield,
-          pe: asset?.indicators.valuation.pe,
-          pvp: asset?.indicators.valuation.pvp,
-          roe: asset?.indicators.efficiency.roe,
-          roic: asset?.indicators.efficiency.roic,
-          netMargin: asset?.indicators.efficiency.net_margin,
-          debtEbitda: asset?.indicators.debt.debt_ebitda,
-        },
-        valuation: {
-          grahamValue,
-          upside,
-        },
-      }),
+    // Sem os campos de mercado na queryKey: o server busca o snapshot atual
+    // por conta própria a cada chamada (POST /ai/asset-opinion), então a
+    // resposta já reflete o preço/indicadores do momento sem precisar disso
+    // aqui para invalidar o cache do React Query.
+    queryKey: ['asset-opinion', symbol],
+    queryFn: async () => getAssetOpinion(asset?.symbol || symbol || ''),
     enabled: Boolean(asset?.symbol && hasAiInsights),
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
@@ -277,30 +248,9 @@ export default function AssetDetail() {
       };
     }
 
-    if (normalized === 'venda' || normalized === 'evitar') {
-      return {
-        label: normalized.toUpperCase(),
-        className:
-          'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/40',
-      };
-    }
-
-    if (normalized === 'compra' || normalized === 'top') {
-      return {
-        label: normalized.toUpperCase(),
-        className:
-          'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40',
-      };
-    }
-
-    if (normalized === 'hold' || normalized === 'bom') {
-      return {
-        label: normalized.toUpperCase(),
-        className:
-          'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40',
-      };
-    }
-
+    // AssetOpinionService (server) não emite mais COMPRA/HOLD/VENDA/TOP/BOM/
+    // EVITAR (TRA-9, TRA-53) — as demais tags são nomes de pilar
+    // (qualidade, risco controlado, ...) e caem no estilo genérico abaixo.
     return {
       label: tag,
       className: 'bg-primary/10 text-primary border border-primary/20',
@@ -923,11 +873,10 @@ export default function AssetDetail() {
                       </p>
                     </div>
                   </div>
-                  {/* Só quando o modelo escreveu de fato. Fallback
-                      determinístico, estado de carregamento e os literais de
-                      indisponibilidade são texto local — anunciá-los como IA
-                      seria uma afirmação falsa. */}
-                  {assetOpinion?.source === 'ai' && <AiGeneratedNotice />}
+                  {/* Sem AiGeneratedNotice: AssetOpinionService é
+                      determinístico (TRA-9), nenhum caminho hoje produz
+                      texto de modelo. Volta quando a narrativa por IA
+                      validada existir. */}
                 </CardContent>
               </Card>
             </PremiumBlur>
