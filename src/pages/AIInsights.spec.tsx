@@ -4,6 +4,7 @@ import {MemoryRouter} from 'react-router-dom';
 import AIInsights from './AIInsights';
 
 const portfolioScoreMock = vi.fn();
+const errorRadarMock = vi.fn();
 const simulateMock = vi.fn();
 const getOrCreateAiAnalysisMock = vi.fn();
 const useSubscriptionMock = vi.fn();
@@ -11,6 +12,7 @@ const useSubscriptionMock = vi.fn();
 vi.mock('@/services/ai', () => ({
   aiAnalysisService: {
     portfolioScore: (...args: unknown[]) => portfolioScoreMock(...args),
+    errorRadar: (...args: unknown[]) => errorRadarMock(...args),
     simulate: (...args: unknown[]) => simulateMock(...args),
   },
 }));
@@ -64,6 +66,13 @@ describe('AIInsights — score da carteira', () => {
     });
     getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
     portfolioScoreMock.mockResolvedValue(okScore);
+    errorRadarMock.mockResolvedValue({
+      modelVersion: 'portfolio_error_radar_v1',
+      status: 'ok',
+      riskLevel: 'low',
+      alerts: [],
+      positionsCount: 4,
+    });
   });
 
   it('exibe o overall vindo do endpoint determinístico', async () => {
@@ -145,5 +154,61 @@ describe('AIInsights — score da carteira', () => {
     expect(
       screen.queryByText('Ops! Algo deu errado.'),
     ).not.toBeInTheDocument();
+  });
+
+  describe('Radar Anti-Erro', () => {
+    it('exibe o rótulo em português e o symbol do alerta', async () => {
+      errorRadarMock.mockResolvedValue({
+        modelVersion: 'portfolio_error_radar_v1',
+        status: 'ok',
+        riskLevel: 'high',
+        alerts: [
+          {
+            code: 'ASSET_CONCENTRATION_HIGH',
+            type: 'concentration',
+            severity: 'high',
+            message: 'PETR4 representa 42.3% da carteira — concentração alta.',
+            symbol: 'PETR4',
+          },
+        ],
+        positionsCount: 3,
+      });
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('PETR4 representa 42.3% da carteira — concentração alta.'),
+        ).toBeInTheDocument();
+      });
+      expect(screen.getByText('Concentração')).toBeInTheDocument();
+      expect(screen.getByText('PETR4')).toBeInTheDocument();
+    });
+
+    it('mostra estado neutro quando não há alertas', async () => {
+      renderPage();
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Nenhum alerta no momento/),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('mantém a página utilizável quando só o radar falha', async () => {
+      errorRadarMock.mockRejectedValue(new Error('500'));
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByText('72.5')).toBeInTheDocument();
+      });
+      expect(
+        screen.queryByText('Ops! Algo deu errado.'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Nenhum alerta no momento/),
+      ).not.toBeInTheDocument();
+    });
   });
 });

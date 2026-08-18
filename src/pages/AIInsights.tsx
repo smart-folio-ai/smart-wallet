@@ -30,6 +30,8 @@ import {
   aiAnalysisService,
   AiAnalysisResult,
   PortfolioScoreResponse,
+  PortfolioErrorRadarResponse,
+  PortfolioErrorRadarAlertType,
 } from '@/services/ai';
 import {portfolioService} from '@/server/api/api';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
@@ -47,6 +49,13 @@ import {
  */
 const DEMO_PORTFOLIO_VALUE = 10000;
 
+const ERROR_RADAR_TYPE_LABEL: Record<PortfolioErrorRadarAlertType, string> = {
+  concentration: 'Concentração',
+  diversification: 'Diversificação',
+  volatility: 'Volatilidade',
+  other: 'Risco',
+};
+
 const AIInsights: React.FC = () => {
   const {planName, isSubscribed, isLoading: subLoading} = useSubscription();
   const [loading, setLoading] = useState(true);
@@ -56,6 +65,8 @@ const AIInsights: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [portfolioScore, setPortfolioScore] =
     useState<PortfolioScoreResponse | null>(null);
+  const [errorRadar, setErrorRadar] =
+    useState<PortfolioErrorRadarResponse | null>(null);
 
   // Estados para Simulação
   const [monthlyInvest, setMonthlyInvest] = useState(1000);
@@ -101,18 +112,27 @@ const AIInsights: React.FC = () => {
       );
       setTotalValue(tValue);
 
-      // O score de carteira vem do backend determinístico e é independente
-      // da análise do LLM: se o trackerr-ia estiver fora, o score ainda
-      // aparece, e vice-versa. Por isso allSettled em vez de await sequencial.
-      const [analysisOutcome, scoreOutcome] = await Promise.allSettled([
-        getOrCreateAiAnalysis({rawAssets: assets, plan: aiPlan}),
-        aiAnalysisService.portfolioScore(),
-      ]);
+      // Score de carteira e radar de erro vêm do backend determinístico e são
+      // independentes entre si e da análise do LLM: se o trackerr-ia estiver
+      // fora, os dois ainda aparecem, e vice-versa. Por isso allSettled em
+      // vez de await sequencial.
+      const [analysisOutcome, scoreOutcome, errorRadarOutcome] =
+        await Promise.allSettled([
+          getOrCreateAiAnalysis({rawAssets: assets, plan: aiPlan}),
+          aiAnalysisService.portfolioScore(),
+          aiAnalysisService.errorRadar(),
+        ]);
 
       if (scoreOutcome.status === 'fulfilled') {
         setPortfolioScore(scoreOutcome.value);
       } else {
         setPortfolioScore(null);
+      }
+
+      if (errorRadarOutcome.status === 'fulfilled') {
+        setErrorRadar(errorRadarOutcome.value);
+      } else {
+        setErrorRadar(null);
       }
 
       if (analysisOutcome.status === 'rejected') {
@@ -417,12 +437,18 @@ const AIInsights: React.FC = () => {
               <ShieldAlert className="h-5 w-5 text-rose-500" /> Radar Anti-Erro
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(aiData?.error_detection || []).map((err, i) => (
+              {errorRadar?.status === 'ok' && errorRadar.alerts.length === 0 && (
+                <p className="text-sm text-muted-foreground md:col-span-2">
+                  Nenhum alerta no momento — sinais de concentração, diversificação
+                  e risco dentro do esperado.
+                </p>
+              )}
+              {(errorRadar?.alerts || []).map((alert) => (
                 <div
-                  key={i}
+                  key={alert.code}
                   className={cn(
                     'p-5 rounded-2xl border transition-all',
-                    err.severity === 'high'
+                    alert.severity === 'high'
                       ? 'bg-rose-500/5 border-rose-500/20 shadow-lg shadow-rose-500/5'
                       : 'bg-amber-500/5 border-amber-500/20',
                   )}>
@@ -430,22 +456,22 @@ const AIInsights: React.FC = () => {
                     <div
                       className={cn(
                         'h-2 w-2 rounded-full',
-                        err.severity === 'high'
+                        alert.severity === 'high'
                           ? 'bg-rose-500'
                           : 'bg-amber-500',
                       )}
                     />
                     <span className="text-[10px] font-black uppercase tracking-widest">
-                      {err.type}
+                      {ERROR_RADAR_TYPE_LABEL[alert.type]}
                     </span>
-                    {err.symbol && (
+                    {alert.symbol && (
                       <span className="ml-auto text-[10px] font-bold bg-muted px-2 py-0.5 rounded">
-                        {err.symbol}
+                        {alert.symbol}
                       </span>
                     )}
                   </div>
                   <p className="text-xs font-medium leading-relaxed">
-                    {err.message}
+                    {alert.message}
                   </p>
                 </div>
               ))}

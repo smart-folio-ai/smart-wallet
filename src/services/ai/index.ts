@@ -86,6 +86,33 @@ export interface AssetOpinionResponse {
   status: 'ok' | 'degraded';
 }
 
+/**
+ * Espelha `PortfolioErrorRadarOutput` do server (GET /ai/error-radar).
+ * `type` é a categoria ampla do alerta; `code` é o identificador fino, útil
+ * pra depuração mas não pensado pra exibição direta.
+ */
+export type PortfolioErrorRadarAlertType =
+  | 'concentration'
+  | 'diversification'
+  | 'volatility'
+  | 'other';
+
+export interface PortfolioErrorRadarAlert {
+  code: string;
+  type: PortfolioErrorRadarAlertType;
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+  symbol?: string;
+}
+
+export interface PortfolioErrorRadarResponse {
+  modelVersion: 'portfolio_error_radar_v1';
+  status: 'ok' | 'insufficient_data';
+  riskLevel: 'low' | 'medium' | 'high' | null;
+  alerts: PortfolioErrorRadarAlert[];
+  positionsCount: number;
+}
+
 export interface ErrorDetection {
   type: 'correlation' | 'concentration' | 'overvalued' | 'other';
   severity: 'low' | 'medium' | 'high';
@@ -277,6 +304,11 @@ class AiAnalysisService {
 
   async assetOpinion(symbol: string): Promise<AssetOpinionResponse> {
     const response = await aiService.assetOpinion(symbol);
+    return response.data;
+  }
+
+  async errorRadar(): Promise<PortfolioErrorRadarResponse> {
+    const response = await aiService.errorRadar();
     return response.data;
   }
 }
