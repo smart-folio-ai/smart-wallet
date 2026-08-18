@@ -51,6 +51,7 @@ export const aiService = {
   chat: (payload: any) => apiClient.post('/ai/chat', payload),
   intelligentChat: (payload: any) => apiClient.post('/ai/chat/intelligent', payload),
   trackerrScore: (payload: any) => apiClient.post('/ai/trackerr-score', payload),
+  portfolioScore: () => apiClient.get('/ai/portfolio-score'),
 };
 
 export const stockServices = {
