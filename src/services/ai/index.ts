@@ -39,6 +39,38 @@ export interface InvestmentScore {
   details: InvestmentScoreDetail;
 }
 
+/**
+ * Score de carteira determinístico, vindo de GET /ai/portfolio-score.
+ * Espelha `PortfolioScoreOutput` do server.
+ *
+ * Substitui o `InvestmentScore` acima, que era gerado pelo LLM. Note que só
+ * traz diversificação e risco: consistência e volatilidade não têm cálculo
+ * determinístico e foram deliberadamente deixadas de fora em vez de
+ * inventadas (TRA-5).
+ */
+export interface PortfolioScoreDimension {
+  key: 'diversification' | 'risk';
+  /** Sempre normalizado para "maior = melhor", inclusive risco. */
+  score: number;
+  weight: number;
+}
+
+export interface PortfolioScoreResponse {
+  modelVersion: 'portfolio_score_v1';
+  /** null quando não há posição suficiente. Nunca 0 como placeholder. */
+  overall: number | null;
+  status: 'ok' | 'insufficient_data';
+  dimensions: PortfolioScoreDimension[];
+  diversificationStatus: 'poor' | 'moderate' | 'good' | 'excellent' | null;
+  riskLevel: 'low' | 'medium' | 'high' | null;
+  flags: Array<{
+    code: string;
+    severity: 'low' | 'medium' | 'high';
+    message: string;
+  }>;
+  positionsCount: number;
+}
+
 export interface ErrorDetection {
   type: 'correlation' | 'concentration' | 'overvalued' | 'other';
   severity: 'low' | 'medium' | 'high';
@@ -220,6 +252,11 @@ class AiAnalysisService {
     previousPillarScores?: Record<string, number>;
   }): Promise<TrackerrScoreResponse> {
     const response = await aiService.trackerrScore(payload);
+    return response.data;
+  }
+
+  async portfolioScore(): Promise<PortfolioScoreResponse> {
+    const response = await aiService.portfolioScore();
     return response.data;
   }
 }

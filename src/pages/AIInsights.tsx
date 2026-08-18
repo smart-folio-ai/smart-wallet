@@ -26,7 +26,11 @@ import {Button} from '@/components/ui/button';
 import {Progress} from '@/components/ui/progress';
 import {Slider} from '@/components/ui/slider';
 import {toast} from 'sonner';
-import {aiAnalysisService, AiAnalysisResult} from '@/services/ai';
+import {
+  aiAnalysisService,
+  AiAnalysisResult,
+  PortfolioScoreResponse,
+} from '@/services/ai';
 import {portfolioService} from '@/server/api/api';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
 import {cn} from '@/lib/utils';
@@ -37,6 +41,12 @@ import {
   isProOrHigherPlan,
 } from '@/services/ai/trakkerAi';
 
+/**
+ * Valor usado na projeção quando a carteira ainda está vazia, para que os
+ * sliders tenham o que simular. Não representa a carteira de ninguém.
+ */
+const DEMO_PORTFOLIO_VALUE = 10000;
+
 const AIInsights: React.FC = () => {
   const {planName, isSubscribed, isLoading: subLoading} = useSubscription();
   const [loading, setLoading] = useState(true);
@@ -44,6 +54,8 @@ const AIInsights: React.FC = () => {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [portfolioScore, setPortfolioScore] =
+    useState<PortfolioScoreResponse | null>(null);
 
   // Estados para Simulação
   const [monthlyInvest, setMonthlyInvest] = useState(1000);
@@ -89,11 +101,24 @@ const AIInsights: React.FC = () => {
       );
       setTotalValue(tValue);
 
-      const result = await getOrCreateAiAnalysis({
-        rawAssets: assets,
-        plan: aiPlan,
-      });
-      setAnalysisResult(result);
+      // O score de carteira vem do backend determinístico e é independente
+      // da análise do LLM: se o trackerr-ia estiver fora, o score ainda
+      // aparece, e vice-versa. Por isso allSettled em vez de await sequencial.
+      const [analysisOutcome, scoreOutcome] = await Promise.allSettled([
+        getOrCreateAiAnalysis({rawAssets: assets, plan: aiPlan}),
+        aiAnalysisService.portfolioScore(),
+      ]);
+
+      if (scoreOutcome.status === 'fulfilled') {
+        setPortfolioScore(scoreOutcome.value);
+      } else {
+        setPortfolioScore(null);
+      }
+
+      if (analysisOutcome.status === 'rejected') {
+        throw analysisOutcome.reason;
+      }
+      setAnalysisResult(analysisOutcome.value);
     } catch {
       setError(
         'Não foi possível carregar os insights agora. Tente novamente em alguns instantes.',
@@ -107,15 +132,17 @@ const AIInsights: React.FC = () => {
   const handleSimulate = async () => {
     setSimLoading(true);
     try {
-      const currentVal =
-        totalValue || (analysisResult as any)?.ai_analysis?.investment_score
-          ? (analysisResult?.ai_analysis as any).total_value
-          : 10000;
+      // `totalValue` é a soma real das posições, calculada em fetchData.
+      // A versão anterior lia `ai_analysis.total_value`, campo que a resposta
+      // do LLM nunca traz (`total_value` existe no request enviado ao
+      // trackerr-ia, não no retorno), então caía sempre no default de 10000 —
+      // toda projeção era calculada sobre uma carteira de R$ 10 mil.
+      const currentVal = totalValue > 0 ? totalValue : DEMO_PORTFOLIO_VALUE;
 
       const res = await aiAnalysisService.simulate({
         monthly_investment: monthlyInvest,
         years,
-        current_portfolio_value: currentVal || 10000,
+        current_portfolio_value: currentVal,
         expected_annual_return: 0.1,
       });
       setSimulation(res);
@@ -137,8 +164,20 @@ const AIInsights: React.FC = () => {
     );
 
   const aiData = analysisResult?.ai_analysis || analysisResult;
-  const score = aiData?.investment_score;
   const isPremium = hasProOrHigher;
+
+  // Score determinístico (GET /ai/portfolio-score). `overall` é null quando a
+  // carteira não tem posição suficiente — nunca 0, que seria lido como
+  // "carteira péssima" em vez de "sem dado".
+  const hasScore =
+    portfolioScore?.status === 'ok' && portfolioScore.overall !== null;
+  const overallScore = hasScore ? portfolioScore!.overall! : null;
+  const dimensionScore = (key: 'diversification' | 'risk'): number | null => {
+    const dimension = portfolioScore?.dimensions?.find(
+      (item) => item.key === key,
+    );
+    return typeof dimension?.score === 'number' ? dimension.score : null;
+  };
 
   if (error && !analysisResult) {
     return (
@@ -234,7 +273,7 @@ const AIInsights: React.FC = () => {
                       strokeWidth="12"
                       strokeDasharray={552.92}
                       strokeDashoffset={
-                        552.92 * (1 - (score?.overall || 0) / 100)
+                        552.92 * (1 - (overallScore ?? 0) / 100)
                       }
                       className="text-primary transition-all duration-1000 ease-out"
                       strokeLinecap="round"
@@ -242,23 +281,29 @@ const AIInsights: React.FC = () => {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-5xl font-black tracking-tighter">
-                      {score?.overall || '--'}
+                      {overallScore ?? '--'}
                     </span>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                      Investment Score
+                      Score da carteira
                     </span>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-xl font-bold">
-                    {score?.overall
-                      ? score.overall > 80
+                    {overallScore === null
+                      ? 'Sem dados suficientes'
+                      : overallScore >= 80
                         ? 'Excelente'
-                        : 'Bom'
-                      : 'Calculando...'}
+                        : overallScore >= 60
+                          ? 'Bom'
+                          : overallScore >= 40
+                            ? 'Regular'
+                            : 'Frágil'}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Sua pontuação baseada em fundamentos reais.
+                    {overallScore === null
+                      ? 'Adicione ativos à carteira para calcular o score.'
+                      : 'Calculado a partir da diversificação e do risco da sua carteira.'}
                   </p>
                 </div>
               </CardContent>
@@ -279,15 +324,22 @@ const AIInsights: React.FC = () => {
                     "
                   </p>
                 </div>
-                {score && (
+                {/* Só diversificação e risco: consistência e volatilidade não
+                    têm cálculo determinístico e foram removidas em vez de
+                    exibirem número inventado pelo LLM (TRA-5). */}
+                {hasScore && (
                   <div className="grid grid-cols-2 gap-4 px-2">
                     <ScoreRow
                       label="Diversificação"
-                      val={score.diversification}
+                      val={dimensionScore('diversification')}
                     />
-                    <ScoreRow label="Consistência" val={score.consistency} />
-                    <ScoreRow label="Risco" val={score.risk} />
-                    <ScoreRow label="Volatilidade" val={score.volatility} />
+                    {/* "Controle de risco", não "Risco": a dimensão vem
+                        normalizada para maior = melhor, então uma barra cheia
+                        sob o rótulo "Risco" leria como o oposto do que é. */}
+                    <ScoreRow
+                      label="Controle de risco"
+                      val={dimensionScore('risk')}
+                    />
                   </div>
                 )}
               </CardContent>
@@ -551,14 +603,16 @@ const AIInsights: React.FC = () => {
   );
 };
 
-const ScoreRow = ({label, val}: {label: string; val: number}) => (
+const ScoreRow = ({label, val}: {label: string; val: number | null}) => (
   <div className="space-y-2">
     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
       <span>{label}</span>
-      <span className="text-primary">{val}%</span>
+      {/* Em dash quando não há valor. `val || 0` mostraria 0% para dado
+          ausente, que é uma afirmação — e errada. */}
+      <span className="text-primary">{val === null ? '—' : `${val}%`}</span>
     </div>
     <Progress
-      value={val}
+      value={val ?? 0}
       className="h-1 bg-primary/5"
       indicatorClassName="bg-gradient-to-r from-primary/50 to-primary"
     />
