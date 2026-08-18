@@ -54,6 +54,7 @@ export const aiService = {
   portfolioScore: () => apiClient.get('/ai/portfolio-score'),
   assetOpinion: (symbol: string) =>
     apiClient.post('/ai/asset-opinion', {symbol}),
+  errorRadar: () => apiClient.get('/ai/error-radar'),
 };
 
 export const stockServices = {
