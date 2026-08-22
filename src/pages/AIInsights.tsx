@@ -39,6 +39,7 @@ import {portfolioService} from '@/server/api/api';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
 import {cn} from '@/lib/utils';
 import {useSubscription} from '@/hooks/useSubscription';
+import {RagAskPanel} from '@/components/ai/RagAskPanel';
 import {
   getAiPlanFromPlanName,
   getOrCreateAiAnalysis,
@@ -360,6 +361,21 @@ const AIInsights: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Pergunta contextual ao RAG sobre a carteira (TRA-39). */}
+          <Card className="rounded-2xl bg-card border-primary/5">
+            <CardContent className="p-6">
+              <RagAskPanel
+                contextLabel="sua carteira"
+                placeholder="Pergunte sobre a sua carteira..."
+                quickPrompts={[
+                  'Por que minha carteira está concentrada?',
+                  'Qual o maior risco da minha carteira hoje?',
+                  'Como estão meus dividendos projetados?',
+                ]}
+              />
+            </CardContent>
+          </Card>
 
           {/* Auto Rebalancing & Allocation */}
           <section className="space-y-4">

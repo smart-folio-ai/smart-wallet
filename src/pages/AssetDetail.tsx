@@ -47,6 +47,7 @@ import {useQuery} from '@tanstack/react-query';
 import Stock from '@/services/stocks';
 import {useSubscription} from '@/hooks/useSubscription';
 import {getAssetOpinion} from '@/services/ai/assetOpinion';
+import {RagAskPanel} from '@/components/ai/RagAskPanel';
 import {IndicatorItem as FundamentalIndicatorItem} from '@/components/asset/indicator-item';
 import {readIndicator} from '@/pages/asset-fundamentals.utils';
 import type {FundamentalKey} from '@/pages/asset-fundamentals.utils';
@@ -877,6 +878,18 @@ export default function AssetDetail() {
                       determinístico (TRA-9), nenhum caminho hoje produz
                       texto de modelo. Volta quando a narrativa por IA
                       validada existir. */}
+
+                  {/* Pergunta contextual ao RAG sobre este ativo (TRA-39). */}
+                  <div className="pt-2 border-t border-primary/10">
+                    <RagAskPanel
+                      contextLabel={asset.symbol}
+                      placeholder={`Pergunte sobre ${asset.symbol} na sua carteira...`}
+                      quickPrompts={[
+                        `${asset.symbol} faz sentido pra minha carteira?`,
+                        `Qual o peso de ${asset.symbol} na minha carteira?`,
+                      ]}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </PremiumBlur>
