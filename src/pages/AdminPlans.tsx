@@ -2,6 +2,7 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {FormEvent, useState} from 'react';
 import {toast} from 'sonner';
 import {AdminPlan} from '@/interface/admin';
+import {UserPlanTier} from '@/interface/subscription';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {Checkbox} from '@/components/ui/checkbox';
@@ -25,6 +26,7 @@ type PlanFormState = {
   currency: string;
   interval: 'month' | 'year' | 'week' | 'day';
   intervalCount: string;
+  tier: UserPlanTier | '';
   features: string;
   annualPrice: string;
   annualStripePriceId: string;
@@ -39,6 +41,7 @@ const initialForm: PlanFormState = {
   currency: 'brl',
   interval: 'month',
   intervalCount: '1',
+  tier: '',
   features: '',
   annualPrice: '',
   annualStripePriceId: '',
@@ -54,6 +57,7 @@ function mapPlanToForm(plan: AdminPlan): PlanFormState {
     currency: plan.currency || 'brl',
     interval: (plan.interval as PlanFormState['interval']) || 'month',
     intervalCount: String(plan.intervalCount || 1),
+    tier: plan.tier || '',
     features: (plan.features || []).join('\n'),
     annualPrice: plan.annualPrice != null ? String(plan.annualPrice) : '',
     annualStripePriceId: plan.annualStripePriceId || '',
@@ -79,6 +83,9 @@ export default function AdminPlans() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (!form.tier) {
+        throw new Error('Selecione o nível de acesso do plano.');
+      }
       const payload = {
         name: form.name.trim(),
         description: form.description.trim(),
@@ -86,6 +93,7 @@ export default function AdminPlans() {
         currency: form.currency.trim().toLowerCase(),
         interval: form.interval,
         intervalCount: Number(form.intervalCount),
+        tier: form.tier,
         features: form.features
           .split('\n')
           .map((item) => item.trim())
@@ -112,7 +120,11 @@ export default function AdminPlans() {
       resetForm();
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Não foi possível salvar o plano.');
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Não foi possível salvar o plano.'
+      );
     },
   });
 
@@ -222,6 +234,31 @@ export default function AdminPlans() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label>Nível de acesso</Label>
+              <Select
+                value={form.tier}
+                onValueChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    tier: value as PlanFormState['tier'],
+                  }))
+                }>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                  <SelectItem value="global_investor">Global Investor</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Define o acesso liberado pro assinante — independente do nome do plano.
+              </p>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="plan-annual-price">
@@ -321,6 +358,7 @@ export default function AdminPlans() {
             <TableHeader>
               <TableRow>
                 <TableHead>Plano</TableHead>
+                <TableHead>Nível</TableHead>
                 <TableHead>Preço</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -333,6 +371,7 @@ export default function AdminPlans() {
                     <div className="font-medium">{plan.name}</div>
                     <div className="text-xs text-muted-foreground">{plan.intervalCount}x {plan.interval}</div>
                   </TableCell>
+                  <TableCell>{plan.tier || '—'}</TableCell>
                   <TableCell>
                     {plan.currency?.toUpperCase()} {plan.price.toFixed(2)}
                   </TableCell>
@@ -359,7 +398,7 @@ export default function AdminPlans() {
               ))}
               {!isLoading && !plans?.length ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     Nenhum plano cadastrado.
                   </TableCell>
                 </TableRow>
