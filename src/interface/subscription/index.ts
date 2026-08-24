@@ -11,6 +11,8 @@ export interface SubscriptionInterface {
   ): Promise<{url: string}>;
 }
 
+export type UserPlanTier = 'free' | 'pro' | 'premium' | 'global_investor';
+
 export interface ISubscription {
   _id: string;
   name: string;
@@ -19,6 +21,7 @@ export interface ISubscription {
   currency: string;
   interval: string;
   intervalCount: number;
+  tier: UserPlanTier;
   stripePriceId: string;
   stripeProductId: string;
   annualPrice?: number;
@@ -38,6 +41,7 @@ export interface ICreateSubscription {
   currency: string;
   interval: string;
   intervalCount: number;
+  tier: UserPlanTier;
   features: string[];
   annualPrice?: number;
   annualStripePriceId?: string;
@@ -52,6 +56,7 @@ export interface IUpdateSubscription {
   currency?: string;
   interval?: string;
   intervalCount?: number;
+  tier?: UserPlanTier;
   stripePriceId?: string;
   stripeProductId?: string;
   annualPrice?: number;
