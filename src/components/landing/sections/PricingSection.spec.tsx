@@ -70,7 +70,9 @@ describe('PricingSection', () => {
   it('mantém a âncora #planos e o cabeçalho mesmo antes de carregar', () => {
     const {container} = renderSection();
     expect(container.querySelector('#planos')).not.toBeNull();
-    expect(screen.getByText('Planos')).toBeInTheDocument();
+    expect(
+      screen.getByText('Comece grátis. Pague quando fizer diferença.'),
+    ).toBeInTheDocument();
   });
 
   it('renderiza todos os planos ativos vindos da API, inclusive o gratuito', async () => {
@@ -257,6 +259,8 @@ describe('PricingSection', () => {
       expect(screen.getByTestId('pricing-plans-empty')).toBeInTheDocument(),
     );
     expect(container.querySelector('#planos')).not.toBeNull();
-    expect(screen.getByText('Planos')).toBeInTheDocument();
+    expect(
+      screen.getByText('Comece grátis. Pague quando fizer diferença.'),
+    ).toBeInTheDocument();
   });
 });
