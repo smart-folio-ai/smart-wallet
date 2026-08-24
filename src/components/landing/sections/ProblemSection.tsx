@@ -29,10 +29,7 @@ export function ProblemSection() {
             data-reveal
             data-reveal-delay={String(index * 0.1)}
             className="p-7">
-            <span className="font-heading text-sm tabular-nums text-on-surface-muted/35">
-              {String(index + 1).padStart(2, '0')}
-            </span>
-            <h3 className="mt-4 font-heading text-lg font-semibold leading-snug text-on-surface">
+            <h3 className="font-heading text-lg font-semibold leading-snug text-on-surface">
               {card.title}
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-on-surface-muted/60">

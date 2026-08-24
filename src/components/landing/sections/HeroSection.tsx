@@ -3,7 +3,6 @@ import {Link} from 'react-router-dom';
 import gsap from 'gsap';
 import {ArrowRight} from 'lucide-react';
 import {Button} from '@/components/ui/button';
-import {Eyebrow} from '../ui/Eyebrow';
 import {GlassPanel} from '../ui/GlassPanel';
 import {GridBackdrop} from '../ui/GridBackdrop';
 import {Ticker} from '../ui/Ticker';
@@ -39,8 +38,7 @@ export function HeroSection() {
     const ctx = gsap.context(() => {
       gsap
         .timeline({defaults: {ease: 'power3.out', duration: 0.7}})
-        .from('[data-hero="eyebrow"]', {opacity: 0, y: 16})
-        .from('[data-hero="line"]', {opacity: 0, y: 24, stagger: 0.1}, '-=0.45')
+        .from('[data-hero="line"]', {opacity: 0, y: 24, stagger: 0.1})
         .from('[data-hero="sub"]', {opacity: 0, y: 16}, '-=0.4')
         .from('[data-hero="ctas"]', {opacity: 0, y: 16}, '-=0.45')
         .from('[data-hero="proof"]', {opacity: 0, y: 12}, '-=0.5')
@@ -65,11 +63,7 @@ export function HeroSection() {
 
       <div className="relative mx-auto grid max-w-7xl gap-16 px-4 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:px-8">
         <div>
-          <div data-hero="eyebrow">
-            <Eyebrow>{heroCopy.eyebrow}</Eyebrow>
-          </div>
-
-          <h1 className="mt-7 font-heading font-bold tracking-[-0.03em] text-on-surface [font-size:clamp(2.5rem,6vw,4.5rem)] [line-height:0.98]">
+          <h1 className="font-heading font-bold tracking-[-0.03em] text-on-surface [font-size:clamp(2.5rem,6vw,4.5rem)] [line-height:0.98]">
             <span data-hero="line" className="block">
               {heroCopy.title}
             </span>

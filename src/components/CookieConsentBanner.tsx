@@ -112,11 +112,11 @@ export const CookieConsentBanner = () => {
             </div>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <Link to="/privacy" className="flex items-center gap-1 hover:underline">
+            <Link to="/privacidade" className="flex items-center gap-1 hover:underline">
               <Shield className="h-4 w-4" />
               Política de Privacidade
             </Link>
-            <Link to="/terms" className="flex items-center gap-1 hover:underline">
+            <Link to="/termos" className="flex items-center gap-1 hover:underline">
               <FileText className="h-4 w-4" />
               Termos de Uso
             </Link>

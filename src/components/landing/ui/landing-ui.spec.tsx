@@ -1,7 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Section} from './Section';
-import {Eyebrow} from './Eyebrow';
 import {GlassPanel} from './GlassPanel';
 import {GridBackdrop} from './GridBackdrop';
 
@@ -17,11 +16,6 @@ describe('primitivos da landing', () => {
     expect(section).not.toBeNull();
     expect(section?.id).toBe('planos');
     expect(screen.getByText('conteudo')).toBeInTheDocument();
-  });
-
-  it('Eyebrow renderiza o texto', () => {
-    render(<Eyebrow>Gestão de carteira com IA</Eyebrow>);
-    expect(screen.getByText('Gestão de carteira com IA')).toBeInTheDocument();
   });
 
   it('GlassPanel repassa className e children', () => {

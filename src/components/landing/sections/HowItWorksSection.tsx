@@ -1,7 +1,6 @@
 import {useEffect, useRef} from 'react';
 import gsap from 'gsap';
 import {Section} from '../ui/Section';
-import {Eyebrow} from '../ui/Eyebrow';
 import {workflowSteps} from '../landing-data';
 import {ensureScrollTrigger} from '../motion/useGsapReveal';
 
@@ -33,18 +32,14 @@ export function HowItWorksSection() {
   return (
     <Section id="como-funciona">
       <div className="max-w-2xl">
-        <div data-reveal>
-          <Eyebrow>Como funciona</Eyebrow>
-        </div>
         <h2
           data-reveal
-          data-reveal-delay="0.08"
-          className="mt-6 font-heading font-bold tracking-[-0.03em] text-on-surface [font-size:clamp(1.875rem,3.5vw,3rem)] [line-height:1.08]">
+          className="font-heading font-bold tracking-[-0.03em] text-on-surface [font-size:clamp(1.875rem,3.5vw,3rem)] [line-height:1.08]">
           Do extrato à decisão em três passos
         </h2>
         <p
           data-reveal
-          data-reveal-delay="0.14"
+          data-reveal-delay="0.08"
           className="mt-5 text-[1.0625rem] leading-[1.7] text-on-surface-muted/60">
           Você conecta uma vez. O resto é acompanhamento.
         </p>

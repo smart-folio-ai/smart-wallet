@@ -4,7 +4,6 @@ import {useQuery} from '@tanstack/react-query';
 import {Check} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Section} from '../ui/Section';
-import {Eyebrow} from '../ui/Eyebrow';
 import {GlassPanel} from '../ui/GlassPanel';
 import {PurchaseIntentModal} from '../PurchaseIntentModal';
 import SubscriptionService from '@/services/subscription';
@@ -171,18 +170,14 @@ export function PricingSection() {
   return (
     <Section id="planos">
       <div className="mx-auto max-w-2xl text-center">
-        <div data-reveal>
-          <Eyebrow>Planos</Eyebrow>
-        </div>
         <h2
           data-reveal
-          data-reveal-delay="0.08"
-          className="mt-6 font-heading font-bold tracking-[-0.03em] text-on-surface [font-size:clamp(1.875rem,3.5vw,3rem)] [line-height:1.08]">
+          className="font-heading font-bold tracking-[-0.03em] text-on-surface [font-size:clamp(1.875rem,3.5vw,3rem)] [line-height:1.08]">
           Comece grátis. Pague quando fizer diferença.
         </h2>
         <p
           data-reveal
-          data-reveal-delay="0.14"
+          data-reveal-delay="0.08"
           className="mt-5 text-[1.0625rem] leading-[1.7] text-on-surface-muted/60">
           Sem cartão para começar e sem prazo de expiração no plano grátis.
         </p>

@@ -1,5 +1,4 @@
 export const heroCopy = {
-  eyebrow: 'Gestão de carteira com IA',
   title: 'Sua carteira inteira.',
   titleAccent: 'Sem planilha, sem surpresa no IR.',
   subtitle:
@@ -65,7 +64,6 @@ export const problemCopy = {
 };
 
 export const productCopy = {
-  eyebrow: 'O produto',
   title: 'Três coisas que você para de fazer na mão',
   subtitle:
     'Conecte uma vez. O acompanhamento passa a ser leitura, não digitação.',

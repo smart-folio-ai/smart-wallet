@@ -1,5 +1,4 @@
 import {Section} from '../ui/Section';
-import {Eyebrow} from '../ui/Eyebrow';
 import {PortfolioMockup} from '../mockups/PortfolioMockup';
 import {AiAlertMockup} from '../mockups/AiAlertMockup';
 import {TaxMockup} from '../mockups/TaxMockup';
@@ -18,18 +17,14 @@ export function ProductSection() {
   return (
     <Section id="produto">
       <div className="max-w-2xl">
-        <div data-reveal>
-          <Eyebrow>{productCopy.eyebrow}</Eyebrow>
-        </div>
         <h2
           data-reveal
-          data-reveal-delay="0.08"
-          className="mt-6 font-heading font-bold tracking-[-0.03em] text-on-surface [font-size:clamp(1.875rem,3.5vw,3rem)] [line-height:1.08]">
+          className="font-heading font-bold tracking-[-0.03em] text-on-surface [font-size:clamp(1.875rem,3.5vw,3rem)] [line-height:1.08]">
           {productCopy.title}
         </h2>
         <p
           data-reveal
-          data-reveal-delay="0.14"
+          data-reveal-delay="0.08"
           className="mt-5 text-[1.0625rem] leading-[1.7] text-on-surface-muted/60">
           {productCopy.subtitle}
         </p>
@@ -41,19 +36,14 @@ export function ProductSection() {
             sem o pin) ele vira vazio literal, então recolhe para o ritmo
             normal. */}
         <div className="space-y-16 lg:space-y-[70vh] motion-reduce:lg:space-y-16">
-          {productCopy.blocks.map((block, index) => {
+          {productCopy.blocks.map((block) => {
             const Mockup = mockupById[block.id];
 
             return (
               <div key={block.id}>
-                <div className="flex items-baseline gap-4">
-                  <span className="font-heading text-sm tabular-nums text-on-surface-muted/30">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <h3 className="font-heading text-2xl font-semibold tracking-[-0.02em] text-on-surface">
-                    {block.title}
-                  </h3>
-                </div>
+                <h3 className="font-heading text-2xl font-semibold tracking-[-0.02em] text-on-surface">
+                  {block.title}
+                </h3>
                 <p className="mt-4 max-w-lg text-[1.0625rem] leading-[1.7] text-on-surface-muted/60">
                   {block.description}
                 </p>
