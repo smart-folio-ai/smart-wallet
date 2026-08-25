@@ -19,7 +19,8 @@ import {
 interface B3ImportGuideModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Abre o seletor de arquivo do relatório consolidado (posições). */
+  /** Abre o seletor de arquivo: aceita o consolidado E o de movimentação
+   *  — os dois vão para a mesma rota de import. */
   onImportReport?: () => void;
   /** Leva para a tela de transações, onde entra o extrato de negociação. */
   onGoToTransactions?: () => void;
@@ -39,6 +40,8 @@ type FileCard = {
   icon: typeof Wallet;
   fills: string[];
   missing: string[];
+  /** Qual botão daqui aceita este arquivo. */
+  uploadVia: 'relatorio' | 'negociacoes';
 };
 
 const FILES: FileCard[] = [
@@ -52,6 +55,7 @@ const FILES: FileCard[] = [
       'Quanto você pagou (só traz a cotação de fechamento)',
       'Data de cada provento — o arquivo não tem coluna de data',
     ],
+    uploadVia: 'relatorio',
   },
   {
     id: 'negociacao',
@@ -63,6 +67,7 @@ const FILES: FileCard[] = [
       'Preço médio, lucro/prejuízo e base para o IR',
     ],
     missing: ['Proventos (dividendos, JCP e rendimentos não aparecem aqui)'],
+    uploadVia: 'negociacoes',
   },
   {
     id: 'movimentacao',
@@ -74,6 +79,7 @@ const FILES: FileCard[] = [
       'Dividendos, JCP e rendimentos mês a mês',
     ],
     missing: ['Preço de compra dos ativos'],
+    uploadVia: 'relatorio',
   },
 ];
 
@@ -126,6 +132,15 @@ export function B3ImportGuideModal({
                       </li>
                     ))}
                   </ul>
+
+                  <p className="mt-3 border-t border-surface-hairline/[0.1] pt-2 text-[11px] text-on-surface-subtle">
+                    Envie em{' '}
+                    <span className="font-semibold text-on-surface-muted">
+                      {file.uploadVia === 'relatorio'
+                        ? 'Importar relatório'
+                        : 'Importar negociações'}
+                    </span>
+                  </p>
                 </div>
               );
             })}
@@ -193,7 +208,7 @@ export function B3ImportGuideModal({
             )}
             {onImportReport && (
               <Button onClick={onImportReport}>
-                Importar relatório
+                Importar relatório ou movimentação
                 <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             )}

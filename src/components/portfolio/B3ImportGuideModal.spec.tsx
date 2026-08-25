@@ -51,7 +51,7 @@ describe('B3ImportGuideModal', () => {
     );
 
     await userEvent.click(
-      screen.getByRole('button', {name: /importar relatório/i}),
+      screen.getByRole('button', {name: /importar relatório ou movimentação/i}),
     );
     expect(onImportReport).toHaveBeenCalledTimes(1);
 
@@ -59,6 +59,35 @@ describe('B3ImportGuideModal', () => {
       screen.getByRole('button', {name: /importar negociações/i}),
     );
     expect(onGoToTransactions).toHaveBeenCalledTimes(1);
+  });
+
+  it('diz que o extrato de movimentação entra pelo mesmo botão do relatório', () => {
+    render(<B3ImportGuideModal open onOpenChange={() => {}} />);
+
+    // Sem isto o usuário procura um botão "Importar movimentação" que não
+    // existe e conclui que o app não aceita o arquivo.
+    expect(
+      screen.getAllByText('Importar relatório').length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Importar negociações').length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it('o botão principal nomeia os dois arquivos que aceita', async () => {
+    const onImportReport = vi.fn();
+    render(
+      <B3ImportGuideModal
+        open
+        onOpenChange={() => {}}
+        onImportReport={onImportReport}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole('button', {name: /importar relatório ou movimentação/i}),
+    );
+    expect(onImportReport).toHaveBeenCalledTimes(1);
   });
 
   it('não renderiza nada quando fechado', () => {
