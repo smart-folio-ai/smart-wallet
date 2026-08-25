@@ -20,6 +20,8 @@ import {
 import {Skeleton} from '@/components/ui/skeleton';
 import {Button} from '@/components/ui/button';
 import {FeatureTourModal} from '@/components/ui/feature-tour-modal';
+import {MetricCell, MetricCellGrid} from '@/components/ui/metric-cell';
+import {PriorityFeed, PriorityFeedItem} from '@/components/ui/priority-feed';
 import {
   Area,
   Bar,
@@ -1024,62 +1026,48 @@ const Dashboard = () => {
         </Select>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Patrimônio total
-          </p>
-          <p className="mt-1 text-2xl font-bold">
-            {formatCurrency(summary.totalValue || 0)}
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            P&L do período
-          </p>
-          {summary.totalPnl === null ||
-          summary.totalPnlPercentage === null ? (
-            <>
-              <p className="mt-1 text-2xl font-bold">—</p>
-              <p className="text-xs text-muted-foreground">
-                custo médio indisponível
-              </p>
-            </>
-          ) : (
-            <>
-              <p
-                className={`mt-1 text-2xl font-bold ${
-                  summary.totalPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'
-                }`}>
-                {summary.totalPnl >= 0 ? '+' : '-'}
-                {formatCurrency(Math.abs(summary.totalPnl))}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {summary.totalPnlPercentage >= 0 ? '+' : '-'}
-                {Math.abs(summary.totalPnlPercentage).toFixed(2)}%
-              </p>
-            </>
-          )}
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Dividendos no ano
-          </p>
-          <p className="mt-1 text-2xl font-bold">
-            {formatCurrency(totalDividendsYear)}
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Yield estimado
-          </p>
-          <p className="mt-1 text-2xl font-bold">
-            {estimatedDividendYieldPct !== null
+      <MetricCellGrid className="mb-6">
+        <MetricCell
+          label="Patrimônio total"
+          value={formatCurrency(summary.totalValue || 0)}
+        />
+        <MetricCell
+          label="P&L do período"
+          value={
+            summary.totalPnl === null || summary.totalPnlPercentage === null
+              ? '—'
+              : `${summary.totalPnl >= 0 ? '+' : '-'}${formatCurrency(
+                  Math.abs(summary.totalPnl),
+                )}`
+          }
+          tone={
+            summary.totalPnl === null
+              ? 'default'
+              : summary.totalPnl >= 0
+                ? 'positive'
+                : 'negative'
+          }
+          sub={
+            summary.totalPnl === null || summary.totalPnlPercentage === null
+              ? 'custo médio indisponível'
+              : `${summary.totalPnlPercentage >= 0 ? '+' : '-'}${Math.abs(
+                  summary.totalPnlPercentage,
+                ).toFixed(2)}%`
+          }
+        />
+        <MetricCell
+          label="Dividendos no ano"
+          value={formatCurrency(totalDividendsYear)}
+        />
+        <MetricCell
+          label="Yield estimado"
+          value={
+            estimatedDividendYieldPct !== null
               ? `${estimatedDividendYieldPct.toFixed(2)}%`
-              : '—'}
-          </p>
-        </div>
-      </div>
+              : '—'
+          }
+        />
+      </MetricCellGrid>
 
       <FeatureTourModal
         open={openFeatureTour}
@@ -1129,7 +1117,7 @@ const Dashboard = () => {
         }}
       />
 
-      <Card className="mb-8 overflow-hidden rounded-2xl border border-border bg-card">
+      <Card variant="glass" className="mb-8 overflow-hidden">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -1188,7 +1176,7 @@ const Dashboard = () => {
       </Card>
 
       <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-2 rounded-2xl border-border bg-card overflow-hidden">
+        <Card variant="glass" className="xl:col-span-2 overflow-hidden">
           <CardHeader className="pb-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -1380,7 +1368,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm overflow-hidden">
+        <Card variant="glass" className="overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
@@ -1475,7 +1463,7 @@ const Dashboard = () => {
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Card className="rounded-2xl border border-border bg-card">
+        <Card variant="glass">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -1505,69 +1493,66 @@ const Dashboard = () => {
                 locked={!hasProOrHigher}
                 title="Insights exclusivos para PRO+"
                 description="Faça upgrade para liberar alertas diários da Trackerr IA com base nos seus dados reais.">
-                <div className="space-y-3">
+                <PriorityFeed>
                   {actionableInsights.map((item, idx) => (
-                    <div
+                    <PriorityFeedItem
                       key={`${item.title}-${idx}`}
-                      className="rounded-lg border border-border/40 bg-background/70 p-3">
-                      <div className="mb-1 flex items-center justify-between">
-                        <p className="text-sm font-semibold">{item.title}</p>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                            item.priority === 'Alta'
-                              ? 'bg-rose-500/15 text-rose-500'
-                              : item.priority === 'Média'
-                                ? 'bg-amber-500/15 text-amber-500'
-                                : 'bg-emerald-500/15 text-emerald-500'
-                          }`}>
-                          {item.priority}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {item.description}
-                      </p>
-                    </div>
+                      severity={
+                        item.priority === 'Alta'
+                          ? 'alta'
+                          : item.priority === 'Média'
+                            ? 'media'
+                            : 'baixa'
+                      }
+                      title={item.title}
+                      description={item.description}
+                    />
                   ))}
-                  {aiDashboardHighlights.length > 0 && (
-                    <div className="rounded-lg border border-border/40 bg-background/70 p-3">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Sinais do Trackerr IA
-                      </p>
-                      <div className="space-y-1">
-                        {aiDashboardHighlights.map((item, idx) => (
-                          <p
-                            key={`${item.title}-${idx}`}
-                            className="text-xs text-muted-foreground">
-                            {item.title}
-                          </p>
-                        ))}
+                </PriorityFeed>
+                {(aiDashboardHighlights.length > 0 ||
+                  derivedDashboardHighlights.length > 0) && (
+                  <div className="mt-3 space-y-3">
+                    {aiDashboardHighlights.length > 0 && (
+                      <div className="rounded-lg border border-surface-hairline/[0.1] bg-surface-panel/40 p-3">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Sinais do Trackerr IA
+                        </p>
+                        <div className="space-y-1">
+                          {aiDashboardHighlights.map((item, idx) => (
+                            <p
+                              key={`${item.title}-${idx}`}
+                              className="text-xs text-muted-foreground">
+                              {item.title}
+                            </p>
+                          ))}
+                        </div>
+                        <AiGeneratedNotice className="mt-2" />
                       </div>
-                      <AiGeneratedNotice className="mt-2" />
-                    </div>
-                  )}
-                  {derivedDashboardHighlights.length > 0 && (
-                    <div className="rounded-lg border border-border/40 bg-background/70 p-3">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Sinais de watchlist e cenário
-                      </p>
-                      <div className="space-y-1">
-                        {derivedDashboardHighlights.map((item, idx) => (
-                          <p
-                            key={`${item.title}-${idx}`}
-                            className="text-xs text-muted-foreground">
-                            {item.title}
-                          </p>
-                        ))}
+                    )}
+                    {derivedDashboardHighlights.length > 0 && (
+                      <div className="rounded-lg border border-surface-hairline/[0.1] bg-surface-panel/40 p-3">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Sinais de watchlist e cenário
+                        </p>
+                        <div className="space-y-1">
+                          {derivedDashboardHighlights.map((item, idx) => (
+                            <p
+                              key={`${item.title}-${idx}`}
+                              className="text-xs text-muted-foreground">
+                              {item.title}
+                            </p>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </PremiumBlur>
             )}
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-primary/10 bg-card/50 shadow-lg">
+        <Card variant="glass">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4 text-primary" />
@@ -1587,7 +1572,7 @@ const Dashboard = () => {
                 {recommendedActions.map((item) => (
                   <div
                     key={item.title}
-                    className="rounded-lg border border-border/40 bg-background/60 p-3">
+                    className="rounded-lg border border-surface-hairline/[0.1] bg-surface-panel/40 p-3">
                     <p className="text-sm font-semibold">{item.title}</p>
                     <p className="text-xs text-muted-foreground">
                       {item.reason}
@@ -1601,7 +1586,7 @@ const Dashboard = () => {
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="rounded-xl border border-border bg-card p-1">
+        <Card variant="glass" className="p-1">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-primary" />
@@ -1638,7 +1623,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border border-border bg-card p-1">
+        <Card variant="glass" className="p-1">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4 text-primary" />
@@ -1655,7 +1640,7 @@ const Dashboard = () => {
                 {futureDividendEvents.map((event) => (
                   <div
                     key={`${event.symbol}-${event.date}`}
-                    className="rounded-lg border border-border/40 p-2 text-sm">
+                    className="rounded-lg border border-surface-hairline/[0.1] p-2 text-sm">
                     <p className="font-medium">{event.symbol}</p>
                     <p className="text-xs text-muted-foreground">
                       Provento previsto: {formatCurrency(event.value)} em{' '}
@@ -1668,7 +1653,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border border-border bg-card p-1">
+        <Card variant="glass" className="p-1">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
@@ -1679,7 +1664,7 @@ const Dashboard = () => {
             {benchmarkCards.map((item) => (
               <div
                 key={item.label}
-                className="flex items-center justify-between rounded-lg border border-border/40 p-2 text-sm">
+                className="flex items-center justify-between rounded-lg border border-surface-hairline/[0.1] p-2 text-sm">
                 <span>{item.label}</span>
                 <strong
                   className={
@@ -1699,7 +1684,7 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <Card className="mb-8 rounded-2xl border-border bg-card overflow-hidden">
+      <Card variant="glass" className="mb-8 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Dividendos</CardTitle>
           <CardDescription>
@@ -1780,7 +1765,7 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      <Card className="mb-8 rounded-2xl border-border bg-card overflow-hidden">
+      <Card variant="glass" className="mb-8 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle>Ativos em foco</CardTitle>
           <CardDescription>
@@ -1884,7 +1869,7 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border border-primary/10 bg-card/50 shadow-sm">
+      <Card variant="glass">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-primary" />
