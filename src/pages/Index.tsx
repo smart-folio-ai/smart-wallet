@@ -67,6 +67,7 @@ import {
   filterHistoryByPeriod,
   brapiRangeForDays,
   getEffectiveHistoryWindow,
+  HISTORY_WINDOW_DAYS,
 } from '@/pages/benchmark-window.utils';
 
 interface Asset {
@@ -794,6 +795,16 @@ const Dashboard = () => {
     [historyByPeriod],
   );
 
+  // Quando `filterHistoryByPeriod` cai no fallback (o recorte pedido tinha
+  // 1 ponto ou menos e ele devolveu o histórico inteiro), a janela efetiva
+  // cobre mais dias do que o período nominal escolhido. Sem isto, clicar em
+  // 7D/1M/3M/etc. com pouco histórico troca o botão ativo mas o gráfico
+  // continua idêntico — silencioso, parece bug em vez de "sem dado".
+  const periodFallbackActive = Boolean(
+    effectiveHistoryWindow &&
+      effectiveHistoryWindow.days > (HISTORY_WINDOW_DAYS[selectedPeriod] || 30),
+  );
+
   const {data: benchmarkHistory} = useQuery({
     queryKey: [
       'dashboard-benchmark-history',
@@ -1301,14 +1312,20 @@ const Dashboard = () => {
                                 : value
                         }
                       />
+                      {/* Carteira usa a cor da marca (hsl(var(--primary))) — o
+                          mesmo azul do chip "Carteira" logo acima do
+                          gráfico. Antes a linha era verde (#22c55e) enquanto
+                          o chip já era azul, e essa mesma linha verde ficava
+                          quase idêntica à do CDI (#10b981) no mesmo gráfico:
+                          duas séries diferentes lendo como uma só. */}
                       <Area
                         type="monotone"
                         dataKey="portfolioPerformance"
                         name="Carteira"
-                        stroke="#22c55e"
+                        stroke="hsl(var(--primary))"
                         strokeWidth={2.5}
                         fillOpacity={0.12}
-                        fill="#22c55e"
+                        fill="hsl(var(--primary))"
                         connectNulls
                       />
                       <Line
@@ -1324,7 +1341,7 @@ const Dashboard = () => {
                         type="monotone"
                         dataKey="btcPerformance"
                         name="BTC"
-                        stroke="#3b82f6"
+                        stroke="#a855f6"
                         strokeWidth={2}
                         dot={false}
                         connectNulls
@@ -1341,6 +1358,12 @@ const Dashboard = () => {
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
+                {periodFallbackActive && effectiveHistoryWindow && (
+                  <p className="mt-2 text-xs text-warning">
+                    Sem dados suficientes para {selectedPeriod} — mostrando os
+                    últimos {effectiveHistoryWindow.days} dias disponíveis.
+                  </p>
+                )}
                 {comparisonChartData.length < 2 && (
                   <p className="mt-2 text-xs text-muted-foreground">
                     Histórico insuficiente para comparação de rendimento no
