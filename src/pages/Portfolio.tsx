@@ -21,6 +21,7 @@ import {AssetsList} from '@/components/portfolio/AssetsList';
 import {AssetsListHeader} from '@/components/portfolio/AssetsListHeader';
 import {AssetDetailModal} from '@/components/portfolio/AssetDetailModal';
 import {CreatePortfolioDialog} from '@/components/portfolio/CreatePortfolioDialog';
+import {B3ImportGuideModal} from '@/components/portfolio/B3ImportGuideModal';
 import {
   Select,
   SelectContent,
@@ -55,6 +56,10 @@ const Portfolio = () => {
   const [recommendationFilter, setRecommendationFilter] = useState('all');
   const [imbalanceFilter, setImbalanceFilter] = useState('all');
   const [isUploadingB3, setIsUploadingB3] = useState(false);
+  // A B3 exporta três arquivos diferentes e nenhum sozinho preenche a
+  // carteira toda. O guia abre antes do seletor de arquivo para o usuário
+  // não importar o consolidado e concluir que o P&L está quebrado.
+  const [b3GuideOpen, setB3GuideOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: '',
     direction: 'asc',
@@ -434,7 +439,7 @@ const Portfolio = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => document.getElementById('b3-upload')?.click()}
+              onClick={() => setB3GuideOpen(true)}
               disabled={isUploadingB3}>
               {isUploadingB3 ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -649,6 +654,19 @@ const Portfolio = () => {
       <AssetDetailModal
         selectedAsset={selectedAsset}
         setSelectedAsset={setSelectedAsset}
+      />
+
+      <B3ImportGuideModal
+        open={b3GuideOpen}
+        onOpenChange={setB3GuideOpen}
+        onImportReport={() => {
+          setB3GuideOpen(false);
+          document.getElementById('b3-upload')?.click();
+        }}
+        onGoToTransactions={() => {
+          setB3GuideOpen(false);
+          navigate('/transactions');
+        }}
       />
     </div>
   );
