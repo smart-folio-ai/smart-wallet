@@ -15,7 +15,11 @@ function arcPath(cx: number, cy: number, radius: number, startDeg: number, endDe
   const startY = cy - radius * Math.sin(toRad(startDeg));
   const endX = cx + radius * Math.cos(toRad(endDeg));
   const endY = cy - radius * Math.sin(toRad(endDeg));
-  return `M ${startX} ${startY} A ${radius} ${radius} 0 0 0 ${endX} ${endY}`;
+  // sweep-flag 1: no SVG o eixo Y cresce para baixo, entao o arco que
+  // sobe pela esquerda, passa pelo topo e desce a direita e o SENTIDO
+  // HORARIO. Com 0 cada faixa curvava para o lado oposto e o medidor
+  // virava um bico em vez de um semicirculo.
+  return `M ${startX} ${startY} A ${radius} ${radius} 0 0 1 ${endX} ${endY}`;
 }
 
 export function CapitalRatioGauge({label, value, maxScale, dangerAbove}: CapitalRatioGaugeProps) {
