@@ -268,12 +268,26 @@ const Portfolio = () => {
     const overAllocated = assets.filter((asset) => asset.allocation > 20);
     const highRisk = assets.filter((asset) => Math.abs(asset.change24h || 0) > 5);
     const concentrated = assets.filter((asset) => asset.allocation > 25);
+
+    // "0 ativos oscilando mais de 5%" afirma que nenhum oscilou. Sem
+    // cotação atualizada não sabemos disso: `change24h` chega vazio para
+    // todos e vira 0 no mapeamento. Zero por diversificação (alocação) e
+    // zero por falta de dado (oscilação) parecem iguais na tela, e é o
+    // segundo que faz o painel parecer quebrado.
+    const temDadoDeOscilacao = displayApiAssets.some(
+      (asset: any) =>
+        asset?.change24h !== null &&
+        asset?.change24h !== undefined &&
+        Number(asset.change24h) !== 0,
+    );
+
     return {
       overAllocated,
       highRisk,
       concentrated,
+      temDadoDeOscilacao,
     };
-  }, [assets]);
+  }, [assets, displayApiAssets]);
 
   const handleB3Import = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -552,7 +566,18 @@ const Portfolio = () => {
           </div>
           <div className="rounded-lg border border-border/50 bg-background/60 p-3">
             <p className="text-muted-foreground">Alta oscilação (24h &gt; 5%)</p>
-            <p className="text-xl font-semibold">{imbalanceInsights.highRisk.length}</p>
+            {imbalanceInsights.temDadoDeOscilacao ? (
+              <p className="text-xl font-semibold">
+                {imbalanceInsights.highRisk.length}
+              </p>
+            ) : (
+              <>
+                <p className="text-xl font-semibold">—</p>
+                <p className="text-xs text-muted-foreground">
+                  depende da cotação do dia
+                </p>
+              </>
+            )}
           </div>
           <div className="rounded-lg border border-border/50 bg-background/60 p-3">
             <p className="text-muted-foreground">Concentração crítica (&gt; 25%)</p>
