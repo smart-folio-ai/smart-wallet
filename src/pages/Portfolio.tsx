@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
-import {Download, Share2, Upload, Loader2, Trash2, AlertTriangle} from 'lucide-react';
+import {Upload, Loader2, Trash2, AlertTriangle} from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import {useQueryClient, useMutation} from '@tanstack/react-query';
 
@@ -449,14 +449,9 @@ const Portfolio = () => {
               Importar B3
             </Button>
           </div>
-          <Button variant="outline" size="sm" className="hidden sm:flex">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </Button>
-          <Button variant="outline" size="sm" className="hidden sm:flex">
-            <Share2 className="h-4 w-4 mr-2" />
-            Compartilhar
-          </Button>
+          {/* Exportar e Compartilhar ainda não foram implementados — eram
+              botões sem onClick, que num teste beta leem como produto
+              quebrado. Escondidos até existirem de verdade (TRA-91). */}
         </div>
       </div>
 

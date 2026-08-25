@@ -805,6 +805,7 @@ const Dashboard = () => {
       effectiveHistoryWindow.days > (HISTORY_WINDOW_DAYS[selectedPeriod] || 30),
   );
 
+
   const {data: benchmarkHistory} = useQuery({
     queryKey: [
       'dashboard-benchmark-history',
@@ -969,6 +970,20 @@ const Dashboard = () => {
     }),
     [comparisonChartData],
   );
+
+  // Enquanto as fontes de cotação não estão ligadas, o preço de cada ativo
+  // fica congelado no valor da importação. O snapshot diário grava
+  // quantidade × preço, então grava o mesmo número todo dia e a curva sai
+  // reta — por falta de dado, não por defeito. Sem dizer isso, linha reta
+  // e P&L parado leem como produto quebrado (TRA-92).
+  const portfolioSeriesIsFlat = useMemo(() => {
+    if (comparisonChartData.length < 2) return false;
+    const values = comparisonChartData
+      .map((point) => Number(point.portfolioPerformance))
+      .filter((value) => Number.isFinite(value));
+    if (values.length < 2) return false;
+    return Math.max(...values) - Math.min(...values) < 0.005;
+  }, [comparisonChartData]);
 
   const benchmarkCards = useMemo(
     () => [
@@ -1362,6 +1377,14 @@ const Dashboard = () => {
                   <p className="mt-2 text-xs text-warning">
                     Sem dados suficientes para {selectedPeriod} — mostrando os
                     últimos {effectiveHistoryWindow.days} dias disponíveis.
+                  </p>
+                )}
+                {portfolioSeriesIsFlat && (
+                  <p className="mt-2 text-xs text-warning">
+                    A linha da carteira está parada porque as cotações ainda
+                    não são atualizadas automaticamente — o valor de cada
+                    ativo segue o da última importação. Os comparativos de
+                    mercado acima usam dados ao vivo.
                   </p>
                 )}
                 {comparisonChartData.length < 2 && (
