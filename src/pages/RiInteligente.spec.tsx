@@ -326,6 +326,31 @@ describe('RiInteligente', () => {
     });
   });
 
+  it('explains that documents were found but their links failed validation', async () => {
+    // Reportado pelo usuário: Puppeteer achava 20 documentos e a busca
+    // mostrava a mensagem genérica de rodapé, como se não tivesse
+    // encontrado nada — sem dizer que os links foram descartados na
+    // validação. Este warning não tinha caso nenhum no frontend.
+    searchRiDocumentsMock.mockResolvedValueOnce({
+      documents: [],
+      total: 0,
+      warnings: ['ri_no_valid_documents_found'],
+      fallback: {
+        availableDocumentTypes: [],
+        suggestedFilters: ['all'],
+      },
+    });
+
+    renderPage();
+    await executeSearch();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/documentos encontrados, mas os links não abriram/i),
+      ).toBeDefined();
+    });
+  });
+
   it('shows safe empty state when no valid recent release is found', async () => {
     searchRiDocumentsMock.mockResolvedValueOnce({
       documents: [],
