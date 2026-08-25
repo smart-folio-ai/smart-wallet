@@ -21,7 +21,7 @@ describe('CapitalRatioGauge — geometria do arco', () => {
 
   it('desenha os arcos no sentido horário (sweep-flag 1)', () => {
     const {container} = render(
-      <CapitalRatioGauge label="Índice de Basileia" value={14.23} max={30} />,
+      <CapitalRatioGauge label="Índice de Basileia" value={14.23} maxScale={30} />,
     );
 
     const arcs = paths(container).filter((d) => d.includes('A '));
@@ -36,7 +36,7 @@ describe('CapitalRatioGauge — geometria do arco', () => {
 
   it('o arco começa à esquerda e termina à direita do centro', () => {
     const {container} = render(
-      <CapitalRatioGauge label="Índice de Basileia" value={14.23} max={30} />,
+      <CapitalRatioGauge label="Índice de Basileia" value={14.23} maxScale={30} />,
     );
 
     const trilho = paths(container).find((d) => d.includes('A '))!;
