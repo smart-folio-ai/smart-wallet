@@ -159,6 +159,19 @@ function buildRiNotice(params: {
     };
   }
 
+  // O backend encontrou documentos, mas nenhum passou na validação do link
+  // (arquivo indisponível, redirecionado para uma página de erro, ou tipo
+  // de conteúdo que não é PDF/planilha). Sem este caso, a busca caía na
+  // mensagem genérica de rodapé — que lê como "não encontrou nada", quando
+  // na verdade encontrou e descartou por o link não abrir de verdade.
+  if (warnings.includes('ri_no_valid_documents_found')) {
+    return {
+      title: 'Documentos encontrados, mas os links não abriram',
+      description: `Encontramos releases para ${query || 'o ticker informado'}, mas os links não passaram na validação (podem estar fora do ar ou redirecionando para uma página de erro). Tente novamente em instantes.`,
+      suggestedFilters: ['all'],
+    };
+  }
+
   return null;
 }
 
