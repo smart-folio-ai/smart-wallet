@@ -94,7 +94,9 @@ describe('Landing', () => {
     const pricingSection = container.querySelector('#planos');
     expect(pricingSection).not.toBeNull();
     expect(
-      within(pricingSection as HTMLElement).getByText('Planos'),
+      within(pricingSection as HTMLElement).getByText(
+        'Comece grátis. Pague quando fizer diferença.',
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /meus dados ficam seguros/i}),
@@ -114,7 +116,9 @@ describe('Landing', () => {
 
     const pricingSection = container.querySelector('#planos');
     expect(
-      within(pricingSection as HTMLElement).getByText('Planos'),
+      within(pricingSection as HTMLElement).getByText(
+        'Comece grátis. Pague quando fizer diferença.',
+      ),
     ).toBeVisible();
   });
 });
