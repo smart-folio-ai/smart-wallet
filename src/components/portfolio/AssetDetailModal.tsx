@@ -37,19 +37,6 @@ export const AssetDetailModal = ({ selectedAsset, setSelectedAsset }: AssetDetai
                    selectedAsset.type === 'etf' ? 'ETF' :
                    selectedAsset.type === 'crypto' ? 'Cripto' : 'Outro'}
                 </Badge>
-                {selectedAsset.aiRecommendation && (
-                  <Badge 
-                    className={`ml-2 ${
-                      selectedAsset.aiRecommendation === 'buy' ? 'bg-success/20 text-success' : 
-                      selectedAsset.aiRecommendation === 'sell' ? 'bg-destructive/20 text-destructive' : 
-                      'bg-yellow-500/20 text-yellow-500'
-                    }`}
-                  >
-                    {selectedAsset.aiRecommendation === 'buy' ? 'Comprar' : 
-                     selectedAsset.aiRecommendation === 'sell' ? 'Vender' : 
-                     'Manter'}
-                  </Badge>
-                )}
               </h2>
               <p className="text-muted-foreground">{selectedAsset.name}</p>
             </div>
@@ -113,20 +100,6 @@ export const AssetDetailModal = ({ selectedAsset, setSelectedAsset }: AssetDetai
                     {formatPercentage(selectedAsset.profitLossPercentage || 0)}
                   </span>
                 </div>
-                {selectedAsset.aiRecommendation && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Recomendação IA</span>
-                    <span className={`font-medium ${
-                      selectedAsset.aiRecommendation === 'buy' ? 'text-success' : 
-                      selectedAsset.aiRecommendation === 'sell' ? 'text-destructive' : 
-                      'text-yellow-500'
-                    }`}>
-                      {selectedAsset.aiRecommendation === 'buy' ? 'Comprar' : 
-                       selectedAsset.aiRecommendation === 'sell' ? 'Vender' : 
-                       'Manter'} ({selectedAsset.aiConfidence}%)
-                    </span>
-                  </div>
-                )}
                 {(selectedAsset.type === 'stock' || selectedAsset.type === 'fii') && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Dividend Yield</span>

@@ -53,6 +53,42 @@ describe('ChatInteligente', () => {
     expect(within(emptyState).getByRole('button', {name: /Compare PETR4 e VALE3/i})).toBeDefined();
   });
 
+  /**
+   * Reportado em producao: "quais acoes com p/vp abaixo de 1.0?" recebia
+   * "Valor total: R$ 11.933,23" e o Trackerr Score como resposta. A
+   * pergunta caia em `unknown` no backend, que injeta carteira + score como
+   * contexto pro LLM; sem texto do modelo, a tela exibia so esse contexto.
+   */
+  it('explains that market screening by indicator is not available', async () => {
+    askStructuredChatMock.mockResolvedValueOnce({
+      intent: 'market_screening',
+      deterministic: true,
+      message: '',
+      route: {
+        type: 'deterministic_no_llm',
+        llmEligible: false,
+        reason: 'capability_not_available',
+      },
+      data: {},
+      unavailable: ['market_wide_fundamental_screening'],
+      warnings: ['screening_requires_market_dataset'],
+      assumptions: [],
+    });
+
+    renderPage();
+    await userEvent.type(
+      screen.getByLabelText('Pergunta do chat'),
+      'quais acoes com p/vp abaixo de 1.0?',
+    );
+    await userEvent.click(screen.getByRole('button', {name: /Enviar/i}));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/não consigo filtrar ações do mercado por indicador/i),
+      ).toBeDefined();
+    });
+  });
+
   it('renders user and assistant messages with structured blocks', async () => {
     askStructuredChatMock.mockResolvedValueOnce({
       intent: 'tax_estimation',

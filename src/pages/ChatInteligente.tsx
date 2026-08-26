@@ -467,8 +467,16 @@ export default function ChatInteligente() {
           })
         : await askStructuredChat(trimmed);
       const modelText = response.message?.trim() || '';
+      // Screening por indicador (P/VP, DY, ROE) pede uma lista do mercado
+      // inteiro, e os fundamentos que temos são só dos ativos em carteira.
+      // Dizer isso é a resposta certa — antes a pergunta caía em "unknown" e
+      // a tela devolvia patrimônio e score, que não têm relação nenhuma com
+      // o que foi perguntado.
       const assistantText =
-        modelText || 'Análise estruturada concluída com base nos dados disponíveis.';
+        response.intent === 'market_screening'
+          ? 'Ainda não consigo filtrar ações do mercado por indicador (P/VP, dividend yield, ROE). Os dados fundamentalistas que tenho são apenas dos ativos que você já tem em carteira — posso analisar esses, comparar dois deles, ou avaliar concentração e risco da sua posição.'
+          : modelText ||
+            'Análise estruturada concluída com base nos dados disponíveis.';
       // Sem texto do modelo, o resumo acima é literal do cliente. Com
       // `deterministic` ou rota `deterministic_no_llm`, o backend calculou a
       // resposta sem LLM — é o mesmo sinal que alimenta o selo "Cálculo

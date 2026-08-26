@@ -42,10 +42,11 @@ const STATUS_BADGE_CLASS: Record<DecisionStatus, string> = {
     'h-7 rounded-full border border-border/50 bg-background/40 px-3 text-muted-foreground',
 };
 
+// TRA-53: as tres primeiras linhas mapeavam COMPRA/HOLD/VENDA da IA para
+// "Comprar aos poucos" / "Manter" / "Revisar" — verbo de ordem por ativo,
+// que o produto declara publicamente nao emitir. O que restou descreve
+// fato observavel da carteira do usuario: peso da posicao e movimento.
 const resolveDecisionStatus = (asset: Asset): DecisionStatus => {
-  if (asset.aiRecommendation === 'buy') return 'Comprar aos poucos';
-  if (asset.aiRecommendation === 'hold') return 'Manter';
-  if (asset.aiRecommendation === 'sell') return 'Revisar';
   if (asset.allocation >= 25) return 'Sobrepeso';
   if ((asset.change24h || 0) <= -3) return 'Aguardar';
   return 'Sem cobertura';
