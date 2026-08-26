@@ -145,10 +145,10 @@ interface ActionableInsight {
 }
 
 const ALLOCATION_COLORS = {
-  stocks: '#22c55e',
-  crypto: '#3b82f6',
-  fiis: '#8b5cf6',
-  other: '#f59e0b',
+  stocks: 'hsl(var(--chart-2))',
+  crypto: 'hsl(var(--chart-1))',
+  fiis: 'hsl(var(--chart-4))',
+  other: 'hsl(var(--chart-3))',
 };
 
 const formatHistoryDate = (value: unknown): string => {
@@ -761,21 +761,21 @@ const Dashboard = () => {
         label: 'Dólar (USD/BRL)',
         value: marketComparators?.dollar?.value ?? null,
         variationPct: marketComparators?.dollar?.variationPct ?? null,
-        colorClass: 'text-sky-500',
+        colorClass: 'text-[hsl(var(--chart-1))]',
       },
       {
         key: 'ibov',
         label: 'IBOV',
         value: marketComparators?.ibov?.value ?? null,
         variationPct: marketComparators?.ibov?.variationPct ?? null,
-        colorClass: 'text-amber-500',
+        colorClass: 'text-[hsl(var(--chart-3))]',
       },
       {
         key: 'cdi',
         label: 'CDI',
         value: marketComparators?.cdi?.value ?? null,
         variationPct: marketComparators?.cdi?.variationPct ?? null,
-        colorClass: 'text-emerald-500',
+        colorClass: 'text-[hsl(var(--chart-2))]',
       },
     ],
     [marketComparators, summary.totalPnlPercentage, summary.totalValue],
@@ -1220,7 +1220,7 @@ const Dashboard = () => {
                     onClick={() => setSelectedPeriod(period)}
                     className={`h-8 rounded-full px-4 text-xs font-bold transition-all ${
                       selectedPeriod === period
-                        ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                        ? 'bg-primary text-primary-foreground hover:brightness-110'
                         : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
                     }`}>
                     {period}
@@ -1274,9 +1274,9 @@ const Dashboard = () => {
                       <span
                         className={
                           (item.variationPct || 0) > 0
-                            ? 'text-emerald-500'
+                            ? 'text-accent-positive'
                             : (item.variationPct || 0) < 0
-                              ? 'text-rose-500'
+                              ? 'text-accent-negative'
                               : 'text-muted-foreground'
                         }>
                         {item.variationPct !== null
@@ -1347,7 +1347,7 @@ const Dashboard = () => {
                         type="monotone"
                         dataKey="ibovPerformance"
                         name="IBOV"
-                        stroke="#f59e0b"
+                        stroke="hsl(var(--chart-3))"
                         strokeWidth={2}
                         dot={false}
                         connectNulls
@@ -1356,7 +1356,7 @@ const Dashboard = () => {
                         type="monotone"
                         dataKey="btcPerformance"
                         name="BTC"
-                        stroke="#a855f6"
+                        stroke="hsl(var(--chart-4))"
                         strokeWidth={2}
                         dot={false}
                         connectNulls
@@ -1365,7 +1365,7 @@ const Dashboard = () => {
                         type="monotone"
                         dataKey="cdiPerformance"
                         name="CDI"
-                        stroke="#10b981"
+                        stroke="hsl(var(--chart-2))"
                         strokeWidth={2}
                         dot={false}
                         connectNulls
@@ -1489,7 +1489,7 @@ const Dashboard = () => {
                       </div>
                       {row.target !== null ? (
                         <p
-                          className={`text-xs ${row.delta && row.delta > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                          className={`text-xs ${row.delta && row.delta > 0 ? 'text-warning' : 'text-accent-positive'}`}>
                           {row.delta && row.delta > 0 ? 'Acima' : 'Abaixo'} da
                           meta em {Math.abs(row.delta || 0).toFixed(2)}% (meta{' '}
                           {row.target.toFixed(2)}%)
@@ -1717,8 +1717,8 @@ const Dashboard = () => {
                     item.value === null
                       ? 'text-muted-foreground'
                       : item.value >= 0
-                        ? 'text-emerald-500'
-                        : 'text-rose-500'
+                        ? 'text-accent-positive'
+                        : 'text-accent-negative'
                   }>
                   {item.value === null
                     ? 'Indisponível'
@@ -1804,7 +1804,11 @@ const Dashboard = () => {
                     />
                   }
                 />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="#22c55e" />
+                <Bar
+                  dataKey="value"
+                  radius={[6, 6, 0, 0]}
+                  fill="hsl(var(--accent-positive))"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1860,7 +1864,7 @@ const Dashboard = () => {
                     key={`gainer-${asset.id}`}
                     className="flex items-center justify-between text-sm">
                     <span>{asset.symbol}</span>
-                    <span className="font-semibold text-emerald-500">
+                    <span className="font-semibold text-accent-positive">
                       +{asset.returnSinceAvgPrice.toFixed(2)}%
                     </span>
                   </p>
@@ -1884,7 +1888,7 @@ const Dashboard = () => {
                     key={`loser-${asset.id}`}
                     className="flex items-center justify-between text-sm">
                     <span>{asset.symbol}</span>
-                    <span className="font-semibold text-rose-500">
+                    <span className="font-semibold text-accent-negative">
                       {asset.returnSinceAvgPrice.toFixed(2)}%
                     </span>
                   </p>
