@@ -215,7 +215,6 @@ const toIsoDate = (value: unknown): string | null => {
   return parsed.toISOString().slice(0, 10);
 };
 
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const {
@@ -805,7 +804,6 @@ const Dashboard = () => {
       effectiveHistoryWindow.days > (HISTORY_WINDOW_DAYS[selectedPeriod] || 30),
   );
 
-
   const {data: benchmarkHistory} = useQuery({
     queryKey: [
       'dashboard-benchmark-history',
@@ -1099,32 +1097,32 @@ const Dashboard = () => {
         open={openFeatureTour}
         onOpenChange={setOpenFeatureTour}
         heading="Conheça as novidades"
-        subheading="Recursos que melhoram suas decisoes"
+        subheading="Recursos que melhoram suas decisões"
         items={[
           {
             title: 'Investment Score',
             description:
-              'Uma nota de 0-100 baseada em diversificacao, risco e consistencia, visivel na pagina de Insights.',
+              'Uma nota de 0-100 baseada em diversificação, risco e consistência, visível na página de Insights.',
           },
           {
             title: 'Simulador de Futuro',
             description:
-              'Agora voce pode simular aportes mensais e ver projecoes em cenarios otimistas, neutros e pessimistas.',
+              'Agora você pode simular aportes mensais e ver projeções em cenários otimistas, neutros e pessimistas.',
           },
           {
             title: 'Radar Anti-Erro',
             description:
-              'A IA detecta erros de concentracao de setor e correlacao, emitindo alertas preventivos.',
+              'A IA detecta erros de concentração de setor e correlação, emitindo alertas preventivos.',
           },
           {
             title: 'Radar de Oportunidades',
             description:
-              'Uma lista premium de ativos com potencial de valorizacao baseada na analise da IA.',
+              'Uma lista premium de ativos com potencial de valorização baseada na análise da IA.',
           },
           {
-            title: 'Opiniao Trackerr IA',
+            title: 'Opinião Trackerr IA',
             description:
-              'Integrada na pagina de detalhes de cada ativo para entregar um resumo estrategico rapido.',
+              'Integrada na página de detalhes de cada ativo para entregar um resumo estratégico rápido.',
           },
         ]}
         onExit={() => {
@@ -1147,9 +1145,7 @@ const Dashboard = () => {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <CardTitle>
-                Otimizador Fiscal
-              </CardTitle>
+              <CardTitle>Otimizador Fiscal</CardTitle>
               <CardDescription>
                 Oportunidades para reduzir imposto com prejuízo acumulado
               </CardDescription>
@@ -1201,7 +1197,7 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <Card variant="glass" className="xl:col-span-2 overflow-hidden">
           <CardHeader className="pb-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1287,7 +1283,10 @@ const Dashboard = () => {
                   ))}
                 </div>
 
-                <div className="h-44">
+                <div
+                  className="h-44"
+                  role="img"
+                  aria-label="Gráfico de desempenho percentual da carteira comparado a IBOV, BTC e CDI">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                       data={comparisonChartData}
@@ -1432,7 +1431,10 @@ const Dashboard = () => {
               </div>
             ) : (
               <>
-                <div className="mb-4 h-44">
+                <div
+                  className="mb-4 h-44"
+                  role="img"
+                  aria-label="Gráfico de barras de alocação por classe de ativo">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={allocationChartData}
@@ -1508,7 +1510,7 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card variant="glass">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-3">
@@ -1777,7 +1779,10 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="h-56">
+          <div
+            className="h-56"
+            role="img"
+            aria-label="Histórico mensal de dividendos recebidos nos últimos 12 meses">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={dividendMonthlyData}

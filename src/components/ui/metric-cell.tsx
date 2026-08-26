@@ -63,7 +63,7 @@ export function MetricCellGrid({
   return (
     <div
       className={cn(
-        'grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-surface-hairline/[0.1] bg-surface-hairline/[0.08] lg:grid-cols-4',
+        'grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-surface-hairline/[0.1] bg-surface-hairline/[0.08] md:grid-cols-4',
         className
       )}>
       {children}
