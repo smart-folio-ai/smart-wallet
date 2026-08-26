@@ -143,14 +143,14 @@ export function AppTopbar() {
             type="button"
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-foreground"
+            className="h-11 w-11 text-muted-foreground hover:text-foreground"
             onClick={() => navigate('/settings')}
           >
             <Settings className="h-4 w-4" />
             <span className="sr-only">Configurações</span>
           </Button>
 
-          <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+          <Button type="button" variant="ghost" size="icon" className="h-11 w-11 text-muted-foreground hover:text-foreground">
             <Bell className="h-4 w-4" />
             <span className="sr-only">Notificações</span>
           </Button>

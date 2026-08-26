@@ -210,3 +210,14 @@
 .font-share-tech {
   font-family: var(--font-heading);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .animate-value {
+    transition: none;
+  }
+}
