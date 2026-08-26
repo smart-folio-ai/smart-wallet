@@ -38,7 +38,6 @@ import {useQuery} from '@tanstack/react-query';
 import {useSubscription} from '@/hooks/useSubscription';
 import {
   buildAiCacheSignature,
-  extractAssetRecommendationsFromAnalysis,
   getAiPlanFromPlanName,
   getOrCreateAiAnalysis,
 } from '@/services/ai/trakkerAi';
@@ -53,7 +52,6 @@ const Portfolio = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
-  const [recommendationFilter, setRecommendationFilter] = useState('all');
   const [imbalanceFilter, setImbalanceFilter] = useState('all');
   const [isUploadingB3, setIsUploadingB3] = useState(false);
   // A B3 exporta três arquivos diferentes e nenhum sozinho preenche a
@@ -121,9 +119,6 @@ const Portfolio = () => {
       }),
   });
 
-  const aiRecommendationsBySymbol =
-    extractAssetRecommendationsFromAnalysis(portfolioAiAnalysis);
-
   const totalApiValue = displayApiAssets.reduce(
     (sum: number, asset: any) => sum + (asset.total || 0),
     0,
@@ -143,10 +138,6 @@ const Portfolio = () => {
         : 0,
     type: a.type,
     sector: a.sector ?? undefined,
-    aiRecommendation:
-      aiRecommendationsBySymbol[String(a.symbol || '').toUpperCase()] ||
-      a.aiRecommendation ||
-      undefined,
     avgPrice: a.avgPrice ?? a.price,
     purchasePrice: a.avgPrice ?? a.price,
     profitLoss:
@@ -189,15 +180,6 @@ const Portfolio = () => {
         return false;
       if (sectorFilter !== 'all' && String(asset.sector || '') !== sectorFilter)
         return false;
-      if (recommendationFilter !== 'all') {
-        if (recommendationFilter === 'uncovered' && asset.aiRecommendation)
-          return false;
-        if (
-          recommendationFilter !== 'uncovered' &&
-          asset.aiRecommendation !== recommendationFilter
-        )
-          return false;
-      }
       if (imbalanceFilter === 'overallocated' && asset.allocation <= 20)
         return false;
       if (imbalanceFilter === 'high-risk' && Math.abs(asset.change24h || 0) <= 5)
@@ -601,8 +583,6 @@ const Portfolio = () => {
               sectorFilter={sectorFilter}
               setSectorFilter={setSectorFilter}
               availableSectors={availableSectors}
-              recommendationFilter={recommendationFilter}
-              setRecommendationFilter={setRecommendationFilter}
               imbalanceFilter={imbalanceFilter}
               setImbalanceFilter={setImbalanceFilter}
             />

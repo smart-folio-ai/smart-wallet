@@ -10,8 +10,6 @@ interface AssetsListHeaderProps {
   sectorFilter: string;
   setSectorFilter: (value: string) => void;
   availableSectors: string[];
-  recommendationFilter: string;
-  setRecommendationFilter: (value: string) => void;
   imbalanceFilter: string;
   setImbalanceFilter: (value: string) => void;
 }
@@ -23,8 +21,6 @@ export const AssetsListHeader = ({
   sectorFilter,
   setSectorFilter,
   availableSectors,
-  recommendationFilter,
-  setRecommendationFilter,
   imbalanceFilter,
   setImbalanceFilter,
 }: AssetsListHeaderProps) => {
@@ -51,19 +47,6 @@ export const AssetsListHeader = ({
               {sector}
             </SelectItem>
           ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={recommendationFilter} onValueChange={setRecommendationFilter}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Recomendação IA" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">IA: Todas</SelectItem>
-          <SelectItem value="buy">Comprar aos poucos</SelectItem>
-          <SelectItem value="hold">Manter</SelectItem>
-          <SelectItem value="sell">Revisar</SelectItem>
-          <SelectItem value="uncovered">Sem cobertura</SelectItem>
         </SelectContent>
       </Select>
 
