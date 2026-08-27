@@ -23,8 +23,10 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
+import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {Progress} from '@/components/ui/progress';
 import {Slider} from '@/components/ui/slider';
+import {Switch} from '@/components/ui/switch';
 import {toast} from 'sonner';
 import {
   aiAnalysisService,
@@ -35,11 +37,20 @@ import {
   FutureSimulatorHorizon,
   FutureSimulatorResponse,
 } from '@/services/ai';
-import {portfolioService} from '@/server/api/api';
+import {portfolioService, stockServices} from '@/server/api/api';
+import {accumulateCdi} from '@/pages/cdi-performance.utils';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
+import {resolveScoreTone, SCORE_TONE_CLASSES} from '@/utils/score-tone';
+import type {ScoreTone} from '@/utils/score-tone';
 import {cn} from '@/lib/utils';
 import {useSubscription} from '@/hooks/useSubscription';
 import {RagAskPanel} from '@/components/ai/RagAskPanel';
+import {InvestorProfileBadge} from '@/components/ai/InvestorProfileBadge';
+import {
+  getInvestorProfile,
+  setInvestorProfileOverride,
+  InvestorProfileResponse,
+} from '@/services/ai/investorProfile';
 import {
   getAiPlanFromPlanName,
   getOrCreateAiAnalysis,
@@ -73,6 +84,10 @@ const AIInsights: React.FC = () => {
     useState<PortfolioScoreResponse | null>(null);
   const [errorRadar, setErrorRadar] =
     useState<PortfolioErrorRadarResponse | null>(null);
+  // Distingue "ainda nao buscado" (usuario free, fetchData nem tenta) de
+  // "buscou e falhou de verdade" — errorRadar === null cobre os dois casos e
+  // nao pode ser usado sozinho para decidir se mostra o estado de falha.
+  const [errorRadarFailed, setErrorRadarFailed] = useState(false);
 
   // Estados para Simulação
   const [monthlyInvest, setMonthlyInvest] = useState(1000);
@@ -81,6 +96,26 @@ const AIInsights: React.FC = () => {
     null,
   );
   const [simLoading, setSimLoading] = useState(false);
+  const [cdiComparison, setCdiComparison] = useState<number | null>(null);
+
+  // viewMode: estado originalmente introduzido em versão mínima pela Task 9
+  // (comparação com CDI), que só precisava ler/persistir a preferência via
+  // localStorage. Esta Task (8) é a dona "real" do estado — adiciona o fetch
+  // do perfil do investidor e a sugestão de modo avançado baseada nele (ver
+  // useEffect abaixo), além do toggle na UI que efetivamente escreve em
+  // localStorage. O estado em si não é redeclarado aqui.
+  const [investorProfile, setInvestorProfile] =
+    useState<InvestorProfileResponse | null>(null);
+  const [viewMode, setViewMode] = useState<'standard' | 'advanced'>(
+    'standard',
+  );
+
+  useEffect(() => {
+    const savedMode = localStorage.getItem('ai_insights_view_mode');
+    if (savedMode === 'standard' || savedMode === 'advanced') {
+      setViewMode(savedMode);
+    }
+  }, []);
 
   const hasProOrHigher = isProOrHigherPlan(planName, isSubscribed);
   const aiPlan = getAiPlanFromPlanName(planName);
@@ -91,6 +126,8 @@ const AIInsights: React.FC = () => {
   }, [subLoading, hasProOrHigher, aiPlan]);
 
   const fetchData = async () => {
+    setErrorRadarFailed(false);
+
     if (!hasProOrHigher) {
       setAnalysisResult(null);
       setLoading(false);
@@ -110,18 +147,16 @@ const AIInsights: React.FC = () => {
           ? rawData.assets
           : [];
 
-      // Usa 'premium' por padrão para sempre acionar a análise com IA
-      const plan = (localStorage.getItem('user_plan') as any) || 'premium';
-
       // Score de carteira e radar de erro vêm do backend determinístico e são
       // independentes entre si e da análise do LLM: se o trackerr-ia estiver
       // fora, os dois ainda aparecem, e vice-versa. Por isso allSettled em
       // vez de await sequencial.
-      const [analysisOutcome, scoreOutcome, errorRadarOutcome] =
+      const [analysisOutcome, scoreOutcome, errorRadarOutcome, profileOutcome] =
         await Promise.allSettled([
           getOrCreateAiAnalysis({rawAssets: assets, plan: aiPlan}),
           aiAnalysisService.portfolioScore(),
           aiAnalysisService.errorRadar(),
+          getInvestorProfile(),
         ]);
 
       if (scoreOutcome.status === 'fulfilled') {
@@ -134,6 +169,24 @@ const AIInsights: React.FC = () => {
         setErrorRadar(errorRadarOutcome.value);
       } else {
         setErrorRadar(null);
+        setErrorRadarFailed(true);
+      }
+
+      // O perfil de investidor é independente das demais fontes: falhar não
+      // deve derrubar o resto da página — o badge já trata `null` como "não
+      // renderizar nada".
+      if (profileOutcome.status === 'fulfilled') {
+        setInvestorProfile(profileOutcome.value);
+        // A preferência salva pelo usuário sempre vence; só sugerimos o modo
+        // avançado a partir do perfil quando não há nada salvo ainda.
+        const savedMode = localStorage.getItem('ai_insights_view_mode');
+        if (savedMode === 'standard' || savedMode === 'advanced') {
+          setViewMode(savedMode);
+        } else if (profileOutcome.value.sophistication === 'experienced') {
+          setViewMode('advanced');
+        }
+      } else {
+        setInvestorProfile(null);
       }
 
       if (analysisOutcome.status === 'rejected') {
@@ -150,6 +203,28 @@ const AIInsights: React.FC = () => {
     }
   };
 
+  const handleProfileOverride = async (override: {
+    sophistication?: 'beginner' | 'intermediate' | 'experienced';
+  }) => {
+    try {
+      const updated = await setInvestorProfileOverride(override);
+      setInvestorProfile(updated);
+    } catch {
+      toast.error('Não foi possível salvar a alteração de perfil.');
+    }
+  };
+
+  const handleViewModeChange = (checked: boolean) => {
+    const mode = checked ? 'advanced' : 'standard';
+    setViewMode(mode);
+    localStorage.setItem('ai_insights_view_mode', mode);
+    // Mesmo padrão de "troca de parâmetro invalida resultado" usado no
+    // slider e nos botões de horizonte: uma simulação já calculada no modo
+    // antigo não deve continuar visível como se refletisse o modo novo.
+    setSimulation(null);
+    setCdiComparison(null);
+  };
+
   const handleSimulate = async () => {
     setSimLoading(true);
     try {
@@ -162,7 +237,40 @@ const AIInsights: React.FC = () => {
         monthlyContribution: monthlyInvest > 0 ? monthlyInvest : undefined,
       });
       setSimulation(res);
-    } catch (err) {
+
+      if (viewMode === 'advanced') {
+        const monthsBack = res.months;
+        const from = new Date();
+        from.setMonth(from.getMonth() - monthsBack);
+        const to = new Date();
+        try {
+          const cdiResponse = await stockServices.getCdiSeries(
+            from.toISOString().slice(0, 10),
+            to.toISOString().slice(0, 10),
+          );
+          const series = cdiResponse.data?.series;
+          if (Array.isArray(series) && series.length > 1) {
+            const accumulated = accumulateCdi(series);
+            const lastValue = Array.from(accumulated.values()).pop();
+            if (typeof lastValue === 'number') {
+              setCdiComparison(
+                res.currentPortfolioValue * (1 + lastValue / 100),
+              );
+            } else {
+              setCdiComparison(null);
+            }
+          } else {
+            setCdiComparison(null);
+          }
+        } catch {
+          setCdiComparison(null);
+        }
+      } else {
+        setCdiComparison(null);
+      }
+    } catch {
+      setSimulation(null);
+      setCdiComparison(null);
       toast.error('Não foi possível calcular a projeção.');
     } finally {
       setSimLoading(false);
@@ -195,6 +303,18 @@ const AIInsights: React.FC = () => {
     return typeof dimension?.score === 'number' ? dimension.score : null;
   };
 
+  const scoreTone = resolveScoreTone(overallScore);
+  const scoreToneClasses = SCORE_TONE_CLASSES[scoreTone];
+
+  const simulationTone = simulation
+    ? resolveScoreTone(
+        simulation.scenarios.base.projectedValue >
+          simulation.currentPortfolioValue * 1.5
+          ? 80
+          : 50,
+      )
+    : 'neutral';
+
   if (error && !analysisResult) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -208,21 +328,66 @@ const AIInsights: React.FC = () => {
     );
   }
 
+  const SEVERITY_ORDER: Record<'high' | 'medium' | 'low', number> = {
+    high: 0,
+    medium: 1,
+    low: 2,
+  };
+  const SEVERITY_LABEL: Record<'high' | 'medium' | 'low', string> = {
+    high: 'ALTO',
+    medium: 'MÉDIO',
+    low: 'BAIXO',
+  };
+
+  const sortedAlerts = [...(errorRadar?.alerts || [])].sort(
+    (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity],
+  );
+  const highCount = sortedAlerts.filter((a) => a.severity === 'high').length;
+  const mediumCount = sortedAlerts.filter((a) => a.severity === 'medium').length;
+
   return (
     <div className="container mx-auto py-8 space-y-10 selection:bg-primary/20">
       {/* Header com Smart Feed */}
       <header className="space-y-6">
         <div className="flex justify-between items-end">
           <div className="space-y-1">
-            <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-              Insights IA
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-4xl font-black tracking-tight font-heading text-foreground">
+                Insights IA
+              </h1>
+              <button
+                type="button"
+                aria-label="Atualizar análise"
+                onClick={fetchData}
+                className="h-8 w-8 rounded-full border border-border/60 flex items-center justify-center hover:bg-muted/10 transition-colors">
+                <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
             <p className="text-muted-foreground font-medium">
-              Visão estratégica e proibições de erro com inteligência
+              Visão estratégica e prevenção de erros com inteligência
               artificial.
             </p>
           </div>
-          {!isPremium && <BadgePremium />}
+          <div className="flex items-center gap-3">
+            <InvestorProfileBadge
+              profile={investorProfile}
+              onOverride={handleProfileOverride}
+            />
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="view-mode-toggle"
+                className="text-xs font-bold text-muted-foreground">
+                Avançado
+              </label>
+              <Switch
+                id="view-mode-toggle"
+                aria-label="Modo avançado"
+                checked={viewMode === 'advanced'}
+                onCheckedChange={handleViewModeChange}
+              />
+            </div>
+            {isPremium && <BadgePremium />}
+          </div>
         </div>
 
         {/* Smart Feed (Spotify Style) */}
@@ -267,7 +432,7 @@ const AIInsights: React.FC = () => {
         <div className="xl:col-span-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Investment Score Gauge */}
-            <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5">
+            <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-lg">
               <CardContent className="p-8 flex flex-col items-center justify-center text-center space-y-6">
                 <div className="relative">
                   <svg className="h-48 w-48 -rotate-90">
@@ -291,7 +456,10 @@ const AIInsights: React.FC = () => {
                       strokeDashoffset={
                         552.92 * (1 - (overallScore ?? 0) / 100)
                       }
-                      className="text-primary transition-all duration-1000 ease-out"
+                      className={cn(
+                        scoreToneClasses.text,
+                        'transition-all duration-1000 ease-out',
+                      )}
                       strokeLinecap="round"
                     />
                   </svg>
@@ -328,7 +496,7 @@ const AIInsights: React.FC = () => {
             {/* Assessment Text */}
             <Card className="rounded-2xl bg-card border-none shadow-none flex flex-col justify-center">
               <CardContent className="p-0">
-                <div className="p-6 bg-primary/5 rounded-2xl mb-4 border border-primary/10">
+                <div className="p-6 bg-muted/5 rounded-2xl mb-4 border-l-2 border-border">
                   <h4 className="flex items-center gap-2 text-sm font-bold mb-3">
                     <Activity className="h-4 w-4 text-primary" /> Opinião
                     Trackerr
@@ -339,6 +507,9 @@ const AIInsights: React.FC = () => {
                       'Analisando seu portfólio para gerar recomendações personalizadas...'}
                     "
                   </p>
+                  {aiData?.portfolio_assessment && (
+                    <AiGeneratedNotice className="pt-2" />
+                  )}
                 </div>
                 {/* Só diversificação e risco: consistência e volatilidade não
                     têm cálculo determinístico e foram removidas em vez de
@@ -348,6 +519,7 @@ const AIInsights: React.FC = () => {
                     <ScoreRow
                       label="Diversificação"
                       val={dimensionScore('diversification')}
+                      tone={resolveScoreTone(dimensionScore('diversification'))}
                     />
                     {/* "Controle de risco", não "Risco": a dimensão vem
                         normalizada para maior = melhor, então uma barra cheia
@@ -355,6 +527,7 @@ const AIInsights: React.FC = () => {
                     <ScoreRow
                       label="Controle de risco"
                       val={dimensionScore('risk')}
+                      tone={resolveScoreTone(dimensionScore('risk'))}
                     />
                   </div>
                 )}
@@ -395,7 +568,7 @@ const AIInsights: React.FC = () => {
                           <div className="flex justify-between text-xs font-bold">
                             <span>{item.category}</span>
                             <div className="space-x-2">
-                              <span className="text-muted-foreground line-through decoration-primary/30">
+                              <span className="text-muted-foreground line-through decoration-muted-foreground/40">
                                 {item.current.toFixed(1)}%
                               </span>
                               <span className="text-primary">
@@ -422,7 +595,7 @@ const AIInsights: React.FC = () => {
                 </CardContent>
               </Card>
               <div className="space-y-4">
-                <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10">
+                <div className="bg-muted/5 rounded-2xl p-6 border border-border/60">
                   <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-primary" /> Movimentações
                     Sugeridas
@@ -437,6 +610,9 @@ const AIInsights: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                  {(aiData?.rebalancing?.top_moves || []).length > 0 && (
+                    <AiGeneratedNotice className="pt-3" />
+                  )}
                 </div>
               </div>
             </div>
@@ -447,32 +623,50 @@ const AIInsights: React.FC = () => {
             <h2 className="text-xl font-bold flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-rose-500" /> Radar Anti-Erro
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {errorRadar?.status === 'ok' && errorRadar.alerts.length === 0 && (
-                <p className="text-sm text-muted-foreground md:col-span-2">
-                  Nenhum alerta no momento — sinais de concentração, diversificação
-                  e risco dentro do esperado.
+            {errorRadarFailed && (
+              <div className="p-5 rounded-2xl border border-border/60 bg-muted/5 flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Não foi possível carregar o radar.
                 </p>
-              )}
-              {(errorRadar?.alerts || []).map((alert) => (
+                <Button onClick={fetchData} variant="outline" size="sm" className="rounded-xl">
+                  Tentar novamente
+                </Button>
+              </div>
+            )}
+            {errorRadar?.status === 'ok' && sortedAlerts.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Nenhum alerta no momento — sinais de concentração, diversificação e
+                risco dentro do esperado.
+              </p>
+            )}
+            {sortedAlerts.length > 0 && (
+              <p className="text-xs font-bold text-muted-foreground">
+                {sortedAlerts.length}{' '}
+                {sortedAlerts.length === 1 ? 'alerta' : 'alertas'} —{' '}
+                {highCount} alto(s), {mediumCount} médio(s)
+              </p>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sortedAlerts.map((alert) => (
                 <div
                   key={alert.code}
                   className={cn(
                     'p-5 rounded-2xl border transition-all',
                     alert.severity === 'high'
-                      ? 'bg-rose-500/5 border-rose-500/20 shadow-lg shadow-rose-500/5'
-                      : 'bg-amber-500/5 border-amber-500/20',
+                      ? 'bg-warning/5 border-warning/20'
+                      : 'bg-muted/5 border-border/60',
                   )}>
                   <div className="flex items-center gap-2 mb-2">
-                    <div
+                    <span
                       className={cn(
-                        'h-2 w-2 rounded-full',
+                        'text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest',
                         alert.severity === 'high'
-                          ? 'bg-rose-500'
-                          : 'bg-amber-500',
-                      )}
-                    />
-                    <span className="text-[10px] font-black uppercase tracking-widest">
+                          ? 'bg-warning text-warning-foreground'
+                          : 'bg-muted text-muted-foreground',
+                      )}>
+                      {SEVERITY_LABEL[alert.severity]}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                       {ERROR_RADAR_TYPE_LABEL[alert.type]}
                     </span>
                     {alert.symbol && (
@@ -481,9 +675,7 @@ const AIInsights: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs font-medium leading-relaxed">
-                    {alert.message}
-                  </p>
+                  <p className="text-xs font-medium leading-relaxed">{alert.message}</p>
                 </div>
               ))}
             </div>
@@ -511,7 +703,11 @@ const AIInsights: React.FC = () => {
                     </div>
                     <Slider
                       value={[monthlyInvest]}
-                      onValueChange={(v) => setMonthlyInvest(v[0])}
+                      onValueChange={(v) => {
+                        setMonthlyInvest(v[0]);
+                        setSimulation(null);
+                        setCdiComparison(null);
+                      }}
                       max={10000}
                       step={100}
                       className="py-4"
@@ -524,7 +720,11 @@ const AIInsights: React.FC = () => {
                         <button
                           key={option.value}
                           type="button"
-                          onClick={() => setHorizon(option.value)}
+                          onClick={() => {
+                            setHorizon(option.value);
+                            setSimulation(null);
+                            setCdiComparison(null);
+                          }}
                           className={cn(
                             'rounded-xl py-2 text-xs font-bold border transition-colors',
                             horizon === option.value
@@ -548,7 +748,12 @@ const AIInsights: React.FC = () => {
                   </Button>
                 </div>
 
-                <div className="bg-primary/5 rounded-[2rem] p-8 flex flex-col justify-center items-center text-center border border-primary/10 relative">
+                <div
+                  className={cn(
+                    'rounded-[2rem] p-8 flex flex-col justify-center items-center text-center border relative',
+                    SCORE_TONE_CLASSES[simulationTone].bg,
+                    SCORE_TONE_CLASSES[simulationTone].border,
+                  )}>
                   {simulation ? (
                     <div className="animate-in fade-in zoom-in duration-500 space-y-6">
                       <div>
@@ -586,6 +791,24 @@ const AIInsights: React.FC = () => {
                           </span>
                         </div>
                       </div>
+                      {viewMode === 'advanced' && cdiComparison !== null && (
+                        <div className="pt-4 border-t border-border/60 w-full">
+                          <span className="block text-[10px] text-muted-foreground uppercase font-bold mb-1">
+                            CDI acumulado (últimos {simulation.months} meses)
+                          </span>
+                          <span className="font-black text-foreground text-lg">
+                            {formatCurrency(cdiComparison)}
+                          </span>
+                          <p className="text-[10px] text-muted-foreground/70 mt-1">
+                            Estimativa simplificada: aplica o CDI já realizado
+                            nos últimos {simulation.months} meses sobre o
+                            valor atual da carteira, sem simular os aportes
+                            mensais dentro do CDI. É uma referência do passado,
+                            não uma projeção da mesma janela futura dos
+                            cenários acima.
+                          </p>
+                        </div>
+                      )}
                       {simulation.limitations.length > 0 && (
                         <p className="text-[10px] text-muted-foreground/70 pt-2">
                           Projeção com dados parciais da carteira.
@@ -649,6 +872,9 @@ const AIInsights: React.FC = () => {
                 </div>
               ))}
             </div>
+            {(aiData?.opportunity_radar || []).length > 0 && (
+              <AiGeneratedNotice className="pt-2" />
+            )}
           </section>
 
           {!isPremium && <UpgradeBanner />}
@@ -658,18 +884,32 @@ const AIInsights: React.FC = () => {
   );
 };
 
-const ScoreRow = ({label, val}: {label: string; val: number | null}) => (
+const ScoreRow = ({
+  label,
+  val,
+  tone = 'neutral',
+}: {
+  label: string;
+  val: number | null;
+  tone?: ScoreTone;
+}) => (
   <div className="space-y-2">
     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
       <span>{label}</span>
       {/* Em dash quando não há valor. `val || 0` mostraria 0% para dado
           ausente, que é uma afirmação — e errada. */}
-      <span className="text-primary">{val === null ? '—' : `${val}%`}</span>
+      <span className={SCORE_TONE_CLASSES[tone].text}>
+        {val === null ? '—' : `${val}%`}
+      </span>
     </div>
     <Progress
       value={val ?? 0}
       className="h-1 bg-primary/5"
-      indicatorClassName="bg-gradient-to-r from-primary/50 to-primary"
+      indicatorClassName={cn(
+        tone === 'warning' && 'bg-gradient-to-r from-warning/50 to-warning',
+        tone === 'neutral' && 'bg-gradient-to-r from-muted-foreground/50 to-muted-foreground',
+        tone === 'positive' && 'bg-gradient-to-r from-positive/50 to-positive',
+      )}
     />
   </div>
 );

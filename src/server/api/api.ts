@@ -58,6 +58,11 @@ export const aiService = {
     horizon: '6m' | '1y' | '5y' | '10y';
     monthlyContribution?: number;
   }) => apiClient.post('/ai/future-simulator', payload),
+  getInvestorProfile: () => apiClient.get('/ai/investor-profile'),
+  updateInvestorProfile: (payload: {
+    sophistication?: 'beginner' | 'intermediate' | 'experienced' | null;
+    riskTolerance?: 'conservative' | 'moderate' | 'aggressive' | null;
+  }) => apiClient.put('/ai/investor-profile', payload),
 };
 
 export const stockServices = {
