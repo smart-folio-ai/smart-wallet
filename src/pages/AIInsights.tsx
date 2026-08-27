@@ -632,6 +632,7 @@ const AIInsights: React.FC = () => {
                       onValueChange={(v) => {
                         setMonthlyInvest(v[0]);
                         setSimulation(null);
+                        setCdiComparison(null);
                       }}
                       max={10000}
                       step={100}
@@ -648,6 +649,7 @@ const AIInsights: React.FC = () => {
                           onClick={() => {
                             setHorizon(option.value);
                             setSimulation(null);
+                            setCdiComparison(null);
                           }}
                           className={cn(
                             'rounded-xl py-2 text-xs font-bold border transition-colors',

@@ -567,4 +567,37 @@ describe('AIInsights — comparacao com CDI no modo avancado', () => {
     });
     expect(screen.queryByText('CDI no período')).not.toBeInTheDocument();
   });
+
+  it('limpa a comparacao com CDI ao trocar o horizonte apos calcular', async () => {
+    getCdiSeriesMock.mockResolvedValue({
+      data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
+    });
+    futureSimulatorMock.mockResolvedValue({
+      modelVersion: 'future_simulator_v1',
+      horizon: '10y',
+      months: 120,
+      currentPortfolioValue: 100000,
+      monthlyContribution: 1000,
+      scenarios: {
+        pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+      },
+      assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
+      dividendProjection: {current: {monthly: 0, annual: 0}},
+      limitations: [],
+      confidence: 'high',
+    });
+
+    renderPage();
+    const calcButton = await screen.findByText('Calcular Projeção IA');
+    fireEvent.click(calcButton);
+
+    expect(await screen.findByText('CDI no período')).toBeInTheDocument();
+
+    const oneYearButton = screen.getByText('1 ano');
+    fireEvent.click(oneYearButton);
+
+    expect(screen.queryByText('CDI no período')).not.toBeInTheDocument();
+  });
 });
