@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import {Pencil} from 'lucide-react';
 import {
   Popover,
@@ -27,6 +28,8 @@ export function InvestorProfileBadge({
   profile,
   onOverride,
 }: InvestorProfileBadgeProps) {
+  const [open, setOpen] = useState(false);
+
   if (!profile) return null;
 
   const isSuggested = profile.confidence < CONFIDENCE_THRESHOLD;
@@ -35,7 +38,7 @@ export function InvestorProfileBadge({
   }`;
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -53,7 +56,10 @@ export function InvestorProfileBadge({
             <button
               key={level}
               type="button"
-              onClick={() => onOverride({sophistication: level})}
+              onClick={() => {
+                setOpen(false);
+                onOverride({sophistication: level});
+              }}
               className={cn(
                 'w-full text-left text-sm px-2 py-1.5 rounded-lg hover:bg-muted/10 transition-colors',
                 profile.sophistication === level && 'font-bold text-primary',
