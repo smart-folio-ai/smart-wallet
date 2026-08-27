@@ -348,6 +348,53 @@ describe('AIInsights — score da carteira', () => {
   });
 });
 
+describe('AIInsights — severidade do radar de erro', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    isProOrHigherPlanMock.mockReturnValue(true);
+    useSubscriptionMock.mockReturnValue({
+      planName: 'Investidor Pro',
+      isSubscribed: true,
+      isLoading: false,
+    });
+    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
+    portfolioScoreMock.mockResolvedValue(okScore);
+  });
+
+  it('ordena alertas por severidade e mostra chip de texto, nao so cor', async () => {
+    errorRadarMock.mockResolvedValue({
+      modelVersion: 'portfolio_error_radar_v1',
+      status: 'ok',
+      riskLevel: 'high',
+      positionsCount: 3,
+      alerts: [
+        {code: 'div_low', type: 'diversification', severity: 'medium', message: 'Diversificação baixa'},
+        {code: 'conc_high', type: 'concentration', severity: 'high', symbol: 'PETR4', message: 'Concentração alta em PETR4'},
+      ],
+    });
+    renderPage();
+
+    const highChip = await screen.findByText('ALTO');
+    const mediumChip = screen.getByText('MÉDIO');
+    expect(highChip).toBeInTheDocument();
+    expect(mediumChip).toBeInTheDocument();
+
+    // resumo no topo
+    expect(screen.getByText(/2 alertas/)).toBeInTheDocument();
+    expect(screen.getByText(/1 alto/)).toBeInTheDocument();
+  });
+
+  it('mostra mensagem de falha explicita quando o radar nao carrega', async () => {
+    errorRadarMock.mockRejectedValue(new Error('network error'));
+    renderPage();
+
+    expect(
+      await screen.findByText('Não foi possível carregar o radar.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Tentar novamente')).toBeInTheDocument();
+  });
+});
+
 describe('AIInsights — badge Pro Account', () => {
   beforeEach(() => {
     vi.clearAllMocks();

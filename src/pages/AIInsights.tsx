@@ -223,6 +223,23 @@ const AIInsights: React.FC = () => {
     );
   }
 
+  const SEVERITY_ORDER: Record<'high' | 'medium' | 'low', number> = {
+    high: 0,
+    medium: 1,
+    low: 2,
+  };
+  const SEVERITY_LABEL: Record<'high' | 'medium' | 'low', string> = {
+    high: 'ALTO',
+    medium: 'MÉDIO',
+    low: 'BAIXO',
+  };
+
+  const sortedAlerts = [...(errorRadar?.alerts || [])].sort(
+    (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity],
+  );
+  const highCount = sortedAlerts.filter((a) => a.severity === 'high').length;
+  const mediumCount = sortedAlerts.filter((a) => a.severity === 'medium').length;
+
   return (
     <div className="container mx-auto py-8 space-y-10 selection:bg-primary/20">
       {/* Header com Smart Feed */}
@@ -467,32 +484,48 @@ const AIInsights: React.FC = () => {
             <h2 className="text-xl font-bold flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-rose-500" /> Radar Anti-Erro
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {errorRadar?.status === 'ok' && errorRadar.alerts.length === 0 && (
-                <p className="text-sm text-muted-foreground md:col-span-2">
-                  Nenhum alerta no momento — sinais de concentração, diversificação
-                  e risco dentro do esperado.
+            {errorRadar === null && (
+              <div className="p-5 rounded-2xl border border-border/60 bg-muted/5 flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Não foi possível carregar o radar.
                 </p>
-              )}
-              {(errorRadar?.alerts || []).map((alert) => (
+                <Button onClick={fetchData} variant="outline" size="sm" className="rounded-xl">
+                  Tentar novamente
+                </Button>
+              </div>
+            )}
+            {errorRadar?.status === 'ok' && sortedAlerts.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Nenhum alerta no momento — sinais de concentração, diversificação e
+                risco dentro do esperado.
+              </p>
+            )}
+            {sortedAlerts.length > 0 && (
+              <p className="text-xs font-bold text-muted-foreground">
+                {sortedAlerts.length} alertas — {highCount} alto(s), {mediumCount} médio(s)
+              </p>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sortedAlerts.map((alert) => (
                 <div
                   key={alert.code}
                   className={cn(
                     'p-5 rounded-2xl border transition-all',
                     alert.severity === 'high'
-                      ? 'bg-rose-500/5 border-rose-500/20 shadow-lg shadow-rose-500/5'
-                      : 'bg-amber-500/5 border-amber-500/20',
+                      ? 'bg-warning/5 border-warning/20'
+                      : 'bg-muted/5 border-border/60',
                   )}>
                   <div className="flex items-center gap-2 mb-2">
-                    <div
+                    <span
                       className={cn(
-                        'h-2 w-2 rounded-full',
+                        'text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest',
                         alert.severity === 'high'
-                          ? 'bg-rose-500'
-                          : 'bg-amber-500',
-                      )}
-                    />
-                    <span className="text-[10px] font-black uppercase tracking-widest">
+                          ? 'bg-warning text-warning-foreground'
+                          : 'bg-muted text-muted-foreground',
+                      )}>
+                      {SEVERITY_LABEL[alert.severity]}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                       {ERROR_RADAR_TYPE_LABEL[alert.type]}
                     </span>
                     {alert.symbol && (
@@ -501,9 +534,7 @@ const AIInsights: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs font-medium leading-relaxed">
-                    {alert.message}
-                  </p>
+                  <p className="text-xs font-medium leading-relaxed">{alert.message}</p>
                 </div>
               ))}
             </div>
