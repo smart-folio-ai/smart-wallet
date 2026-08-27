@@ -437,3 +437,46 @@ describe('AIInsights — badge Pro Account', () => {
     expect(screen.queryByText('Pro Account')).not.toBeInTheDocument();
   });
 });
+
+describe('AIInsights — transparencia de conteudo gerado por IA', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    isProOrHigherPlanMock.mockReturnValue(true);
+    useSubscriptionMock.mockReturnValue({
+      planName: 'Investidor Pro',
+      isSubscribed: true,
+      isLoading: false,
+    });
+    portfolioScoreMock.mockResolvedValue(okScore);
+    errorRadarMock.mockResolvedValue({
+      modelVersion: 'portfolio_error_radar_v1',
+      status: 'ok',
+      riskLevel: 'low',
+      alerts: [],
+      positionsCount: 0,
+    });
+  });
+
+  it('mostra aviso de conteudo gerado por IA junto do radar de oportunidades', async () => {
+    getOrCreateAiAnalysisMock.mockResolvedValue({
+      ai_analysis: {
+        opportunity_radar: [
+          {symbol: 'BBAS3', type: 'attractive_range', price: 20, target_price: 25, upside: 25, rationale: 'P/L baixo'},
+        ],
+      },
+    });
+    renderPage();
+
+    const notices = await screen.findAllByText(
+      'Esse texto foi gerado com o auxílio de inteligência artificial.',
+    );
+    expect(notices.length).toBeGreaterThan(0);
+  });
+
+  it('mostra botao de atualizar no header apos carregar com sucesso', async () => {
+    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
+    renderPage();
+
+    expect(await screen.findByLabelText('Atualizar análise')).toBeInTheDocument();
+  });
+});

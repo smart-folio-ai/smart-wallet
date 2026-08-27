@@ -23,6 +23,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
+import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {Progress} from '@/components/ui/progress';
 import {Slider} from '@/components/ui/slider';
 import {toast} from 'sonner';
@@ -246,11 +247,20 @@ const AIInsights: React.FC = () => {
       <header className="space-y-6">
         <div className="flex justify-between items-end">
           <div className="space-y-1">
-            <h1 className="text-4xl font-black tracking-tight font-heading text-foreground">
-              Insights IA
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-4xl font-black tracking-tight font-heading text-foreground">
+                Insights IA
+              </h1>
+              <button
+                type="button"
+                aria-label="Atualizar análise"
+                onClick={fetchData}
+                className="h-8 w-8 rounded-full border border-border/60 flex items-center justify-center hover:bg-muted/10 transition-colors">
+                <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
             <p className="text-muted-foreground font-medium">
-              Visão estratégica e proibições de erro com inteligência
+              Visão estratégica e prevenção de erros com inteligência
               artificial.
             </p>
           </div>
@@ -374,6 +384,9 @@ const AIInsights: React.FC = () => {
                       'Analisando seu portfólio para gerar recomendações personalizadas...'}
                     "
                   </p>
+                  {aiData?.portfolio_assessment && (
+                    <AiGeneratedNotice className="pt-2" />
+                  )}
                 </div>
                 {/* Só diversificação e risco: consistência e volatilidade não
                     têm cálculo determinístico e foram removidas em vez de
@@ -474,6 +487,9 @@ const AIInsights: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                  {(aiData?.rebalancing?.top_moves || []).length > 0 && (
+                    <AiGeneratedNotice className="pt-3" />
+                  )}
                 </div>
               </div>
             </div>
@@ -711,6 +727,9 @@ const AIInsights: React.FC = () => {
                 </div>
               ))}
             </div>
+            {(aiData?.opportunity_radar || []).length > 0 && (
+              <AiGeneratedNotice className="pt-2" />
+            )}
           </section>
 
           {!isPremium && <UpgradeBanner />}
