@@ -37,6 +37,8 @@ import {
 } from '@/services/ai';
 import {portfolioService} from '@/server/api/api';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
+import {resolveScoreTone, SCORE_TONE_CLASSES} from '@/utils/score-tone';
+import type {ScoreTone} from '@/utils/score-tone';
 import {cn} from '@/lib/utils';
 import {useSubscription} from '@/hooks/useSubscription';
 import {RagAskPanel} from '@/components/ai/RagAskPanel';
@@ -196,6 +198,18 @@ const AIInsights: React.FC = () => {
     return typeof dimension?.score === 'number' ? dimension.score : null;
   };
 
+  const scoreTone = resolveScoreTone(overallScore);
+  const scoreToneClasses = SCORE_TONE_CLASSES[scoreTone];
+
+  const simulationTone = simulation
+    ? resolveScoreTone(
+        simulation.scenarios.base.projectedValue >
+          simulation.currentPortfolioValue * 1.5
+          ? 80
+          : 50,
+      )
+    : 'neutral';
+
   if (error && !analysisResult) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -215,7 +229,7 @@ const AIInsights: React.FC = () => {
       <header className="space-y-6">
         <div className="flex justify-between items-end">
           <div className="space-y-1">
-            <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-black tracking-tight font-heading text-foreground">
               Insights IA
             </h1>
             <p className="text-muted-foreground font-medium">
@@ -268,7 +282,7 @@ const AIInsights: React.FC = () => {
         <div className="xl:col-span-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Investment Score Gauge */}
-            <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5">
+            <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-lg">
               <CardContent className="p-8 flex flex-col items-center justify-center text-center space-y-6">
                 <div className="relative">
                   <svg className="h-48 w-48 -rotate-90">
@@ -292,7 +306,10 @@ const AIInsights: React.FC = () => {
                       strokeDashoffset={
                         552.92 * (1 - (overallScore ?? 0) / 100)
                       }
-                      className="text-primary transition-all duration-1000 ease-out"
+                      className={cn(
+                        scoreToneClasses.text,
+                        'transition-all duration-1000 ease-out',
+                      )}
                       strokeLinecap="round"
                     />
                   </svg>
@@ -329,7 +346,7 @@ const AIInsights: React.FC = () => {
             {/* Assessment Text */}
             <Card className="rounded-2xl bg-card border-none shadow-none flex flex-col justify-center">
               <CardContent className="p-0">
-                <div className="p-6 bg-primary/5 rounded-2xl mb-4 border border-primary/10">
+                <div className="p-6 bg-muted/5 rounded-2xl mb-4 border-l-2 border-border">
                   <h4 className="flex items-center gap-2 text-sm font-bold mb-3">
                     <Activity className="h-4 w-4 text-primary" /> Opinião
                     Trackerr
@@ -349,6 +366,7 @@ const AIInsights: React.FC = () => {
                     <ScoreRow
                       label="Diversificação"
                       val={dimensionScore('diversification')}
+                      tone={resolveScoreTone(dimensionScore('diversification'))}
                     />
                     {/* "Controle de risco", não "Risco": a dimensão vem
                         normalizada para maior = melhor, então uma barra cheia
@@ -356,6 +374,7 @@ const AIInsights: React.FC = () => {
                     <ScoreRow
                       label="Controle de risco"
                       val={dimensionScore('risk')}
+                      tone={resolveScoreTone(dimensionScore('risk'))}
                     />
                   </div>
                 )}
@@ -396,7 +415,7 @@ const AIInsights: React.FC = () => {
                           <div className="flex justify-between text-xs font-bold">
                             <span>{item.category}</span>
                             <div className="space-x-2">
-                              <span className="text-muted-foreground line-through decoration-primary/30">
+                              <span className="text-muted-foreground line-through decoration-muted-foreground/40">
                                 {item.current.toFixed(1)}%
                               </span>
                               <span className="text-primary">
@@ -423,7 +442,7 @@ const AIInsights: React.FC = () => {
                 </CardContent>
               </Card>
               <div className="space-y-4">
-                <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10">
+                <div className="bg-muted/5 rounded-2xl p-6 border border-border/60">
                   <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-primary" /> Movimentações
                     Sugeridas
@@ -555,7 +574,12 @@ const AIInsights: React.FC = () => {
                   </Button>
                 </div>
 
-                <div className="bg-primary/5 rounded-[2rem] p-8 flex flex-col justify-center items-center text-center border border-primary/10 relative">
+                <div
+                  className={cn(
+                    'rounded-[2rem] p-8 flex flex-col justify-center items-center text-center border relative',
+                    SCORE_TONE_CLASSES[simulationTone].bg,
+                    SCORE_TONE_CLASSES[simulationTone].border,
+                  )}>
                   {simulation ? (
                     <div className="animate-in fade-in zoom-in duration-500 space-y-6">
                       <div>
@@ -665,18 +689,32 @@ const AIInsights: React.FC = () => {
   );
 };
 
-const ScoreRow = ({label, val}: {label: string; val: number | null}) => (
+const ScoreRow = ({
+  label,
+  val,
+  tone = 'neutral',
+}: {
+  label: string;
+  val: number | null;
+  tone?: ScoreTone;
+}) => (
   <div className="space-y-2">
     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
       <span>{label}</span>
       {/* Em dash quando não há valor. `val || 0` mostraria 0% para dado
           ausente, que é uma afirmação — e errada. */}
-      <span className="text-primary">{val === null ? '—' : `${val}%`}</span>
+      <span className={SCORE_TONE_CLASSES[tone].text}>
+        {val === null ? '—' : `${val}%`}
+      </span>
     </div>
     <Progress
       value={val ?? 0}
       className="h-1 bg-primary/5"
-      indicatorClassName="bg-gradient-to-r from-primary/50 to-primary"
+      indicatorClassName={cn(
+        tone === 'warning' && 'bg-gradient-to-r from-warning/50 to-warning',
+        tone === 'neutral' && 'bg-gradient-to-r from-muted-foreground/50 to-muted-foreground',
+        tone === 'positive' && 'bg-gradient-to-r from-positive/50 to-positive',
+      )}
     />
   </div>
 );
