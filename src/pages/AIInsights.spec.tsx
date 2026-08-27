@@ -29,6 +29,15 @@ vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => useSubscriptionMock(),
 }));
 
+const getInvestorProfileMock = vi.fn();
+const setInvestorProfileOverrideMock = vi.fn();
+
+vi.mock('@/services/ai/investorProfile', () => ({
+  getInvestorProfile: (...args: unknown[]) => getInvestorProfileMock(...args),
+  setInvestorProfileOverride: (...args: unknown[]) =>
+    setInvestorProfileOverrideMock(...args),
+}));
+
 const getCdiSeriesMock = vi.fn();
 
 vi.mock('@/server/api/api', () => ({
@@ -599,5 +608,68 @@ describe('AIInsights — comparacao com CDI no modo avancado', () => {
     fireEvent.click(oneYearButton);
 
     expect(screen.queryByText('CDI no período')).not.toBeInTheDocument();
+  });
+});
+
+describe('AIInsights — toggle Padrao/Avancado', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    isProOrHigherPlanMock.mockReturnValue(true);
+    useSubscriptionMock.mockReturnValue({
+      planName: 'Investidor Pro',
+      isSubscribed: true,
+      isLoading: false,
+    });
+    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
+    portfolioScoreMock.mockResolvedValue(okScore);
+    errorRadarMock.mockResolvedValue({
+      modelVersion: 'portfolio_error_radar_v1',
+      status: 'ok',
+      riskLevel: 'low',
+      alerts: [],
+      positionsCount: 0,
+    });
+    getInvestorProfileMock.mockResolvedValue({
+      sophistication: 'experienced',
+      riskTolerance: 'aggressive',
+      confidence: 0.9,
+      signals: {},
+      source: 'inferred',
+    });
+  });
+
+  it('abre em modo avancado quando o perfil e experienced e nao ha preferencia salva', async () => {
+    renderPage();
+
+    // "before" assertion: enquanto o perfil ainda nao carregou, o toggle
+    // comeca no modo padrao (estado inicial do useState).
+    const toggle = await screen.findByLabelText('Modo avançado');
+    await waitFor(() => {
+      expect(toggle).toBeChecked();
+    });
+  });
+
+  it('persiste a escolha do usuario em localStorage entre remounts', async () => {
+    const {unmount} = renderPage();
+    const toggle = await screen.findByLabelText('Modo avançado');
+    await waitFor(() => {
+      expect(toggle).toBeChecked();
+    });
+
+    fireEvent.click(toggle);
+    expect(localStorage.getItem('ai_insights_view_mode')).toBe('standard');
+    unmount();
+
+    renderPage();
+    const toggleAfterRemount = await screen.findByLabelText('Modo avançado');
+    await waitFor(() => {
+      expect(toggleAfterRemount).not.toBeChecked();
+    });
+  });
+
+  it('mostra o badge de perfil quando o perfil carrega', async () => {
+    renderPage();
+    expect(await screen.findByText('Perfil: Experiente')).toBeInTheDocument();
   });
 });

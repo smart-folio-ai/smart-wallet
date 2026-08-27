@@ -26,6 +26,7 @@ import {Button} from '@/components/ui/button';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {Progress} from '@/components/ui/progress';
 import {Slider} from '@/components/ui/slider';
+import {Switch} from '@/components/ui/switch';
 import {toast} from 'sonner';
 import {
   aiAnalysisService,
@@ -44,6 +45,12 @@ import type {ScoreTone} from '@/utils/score-tone';
 import {cn} from '@/lib/utils';
 import {useSubscription} from '@/hooks/useSubscription';
 import {RagAskPanel} from '@/components/ai/RagAskPanel';
+import {InvestorProfileBadge} from '@/components/ai/InvestorProfileBadge';
+import {
+  getInvestorProfile,
+  setInvestorProfileOverride,
+  InvestorProfileResponse,
+} from '@/services/ai/investorProfile';
 import {
   getAiPlanFromPlanName,
   getOrCreateAiAnalysis,
@@ -87,12 +94,14 @@ const AIInsights: React.FC = () => {
   const [simLoading, setSimLoading] = useState(false);
   const [cdiComparison, setCdiComparison] = useState<number | null>(null);
 
-  // Estado mínimo de viewMode: a Task 8 (badge/toggle de perfil de
-  // investidor) ainda não foi implementada — depende de um endpoint de
-  // backend que ainda não foi mergeado. Esta é apenas a leitura/persistência
-  // via localStorage necessária para features que já precisam reagir ao
-  // modo (como a comparação com CDI abaixo). A Task 8 deve reutilizar este
-  // estado e este efeito, não redeclará-los.
+  // viewMode: estado originalmente introduzido em versão mínima pela Task 9
+  // (comparação com CDI), que só precisava ler/persistir a preferência via
+  // localStorage. Esta Task (8) é a dona "real" do estado — adiciona o fetch
+  // do perfil do investidor e a sugestão de modo avançado baseada nele (ver
+  // useEffect abaixo), além do toggle na UI que efetivamente escreve em
+  // localStorage. O estado em si não é redeclarado aqui.
+  const [investorProfile, setInvestorProfile] =
+    useState<InvestorProfileResponse | null>(null);
   const [viewMode, setViewMode] = useState<'standard' | 'advanced'>(
     'standard',
   );
@@ -139,11 +148,12 @@ const AIInsights: React.FC = () => {
       // independentes entre si e da análise do LLM: se o trackerr-ia estiver
       // fora, os dois ainda aparecem, e vice-versa. Por isso allSettled em
       // vez de await sequencial.
-      const [analysisOutcome, scoreOutcome, errorRadarOutcome] =
+      const [analysisOutcome, scoreOutcome, errorRadarOutcome, profileOutcome] =
         await Promise.allSettled([
           getOrCreateAiAnalysis({rawAssets: assets, plan: aiPlan}),
           aiAnalysisService.portfolioScore(),
           aiAnalysisService.errorRadar(),
+          getInvestorProfile(),
         ]);
 
       if (scoreOutcome.status === 'fulfilled') {
@@ -158,6 +168,24 @@ const AIInsights: React.FC = () => {
         setErrorRadar(null);
       }
 
+      // O perfil de investidor é independente das demais fontes: falhar (ou,
+      // em testes que não mockam este serviço, resolver com `undefined`) não
+      // deve derrubar o resto da página — o badge já trata `null` como "não
+      // renderizar nada".
+      if (profileOutcome.status === 'fulfilled' && profileOutcome.value) {
+        setInvestorProfile(profileOutcome.value);
+        // A preferência salva pelo usuário sempre vence; só sugerimos o modo
+        // avançado a partir do perfil quando não há nada salvo ainda.
+        const savedMode = localStorage.getItem('ai_insights_view_mode');
+        if (savedMode === 'standard' || savedMode === 'advanced') {
+          setViewMode(savedMode);
+        } else if (profileOutcome.value.sophistication === 'experienced') {
+          setViewMode('advanced');
+        }
+      } else {
+        setInvestorProfile(null);
+      }
+
       if (analysisOutcome.status === 'rejected') {
         throw analysisOutcome.reason;
       }
@@ -170,6 +198,23 @@ const AIInsights: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleProfileOverride = async (override: {
+    sophistication?: 'beginner' | 'intermediate' | 'experienced';
+  }) => {
+    try {
+      const updated = await setInvestorProfileOverride(override);
+      setInvestorProfile(updated);
+    } catch {
+      toast.error('Não foi possível salvar a alteração de perfil.');
+    }
+  };
+
+  const handleViewModeChange = (checked: boolean) => {
+    const mode = checked ? 'advanced' : 'standard';
+    setViewMode(mode);
+    localStorage.setItem('ai_insights_view_mode', mode);
   };
 
   const handleSimulate = async () => {
@@ -315,7 +360,26 @@ const AIInsights: React.FC = () => {
               artificial.
             </p>
           </div>
-          {isPremium && <BadgePremium />}
+          <div className="flex items-center gap-3">
+            <InvestorProfileBadge
+              profile={investorProfile}
+              onOverride={handleProfileOverride}
+            />
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="view-mode-toggle"
+                className="text-xs font-bold text-muted-foreground">
+                Avançado
+              </label>
+              <Switch
+                id="view-mode-toggle"
+                aria-label="Modo avançado"
+                checked={viewMode === 'advanced'}
+                onCheckedChange={handleViewModeChange}
+              />
+            </div>
+            {isPremium && <BadgePremium />}
+          </div>
         </div>
 
         {/* Smart Feed (Spotify Style) */}
