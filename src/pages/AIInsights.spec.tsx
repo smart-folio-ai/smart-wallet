@@ -8,6 +8,7 @@ const errorRadarMock = vi.fn();
 const futureSimulatorMock = vi.fn();
 const getOrCreateAiAnalysisMock = vi.fn();
 const useSubscriptionMock = vi.fn();
+const isProOrHigherPlanMock = vi.fn();
 
 vi.mock('@/services/ai', () => ({
   aiAnalysisService: {
@@ -21,7 +22,7 @@ vi.mock('@/services/ai/trakkerAi', () => ({
   getOrCreateAiAnalysis: (...args: unknown[]) =>
     getOrCreateAiAnalysisMock(...args),
   getAiPlanFromPlanName: () => 'pro',
-  isProOrHigherPlan: () => true,
+  isProOrHigherPlan: (...args: unknown[]) => isProOrHigherPlanMock(...args),
 }));
 
 vi.mock('@/hooks/useSubscription', () => ({
@@ -59,6 +60,7 @@ const okScore = {
 describe('AIInsights — score da carteira', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isProOrHigherPlanMock.mockReturnValue(true);
     useSubscriptionMock.mockReturnValue({
       planName: 'Investidor Pro',
       isSubscribed: true,
@@ -294,6 +296,7 @@ describe('AIInsights — score da carteira', () => {
 describe('AIInsights — badge Pro Account', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isProOrHigherPlanMock.mockReturnValue(true);
     getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
     portfolioScoreMock.mockResolvedValue(okScore);
     errorRadarMock.mockResolvedValue({
@@ -313,8 +316,9 @@ describe('AIInsights — badge Pro Account', () => {
     });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('Pro Account')).toBeInTheDocument();
+      expect(screen.getByText('Insights IA')).toBeInTheDocument();
     });
+    expect(screen.getByText('Pro Account')).toBeInTheDocument();
   });
 
   it('nao mostra o badge Pro Account para usuario free', async () => {
@@ -323,9 +327,11 @@ describe('AIInsights — badge Pro Account', () => {
       isSubscribed: false,
       isLoading: false,
     });
+    isProOrHigherPlanMock.mockReturnValue(false);
     renderPage();
     await waitFor(() => {
-      expect(screen.queryByText('Pro Account')).not.toBeInTheDocument();
+      expect(screen.getByText('Insights IA')).toBeInTheDocument();
     });
+    expect(screen.queryByText('Pro Account')).not.toBeInTheDocument();
   });
 });
