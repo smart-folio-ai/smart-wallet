@@ -29,7 +29,12 @@ vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => useSubscriptionMock(),
 }));
 
+const getCdiSeriesMock = vi.fn();
+
 vi.mock('@/server/api/api', () => ({
+  stockServices: {
+    getCdiSeries: (...args: unknown[]) => getCdiSeriesMock(...args),
+  },
   portfolioService: {
     getAssets: vi.fn().mockResolvedValue({data: []}),
   },
@@ -478,5 +483,88 @@ describe('AIInsights — transparencia de conteudo gerado por IA', () => {
     renderPage();
 
     expect(await screen.findByLabelText('Atualizar análise')).toBeInTheDocument();
+  });
+});
+
+describe('AIInsights — comparacao com CDI no modo avancado', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    isProOrHigherPlanMock.mockReturnValue(true);
+    localStorage.setItem('ai_insights_view_mode', 'advanced');
+    useSubscriptionMock.mockReturnValue({
+      planName: 'Investidor Pro',
+      isSubscribed: true,
+      isLoading: false,
+    });
+    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
+    portfolioScoreMock.mockResolvedValue(okScore);
+    errorRadarMock.mockResolvedValue({
+      modelVersion: 'portfolio_error_radar_v1',
+      status: 'ok',
+      riskLevel: 'low',
+      alerts: [],
+      positionsCount: 0,
+    });
+  });
+
+  it('mostra a comparacao com CDI apos simular, no modo avancado', async () => {
+    getCdiSeriesMock.mockResolvedValue({
+      data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
+    });
+    futureSimulatorMock.mockResolvedValue({
+      modelVersion: 'future_simulator_v1',
+      horizon: '10y',
+      months: 120,
+      currentPortfolioValue: 100000,
+      monthlyContribution: 1000,
+      scenarios: {
+        pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+      },
+      assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
+      dividendProjection: {current: {monthly: 0, annual: 0}},
+      limitations: [],
+      confidence: 'high',
+    });
+
+    renderPage();
+    const calcButton = await screen.findByText('Calcular Projeção IA');
+
+    // "before" assertion: a comparacao com CDI nao deve existir antes de simular.
+    expect(screen.queryByText('CDI no período')).not.toBeInTheDocument();
+
+    fireEvent.click(calcButton);
+
+    expect(await screen.findByText('CDI no período')).toBeInTheDocument();
+  });
+
+  it('nao mostra a comparacao com CDI no modo padrao', async () => {
+    localStorage.setItem('ai_insights_view_mode', 'standard');
+    futureSimulatorMock.mockResolvedValue({
+      modelVersion: 'future_simulator_v1',
+      horizon: '10y',
+      months: 120,
+      currentPortfolioValue: 100000,
+      monthlyContribution: 1000,
+      scenarios: {
+        pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+      },
+      assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
+      dividendProjection: {current: {monthly: 0, annual: 0}},
+      limitations: [],
+      confidence: 'high',
+    });
+
+    renderPage();
+    const calcButton = await screen.findByText('Calcular Projeção IA');
+    fireEvent.click(calcButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/847.000|847\.000,00/)).toBeInTheDocument();
+    });
+    expect(screen.queryByText('CDI no período')).not.toBeInTheDocument();
   });
 });

@@ -36,7 +36,8 @@ import {
   FutureSimulatorHorizon,
   FutureSimulatorResponse,
 } from '@/services/ai';
-import {portfolioService} from '@/server/api/api';
+import {portfolioService, stockServices} from '@/server/api/api';
+import {accumulateCdi} from '@/pages/cdi-performance.utils';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
 import {resolveScoreTone, SCORE_TONE_CLASSES} from '@/utils/score-tone';
 import type {ScoreTone} from '@/utils/score-tone';
@@ -84,6 +85,7 @@ const AIInsights: React.FC = () => {
     null,
   );
   const [simLoading, setSimLoading] = useState(false);
+  const [cdiComparison, setCdiComparison] = useState<number | null>(null);
 
   // Estado mínimo de viewMode: a Task 8 (badge/toggle de perfil de
   // investidor) ainda não foi implementada — depende de um endpoint de
@@ -182,8 +184,40 @@ const AIInsights: React.FC = () => {
         monthlyContribution: monthlyInvest > 0 ? monthlyInvest : undefined,
       });
       setSimulation(res);
+
+      if (viewMode === 'advanced') {
+        const monthsBack = res.months;
+        const from = new Date();
+        from.setMonth(from.getMonth() - monthsBack);
+        const to = new Date();
+        try {
+          const cdiResponse = await stockServices.getCdiSeries(
+            from.toISOString().slice(0, 10),
+            to.toISOString().slice(0, 10),
+          );
+          const series = cdiResponse.data?.series;
+          if (Array.isArray(series) && series.length > 1) {
+            const accumulated = accumulateCdi(series);
+            const lastValue = Array.from(accumulated.values()).pop();
+            if (typeof lastValue === 'number') {
+              setCdiComparison(
+                res.currentPortfolioValue * (1 + lastValue / 100),
+              );
+            } else {
+              setCdiComparison(null);
+            }
+          } else {
+            setCdiComparison(null);
+          }
+        } catch {
+          setCdiComparison(null);
+        }
+      } else {
+        setCdiComparison(null);
+      }
     } catch (err) {
       setSimulation(null);
+      setCdiComparison(null);
       toast.error('Não foi possível calcular a projeção.');
     } finally {
       setSimLoading(false);
@@ -681,6 +715,21 @@ const AIInsights: React.FC = () => {
                           </span>
                         </div>
                       </div>
+                      {viewMode === 'advanced' && cdiComparison !== null && (
+                        <div className="pt-4 border-t border-border/60 w-full">
+                          <span className="block text-[10px] text-muted-foreground uppercase font-bold mb-1">
+                            CDI no período
+                          </span>
+                          <span className="font-black text-foreground text-lg">
+                            {formatCurrency(cdiComparison)}
+                          </span>
+                          <p className="text-[10px] text-muted-foreground/70 mt-1">
+                            Estimativa simplificada: aplica o CDI acumulado do
+                            período sobre o valor atual da carteira, sem
+                            simular os aportes mensais dentro do CDI.
+                          </p>
+                        </div>
+                      )}
                       {simulation.limitations.length > 0 && (
                         <p className="text-[10px] text-muted-foreground/70 pt-2">
                           Projeção com dados parciais da carteira.
