@@ -290,3 +290,42 @@ describe('AIInsights — score da carteira', () => {
     });
   });
 });
+
+describe('AIInsights — badge Pro Account', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
+    portfolioScoreMock.mockResolvedValue(okScore);
+    errorRadarMock.mockResolvedValue({
+      modelVersion: 'portfolio_error_radar_v1',
+      status: 'ok',
+      riskLevel: 'low',
+      alerts: [],
+      positionsCount: 0,
+    });
+  });
+
+  it('mostra o badge Pro Account para assinante premium', async () => {
+    useSubscriptionMock.mockReturnValue({
+      planName: 'Investidor Pro',
+      isSubscribed: true,
+      isLoading: false,
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Pro Account')).toBeInTheDocument();
+    });
+  });
+
+  it('nao mostra o badge Pro Account para usuario free', async () => {
+    useSubscriptionMock.mockReturnValue({
+      planName: 'Free',
+      isSubscribed: false,
+      isLoading: false,
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.queryByText('Pro Account')).not.toBeInTheDocument();
+    });
+  });
+});

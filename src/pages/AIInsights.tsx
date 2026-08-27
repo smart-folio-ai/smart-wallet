@@ -222,7 +222,7 @@ const AIInsights: React.FC = () => {
               artificial.
             </p>
           </div>
-          {!isPremium && <BadgePremium />}
+          {isPremium && <BadgePremium />}
         </div>
 
         {/* Smart Feed (Spotify Style) */}
