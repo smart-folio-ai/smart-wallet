@@ -85,6 +85,23 @@ const AIInsights: React.FC = () => {
   );
   const [simLoading, setSimLoading] = useState(false);
 
+  // Estado mínimo de viewMode: a Task 8 (badge/toggle de perfil de
+  // investidor) ainda não foi implementada — depende de um endpoint de
+  // backend que ainda não foi mergeado. Esta é apenas a leitura/persistência
+  // via localStorage necessária para features que já precisam reagir ao
+  // modo (como a comparação com CDI abaixo). A Task 8 deve reutilizar este
+  // estado e este efeito, não redeclará-los.
+  const [viewMode, setViewMode] = useState<'standard' | 'advanced'>(
+    'standard',
+  );
+
+  useEffect(() => {
+    const savedMode = localStorage.getItem('ai_insights_view_mode');
+    if (savedMode === 'standard' || savedMode === 'advanced') {
+      setViewMode(savedMode);
+    }
+  }, []);
+
   const hasProOrHigher = isProOrHigherPlan(planName, isSubscribed);
   const aiPlan = getAiPlanFromPlanName(planName);
 
