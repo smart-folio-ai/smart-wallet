@@ -84,6 +84,10 @@ const AIInsights: React.FC = () => {
     useState<PortfolioScoreResponse | null>(null);
   const [errorRadar, setErrorRadar] =
     useState<PortfolioErrorRadarResponse | null>(null);
+  // Distingue "ainda nao buscado" (usuario free, fetchData nem tenta) de
+  // "buscou e falhou de verdade" — errorRadar === null cobre os dois casos e
+  // nao pode ser usado sozinho para decidir se mostra o estado de falha.
+  const [errorRadarFailed, setErrorRadarFailed] = useState(false);
 
   // Estados para Simulação
   const [monthlyInvest, setMonthlyInvest] = useState(1000);
@@ -122,6 +126,8 @@ const AIInsights: React.FC = () => {
   }, [subLoading, hasProOrHigher, aiPlan]);
 
   const fetchData = async () => {
+    setErrorRadarFailed(false);
+
     if (!hasProOrHigher) {
       setAnalysisResult(null);
       setLoading(false);
@@ -140,9 +146,6 @@ const AIInsights: React.FC = () => {
         : Array.isArray(rawData?.assets)
           ? rawData.assets
           : [];
-
-      // Usa 'premium' por padrão para sempre acionar a análise com IA
-      const plan = (localStorage.getItem('user_plan') as any) || 'premium';
 
       // Score de carteira e radar de erro vêm do backend determinístico e são
       // independentes entre si e da análise do LLM: se o trackerr-ia estiver
@@ -166,13 +169,13 @@ const AIInsights: React.FC = () => {
         setErrorRadar(errorRadarOutcome.value);
       } else {
         setErrorRadar(null);
+        setErrorRadarFailed(true);
       }
 
-      // O perfil de investidor é independente das demais fontes: falhar (ou,
-      // em testes que não mockam este serviço, resolver com `undefined`) não
+      // O perfil de investidor é independente das demais fontes: falhar não
       // deve derrubar o resto da página — o badge já trata `null` como "não
       // renderizar nada".
-      if (profileOutcome.status === 'fulfilled' && profileOutcome.value) {
+      if (profileOutcome.status === 'fulfilled') {
         setInvestorProfile(profileOutcome.value);
         // A preferência salva pelo usuário sempre vence; só sugerimos o modo
         // avançado a partir do perfil quando não há nada salvo ainda.
@@ -215,6 +218,11 @@ const AIInsights: React.FC = () => {
     const mode = checked ? 'advanced' : 'standard';
     setViewMode(mode);
     localStorage.setItem('ai_insights_view_mode', mode);
+    // Mesmo padrão de "troca de parâmetro invalida resultado" usado no
+    // slider e nos botões de horizonte: uma simulação já calculada no modo
+    // antigo não deve continuar visível como se refletisse o modo novo.
+    setSimulation(null);
+    setCdiComparison(null);
   };
 
   const handleSimulate = async () => {
@@ -260,7 +268,7 @@ const AIInsights: React.FC = () => {
       } else {
         setCdiComparison(null);
       }
-    } catch (err) {
+    } catch {
       setSimulation(null);
       setCdiComparison(null);
       toast.error('Não foi possível calcular a projeção.');
@@ -615,7 +623,7 @@ const AIInsights: React.FC = () => {
             <h2 className="text-xl font-bold flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-rose-500" /> Radar Anti-Erro
             </h2>
-            {errorRadar === null && (
+            {errorRadarFailed && (
               <div className="p-5 rounded-2xl border border-border/60 bg-muted/5 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
                   Não foi possível carregar o radar.
@@ -633,7 +641,9 @@ const AIInsights: React.FC = () => {
             )}
             {sortedAlerts.length > 0 && (
               <p className="text-xs font-bold text-muted-foreground">
-                {sortedAlerts.length} alertas — {highCount} alto(s), {mediumCount} médio(s)
+                {sortedAlerts.length}{' '}
+                {sortedAlerts.length === 1 ? 'alerta' : 'alertas'} —{' '}
+                {highCount} alto(s), {mediumCount} médio(s)
               </p>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -784,15 +794,18 @@ const AIInsights: React.FC = () => {
                       {viewMode === 'advanced' && cdiComparison !== null && (
                         <div className="pt-4 border-t border-border/60 w-full">
                           <span className="block text-[10px] text-muted-foreground uppercase font-bold mb-1">
-                            CDI no período
+                            CDI acumulado (últimos {simulation.months} meses)
                           </span>
                           <span className="font-black text-foreground text-lg">
                             {formatCurrency(cdiComparison)}
                           </span>
                           <p className="text-[10px] text-muted-foreground/70 mt-1">
-                            Estimativa simplificada: aplica o CDI acumulado do
-                            período sobre o valor atual da carteira, sem
-                            simular os aportes mensais dentro do CDI.
+                            Estimativa simplificada: aplica o CDI já realizado
+                            nos últimos {simulation.months} meses sobre o
+                            valor atual da carteira, sem simular os aportes
+                            mensais dentro do CDI. É uma referência do passado,
+                            não uma projeção da mesma janela futura dos
+                            cenários acima.
                           </p>
                         </div>
                       )}

@@ -71,6 +71,14 @@ const okScore = {
   positionsCount: 4,
 };
 
+const defaultInvestorProfile = {
+  sophistication: 'intermediate' as const,
+  riskTolerance: 'moderate' as const,
+  confidence: 0.7,
+  signals: {},
+  source: 'inferred' as const,
+};
+
 describe('AIInsights — score da carteira', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -89,6 +97,7 @@ describe('AIInsights — score da carteira', () => {
       alerts: [],
       positionsCount: 4,
     });
+    getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
   });
 
   it('exibe o overall vindo do endpoint determinístico', async () => {
@@ -323,6 +332,7 @@ describe('AIInsights — score da carteira', () => {
         alerts: [],
         positionsCount: 0,
       });
+      getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
     });
 
     it('limpa a projecao ao trocar o horizonte apos calcular', async () => {
@@ -373,6 +383,7 @@ describe('AIInsights — severidade do radar de erro', () => {
     });
     getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
     portfolioScoreMock.mockResolvedValue(okScore);
+    getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
   });
 
   it('ordena alertas por severidade e mostra chip de texto, nao so cor', async () => {
@@ -422,6 +433,7 @@ describe('AIInsights — badge Pro Account', () => {
       alerts: [],
       positionsCount: 0,
     });
+    getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
   });
 
   it('mostra o badge Pro Account para assinante premium', async () => {
@@ -450,6 +462,22 @@ describe('AIInsights — badge Pro Account', () => {
     });
     expect(screen.queryByText('Pro Account')).not.toBeInTheDocument();
   });
+
+  it('nao mostra falha do radar para usuario free — fetchData nunca tentou buscar', async () => {
+    useSubscriptionMock.mockReturnValue({
+      planName: 'Free',
+      isSubscribed: false,
+      isLoading: false,
+    });
+    isProOrHigherPlanMock.mockReturnValue(false);
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Insights IA')).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByText('Não foi possível carregar o radar.'),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe('AIInsights — transparencia de conteudo gerado por IA', () => {
@@ -469,6 +497,7 @@ describe('AIInsights — transparencia de conteudo gerado por IA', () => {
       alerts: [],
       positionsCount: 0,
     });
+    getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
   });
 
   it('mostra aviso de conteudo gerado por IA junto do radar de oportunidades', async () => {
@@ -498,6 +527,7 @@ describe('AIInsights — transparencia de conteudo gerado por IA', () => {
 describe('AIInsights — comparacao com CDI no modo avancado', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     isProOrHigherPlanMock.mockReturnValue(true);
     localStorage.setItem('ai_insights_view_mode', 'advanced');
     useSubscriptionMock.mockReturnValue({
@@ -514,6 +544,7 @@ describe('AIInsights — comparacao com CDI no modo avancado', () => {
       alerts: [],
       positionsCount: 0,
     });
+    getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
   });
 
   it('mostra a comparacao com CDI apos simular, no modo avancado', async () => {
@@ -541,11 +572,11 @@ describe('AIInsights — comparacao com CDI no modo avancado', () => {
     const calcButton = await screen.findByText('Calcular Projeção IA');
 
     // "before" assertion: a comparacao com CDI nao deve existir antes de simular.
-    expect(screen.queryByText('CDI no período')).not.toBeInTheDocument();
+    expect(screen.queryByText('CDI acumulado (últimos 120 meses)')).not.toBeInTheDocument();
 
     fireEvent.click(calcButton);
 
-    expect(await screen.findByText('CDI no período')).toBeInTheDocument();
+    expect(await screen.findByText('CDI acumulado (últimos 120 meses)')).toBeInTheDocument();
   });
 
   it('nao mostra a comparacao com CDI no modo padrao', async () => {
@@ -574,7 +605,7 @@ describe('AIInsights — comparacao com CDI no modo avancado', () => {
     await waitFor(() => {
       expect(screen.getByText(/847.000|847\.000,00/)).toBeInTheDocument();
     });
-    expect(screen.queryByText('CDI no período')).not.toBeInTheDocument();
+    expect(screen.queryByText('CDI acumulado (últimos 120 meses)')).not.toBeInTheDocument();
   });
 
   it('limpa a comparacao com CDI ao trocar o horizonte apos calcular', async () => {
@@ -602,12 +633,12 @@ describe('AIInsights — comparacao com CDI no modo avancado', () => {
     const calcButton = await screen.findByText('Calcular Projeção IA');
     fireEvent.click(calcButton);
 
-    expect(await screen.findByText('CDI no período')).toBeInTheDocument();
+    expect(await screen.findByText('CDI acumulado (últimos 120 meses)')).toBeInTheDocument();
 
     const oneYearButton = screen.getByText('1 ano');
     fireEvent.click(oneYearButton);
 
-    expect(screen.queryByText('CDI no período')).not.toBeInTheDocument();
+    expect(screen.queryByText('CDI acumulado (últimos 120 meses)')).not.toBeInTheDocument();
   });
 });
 
@@ -671,5 +702,119 @@ describe('AIInsights — toggle Padrao/Avancado', () => {
   it('mostra o badge de perfil quando o perfil carrega', async () => {
     renderPage();
     expect(await screen.findByText('Perfil: Experiente')).toBeInTheDocument();
+  });
+
+  it('limpa a simulacao ja calculada ao trocar o modo Padrao/Avancado', async () => {
+    futureSimulatorMock.mockResolvedValue({
+      modelVersion: 'future_simulator_v1',
+      horizon: '10y',
+      months: 120,
+      currentPortfolioValue: 1000,
+      monthlyContribution: 1000,
+      scenarios: {
+        pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+      },
+      assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
+      dividendProjection: {current: {monthly: 0, annual: 0}},
+      limitations: [],
+      confidence: 'high',
+    });
+
+    renderPage();
+    const calcButton = await screen.findByText('Calcular Projeção IA');
+    fireEvent.click(calcButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/847.000|847\.000,00/)).toBeInTheDocument();
+    });
+
+    const toggle = screen.getByLabelText('Modo avançado');
+    fireEvent.click(toggle);
+
+    expect(screen.queryByText(/847.000|847\.000,00/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Ajuste os aportes e simule o poder dos juros compostos.'),
+    ).toBeInTheDocument();
+  });
+
+  it('fluxo completo: perfil -> badge -> override -> toggle -> CDI', async () => {
+    getInvestorProfileMock.mockResolvedValue({
+      sophistication: 'intermediate',
+      riskTolerance: 'moderate',
+      confidence: 0.7,
+      signals: {},
+      source: 'inferred',
+    });
+
+    renderPage();
+
+    // 1-2. badge mostra o perfil carregado
+    expect(
+      await screen.findByText('Perfil: Intermediário'),
+    ).toBeInTheDocument();
+
+    // 3. abre o popover e escolhe "Experiente"
+    fireEvent.click(screen.getByText('Perfil: Intermediário'));
+    const experiencedOption = await screen.findByText('Experiente');
+
+    // 4. o override retorna o perfil atualizado
+    setInvestorProfileOverrideMock.mockResolvedValue({
+      sophistication: 'experienced',
+      riskTolerance: 'moderate',
+      confidence: 0.7,
+      signals: {},
+      source: 'user_override',
+    });
+    fireEvent.click(experiencedOption);
+
+    await waitFor(() => {
+      expect(setInvestorProfileOverrideMock).toHaveBeenCalledWith({
+        sophistication: 'experienced',
+      });
+    });
+
+    // 5. o badge reflete a resposta do override, nao so o clique
+    expect(
+      await screen.findByText('Perfil: Experiente'),
+    ).toBeInTheDocument();
+
+    // 6. liga o modo Avancado
+    const toggle = screen.getByLabelText('Modo avançado');
+    if (!(toggle as HTMLInputElement).checked) {
+      fireEvent.click(toggle);
+    }
+    await waitFor(() => {
+      expect(toggle).toBeChecked();
+    });
+
+    // 7. roda o simulador
+    getCdiSeriesMock.mockResolvedValue({
+      data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
+    });
+    futureSimulatorMock.mockResolvedValue({
+      modelVersion: 'future_simulator_v1',
+      horizon: '10y',
+      months: 120,
+      currentPortfolioValue: 100000,
+      monthlyContribution: 1000,
+      scenarios: {
+        pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+      },
+      assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
+      dividendProjection: {current: {monthly: 0, annual: 0}},
+      limitations: [],
+      confidence: 'high',
+    });
+
+    fireEvent.click(screen.getByText('Calcular Projeção IA'));
+
+    // 8. a comparacao com CDI aparece
+    expect(
+      await screen.findByText('CDI acumulado (últimos 120 meses)'),
+    ).toBeInTheDocument();
   });
 });
