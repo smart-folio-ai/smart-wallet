@@ -163,6 +163,7 @@ const AIInsights: React.FC = () => {
       });
       setSimulation(res);
     } catch (err) {
+      setSimulation(null);
       toast.error('Não foi possível calcular a projeção.');
     } finally {
       setSimLoading(false);
@@ -222,7 +223,7 @@ const AIInsights: React.FC = () => {
               artificial.
             </p>
           </div>
-          {!isPremium && <BadgePremium />}
+          {isPremium && <BadgePremium />}
         </div>
 
         {/* Smart Feed (Spotify Style) */}
@@ -511,7 +512,10 @@ const AIInsights: React.FC = () => {
                     </div>
                     <Slider
                       value={[monthlyInvest]}
-                      onValueChange={(v) => setMonthlyInvest(v[0])}
+                      onValueChange={(v) => {
+                        setMonthlyInvest(v[0]);
+                        setSimulation(null);
+                      }}
                       max={10000}
                       step={100}
                       className="py-4"
@@ -524,7 +528,10 @@ const AIInsights: React.FC = () => {
                         <button
                           key={option.value}
                           type="button"
-                          onClick={() => setHorizon(option.value)}
+                          onClick={() => {
+                            setHorizon(option.value);
+                            setSimulation(null);
+                          }}
                           className={cn(
                             'rounded-xl py-2 text-xs font-bold border transition-colors',
                             horizon === option.value

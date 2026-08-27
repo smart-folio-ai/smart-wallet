@@ -9,6 +9,8 @@ import {Badge} from '@/components/ui/badge';
 import {Skeleton} from '@/components/ui/skeleton';
 import {formatCurrency} from '@/utils/formatters';
 import useAppToast from '@/hooks/use-app-toast';
+// TEASER DARF — remover esta linha e o <DarfComingSoonCard /> abaixo para desativar
+import DarfComingSoonCard from '@/components/fiscal/darf-coming-soon-card';
 
 interface FiscalOptimizerResponse {
   accumulatedLosses?: {
@@ -336,6 +338,9 @@ export default function Fiscal() {
           </CardContent>
         </Card>
       </div>
+
+      {/* TEASER DARF — remover esta linha e o import para desativar */}
+      <DarfComingSoonCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">

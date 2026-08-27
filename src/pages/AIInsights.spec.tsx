@@ -289,4 +289,98 @@ describe('AIInsights — score da carteira', () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe('AIInsights — simulador nao mantem resultado obsoleto', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      useSubscriptionMock.mockReturnValue({
+        planName: 'Investidor Pro',
+        isSubscribed: true,
+        isLoading: false,
+      });
+      getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
+      portfolioScoreMock.mockResolvedValue(okScore);
+      errorRadarMock.mockResolvedValue({
+        modelVersion: 'portfolio_error_radar_v1',
+        status: 'ok',
+        riskLevel: 'low',
+        alerts: [],
+        positionsCount: 0,
+      });
+    });
+
+    it('limpa a projecao ao trocar o horizonte apos calcular', async () => {
+      futureSimulatorMock.mockResolvedValue({
+        modelVersion: 'future_simulator_v1',
+        horizon: '10y',
+        months: 120,
+        currentPortfolioValue: 1000,
+        monthlyContribution: 1000,
+        scenarios: {
+          pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+          base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+          optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+        },
+        assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
+        dividendProjection: {current: {monthly: 0, annual: 0}},
+        limitations: [],
+        confidence: 'high',
+      });
+
+      renderPage();
+      const calcButton = await screen.findByText('Calcular Projeção IA');
+      fireEvent.click(calcButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/847.000|847\.000,00/)).toBeInTheDocument();
+      });
+
+      const oneYearButton = screen.getByText('1 ano');
+      fireEvent.click(oneYearButton);
+
+      expect(screen.queryByText(/847.000|847\.000,00/)).not.toBeInTheDocument();
+      expect(
+        screen.getByText('Ajuste os aportes e simule o poder dos juros compostos.'),
+      ).toBeInTheDocument();
+    });
+  });
+});
+
+describe('AIInsights — badge Pro Account', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
+    portfolioScoreMock.mockResolvedValue(okScore);
+    errorRadarMock.mockResolvedValue({
+      modelVersion: 'portfolio_error_radar_v1',
+      status: 'ok',
+      riskLevel: 'low',
+      alerts: [],
+      positionsCount: 0,
+    });
+  });
+
+  it('mostra o badge Pro Account para assinante premium', async () => {
+    useSubscriptionMock.mockReturnValue({
+      planName: 'Investidor Pro',
+      isSubscribed: true,
+      isLoading: false,
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Pro Account')).toBeInTheDocument();
+    });
+  });
+
+  it('nao mostra o badge Pro Account para usuario free', async () => {
+    useSubscriptionMock.mockReturnValue({
+      planName: 'Free',
+      isSubscribed: false,
+      isLoading: false,
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.queryByText('Pro Account')).not.toBeInTheDocument();
+    });
+  });
 });
