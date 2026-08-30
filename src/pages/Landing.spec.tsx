@@ -74,6 +74,7 @@ describe('Landing', () => {
       'problema',
       'produto',
       'como-funciona',
+      'profundidade',
       'planos',
       'faq',
     ]);

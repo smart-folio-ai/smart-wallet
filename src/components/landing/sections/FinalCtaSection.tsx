@@ -31,7 +31,7 @@ export function FinalCtaSection() {
           <Button
             asChild
             size="lg"
-            className="group bg-brand text-brand-foreground hover:bg-brand-strong">
+            className="group border border-brand bg-transparent text-brand hover:bg-brand/10 transition-colors">
             <Link ref={ctaRef} to="/register">
               Criar conta gratuita
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />

@@ -86,7 +86,7 @@ export function HeroSection() {
             <Button
               asChild
               size="lg"
-              className="group bg-brand text-brand-foreground transition-colors hover:bg-brand-strong">
+              className="group border border-brand bg-transparent text-brand hover:bg-brand/10 transition-colors">
               <Link ref={ctaRef} to={heroCopy.primaryCta.href}>
                 {heroCopy.primaryCta.label}
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
