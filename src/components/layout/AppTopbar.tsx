@@ -15,6 +15,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useAdaptiveLevel, type AdaptiveLevel } from '@/contexts/AdaptiveLevelContext';
+import { cn } from '@/lib/utils';
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': {
@@ -100,6 +102,12 @@ export function AppTopbar() {
   const { displayPlanName, isSubscribed, isLoading } = useSubscription();
   const { logout } = useAuth();
   const { data: profile } = useCurrentUserProfile();
+  const { level, setLevel } = useAdaptiveLevel();
+  const levelOptions: { id: AdaptiveLevel; label: string }[] = [
+    { id: 'iniciante', label: 'Iniciante' },
+    { id: 'intermediario', label: 'Intermediário' },
+    { id: 'avancado', label: 'Avançado' },
+  ];
   const initials = profile
     ? `${profile.firstName?.[0] ?? ''}${profile.lastName?.[0] ?? ''}`.toUpperCase()
     : '';
@@ -199,6 +207,27 @@ export function AppTopbar() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+      </div>
+      <div className="flex items-center gap-3 border-t border-border/50 px-4 py-1.5 md:px-6">
+        <div className="inline-flex gap-1 rounded-md bg-muted p-0.5">
+          {levelOptions.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setLevel(opt.id)}
+              className={cn(
+                'rounded px-2.5 py-1 text-[11px] font-medium transition-all',
+                opt.id === level
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <span className="text-[10.5px] text-muted-foreground/70">
+          Preferência salva
+        </span>
       </div>
     </header>
   );

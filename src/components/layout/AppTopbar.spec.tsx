@@ -8,6 +8,7 @@ import {AppTopbar} from './AppTopbar';
 const mockUseSubscription = vi.fn();
 const mockUseCurrentUserProfile = vi.fn();
 const mockLogout = vi.fn();
+const mockSetLevel = vi.fn();
 
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => mockUseSubscription(),
@@ -19,6 +20,10 @@ vi.mock('@/hooks/useCurrentUserProfile', () => ({
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({logout: mockLogout}),
+}));
+
+vi.mock('@/contexts/AdaptiveLevelContext', () => ({
+  useAdaptiveLevel: () => ({level: 'intermediario', setLevel: mockSetLevel}),
 }));
 
 beforeAll(() => {
@@ -117,5 +122,13 @@ describe('AppTopbar', () => {
     expect(screen.getByText('Sair')).toBeInTheDocument();
     await user.click(screen.getByText('Sair'));
     expect(mockLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the adaptive-depth level switcher and lets the user change level', async () => {
+    const user = userEvent.setup();
+    renderTopbar();
+    expect(screen.getByText('Intermediário')).toBeInTheDocument();
+    await user.click(screen.getByText('Avançado'));
+    expect(mockSetLevel).toHaveBeenCalledWith('avancado');
   });
 });
