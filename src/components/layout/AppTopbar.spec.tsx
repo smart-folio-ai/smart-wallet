@@ -1,13 +1,24 @@
 import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {SidebarProvider} from '@/components/ui/sidebar';
 import {AppTopbar} from './AppTopbar';
 
 const mockUseSubscription = vi.fn();
+const mockUseCurrentUserProfile = vi.fn();
+const mockLogout = vi.fn();
 
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => mockUseSubscription(),
+}));
+
+vi.mock('@/hooks/useCurrentUserProfile', () => ({
+  useCurrentUserProfile: () => mockUseCurrentUserProfile(),
+}));
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({logout: mockLogout}),
 }));
 
 beforeAll(() => {
@@ -41,6 +52,10 @@ describe('AppTopbar', () => {
     mockUseSubscription.mockReturnValue({
       planName: null,
       isSubscribed: false,
+      isLoading: false,
+    });
+    mockUseCurrentUserProfile.mockReturnValue({
+      data: {firstName: 'Ana', lastName: 'Costa', email: 'ana@example.com'},
       isLoading: false,
     });
   });
@@ -92,5 +107,15 @@ describe('AppTopbar', () => {
     expect(
       screen.queryByRole('button', {name: /upgrade/i}),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows the user avatar with initials and a dropdown with logout', async () => {
+    const user = userEvent.setup();
+    renderTopbar();
+    const trigger = screen.getByText('AC').closest('button')!;
+    await user.click(trigger);
+    expect(screen.getByText('Sair')).toBeInTheDocument();
+    await user.click(screen.getByText('Sair'));
+    expect(mockLogout).toHaveBeenCalledTimes(1);
   });
 });
