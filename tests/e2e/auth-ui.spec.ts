@@ -11,7 +11,9 @@ test.describe('Auth UI — Telas de Autenticação', () => {
       await expect(page.locator('#signin-password')).toBeVisible();
       await expect(page.locator('#signin-submit')).toBeVisible();
       await expect(page.getByText(/Esqueceu a senha?/i)).toBeVisible();
-      await expect(page.getByText(/Criar conta/i)).toBeVisible();
+      await expect(
+        page.getByRole('button', {name: 'Criar conta agora'}),
+      ).toBeVisible();
     });
 
     test('exibe erro de validação para e-mail inválido', async ({page}) => {
@@ -32,7 +34,9 @@ test.describe('Auth UI — Telas de Autenticação', () => {
       await page.goto('/signin');
       await page.locator('#signin-goto-register').click();
       await expect(page).toHaveURL(/register/);
-      await expect(page.getByText('Criar conta', {exact: true})).toBeVisible();
+      await expect(
+        page.getByRole('heading', {name: 'Criar conta', exact: true}),
+      ).toBeVisible();
     });
 
     test('alterna visibilidade da senha', async ({page}) => {
@@ -55,7 +59,9 @@ test.describe('Auth UI — Telas de Autenticação', () => {
     test('renderiza o formulário de cadastro com todos os campos', async ({page}) => {
       await page.goto('/register');
 
-      await expect(page.getByText('Criar conta', {exact: true})).toBeVisible();
+      await expect(
+        page.getByRole('heading', {name: 'Criar conta', exact: true}),
+      ).toBeVisible();
       await expect(page.locator('#register-firstname')).toBeVisible();
       await expect(page.locator('#register-lastname')).toBeVisible();
       await expect(page.locator('#register-email')).toBeVisible();

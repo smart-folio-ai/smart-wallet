@@ -21,6 +21,7 @@ import WalletLoadingScreen from '@/components/WalletLoadingScreen';
 import {AppLogo} from '@/components/AppLogo';
 import {googleClientId} from '@/utils/env';
 import {GoogleLoginButton} from '@/components/GoogleLoginButton';
+import {AuthTabs} from '@/components/auth/AuthTabs';
 
 const formSchema = z.object({
   email: z
@@ -243,19 +244,19 @@ export default function SignIn() {
         </div>
 
         {/* Painel direito - formulário */}
-        <div
-          className="flex-1 flex items-center justify-center p-8"
-          style={{backgroundColor: '#ffffff'}}>
+        <div className="flex-1 flex items-center justify-center bg-background p-8">
           <div className="w-full max-w-md">
             {/* Logo mobile */}
             <div className="mb-8 flex justify-center lg:hidden">
               <AppLogo size="lg" />
             </div>
 
+            <AuthTabs active="login" />
+
             {/* Cabeçalho do form */}
-            <div className="mb-8">
+            <div className="mb-8 mt-6">
               <h2
-                className="font-bold mb-2 text-surface-panel"
+                className="font-bold mb-2 text-foreground"
                 style={{
                   fontSize: '1.875rem',
                   fontFamily: 'var(--font-heading)',
@@ -264,7 +265,7 @@ export default function SignIn() {
                 Entrar no Terminal
               </h2>
               <p
-                className="text-slate-500"
+                className="text-muted-foreground"
                 style={{
                   fontSize: '0.9rem',
                 }}>
@@ -291,7 +292,7 @@ export default function SignIn() {
                     <FormItem>
                       <FormLabel
                         htmlFor="signin-email"
-                        className="uppercase tracking-widest text-xs font-bold text-slate-500"
+                        className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
                         style={{
                           letterSpacing: '0.1em',
                         }}>
@@ -303,7 +304,7 @@ export default function SignIn() {
                           placeholder="seu@email.com"
                           maxLength={254}
                           {...field}
-                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
+                          className="h-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                         />
                       </FormControl>
                       <FormMessage />
@@ -319,7 +320,7 @@ export default function SignIn() {
                       <div className="flex items-center justify-between">
                         <FormLabel
                           htmlFor="signin-password"
-                          className="uppercase tracking-widest text-xs font-bold text-slate-500"
+                          className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
                           style={{
                             letterSpacing: '0.1em',
                           }}>
@@ -339,15 +340,14 @@ export default function SignIn() {
                             placeholder="••••••••"
                             maxLength={128}
                             {...field}
-                            className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
+                            className="h-12 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                           />
                         </FormControl>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
-                          style={{color: '#94a3b8'}}
+                          className="absolute right-1 top-1 h-10 w-10 text-muted-foreground hover:bg-transparent"
                           onClick={() => setShowPassword(!showPassword)}>
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />
@@ -374,12 +374,10 @@ export default function SignIn() {
                           id="signin-keep-connected"
                           checked={field.value}
                           onCheckedChange={field.onChange}
-                          className="border-slate-300 data-[state=checked]:bg-brand data-[state=checked]:border-brand"
+                          className="data-[state=checked]:bg-brand data-[state=checked]:border-brand"
                         />
                       </FormControl>
-                      <FormLabel
-                        className="font-medium text-sm cursor-pointer"
-                        style={{color: '#475569'}}>
+                      <FormLabel className="font-medium text-sm cursor-pointer text-muted-foreground">
                         Manter conectado
                       </FormLabel>
                     </FormItem>
@@ -389,10 +387,7 @@ export default function SignIn() {
                 <Button
                   id="signin-submit"
                   type="submit"
-                  className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))]"
-                  style={{
-                    color: '#f9f7ff',
-                  }}
+                  className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))] text-brand-foreground"
                   disabled={authenticating || isSyncing}>
                   {authenticating ? (
                     'Verificando...'
@@ -409,7 +404,7 @@ export default function SignIn() {
             </Form>
 
             {/* Rodapé externo */}
-            <p className="text-xs text-center mt-8" style={{color: '#94a3b8'}}>
+            <p className="text-xs text-center mt-8 text-muted-foreground">
               Copyright © 2025 Trackerr. Todos os direitos reservados.
             </p>
           </div>

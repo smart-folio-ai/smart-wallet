@@ -61,6 +61,7 @@ describe('Register', () => {
     expect(getInput('#register-lastname')).toBeTruthy();
     expect(getInput('#register-email')).toBeTruthy();
     expect(screen.getAllByPlaceholderText(/••••••••/)).toHaveLength(2);
+    expect(screen.getByRole('link', {name: 'Criar conta'})).toHaveAttribute('aria-current', 'page');
   });
 
   it('deve exibir erro para senha sem caractere especial', async () => {

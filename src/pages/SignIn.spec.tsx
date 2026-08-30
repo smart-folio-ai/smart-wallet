@@ -59,6 +59,7 @@ describe('SignIn', () => {
     expect(screen.getByLabelText(/Senha/i)).toBeDefined();
     expect(screen.getByRole('button', {name: /Entrar no Terminal/i})).toBeDefined();
     expect(screen.getByTestId('google-login-button')).toBeDefined();
+    expect(screen.getByRole('link', {name: 'Entrar'})).toHaveAttribute('aria-current', 'page');
   });
 
   it('deve aplicar limites de caracteres nos campos de login', () => {
