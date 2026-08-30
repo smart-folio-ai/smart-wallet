@@ -31,7 +31,9 @@ test.describe('Auth Navigation And Validation', () => {
     await page.locator('#register-confirm-password').fill('Senha123!');
     await page.locator('#register-submit').click();
     await expect(page).toHaveURL(/register(?:\/)?$/);
-    await expect(page.getByRole('heading', {name: /Criar conta/i})).toBeVisible();
+    await expect(
+      page.getByRole('heading', {name: /Comece em minutos/i}),
+    ).toBeVisible();
   });
 
   test('redefine senha com token inválido e abre solicitar novo link', async ({page}) => {

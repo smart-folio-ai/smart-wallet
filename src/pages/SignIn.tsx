@@ -1,9 +1,19 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {useNavigate, useLocation} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-import {Eye, EyeOff, ArrowRight} from '@/components/ui/icons';
+import {
+  ArrowRight,
+  Buildings,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  Receipt,
+  Sparkles,
+  Stack,
+} from '@/components/ui/icons';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {
@@ -19,9 +29,9 @@ import {toast} from 'sonner';
 import AuthenticationService from '../services/authentication';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
 import {AppLogo} from '@/components/AppLogo';
-import {googleClientId} from '@/utils/env';
 import {GoogleLoginButton} from '@/components/GoogleLoginButton';
 import {AuthTabs} from '@/components/auth/AuthTabs';
+import {ThemeToggle} from '@/components/ThemeToggle';
 
 const formSchema = z.object({
   email: z
@@ -37,55 +47,23 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const TypingEffect = ({text, speed = 100}: {text: string; speed?: number}) => {
-  const [displayedText, setDisplayedText] = useState('');
-  useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      setDisplayedText(text.substring(0, i + 1));
-      i++;
-      if (i >= text.length) clearInterval(timer);
-    }, speed);
-    return () => clearInterval(timer);
-  }, [text, speed]);
-  return <>{displayedText}</>;
-};
-
-const CountUp = ({
-  end,
-  decimals = 0,
-  duration = 110000,
-  prefix = '',
-  suffix = '',
-}: {
-  end: number;
-  decimals?: number;
-  duration?: number;
-  prefix?: string;
-  suffix?: string;
-}) => {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    let startTimestamp: number | null = null;
-    const step = (timestamp: number) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      setCount(progress * end);
-      if (progress < 1) {
-        window.requestAnimationFrame(step);
-      }
-    };
-    window.requestAnimationFrame(step);
-  }, [end, duration]);
-
-  return (
-    <>
-      {prefix}
-      {count.toFixed(decimals)}
-      {suffix}
-    </>
-  );
-};
+const proofPoints = [
+  {
+    icon: Stack,
+    title: 'Consolidação multi-corretora',
+    body: 'B3, corretoras nacionais e cripto em um único patrimônio, sem planilha.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Copiloto com trilha de auditoria',
+    body: 'Cada insight traz fonte, janela de dados e nível de confiança do modelo.',
+  },
+  {
+    icon: Receipt,
+    title: 'Fiscal calculado, não estimado',
+    body: 'Apuração mensal, prejuízo compensado e DARF com o valor a pagar.',
+  },
+];
 
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
@@ -145,8 +123,12 @@ export default function SignIn() {
       />
       <div
         id="signin-page"
-        className="dark min-h-screen flex"
+        className="relative min-h-screen flex"
         style={{fontFamily: 'var(--font-body)'}}>
+        <div className="absolute right-4 top-4 z-50">
+          <ThemeToggle />
+        </div>
+
         {/* Painel esquerdo - editorial */}
         <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14 bg-surface-panel">
           {/* Glow ambiental */}
@@ -154,43 +136,45 @@ export default function SignIn() {
             className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
             style={{
               background:
-                'radial-gradient(circle, hsl(var(--brand) / 0.08) 0%, transparent 70%)',
+                'radial-gradient(circle, hsl(var(--brand) / 0.14) 0%, transparent 70%)',
             }}
           />
           <div
             className="absolute bottom-0 right-0 w-80 h-80 rounded-full pointer-events-none"
             style={{
               background:
-                'radial-gradient(circle, hsl(var(--brand) / 0.05) 0%, transparent 70%)',
+                'radial-gradient(circle, hsl(var(--accent-positive) / 0.08) 0%, transparent 70%)',
             }}
           />
 
           {/* Logo */}
-          <div className="relative z-10 ml-2">
-            <AppLogo size="lg" />
+          <div className="relative z-10 ml-2 flex items-center gap-2.5">
+            <AppLogo size="md" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-muted/70">
+              Enterprise Wealth Intelligence
+            </span>
           </div>
 
           {/* Conteúdo central */}
           <div className="relative z-10 flex-1 flex flex-col justify-center">
-            <div className="mb-6 inline-flex">
-              <span
-                className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full text-on-surface-accent bg-brand/[0.12]"
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  letterSpacing: '0.12em',
-                }}>
-                Terminal Financeiro
-              </span>
-            </div>
             <h1
               className="font-bold leading-tight mb-5 text-on-surface"
               style={{
                 fontSize: '2.75rem',
                 fontFamily: 'var(--font-heading)',
                 letterSpacing: '-0.02em',
-                minHeight: '2.5em',
               }}>
-              <TypingEffect text="Precisão institucional para o seu patrimônio." />
+              A carteira inteira,{' '}
+              <span
+                style={{
+                  background:
+                    'linear-gradient(120deg, hsl(var(--brand)) 0%, hsl(var(--benchmark)) 58%, hsl(var(--accent-positive)) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  color: 'transparent',
+                }}>
+                lida por uma IA que explica.
+              </span>
             </h1>
             <p
               className="leading-relaxed text-on-surface-muted/75"
@@ -198,39 +182,25 @@ export default function SignIn() {
                 fontSize: '1rem',
                 lineHeight: '1.7',
               }}>
-              Acompanhe seu portfólio com análises em tempo real, insights
-              inteligentes e uma interface construída para quem leva
-              investimentos a sério.
+              Consolidação multi-corretora, risco quantitativo e apuração
+              fiscal em uma leitura só — na profundidade certa para o seu
+              nível de investidor.
             </p>
 
-            {/* Métricas */}
-            <div className="mt-10 grid grid-cols-3 gap-4">
-              {[
-                {
-                  value: (
-                    <CountUp end={2.4} decimals={1} prefix="R$ " suffix="M" />
-                  ),
-                  label: 'Patrimônio monitorado',
-                },
-                {
-                  value: <CountUp end={2} decimals={1} suffix="k+" />,
-                  label: 'Investidores ativos',
-                },
-                {
-                  value: '99.9%',
-                  label: 'Uptime do sistema',
-                },
-              ].map((item, index) => (
-                <div key={index} className="rounded-xl p-4 bg-surface-raised">
-                  <div
-                    className="font-bold text-lg mb-1 text-on-surface-accent"
-                    style={{
-                      fontFamily: 'var(--font-heading)',
-                    }}>
-                    {item.value}
-                  </div>
-                  <div className="text-xs text-on-surface-muted/60">
-                    {item.label}
+            {/* Prova social */}
+            <div className="mt-8 flex flex-col gap-4">
+              {proofPoints.map((item) => (
+                <div key={item.title} className="flex items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                    <item.icon className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <div className="text-sm font-semibold text-on-surface">
+                      {item.title}
+                    </div>
+                    <div className="mt-0.5 text-xs leading-relaxed text-on-surface-muted/60">
+                      {item.body}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -244,7 +214,7 @@ export default function SignIn() {
         </div>
 
         {/* Painel direito - formulário */}
-        <div className="flex-1 flex items-center justify-center bg-background p-8">
+        <div className="relative flex-1 flex items-center justify-center bg-background p-8">
           <div className="w-full max-w-md">
             {/* Logo mobile */}
             <div className="mb-8 flex justify-center lg:hidden">
@@ -254,29 +224,45 @@ export default function SignIn() {
             <AuthTabs active="login" />
 
             {/* Cabeçalho do form */}
-            <div className="mb-8 mt-6">
+            <div className="mb-6 mt-6">
               <h2
                 className="font-bold mb-2 text-foreground"
                 style={{
-                  fontSize: '1.875rem',
+                  fontSize: '1.5rem',
                   fontFamily: 'var(--font-heading)',
                   letterSpacing: '-0.02em',
                 }}>
-                Entrar no Terminal
+                Bem-vindo de volta
               </h2>
-              <p
-                className="text-muted-foreground"
-                style={{
-                  fontSize: '0.9rem',
-                }}>
-                Não tem uma conta?{' '}
-                <button
-                  id="signin-goto-register"
-                  onClick={() => navigate('/register')}
-                  className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline text-brand">
-                  Criar conta agora
-                </button>
+              <p className="text-sm text-muted-foreground">
+                Acesse sua carteira consolidada e os insights gerados desde o
+                seu último acesso.
               </p>
+            </div>
+
+            {/* SSO */}
+            <div className="flex flex-col gap-3">
+              <GoogleLoginButton keepConnected={form.getValues('keepConnect')} />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-center gap-2 text-muted-foreground"
+                onClick={() =>
+                  toast.info(
+                    'SSO corporativo disponível nos planos Enterprise.',
+                  )
+                }>
+                <Buildings className="h-4 w-4" />
+                Entrar com SSO corporativo
+              </Button>
+            </div>
+
+            <div className="my-6 flex items-center gap-3">
+              <span className="h-px flex-1 bg-border" />
+              <span className="text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground">
+                Ou com e-mail
+              </span>
+              <span className="h-px flex-1 bg-border" />
             </div>
 
             {/* Formulário */}
@@ -292,20 +278,20 @@ export default function SignIn() {
                     <FormItem>
                       <FormLabel
                         htmlFor="signin-email"
-                        className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
-                        style={{
-                          letterSpacing: '0.1em',
-                        }}>
+                        className="text-xs font-medium text-muted-foreground">
                         E-mail
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          id="signin-email"
-                          placeholder="seu@email.com"
-                          maxLength={254}
-                          {...field}
-                          className="h-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
-                        />
+                        <div className="relative">
+                          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="signin-email"
+                            placeholder="voce@empresa.com"
+                            maxLength={254}
+                            {...field}
+                            className="h-11 pl-10 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                          />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -320,10 +306,7 @@ export default function SignIn() {
                       <div className="flex items-center justify-between">
                         <FormLabel
                           htmlFor="signin-password"
-                          className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
-                          style={{
-                            letterSpacing: '0.1em',
-                          }}>
+                          className="text-xs font-medium text-muted-foreground">
                           Senha
                         </FormLabel>
                         <a
@@ -334,20 +317,23 @@ export default function SignIn() {
                       </div>
                       <div className="relative">
                         <FormControl>
+                          <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        </FormControl>
+                        <FormControl>
                           <Input
                             id="signin-password"
                             type={showPassword ? 'text' : 'password'}
-                            placeholder="••••••••"
+                            placeholder="••••••••••"
                             maxLength={128}
                             {...field}
-                            className="h-12 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                            className="h-11 pl-10 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                           />
                         </FormControl>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute right-1 top-1 h-10 w-10 text-muted-foreground hover:bg-transparent"
+                          className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:bg-transparent"
                           onClick={() => setShowPassword(!showPassword)}>
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />
@@ -387,26 +373,40 @@ export default function SignIn() {
                 <Button
                   id="signin-submit"
                   type="submit"
-                  className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))] text-brand-foreground"
+                  className="w-full h-11 font-semibold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))] text-brand-foreground"
                   disabled={authenticating || isSyncing}>
                   {authenticating ? (
                     'Verificando...'
                   ) : (
                     <>
-                      Entrar no Terminal
+                      Entrar na plataforma
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
                 </Button>
-
-                <GoogleLoginButton keepConnected={form.getValues('keepConnect')} />
               </form>
             </Form>
 
-            {/* Rodapé externo */}
-            <p className="text-xs text-center mt-8 text-muted-foreground">
-              Copyright © 2025 Trackerr. Todos os direitos reservados.
+            <p className="mt-6 text-center text-xs text-muted-foreground">
+              Não tem uma conta?{' '}
+              <button
+                id="signin-goto-register"
+                onClick={() => navigate('/register')}
+                className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline text-brand">
+                Criar conta agora
+              </button>
             </p>
+
+            <p className="mt-2 text-center text-xs text-muted-foreground/70">
+              Acesso corporativo com SSO/SAML disponível nos planos
+              Enterprise.
+            </p>
+
+            {/* Rodapé de confiança */}
+            <div className="mt-8 flex items-center justify-center gap-2 border-t border-border/50 pt-6 text-[11px] text-muted-foreground">
+              <Lock className="h-3.5 w-3.5 text-positive" />
+              <span>Conexão cifrada · 2FA disponível · SOC 2 Type II · LGPD</span>
+            </div>
           </div>
         </div>
       </div>
