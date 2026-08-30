@@ -225,3 +225,34 @@ export const taxMockupData = {
   taxable: 4840,
   darf: 1284.6,
 };
+
+export const adaptiveDepthCopy = {
+  title: 'A mesma verdade, no seu idioma.',
+  subtitle:
+    'A IA adapta o vocabulário e a densidade de informação ao seu nível — os números nunca mudam, só como eles são explicados.',
+  levels: [
+    {
+      id: 'iniciante' as const,
+      label: 'Iniciante',
+      metricLabel: 'Como está indo',
+      metricValue: '+8,2% este ano',
+      metricNote: 'Sua carteira está subindo mais que a poupança.',
+    },
+    {
+      id: 'intermediario' as const,
+      label: 'Intermediário',
+      metricLabel: 'Retorno acumulado',
+      metricValue: '+8,2%',
+      metricNote: '12,4 p.p. acima do CDI no período.',
+    },
+    {
+      id: 'avancado' as const,
+      label: 'Avançado',
+      metricLabel: 'Sharpe / Retorno acum.',
+      metricValue: '1,84 / +8,2%',
+      metricNote: 'Vol. anualizada 11,2% · benchmark CDI · janela 12m.',
+    },
+  ],
+};
+
+export type AdaptiveDepthLevelId = (typeof adaptiveDepthCopy.levels)[number]['id'];

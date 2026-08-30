@@ -7,6 +7,7 @@ import {ProblemSection} from '@/components/landing/sections/ProblemSection';
 import {ProductSection} from '@/components/landing/sections/ProductSection';
 import {HowItWorksSection} from '@/components/landing/sections/HowItWorksSection';
 import {TrustSection} from '@/components/landing/sections/TrustSection';
+import {AdaptiveDepthSection} from '@/components/landing/sections/AdaptiveDepthSection';
 import {PricingSection} from '@/components/landing/sections/PricingSection';
 import {FaqSection} from '@/components/landing/sections/FaqSection';
 import {FinalCtaSection} from '@/components/landing/sections/FinalCtaSection';
@@ -37,6 +38,7 @@ export default function Landing() {
         <ProductSection />
         <HowItWorksSection />
         <TrustSection />
+        <AdaptiveDepthSection />
         <PricingSection />
         <FaqSection />
         <FinalCtaSection />
