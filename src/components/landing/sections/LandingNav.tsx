@@ -57,7 +57,7 @@ export function LandingNav() {
           </Button>
           <Button
             asChild
-            className="bg-brand text-brand-foreground transition-colors hover:bg-brand-strong">
+            className="border border-brand bg-transparent text-brand hover:bg-brand/10 transition-colors">
             <Link to="/register">Criar conta</Link>
           </Button>
         </div>

@@ -146,7 +146,7 @@ export function PricingSection() {
           size="lg"
           className={`mt-8 w-full ${
             plan.featured
-              ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
+              ? 'border border-brand bg-transparent text-brand hover:bg-brand/10 transition-colors'
               : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
           }`}>
           <Link to="/register">{plan.cta}</Link>
@@ -158,7 +158,7 @@ export function PricingSection() {
           onClick={() => setModalPlan({id: plan.id, name: plan.name})}
           className={`mt-8 w-full ${
             plan.featured
-              ? 'bg-brand text-brand-foreground hover:bg-brand-strong'
+              ? 'border border-brand bg-transparent text-brand hover:bg-brand/10 transition-colors'
               : 'border border-surface-hairline/[0.12] bg-transparent text-on-surface hover:bg-surface-hairline/[0.06]'
           }`}>
           {plan.cta}
