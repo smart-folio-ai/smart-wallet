@@ -40,11 +40,12 @@ test.describe('Auth UI — Telas de Autenticação', () => {
       const passwordInput = page.locator('#signin-password');
       await expect(passwordInput).toHaveAttribute('type', 'password');
 
-      // Em botões apenas com ícone (SVG), buscamos pelo title/sr-only text ou clicamos no botão dentro da div
-      await page.locator('button:has(svg.lucide-eye)').click();
+      // Nome acessível (sr-only) em vez de classe CSS gerada pela lib de ícone
+      // — independe de qual lib de ícone está em uso.
+      await page.getByRole('button', {name: 'Mostrar senha'}).click();
       await expect(passwordInput).toHaveAttribute('type', 'text');
 
-      await page.locator('button:has(svg.lucide-eye-off)').click();
+      await page.getByRole('button', {name: 'Ocultar senha'}).click();
       await expect(passwordInput).toHaveAttribute('type', 'password');
     });
   });
