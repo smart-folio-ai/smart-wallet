@@ -22,7 +22,6 @@ import {AppLogo} from '@/components/AppLogo';
 import {googleClientId} from '@/utils/env';
 import {GoogleLoginButton} from '@/components/GoogleLoginButton';
 import {AuthTabs} from '@/components/auth/AuthTabs';
-import {ThemeToggle} from '@/components/ThemeToggle';
 
 const formSchema = z.object({
   email: z
@@ -146,11 +145,8 @@ export default function SignIn() {
       />
       <div
         id="signin-page"
-        className="dark relative min-h-screen flex"
+        className="dark min-h-screen flex"
         style={{fontFamily: 'var(--font-body)'}}>
-        <div className="absolute right-4 top-4 z-50">
-          <ThemeToggle />
-        </div>
         {/* Painel esquerdo - editorial */}
         <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14 bg-surface-panel">
           {/* Glow ambiental */}
