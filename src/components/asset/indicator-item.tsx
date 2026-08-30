@@ -1,4 +1,4 @@
-import {Info} from 'lucide-react';
+import {Info} from '@/components/ui/icons';
 import {Badge} from '@/components/ui/badge';
 
 export const INDICATOR_UNAVAILABLE_TEXT = '—';

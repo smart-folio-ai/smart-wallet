@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {Calculator, PiggyBank, TrendingUp, ArrowRight, CircleHelp} from 'lucide-react';
+import {Calculator, PiggyBank, TrendingUp, ArrowRight, CircleHelp} from '@/components/ui/icons';
 import {
   calculateFixedIncomeComparison,
   type FixedIncomeScenarioResult,

@@ -8,7 +8,7 @@ import {
   Search,
   Sparkles,
   XCircle,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {

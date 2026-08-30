@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import {Upload, RefreshCw} from 'lucide-react';
+import {Upload, RefreshCw} from '@/components/ui/icons';
 
 type Transaction = {
   _id: string;

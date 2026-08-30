@@ -3,7 +3,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
 import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
-import {Plus, Loader2} from 'lucide-react';
+import {Plus, Loader2} from '@/components/ui/icons';
 import {
   Dialog,
   DialogContent,

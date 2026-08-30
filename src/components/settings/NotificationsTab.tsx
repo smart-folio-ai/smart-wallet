@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Bell, Save } from 'lucide-react';
+import { Bell, Save } from '@/components/ui/icons';
 import { UserSettings } from '@/interface/users';
 
 interface NotificationsTabProps {

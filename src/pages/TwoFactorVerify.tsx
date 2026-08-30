@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {Loader2, ShieldCheck, ArrowLeft} from 'lucide-react';
+import {Loader2, ShieldCheck, ArrowLeft} from '@/components/ui/icons';
 import {api} from '@/server/api/api';
 import useAppToast from '@/hooks/use-app-toast';
 

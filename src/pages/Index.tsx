@@ -16,7 +16,7 @@ import {
   CalendarClock,
   ShieldAlert,
   Target,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {Skeleton} from '@/components/ui/skeleton';
 import {Button} from '@/components/ui/button';
 import {FeatureTourModal} from '@/components/ui/feature-tour-modal';

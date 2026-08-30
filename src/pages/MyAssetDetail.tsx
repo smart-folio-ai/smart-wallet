@@ -12,7 +12,7 @@ import {
   Receipt,
   Sparkles,
   Calculator,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   Card,
   CardContent,

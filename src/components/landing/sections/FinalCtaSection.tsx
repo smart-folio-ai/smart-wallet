@@ -1,5 +1,5 @@
 import {Link} from 'react-router-dom';
-import {ArrowRight, Check} from 'lucide-react';
+import {ArrowRight, Check} from '@/components/ui/icons';
 import {Button} from '@/components/ui/button';
 import {Section} from '../ui/Section';
 import {GridBackdrop} from '../ui/GridBackdrop';

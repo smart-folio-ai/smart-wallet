@@ -3,7 +3,7 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import {Badge} from '@/components/ui/badge';
 import {ChatMentionInput} from '@/components/chat/ChatMentionInput';
-import {MessageSquare, Send, AlertTriangle, Bot, User2, Sparkles, RotateCcw} from 'lucide-react';
+import {MessageSquare, Send, AlertTriangle, Bot, User2, Sparkles, RotateCcw} from '@/components/ui/icons';
 import {useSubscription} from '@/hooks/useSubscription';
 import {PremiumBlur} from '@/components/ui/premium-blur';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';

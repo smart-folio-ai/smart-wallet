@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {Badge} from '@/components/ui/badge';
-import {ArrowUpDown, Building, Coins, TrendingUp} from 'lucide-react';
+import {ArrowUpDown, Building, Coins, TrendingUp} from '@/components/ui/icons';
 import {Asset, SortConfig} from '@/types/portfolio';
 import {formatCurrency} from '@/utils/formatters';
 import portfolioService from '@/services/portfolio';

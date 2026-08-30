@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Asset } from "@/types/portfolio";
 import { formatCurrency, formatPercentage } from "@/utils/formatters";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight } from '@/components/ui/icons';
 import { 
   LineChart,
   Line, 

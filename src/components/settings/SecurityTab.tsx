@@ -11,7 +11,7 @@ import {Button} from '@/components/ui/button';
 import {Switch} from '@/components/ui/switch';
 import {Label} from '@/components/ui/label';
 import {Input} from '@/components/ui/input';
-import {Shield, Save, Eye, EyeOff} from 'lucide-react';
+import {Shield, Save, Eye, EyeOff} from '@/components/ui/icons';
 import {UserSettings} from '@/interface/users';
 
 interface SecurityTabProps {

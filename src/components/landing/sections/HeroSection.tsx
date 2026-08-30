@@ -1,7 +1,7 @@
 import {useLayoutEffect, useRef} from 'react';
 import {Link} from 'react-router-dom';
 import gsap from 'gsap';
-import {ArrowRight} from 'lucide-react';
+import {ArrowRight} from '@/components/ui/icons';
 import {Button} from '@/components/ui/button';
 import {GlassPanel} from '../ui/GlassPanel';
 import {GridBackdrop} from '../ui/GridBackdrop';

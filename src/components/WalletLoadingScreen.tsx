@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {Wallet} from 'lucide-react';
+import {Wallet} from '@/components/ui/icons';
 
 interface WalletLoadingScreenProps {
   isLoading: boolean;

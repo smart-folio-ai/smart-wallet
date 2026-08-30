@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
-import {Upload, Loader2, Trash2, AlertTriangle} from 'lucide-react';
+import {Upload, Loader2, Trash2, AlertTriangle} from '@/components/ui/icons';
 import {useToast} from '@/hooks/use-toast';
 import {useQueryClient, useMutation} from '@tanstack/react-query';
 

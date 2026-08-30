@@ -1,4 +1,4 @@
-import {AlertTriangle, Info, TrendingUp} from 'lucide-react';
+import {AlertTriangle, Info, TrendingUp} from '@/components/ui/icons';
 import {GlassPanel} from '../ui/GlassPanel';
 import {aiAlertMockupData} from '../landing-data';
 

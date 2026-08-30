@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Pencil} from 'lucide-react';
+import {Pencil} from '@/components/ui/icons';
 import {
   Popover,
   PopoverContent,

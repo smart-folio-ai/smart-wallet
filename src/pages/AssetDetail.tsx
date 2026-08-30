@@ -16,7 +16,7 @@ import {
   ExternalLink,
   Zap,
   Landmark,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   Card,
   CardContent,
