@@ -307,7 +307,7 @@ git commit -m "feat(web): fix SignIn panel to respect theme tokens, add auth tab
 - Modify: `src/pages/Register.tsx`
 
 **Interfaces:**
-- Consumes: `AuthTabs` (Task 1), `ThemeToggle`.
+- Consumes: `AuthTabs` (Task 1). NOT `ThemeToggle` — see Step 7.
 
 - [ ] **Step 1: Painel direito — remover `style` inline, adicionar `bg-background`**
 
@@ -379,9 +379,9 @@ Botão de submit (linha 507-523): remove `style={{color: '#f9f7ff'}}`, adiciona 
 
 Rodapé (linha 528-530): `style={{color: '#94a3b8'}}` → `text-muted-foreground`, sem `style`.
 
-- [ ] **Step 7: Adicionar o `ThemeToggle`**
+- [ ] **Step 7: NÃO adicionar `ThemeToggle`**
 
-Mesmo padrão do Task 2/Step 6 — container raiz em `Register.tsx:120-123`.
+Correção pós-Task 2: `Register.tsx:122` também tem `className="dark min-h-screen flex"` no container raiz — mesma causa raiz do bug encontrado e corrigido na Task 2 (toggle dentro de escopo `.dark` forçado não tem efeito nenhum; auth é propositalmente sempre escuro, decisão de design já documentada). Não adicionar `ThemeToggle` em `Register.tsx`. Pular este step.
 
 - [ ] **Step 8: Type-check, lint, specs existentes**
 
