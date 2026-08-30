@@ -8,8 +8,8 @@ import {
   Buildings,
   Eye,
   EyeOff,
-  Lock,
-  Mail,
+  LockSimple,
+  MailSimple,
   Receipt,
   Sparkles,
   Stack,
@@ -83,6 +83,21 @@ const proofPoints = [
   },
 ];
 
+const trustStats = [
+  {value: '99,98%', label: 'uptime 12 meses'},
+  {value: 'AES-256', label: 'dados cifrados'},
+  {value: 'SOC 2', label: 'Type II'},
+  {value: 'LGPD', label: 'conformidade'},
+];
+
+// Gradiente do painel esquerdo — traduzido dos valores RGB literais do
+// handoff (fixos, só tema escuro) para tokens, pra funcionar nos dois temas.
+const panelGradient = {
+  backgroundImage:
+    'linear-gradient(140deg, hsl(var(--brand) / 0.42) 0%, hsl(var(--benchmark) / 0.16) 46%, hsl(var(--background) / 0.9) 100%)',
+  backgroundColor: 'hsl(var(--surface-input))',
+};
+
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -145,34 +160,53 @@ export default function Register() {
       id="register-page"
       className="relative min-h-screen flex"
       style={{fontFamily: 'var(--font-body)'}}>
-      <div className="absolute right-4 top-4 z-50">
+      <div className="fixed right-4 top-4 z-50">
         <ThemeToggle />
       </div>
 
       {/* Painel esquerdo - editorial */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14 bg-surface-panel">
+      <div
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
+        style={panelGradient}>
         {/* Glow ambiental */}
         <div
-          className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
+          aria-hidden
+          className="pointer-events-none absolute"
           style={{
+            left: '14%',
+            top: '8%',
+            width: 720,
+            height: 380,
+            transform: 'translate(-50%, -50%)',
             background:
-              'radial-gradient(circle, hsl(var(--brand) / 0.14) 0%, transparent 70%)',
+              'radial-gradient(circle, hsl(var(--brand) / 0.34) 0%, transparent 66%)',
           }}
         />
         <div
-          className="absolute bottom-0 left-0 w-80 h-80 rounded-full pointer-events-none"
+          aria-hidden
+          className="pointer-events-none absolute"
           style={{
+            left: '88%',
+            top: '96%',
+            width: 620,
+            height: 340,
+            transform: 'translate(-50%, -50%)',
             background:
-              'radial-gradient(circle, hsl(var(--accent-positive) / 0.08) 0%, transparent 70%)',
+              'radial-gradient(circle, hsl(var(--accent-positive) / 0.20) 0%, transparent 66%)',
           }}
         />
 
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-2.5">
-          <AppLogo size="md" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-muted/70">
-            Enterprise Wealth Intelligence
-          </span>
+          <AppLogo variant="icon" size="md" />
+          <div className="flex flex-col">
+            <span className="font-heading text-lg font-semibold tracking-tight text-on-surface">
+              Trackerr
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-muted/70">
+              Enterprise Wealth Intelligence
+            </span>
+          </div>
         </div>
 
         {/* Conteúdo central */}
@@ -184,7 +218,8 @@ export default function Register() {
               fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
             }}>
-            A carteira inteira,{' '}
+            A carteira inteira,
+            <br />
             <span
               style={{
                 background:
@@ -211,8 +246,10 @@ export default function Register() {
           <div className="mt-8 flex flex-col gap-4">
             {proofPoints.map((item) => (
               <div key={item.title} className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                  <item.icon className="h-4 w-4" />
+                <span
+                  aria-hidden
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                  <item.icon className="h-4 w-4" weight="fill" />
                 </span>
                 <div>
                   <div className="text-sm font-semibold text-on-surface">
@@ -227,10 +264,24 @@ export default function Register() {
           </div>
         </div>
 
-        {/* Rodapé */}
-        <p className="text-xs relative z-10 text-on-surface-muted/40">
-          © 2025 Trackerr. Plataforma de análise de investimentos.
-        </p>
+        {/* Rodapé de confiança */}
+        <div className="relative z-10 flex flex-wrap items-center gap-6 border-t border-on-surface/10 pt-5">
+          {trustStats.map((stat) => (
+            <div key={stat.label}>
+              <div
+                className="font-semibold text-sm text-on-surface"
+                style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
+                {stat.value}
+              </div>
+              <div className="mt-0.5 text-[10.5px] text-on-surface-muted/60">
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Painel direito - formulário */}
@@ -269,7 +320,7 @@ export default function Register() {
               className="w-full justify-center gap-2 text-muted-foreground"
               onClick={() =>
                 toast.info(
-                  'SSO corporativo disponível nos planos Enterprise.',
+                  'SSO corporativo (SAML) em breve. Fale com o time comercial para o piloto Enterprise.',
                 )
               }>
               <Buildings className="h-4 w-4" />
@@ -297,20 +348,25 @@ export default function Register() {
                   name="firstname"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-medium text-muted-foreground">
+                      <FormLabel
+                        htmlFor="register-firstname"
+                        className="text-xs font-medium text-muted-foreground">
                         Nome
                       </FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <div className="relative">
+                        <User
+                          aria-hidden
+                          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                        />
+                        <FormControl>
                           <Input
                             id="register-firstname"
                             placeholder="João"
                             {...field}
                             className="h-11 pl-10 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -320,7 +376,9 @@ export default function Register() {
                   name="lastname"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-medium text-muted-foreground">
+                      <FormLabel
+                        htmlFor="register-lastname"
+                        className="text-xs font-medium text-muted-foreground">
                         Sobrenome
                       </FormLabel>
                       <FormControl>
@@ -342,20 +400,25 @@ export default function Register() {
                 name="email"
                 render={({field}) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-medium text-muted-foreground">
+                    <FormLabel
+                      htmlFor="register-email"
+                      className="text-xs font-medium text-muted-foreground">
                       E-mail
                     </FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <div className="relative">
+                      <MailSimple
+                        aria-hidden
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                      />
+                      <FormControl>
                         <Input
                           id="register-email"
                           placeholder="voce@empresa.com"
                           {...field}
                           className="h-11 pl-10 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                         />
-                      </div>
-                    </FormControl>
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -366,13 +429,16 @@ export default function Register() {
                 name="password"
                 render={({field}) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-medium text-muted-foreground">
+                    <FormLabel
+                      htmlFor="register-password"
+                      className="text-xs font-medium text-muted-foreground">
                       Senha
                     </FormLabel>
                     <div className="relative">
-                      <FormControl>
-                        <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      </FormControl>
+                      <LockSimple
+                        aria-hidden
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                      />
                       <FormControl>
                         <Input
                           id="register-password"
@@ -408,13 +474,16 @@ export default function Register() {
                 name="confirmPassword"
                 render={({field}) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-medium text-muted-foreground">
+                    <FormLabel
+                      htmlFor="register-confirm-password"
+                      className="text-xs font-medium text-muted-foreground">
                       Confirmar senha
                     </FormLabel>
                     <div className="relative">
-                      <FormControl>
-                        <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      </FormControl>
+                      <LockSimple
+                        aria-hidden
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                      />
                       <FormControl>
                         <Input
                           id="register-confirm-password"
@@ -503,7 +572,9 @@ export default function Register() {
                         required
                       />
                     </FormControl>
-                    <FormLabel className="font-medium text-sm leading-snug cursor-pointer text-muted-foreground">
+                    <FormLabel
+                      htmlFor="register-accept-terms"
+                      className="font-medium text-sm leading-snug cursor-pointer text-muted-foreground">
                       Eu li e concordo com os{' '}
                       <a
                         href="#"
@@ -533,7 +604,7 @@ export default function Register() {
               <Button
                 id="register-submit"
                 type="submit"
-                className="w-full h-11 font-semibold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))] text-brand-foreground"
+                className="w-full h-11 font-semibold text-sm gap-2 transition-all duration-200 shadow-lg shadow-brand/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))] text-brand-foreground"
                 disabled={loading}>
                 {loading ? (
                   'Criando conta...'
@@ -563,7 +634,7 @@ export default function Register() {
 
           {/* Rodapé de confiança */}
           <div className="mt-8 flex items-center justify-center gap-2 border-t border-border/50 pt-6 text-[11px] text-muted-foreground">
-            <Lock className="h-3.5 w-3.5 text-positive" />
+            <LockSimple aria-hidden className="h-3.5 w-3.5 text-positive" />
             <span>Conexão cifrada · 2FA disponível · SOC 2 Type II · LGPD</span>
           </div>
         </div>

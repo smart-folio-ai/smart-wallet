@@ -112,7 +112,7 @@ export {Clock as CalendarClock, Question as HelpCircle} from '@phosphor-icons/re
 export {
   Buildings,
   Stack,
-  Lock,
+  LockSimple,
   EnvelopeSimple as MailSimple,
 } from '@phosphor-icons/react';
 

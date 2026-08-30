@@ -62,6 +62,13 @@ describe('Register', () => {
     expect(getInput('#register-password')).toBeTruthy();
     expect(getInput('#register-confirm-password')).toBeTruthy();
     expect(screen.getByRole('link', {name: 'Criar conta'})).toHaveAttribute('aria-current', 'page');
+    // Os ícones decorativos dentro dos campos (envelope/cadeado) não podem
+    // roubar o id/aria-describedby do FormControl — clicar no <label> tem
+    // que focar o <input>, não o ícone.
+    expect(screen.getByLabelText(/^Senha$/i)).toBe(getInput('#register-password'));
+    expect(screen.getByLabelText(/Confirmar senha/i)).toBe(
+      getInput('#register-confirm-password'),
+    );
   });
 
   it('deve exibir erro para senha sem caractere especial', async () => {
