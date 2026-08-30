@@ -36,6 +36,7 @@ export function AdaptiveDepthSection() {
               size="sm"
               variant="ghost"
               onClick={() => setLevelId(l.id)}
+              aria-pressed={l.id === levelId}
               className={cn(
                 'rounded-md px-4 text-sm font-medium transition-colors',
                 l.id === levelId
