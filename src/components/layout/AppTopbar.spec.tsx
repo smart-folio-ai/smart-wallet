@@ -1,13 +1,12 @@
 import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {SidebarProvider} from '@/components/ui/sidebar';
 import {AppTopbar} from './AppTopbar';
 
 const mockUseSubscription = vi.fn();
 const mockUseCurrentUserProfile = vi.fn();
-const mockLogout = vi.fn();
 const mockSetLevel = vi.fn();
 
 vi.mock('@/hooks/useSubscription', () => ({
@@ -16,10 +15,6 @@ vi.mock('@/hooks/useSubscription', () => ({
 
 vi.mock('@/hooks/useCurrentUserProfile', () => ({
   useCurrentUserProfile: () => mockUseCurrentUserProfile(),
-}));
-
-vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({logout: mockLogout}),
 }));
 
 vi.mock('@/contexts/AdaptiveLevelContext', () => ({
@@ -48,9 +43,12 @@ beforeAll(() => {
 
 function renderTopbar() {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={['/']}>
       <SidebarProvider>
-        <AppTopbar />
+        <Routes>
+          <Route path="/" element={<AppTopbar />} />
+          <Route path="/signout" element={<div>signout-page</div>} />
+        </Routes>
       </SidebarProvider>
     </MemoryRouter>,
   );
@@ -118,14 +116,14 @@ describe('AppTopbar', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows the user avatar with initials and a dropdown with logout', async () => {
+  it('shows the user avatar with initials and a dropdown that navigates to /signout on logout', async () => {
     const user = userEvent.setup();
     renderTopbar();
     const trigger = screen.getByText('AC').closest('button')!;
     await user.click(trigger);
     expect(screen.getByText('Sair')).toBeInTheDocument();
     await user.click(screen.getByText('Sair'));
-    expect(mockLogout).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('signout-page')).toBeInTheDocument();
   });
 
   it('shows the adaptive-depth level switcher and lets the user change level', async () => {

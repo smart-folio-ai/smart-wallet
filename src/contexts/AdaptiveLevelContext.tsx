@@ -27,7 +27,12 @@ export function AdaptiveLevelProvider({children}: {children: ReactNode}) {
   const [level, setLevelState] = useState<AdaptiveLevel>(readStoredLevel);
 
   const setLevel = (next: AdaptiveLevel) => {
-    localStorage.setItem(STORAGE_KEY, next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // Ignore persistence failures (e.g. Safari private mode, storage full)
+      // and still update in-memory state below.
+    }
     setLevelState(next);
   };
 

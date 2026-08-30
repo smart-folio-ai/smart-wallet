@@ -1040,9 +1040,7 @@ const Dashboard = () => {
 
   const pnlSub =
     summary.totalPnl === null || summary.totalPnlPercentage === null
-      ? level === 'iniciante'
-        ? 'custo médio indisponível'
-        : 'custo médio indisponível'
+      ? 'custo médio indisponível'
       : level === 'iniciante'
         ? 'desde o preço médio'
         : `${summary.totalPnlPercentage >= 0 ? '+' : '-'}${Math.abs(summary.totalPnlPercentage).toFixed(2)}%`;

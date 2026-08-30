@@ -13,7 +13,6 @@ import {
 import { LogOut, User } from '@/components/ui/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useAuth } from '@/hooks/useAuth';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useAdaptiveLevel, type AdaptiveLevel } from '@/contexts/AdaptiveLevelContext';
 import { cn } from '@/lib/utils';
@@ -68,6 +67,16 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   },
 };
 
+const LEVEL_OPTIONS: { id: AdaptiveLevel; label: string }[] = [
+  { id: 'iniciante', label: 'Iniciante' },
+  { id: 'intermediario', label: 'Intermediário' },
+  { id: 'avancado', label: 'Avançado' },
+];
+
+const isMac =
+  typeof navigator !== 'undefined' &&
+  /Mac|iPhone|iPad/.test(navigator.platform ?? navigator.userAgent);
+
 function getPageMeta(pathname: string) {
   if (pathname.startsWith('/portfolio/asset')) {
     return {
@@ -103,15 +112,9 @@ export function AppTopbar() {
   const navigate = useNavigate();
   const meta = getPageMeta(pathname);
   const { displayPlanName, isSubscribed, isLoading } = useSubscription();
-  const { logout } = useAuth();
   const { data: profile } = useCurrentUserProfile();
   const { level, setLevel } = useAdaptiveLevel();
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
-  const levelOptions: { id: AdaptiveLevel; label: string }[] = [
-    { id: 'iniciante', label: 'Iniciante' },
-    { id: 'intermediario', label: 'Intermediário' },
-    { id: 'avancado', label: 'Avançado' },
-  ];
   const initials = profile
     ? `${profile.firstName?.[0] ?? ''}${profile.lastName?.[0] ?? ''}`.toUpperCase()
     : '';
@@ -137,8 +140,8 @@ export function AppTopbar() {
             onClick={() => setPaletteOpen(true)}
           >
             <Search className="mr-2 h-3.5 w-3.5" />
-            Buscar ativos
-            <CommandShortcut className="ml-2">⌘K</CommandShortcut>
+            Buscar
+            <CommandShortcut className="ml-2">{isMac ? '⌘K' : 'Ctrl+K'}</CommandShortcut>
           </Button>
 
           {isLoading ? (
@@ -197,6 +200,7 @@ export function AppTopbar() {
                 <span className="hidden text-sm font-medium text-foreground md:inline">
                   {profile?.firstName ?? ''}
                 </span>
+                <span className="sr-only">Menu do usuário</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -205,7 +209,7 @@ export function AppTopbar() {
                 Configurações
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>
+              <DropdownMenuItem onClick={() => navigate('/signout')}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Sair
               </DropdownMenuItem>
@@ -214,11 +218,16 @@ export function AppTopbar() {
         </div>
       </div>
       <div className="flex items-center gap-3 border-t border-border/50 px-4 py-1.5 md:px-6">
-        <div className="inline-flex gap-1 rounded-md bg-muted p-0.5">
-          {levelOptions.map((opt) => (
+        <div
+          role="radiogroup"
+          aria-label="Nível de detalhe"
+          className="inline-flex gap-1 rounded-md bg-muted p-0.5">
+          {LEVEL_OPTIONS.map((opt) => (
             <button
               key={opt.id}
               type="button"
+              role="radio"
+              aria-checked={opt.id === level}
               onClick={() => setLevel(opt.id)}
               className={cn(
                 'rounded px-2.5 py-1 text-[11px] font-medium transition-all',
