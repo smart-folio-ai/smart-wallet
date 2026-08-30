@@ -1,5 +1,5 @@
 import {useQuery} from '@tanstack/react-query';
-import {BarChart3, BadgeCheck, Crown, Sparkles, Users} from 'lucide-react';
+import {BarChart3, BadgeCheck, Crown, Sparkles, Users} from '@/components/ui/icons';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import AdminService from '@/services/admin';

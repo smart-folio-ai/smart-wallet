@@ -5,7 +5,7 @@ import {useForm} from 'react-hook-form';
 import apiClient from '@/server/api/api';
 import {useMutation} from '@tanstack/react-query';
 import * as z from 'zod';
-import {ArrowLeft, Loader2, Mail, CheckCircle2, ArrowRight} from 'lucide-react';
+import {ArrowLeft, Loader2, Mail, CheckCircle2, ArrowRight} from '@/components/ui/icons';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {

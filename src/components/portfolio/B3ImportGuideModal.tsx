@@ -14,7 +14,7 @@ import {
   TrendingUp,
   Wallet,
   XCircle,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 
 interface B3ImportGuideModalProps {
   open: boolean;

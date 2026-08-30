@@ -14,7 +14,7 @@ import {
   ChevronRight,
   Sparkles,
   PieChart,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   Card,
   CardContent,

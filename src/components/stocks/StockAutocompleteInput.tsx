@@ -1,7 +1,7 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
-import {TrendingUp, X} from 'lucide-react';
+import {TrendingUp, X} from '@/components/ui/icons';
 import {formatCurrency} from '@/utils/formatters';
 import {filterAndSortStockSuggestions} from '@/components/stocks/stock-autocomplete.utils';
 

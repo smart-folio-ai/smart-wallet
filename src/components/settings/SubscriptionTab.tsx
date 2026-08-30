@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Check } from 'lucide-react';
+import { Crown, Check } from '@/components/ui/icons';
 
 interface Subscription {
   planId: string;

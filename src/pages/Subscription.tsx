@@ -9,7 +9,7 @@ import {
   CurrentSubscriptionResponse,
   ISubscription,
 } from '@/interface/subscription';
-import {Calendar, CircleDollarSign, Star} from 'lucide-react';
+import {Calendar, CircleDollarSign, Star} from '@/components/ui/icons';
 import {configUrlStripePaymentSuccessOrCancel, styleToast} from '@/utils';
 import {SeletorPrice} from '@/components/plans/SeletorPrice';
 import {cancelUrl, successUrl} from '@/utils/env';

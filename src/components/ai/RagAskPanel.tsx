@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {Textarea} from '@/components/ui/textarea';
-import {Bot, Send, AlertTriangle, Sparkles} from 'lucide-react';
+import {Bot, Send, AlertTriangle, Sparkles} from '@/components/ui/icons';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {askStructuredChat, StructuredChatResponse} from '@/services/chat';
 

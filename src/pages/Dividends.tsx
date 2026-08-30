@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import portfolioService from '@/services/portfolio';
 import {formatCurrency} from '@/utils';
-import {ChevronRight, Landmark} from 'lucide-react';
+import {ChevronRight, Landmark} from '@/components/ui/icons';
 
 type DividendEventType = 'JCP' | 'Dividendo';
 

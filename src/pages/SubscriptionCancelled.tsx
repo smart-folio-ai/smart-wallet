@@ -6,7 +6,7 @@ import {
   MessageCircle,
   CreditCard,
   HelpCircle,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   Card,
   CardContent,

@@ -14,7 +14,7 @@ import {
   KeyRound,
   CheckCircle2,
   AlertCircle,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {

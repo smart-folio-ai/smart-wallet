@@ -29,7 +29,7 @@ import {
   Users,
   Wallet,
   type LucideIcon,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {NavLink} from 'react-router-dom';
 import {useAuth} from '@/hooks/useAuth';
 

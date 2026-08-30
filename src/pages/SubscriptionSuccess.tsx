@@ -1,6 +1,6 @@
 import React from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {Check, Crown, ArrowRight, Download, Calendar} from 'lucide-react';
+import {Check, Crown, ArrowRight, Download, Calendar} from '@/components/ui/icons';
 import {
   Card,
   CardContent,

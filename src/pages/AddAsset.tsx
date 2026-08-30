@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {Separator} from '@/components/ui/separator';
-import {CalendarIcon, Plus, TrendingUp} from 'lucide-react';
+import {CalendarIcon, Plus, TrendingUp} from '@/components/ui/icons';
 import {useToast} from '@/components/ui/use-toast';
 import {Calendar} from '@/components/ui/calendar';
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';

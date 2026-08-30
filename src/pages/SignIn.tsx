@@ -3,7 +3,7 @@ import {useNavigate, useLocation} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-import {Eye, EyeOff, ArrowRight} from 'lucide-react';
+import {Eye, EyeOff, ArrowRight} from '@/components/ui/icons';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {

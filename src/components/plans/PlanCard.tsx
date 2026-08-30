@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {Check, X} from 'lucide-react';
+import {Check, X} from '@/components/ui/icons';
 import {IPlanWithFeatures} from '@/pages/Subscription';
 
 interface IFeature {

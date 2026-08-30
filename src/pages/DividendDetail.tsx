@@ -31,7 +31,7 @@ import {
 } from 'recharts';
 import portfolioService from '@/services/portfolio';
 import {formatCurrency} from '@/utils';
-import {ArrowLeft, Building2} from 'lucide-react';
+import {ArrowLeft, Building2} from '@/components/ui/icons';
 
 type DividendEventType = 'JCP' | 'Dividendo';
 

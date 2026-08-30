@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 import {Link} from 'react-router-dom';
-import {Shield, FileText, Download, Trash2} from 'lucide-react';
+import {Shield, FileText, Download, Trash2} from '@/components/ui/icons';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import {Switch} from '@/components/ui/switch';

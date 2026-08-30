@@ -1,6 +1,6 @@
 import {useState, useEffect, useCallback} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Loader2} from 'lucide-react';
+import {Loader2} from '@/components/ui/icons';
 import {Button} from '@/components/ui/button';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
 import AuthenticationService from '@/services/authentication';

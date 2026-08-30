@@ -60,7 +60,7 @@ describe('AssetDetail — gauge do Preço Justo', () => {
     });
   });
 
-  // The page renders several lucide-react icons as <svg> before the gauge
+  // The page renders several icons as <svg> before the gauge
   // (back arrow, trend arrows, etc.), so `container.querySelector('svg')`
   // alone would grab one of those instead of the gauge. The gauge is the
   // only svg with this viewBox (set in the GrahamGauge component), so we

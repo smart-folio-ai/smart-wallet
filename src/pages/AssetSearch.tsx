@@ -13,7 +13,7 @@ import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Skeleton} from '@/components/ui/skeleton';
-import {Search, TrendingUp, Building, Coins, BarChart3, X} from 'lucide-react';
+import {Search, TrendingUp, Building, Coins, BarChart3, X} from '@/components/ui/icons';
 import {formatCurrency} from '@/utils/formatters';
 import Stock from '@/services/stocks';
 import {StockAllNacionalResponse} from '@/types/stock';

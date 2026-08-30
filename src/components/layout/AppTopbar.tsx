@@ -2,7 +2,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bell, Search, Settings, Sparkles } from 'lucide-react';
+import { Bell, Search, Settings, Sparkles } from '@/components/ui/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 

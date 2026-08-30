@@ -16,7 +16,7 @@ import {
   ExternalLink,
   Zap,
   Landmark,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   Card,
   CardContent,
@@ -732,7 +732,7 @@ export default function AssetDetail() {
                         dataKey="date"
                         axisLine={false}
                         tickLine={false}
-                        tick={{fontSize: 10, fontWeight: 700}}
+                        tick={{fontSize: 10, fontWeight: 600}}
                         minTickGap={40}
                         dy={10}
                       />

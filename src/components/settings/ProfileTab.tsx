@@ -7,7 +7,7 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Save, User, Edit, X } from 'lucide-react';
+import { Save, User, Edit, X } from '@/components/ui/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

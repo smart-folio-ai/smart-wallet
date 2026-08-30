@@ -1,5 +1,5 @@
 import React from 'react';
-import {Loader as LoaderIcon} from 'lucide-react';
+import {Loader as LoaderIcon} from '@/components/ui/icons';
 
 interface LoaderProps {
   text: string;

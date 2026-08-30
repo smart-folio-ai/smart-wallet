@@ -1,6 +1,6 @@
 import React from 'react';
 import {Button} from '@/components/ui/button';
-import {Crown, X, Zap} from 'lucide-react';
+import {Crown, X, Zap} from '@/components/ui/icons';
 import {useNavigate} from 'react-router-dom';
 
 interface PremiumBlurProps {

@@ -35,7 +35,7 @@ import {
   Bitcoin,
   Coins,
   CircleHelp,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   Dialog,
   DialogContent,

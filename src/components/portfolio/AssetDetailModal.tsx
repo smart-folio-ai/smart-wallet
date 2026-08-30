@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Asset } from "@/types/portfolio";
 import { formatCurrency, formatPercentage } from "@/utils/formatters";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, X } from '@/components/ui/icons';
 import { 
   LineChart,
   Line, 
@@ -41,7 +41,7 @@ export const AssetDetailModal = ({ selectedAsset, setSelectedAsset }: AssetDetai
               <p className="text-muted-foreground">{selectedAsset.name}</p>
             </div>
             <Button variant="ghost" size="icon" onClick={() => setSelectedAsset(null)}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              <X className="h-6 w-6" />
             </Button>
           </div>
 

@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import {Badge} from '@/components/ui/badge';
 import {Separator} from '@/components/ui/separator';
-import {GitCompare, Plus, X, TrendingUp, TrendingDown} from 'lucide-react';
+import {GitCompare, Plus, X, TrendingUp, TrendingDown} from '@/components/ui/icons';
 import {PremiumBlur} from '@/components/ui/premium-blur';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
 import {useSubscription} from '@/hooks/useSubscription';

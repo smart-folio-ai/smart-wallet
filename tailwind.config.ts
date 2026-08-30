@@ -21,7 +21,12 @@ export default {
       fontFamily: {
         sans: ['Inter', 'Segoe UI', 'Arial', 'sans-serif'],
         body: ['Inter', 'Segoe UI', 'Arial', 'sans-serif'],
-        heading: ['Manrope', 'Inter', 'Segoe UI', 'sans-serif'],
+        heading: ['Inter', 'Segoe UI', 'Arial', 'sans-serif'],
+      },
+      fontWeight: {
+        bold: '600',
+        extrabold: '600',
+        black: '600',
       },
       keyframes: {
         float: {
@@ -144,6 +149,8 @@ export default {
         // hardcoded que existiam nos componentes da landing.
         positive: 'hsl(var(--accent-positive) / <alpha-value>)',
         negative: 'hsl(var(--accent-negative) / <alpha-value>)',
+        benchmark: 'hsl(var(--benchmark) / <alpha-value>)',
+        'brand-soft': 'hsl(var(--brand-soft) / <alpha-value>)',
       },
       borderRadius: {
         lg: 'var(--radius)',

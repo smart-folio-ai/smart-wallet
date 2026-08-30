@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,153 +7,157 @@
 @layer base {
   :root {
     --font-body: 'Inter', 'Segoe UI', Arial, sans-serif;
-    --font-heading: 'Manrope', 'Inter', 'Segoe UI', sans-serif;
+    --font-heading: 'Inter', 'Segoe UI', Arial, sans-serif;
 
     --radius: 0.5rem;
 
     /* ──────────────────────────────────────────────────────────────
-     * PALETA CLARA — papel. Off-white morno, neutros na faixa quente
-     * (hue 30–35) para não brigarem com o creme. O card sobe para
-     * branco puro enquanto o fundo fica creme, então o card emerge do
-     * fundo em vez de se confundir com ele.
-     * Contrastes verificados pela fórmula da WCAG; ver
-     * docs/design/paletas-globais.html.
+     * PALETA NOCTURNE CLARA — papel. Off-white baseado em azul neutro,
+     * seguindo o design system Nocturne.
      * ────────────────────────────────────────────────────────────── */
-    --surface-base: 40 33% 98%;
-    --surface-panel: 40 24% 96%;
-    --surface-raised: 40 40% 100%;
-    --surface-input: 40 20% 92%;
-    --surface-hairline: 30 14% 12%;
+    --surface-base: 240 29% 97%;
+    --surface-panel: 240 45% 98%;
+    --surface-raised: 240 100% 100%;
+    --surface-input: 232 25% 94%;
+    --surface-hairline: 234 16% 12%;
 
-    --on-surface: 30 14% 12%;
-    --on-surface-accent: 230 60% 32%;
+    --on-surface: 234 16% 12%;
+    --on-surface-accent: 248 62% 61%;
     --on-surface-muted: 33 9% 38%;
     --on-surface-subtle: 35 7% 50%;
 
-    /* Marca: constante nos dois temas, idêntica ao azul do logo. */
-    --brand: 230 100% 62%;
-    --brand-strong: 230 90% 54%;
+    /* Marca: Nocturne blurple claro */
+    --brand: 248 62% 61%;
+    --brand-strong: 248 55% 52%;
     --brand-foreground: 0 0% 100%;
 
     /* Vocabulário financeiro: alta e baixa. */
-    --accent-positive: 158 76% 30%;
-    --accent-negative: 351 72% 42%;
+    --accent-positive: 164 83% 33%;
+    --accent-negative: 348 75% 46%;
 
-    /* Aviso e informação. --destructive é do shadcn e significa ação
-       perigosa (excluir), não perda financeira — são conceitos
-       diferentes que por acaso são vermelhos. */
-    --warning: 32 90% 34%;
+    /* Aviso e informação. */
+    --warning: 41 93% 31%;
     --warning-foreground: 40 40% 100%;
-    --info: 230 100% 62%;
+    --info: 248 62% 61%;
     --info-foreground: 0 0% 100%;
-    --success: 158 76% 30%;
+    --success: 164 83% 33%;
     --success-foreground: 40 40% 100%;
     --destructive: 0 72% 45%;
     --destructive-foreground: 40 40% 100%;
+
+    /* Tokens de benchmark e brand-soft */
+    --benchmark: 198 73% 38%;
+    --brand-soft: 250 29% 45%;
 
     /* ──────────────────────────────────────────────────────────────
      * Tokens do shadcn. Derivam dos canônicos acima — é isto que faz
      * os 72 arquivos que usam bg-background, text-foreground e bg-card
      * mudarem de cor sem nenhuma alteração de código.
      * ────────────────────────────────────────────────────────────── */
-    --background: 40 33% 98%;
-    --foreground: 30 14% 12%;
-    --card: 40 40% 100%;
-    --card-foreground: 30 14% 12%;
-    --popover: 40 40% 100%;
-    --popover-foreground: 30 14% 12%;
-    --primary: 230 100% 62%;
+    --background: 240 29% 97%;
+    --foreground: 234 16% 12%;
+    --card: 240 100% 100%;
+    --card-foreground: 234 16% 12%;
+    --popover: 240 100% 100%;
+    --popover-foreground: 234 16% 12%;
+    --primary: 248 62% 61%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 96%;
-    --secondary-foreground: 30 14% 12%;
-    --muted: 40 24% 96%;
+    --secondary: 240 45% 98%;
+    --secondary-foreground: 234 16% 12%;
+    --muted: 240 45% 98%;
     --muted-foreground: 33 9% 38%;
-    --accent: 40 24% 96%;
-    --accent-foreground: 30 14% 12%;
-    --border: 35 12% 88%;
-    --input: 35 12% 88%;
-    --ring: 230 100% 62%;
+    --accent: 240 45% 98%;
+    --accent-foreground: 234 16% 12%;
+    --border: 234 16% 88%;
+    --input: 234 16% 88%;
+    --ring: 248 62% 61%;
 
-    --sidebar-background: 40 24% 96%;
-    --sidebar-foreground: 30 14% 12%;
-    --sidebar-primary: 230 100% 62%;
+    --sidebar-background: 240 45% 98%;
+    --sidebar-foreground: 234 16% 12%;
+    --sidebar-primary: 248 62% 61%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 40 33% 98%;
-    --sidebar-accent-foreground: 30 14% 12%;
-    --sidebar-border: 35 12% 88%;
-    --sidebar-ring: 230 100% 62%;
+    --sidebar-accent: 240 29% 97%;
+    --sidebar-accent-foreground: 234 16% 12%;
+    --sidebar-border: 234 16% 88%;
+    --sidebar-ring: 248 62% 61%;
 
-    --chart-1: 230 100% 62%;
-    --chart-2: 158 76% 30%;
-    --chart-3: 32 90% 34%;
-    --chart-4: 280 55% 45%;
-    --chart-5: 351 72% 42%;
+    --chart-1: var(--brand);
+    --chart-2: var(--accent-positive);
+    --chart-3: var(--warning);
+    --chart-4: 250 29% 45%;
+    --chart-5: var(--accent-negative);
   }
 
   .dark {
     /* ──────────────────────────────────────────────────────────────
-     * PALETA ESCURA — a mesma da landing. Preto-azulado quase neutro,
-     * para o azul da marca virar acento raro em vez de banho de cor.
+     * PALETA NOCTURNE ESCURA — seguindo o design system Nocturne.
      * ────────────────────────────────────────────────────────────── */
-    --surface-base: 224 30% 6%;
-    --surface-panel: 224 28% 8%;
-    --surface-raised: 223 24% 11%;
-    --surface-input: 225 20% 18%;
-    --surface-hairline: 0 0% 100%;
+    --surface-base: 233 27% 12%;
+    --surface-panel: 233 23% 15%;
+    --surface-raised: 232 19% 15%;
+    --surface-input: 229 22% 10%;
+    --surface-hairline: 240 10% 92%;
 
-    --on-surface: 228 90% 93%;
-    --on-surface-accent: 228 100% 86%;
+    --on-surface: 240 10% 92%;
+    --on-surface-accent: 249 53% 68%;
     --on-surface-muted: 228 18% 72%;
     --on-surface-subtle: 228 12% 55%;
 
-    --brand: 230 100% 62%;
-    --brand-strong: 230 90% 54%;
+    /* Marca: Nocturne blurple escuro */
+    --brand: 249 53% 68%;
+    --brand-strong: 248 62% 61%;
     --brand-foreground: 0 0% 100%;
 
-    --accent-positive: 158 84% 45%;
-    --accent-negative: 351 83% 61%;
+    /* Vocabulário financeiro: alta e baixa. */
+    --accent-positive: 162 67% 51%;
+    --accent-negative: 350 86% 63%;
 
-    --warning: 40 95% 60%;
-    --warning-foreground: 224 30% 6%;
-    --info: 230 100% 62%;
+    /* Aviso e informação. */
+    --warning: 41 87% 56%;
+    --warning-foreground: 233 27% 12%;
+    --info: 249 53% 68%;
     --info-foreground: 0 0% 100%;
-    --success: 158 84% 45%;
-    --success-foreground: 224 30% 6%;
+    --success: 162 67% 51%;
+    --success-foreground: 233 27% 12%;
     --destructive: 351 70% 42%;
     --destructive-foreground: 228 90% 93%;
 
-    --background: 224 30% 6%;
-    --foreground: 228 90% 93%;
-    --card: 223 24% 11%;
-    --card-foreground: 228 90% 93%;
-    --popover: 223 24% 11%;
-    --popover-foreground: 228 90% 93%;
-    --primary: 230 100% 62%;
+    /* Tokens de benchmark e brand-soft */
+    --benchmark: 194 85% 62%;
+    --brand-soft: 247 93% 83%;
+
+    --background: 233 27% 12%;
+    --foreground: 240 10% 92%;
+    --card: 232 18% 17%;
+    --card-foreground: 240 10% 92%;
+    --popover: 232 18% 17%;
+    --popover-foreground: 240 10% 92%;
+    --primary: 249 53% 68%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 224 28% 8%;
-    --secondary-foreground: 228 90% 93%;
-    --muted: 224 28% 8%;
+    --secondary: 233 23% 15%;
+    --secondary-foreground: 240 10% 92%;
+    --muted: 233 23% 15%;
     --muted-foreground: 228 18% 72%;
-    --accent: 224 28% 8%;
-    --accent-foreground: 228 90% 93%;
-    --border: 225 18% 18%;
-    --input: 225 18% 18%;
-    --ring: 230 100% 62%;
+    --accent: 233 23% 15%;
+    --accent-foreground: 240 10% 92%;
+    --border: 234 16% 18%;
+    --input: 234 16% 18%;
+    --ring: 249 53% 68%;
 
-    --sidebar-background: 224 28% 8%;
-    --sidebar-foreground: 228 90% 93%;
-    --sidebar-primary: 230 100% 62%;
+    --sidebar-background: 233 23% 15%;
+    --sidebar-foreground: 240 10% 92%;
+    --sidebar-primary: 249 53% 68%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 223 24% 11%;
-    --sidebar-accent-foreground: 228 90% 93%;
-    --sidebar-border: 225 18% 18%;
-    --sidebar-ring: 230 100% 62%;
+    --sidebar-accent: 232 18% 17%;
+    --sidebar-accent-foreground: 240 10% 92%;
+    --sidebar-border: 234 16% 18%;
+    --sidebar-ring: 249 53% 68%;
 
-    --chart-1: 230 100% 62%;
-    --chart-2: 158 84% 45%;
-    --chart-3: 40 95% 60%;
-    --chart-4: 280 65% 65%;
-    --chart-5: 351 83% 61%;
+    --chart-1: var(--brand);
+    --chart-2: var(--accent-positive);
+    --chart-3: var(--warning);
+    --chart-4: 247 93% 83%;
+    --chart-5: var(--accent-negative);
   }
 }
 
