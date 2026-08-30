@@ -191,7 +191,7 @@ export default function Register() {
             ].map((item, index) => (
               <div
                 key={index}
-                className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-[#1a253d] bg-surface-raised">
+                className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-surface-raised/80 bg-surface-raised">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-brand/10 text-brand">
                   {item.icon}
                 </div>
@@ -219,7 +219,7 @@ export default function Register() {
       </div>
 
       {/* Painel direito - formulário */}
-      <div className="relative flex-1 flex items-center justify-center overflow-y-auto bg-background p-8">
+      <div className="flex-1 flex items-center justify-center overflow-y-auto bg-background p-8">
         <div className="w-full max-w-md my-8">
           {/* Logo mobile */}
           <div className="mb-8 flex justify-center lg:hidden">

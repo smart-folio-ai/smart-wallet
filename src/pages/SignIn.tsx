@@ -244,7 +244,7 @@ export default function SignIn() {
         </div>
 
         {/* Painel direito - formulário */}
-        <div className="relative flex-1 flex items-center justify-center bg-background p-8">
+        <div className="flex-1 flex items-center justify-center bg-background p-8">
           <div className="w-full max-w-md">
             {/* Logo mobile */}
             <div className="mb-8 flex justify-center lg:hidden">

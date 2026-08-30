@@ -33,5 +33,3 @@ export function AuthTabs({active}: AuthTabsProps) {
     </div>
   );
 }
-
-export default AuthTabs;
