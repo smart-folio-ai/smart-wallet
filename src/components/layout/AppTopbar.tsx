@@ -17,6 +17,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useAdaptiveLevel, type AdaptiveLevel } from '@/contexts/AdaptiveLevelContext';
 import { cn } from '@/lib/utils';
+import { useCommandPalette } from '@/hooks/useCommandPalette';
+import { CommandPalette } from './CommandPalette';
+import { CommandShortcut } from '@/components/ui/command';
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': {
@@ -103,6 +106,7 @@ export function AppTopbar() {
   const { logout } = useAuth();
   const { data: profile } = useCurrentUserProfile();
   const { level, setLevel } = useAdaptiveLevel();
+  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const levelOptions: { id: AdaptiveLevel; label: string }[] = [
     { id: 'iniciante', label: 'Iniciante' },
     { id: 'intermediario', label: 'Intermediário' },
@@ -130,10 +134,11 @@ export function AppTopbar() {
             variant="outline"
             size="sm"
             className="hidden border-border/70 bg-transparent text-muted-foreground hover:text-foreground lg:flex"
-            onClick={() => navigate('/asset-search')}
+            onClick={() => setPaletteOpen(true)}
           >
             <Search className="mr-2 h-3.5 w-3.5" />
             Buscar ativos
+            <CommandShortcut className="ml-2">⌘K</CommandShortcut>
           </Button>
 
           {isLoading ? (
@@ -229,6 +234,7 @@ export function AppTopbar() {
           Preferência salva
         </span>
       </div>
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </header>
   );
 }

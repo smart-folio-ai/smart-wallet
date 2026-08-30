@@ -3,7 +3,7 @@ import { Moon, Sun } from '@/components/ui/icons';
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
-export function ThemeToggle() {
+export function useThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
@@ -23,6 +23,12 @@ export function ThemeToggle() {
     document.documentElement.classList.toggle("dark", newTheme === "dark");
     localStorage.setItem("theme", newTheme);
   };
+
+  return { theme, toggleTheme };
+}
+
+export function ThemeToggle() {
+  const { theme, toggleTheme } = useThemeToggle();
 
   return (
     <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">

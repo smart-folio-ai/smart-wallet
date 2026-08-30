@@ -26,6 +26,10 @@ vi.mock('@/contexts/AdaptiveLevelContext', () => ({
   useAdaptiveLevel: () => ({level: 'intermediario', setLevel: mockSetLevel}),
 }));
 
+vi.mock('@/components/ThemeToggle', () => ({
+  useThemeToggle: () => ({toggleTheme: vi.fn()}),
+}));
+
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
@@ -130,5 +134,12 @@ describe('AppTopbar', () => {
     expect(screen.getByText('Intermediário')).toBeInTheDocument();
     await user.click(screen.getByText('Avançado'));
     expect(mockSetLevel).toHaveBeenCalledWith('avancado');
+  });
+
+  it('opens the command palette when the search button is clicked', async () => {
+    const user = userEvent.setup();
+    renderTopbar();
+    await user.click(screen.getByRole('button', {name: /buscar/i}));
+    expect(screen.getByPlaceholderText(/buscar uma tela/i)).toBeInTheDocument();
   });
 });
