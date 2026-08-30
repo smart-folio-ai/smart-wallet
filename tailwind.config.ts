@@ -21,7 +21,11 @@ export default {
       fontFamily: {
         sans: ['Inter', 'Segoe UI', 'Arial', 'sans-serif'],
         body: ['Inter', 'Segoe UI', 'Arial', 'sans-serif'],
-        heading: ['Manrope', 'Inter', 'Segoe UI', 'sans-serif'],
+        heading: ['Inter', 'Segoe UI', 'Arial', 'sans-serif'],
+      },
+      fontWeight: {
+        bold: '600',
+        extrabold: '600',
       },
       keyframes: {
         float: {
