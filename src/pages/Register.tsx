@@ -29,6 +29,7 @@ import Loader from '@/components/loader';
 import {AxiosError} from 'axios';
 import {AppLogo} from '@/components/AppLogo';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
+import {AuthTabs} from '@/components/auth/AuthTabs';
 
 const formSchema = z
   .object({
@@ -217,20 +218,20 @@ export default function Register() {
         </p>
       </div>
 
-      {/* Painel direito - formulário (BRANCO) */}
-      <div
-        className="flex-1 flex items-center justify-center p-8 overflow-y-auto"
-        style={{backgroundColor: '#ffffff'}}>
+      {/* Painel direito - formulário */}
+      <div className="relative flex-1 flex items-center justify-center overflow-y-auto bg-background p-8">
         <div className="w-full max-w-md my-8">
           {/* Logo mobile */}
           <div className="mb-8 flex justify-center lg:hidden">
             <AppLogo size="lg" />
           </div>
 
+          <AuthTabs active="register" />
+
           {/* Cabeçalho do form */}
-          <div className="mb-8">
+          <div className="mb-8 mt-6">
             <h2
-              className="font-bold mb-2 text-surface-panel"
+              className="font-bold mb-2 text-foreground"
               style={{
                 fontSize: '1.875rem',
                 fontFamily: 'var(--font-heading)',
@@ -238,7 +239,7 @@ export default function Register() {
               }}>
               Criar conta
             </h2>
-            <p className="text-slate-500" style={{fontSize: '0.9rem'}}>
+            <p className="text-muted-foreground" style={{fontSize: '0.9rem'}}>
               Já possui uma conta?{' '}
               <button
                 id="register-goto-signin"
@@ -262,7 +263,7 @@ export default function Register() {
                   render={({field}) => (
                     <FormItem>
                       <FormLabel
-                        className="uppercase tracking-widest text-xs font-bold text-slate-500"
+                        className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
                         style={{
                           letterSpacing: '0.1em',
                         }}>
@@ -273,7 +274,7 @@ export default function Register() {
                           id="register-firstname"
                           placeholder="João"
                           {...field}
-                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
+                          className="h-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                         />
                       </FormControl>
                       <FormMessage />
@@ -286,7 +287,7 @@ export default function Register() {
                   render={({field}) => (
                     <FormItem>
                       <FormLabel
-                        className="uppercase tracking-widest text-xs font-bold text-slate-500"
+                        className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
                         style={{
                           letterSpacing: '0.1em',
                         }}>
@@ -297,7 +298,7 @@ export default function Register() {
                           id="register-lastname"
                           placeholder="Silva"
                           {...field}
-                          className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
+                          className="h-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                         />
                       </FormControl>
                       <FormMessage />
@@ -312,7 +313,7 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold text-slate-500"
+                      className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
                       style={{
                         letterSpacing: '0.1em',
                       }}>
@@ -323,7 +324,7 @@ export default function Register() {
                         id="register-email"
                         placeholder="seu@email.com"
                         {...field}
-                        className="h-12 border border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
+                        className="h-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                       />
                     </FormControl>
                     <FormMessage />
@@ -337,7 +338,7 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold text-slate-500"
+                      className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
                       style={{
                         letterSpacing: '0.1em',
                       }}>
@@ -350,15 +351,14 @@ export default function Register() {
                           type={showPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           {...field}
-                          className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
+                          className="h-12 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                         />
                       </FormControl>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
-                        style={{color: '#94a3b8'}}
+                        className="absolute right-1 top-1 h-10 w-10 text-muted-foreground hover:bg-transparent"
                         onClick={() => setShowPassword(!showPassword)}>
                         {showPassword ? (
                           <EyeOff className="h-4 w-4" />
@@ -381,7 +381,7 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold text-slate-500"
+                      className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
                       style={{
                         letterSpacing: '0.1em',
                       }}>
@@ -394,15 +394,14 @@ export default function Register() {
                           type={showConfirmPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           {...field}
-                          className="h-12 border border-slate-200 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-slate-50/50 text-surface-panel"
+                          className="h-12 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                         />
                       </FormControl>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
-                        style={{color: '#94a3b8'}}
+                        className="absolute right-1 top-1 h-10 w-10 text-muted-foreground hover:bg-transparent"
                         onClick={() =>
                           setShowConfirmPassword(!showConfirmPassword)
                         }>
@@ -423,41 +422,41 @@ export default function Register() {
                 )}
               />
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-600">
-                <p className="mb-2 font-semibold text-slate-700">
+              <div className="rounded-xl border border-input bg-muted/50 p-3 text-xs text-muted-foreground">
+                <p className="mb-2 font-semibold text-foreground">
                   Regras da senha
                 </p>
                 <p
                   className={
-                    hasMinLength ? 'text-emerald-600' : 'text-slate-600'
+                    hasMinLength ? 'text-success' : 'text-muted-foreground'
                   }>
                   • Mínimo de 8 caracteres
                 </p>
                 <p
                   className={
-                    hasUppercase ? 'text-emerald-600' : 'text-slate-600'
+                    hasUppercase ? 'text-success' : 'text-muted-foreground'
                   }>
                   • Pelo menos 1 letra maiúscula
                 </p>
                 <p
                   className={
-                    hasLowercase ? 'text-emerald-600' : 'text-slate-600'
+                    hasLowercase ? 'text-success' : 'text-muted-foreground'
                   }>
                   • Pelo menos 1 letra minúscula
                 </p>
                 <p
-                  className={hasNumber ? 'text-emerald-600' : 'text-slate-600'}>
+                  className={hasNumber ? 'text-success' : 'text-muted-foreground'}>
                   • Pelo menos 1 número
                 </p>
                 <p
                   className={
-                    hasSpecial ? 'text-emerald-600' : 'text-slate-600'
+                    hasSpecial ? 'text-success' : 'text-muted-foreground'
                   }>
                   • Pelo menos 1 caractere especial
                 </p>
                 <p
                   className={
-                    passwordsMatch ? 'text-emerald-600' : 'text-slate-600'
+                    passwordsMatch ? 'text-success' : 'text-muted-foreground'
                   }>
                   • A confirmação deve ser igual à senha
                 </p>
@@ -473,13 +472,11 @@ export default function Register() {
                         id="register-accept-terms"
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        className="mt-0.5 border-slate-300 data-[state=checked]:bg-brand data-[state=checked]:border-brand"
+                        className="mt-0.5 data-[state=checked]:bg-brand data-[state=checked]:border-brand"
                         required
                       />
                     </FormControl>
-                    <FormLabel
-                      className="font-medium text-sm leading-snug cursor-pointer"
-                      style={{color: '#475569'}}>
+                    <FormLabel className="font-medium text-sm leading-snug cursor-pointer text-muted-foreground">
                       Eu li e concordo com os{' '}
                       <a
                         href="#"
@@ -507,10 +504,7 @@ export default function Register() {
               <Button
                 id="register-submit"
                 type="submit"
-                className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))]"
-                style={{
-                  color: '#f9f7ff',
-                }}
+                className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))] text-brand-foreground"
                 disabled={loading}>
                 {loading ? (
                   'Criando Conta...'
@@ -525,7 +519,7 @@ export default function Register() {
           </Form>
 
           {/* Rodapé */}
-          <p className="text-xs text-center mt-8" style={{color: '#94a3b8'}}>
+          <p className="text-xs text-center mt-8 text-muted-foreground">
             Copyright © 2025 Trackerr. Todos os direitos reservados.
           </p>
         </div>
