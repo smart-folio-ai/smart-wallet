@@ -144,6 +144,8 @@ export default {
         // hardcoded que existiam nos componentes da landing.
         positive: 'hsl(var(--accent-positive) / <alpha-value>)',
         negative: 'hsl(var(--accent-negative) / <alpha-value>)',
+        benchmark: 'hsl(var(--benchmark) / <alpha-value>)',
+        'brand-soft': 'hsl(var(--brand-soft) / <alpha-value>)',
       },
       borderRadius: {
         lg: 'var(--radius)',
