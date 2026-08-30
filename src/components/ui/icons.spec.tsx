@@ -3,16 +3,20 @@ import {render} from '@testing-library/react';
 import * as Icons from './icons';
 
 const expectedNames = [
-  'AlertTriangle', 'ArrowLeft', 'ArrowRight', 'ArrowUpDown', 'BadgeCheck',
-  'BarChart3', 'Bell', 'Bot', 'Building', 'Building2', 'Calculator',
-  'Calendar', 'CalendarIcon', 'Check', 'CheckCircle2', 'ChevronDown',
-  'ChevronLeft', 'ChevronRight', 'ChevronUp', 'Circle', 'CircleDollarSign',
-  'CircleHelp', 'Coins', 'Cookie', 'Crown', 'Dot', 'Download', 'Edit',
-  'Eye', 'EyeOff', 'FileText', 'GripVertical', 'Info', 'Landmark', 'Loader',
-  'Loader2', 'Mail', 'MessageSquare', 'Moon', 'MoreHorizontal', 'PanelLeft',
-  'Pencil', 'PiggyBank', 'Plus', 'RefreshCw', 'RotateCcw', 'Save', 'Search',
-  'Send', 'Settings', 'Shield', 'ShieldCheck', 'Sparkles', 'Star', 'Sun',
-  'Trash2', 'TrendingUp', 'Upload', 'User', 'User2', 'Users', 'Wallet', 'X',
+  'Activity', 'AlertCircle', 'AlertTriangle', 'ArrowLeft', 'ArrowRight', 'ArrowUp',
+  'ArrowUpDown', 'BadgeCheck', 'BarChart3', 'Bell', 'Bitcoin', 'Bot', 'Brain',
+  'Briefcase', 'Building', 'Building2', 'Calculator', 'Calendar', 'CalendarClock',
+  'CalendarIcon', 'Camera', 'Check', 'CheckCircle2', 'ChevronDown', 'ChevronLeft',
+  'ChevronRight', 'ChevronUp', 'Circle', 'CircleDollarSign', 'CircleHelp', 'Coins',
+  'Cookie', 'Cpu', 'CreditCard', 'Crown', 'Diamond', 'DollarSign', 'Dot', 'Download',
+  'Edit', 'ExternalLink', 'Eye', 'EyeOff', 'FileSearch', 'FileSpreadsheet', 'FileText',
+  'GitCompare', 'Globe', 'GripVertical', 'HelpCircle', 'Hexagon', 'Info', 'KeyRound',
+  'Landmark', 'Layers', 'Loader', 'Loader2', 'LogOut', 'Mail', 'MessageCircle',
+  'MessageSquare', 'Moon', 'MoreHorizontal', 'PanelLeft', 'Pencil', 'PieChart',
+  'PiggyBank', 'Plus', 'QrCode', 'Receipt', 'RefreshCcw', 'RefreshCw', 'RotateCcw',
+  'Save', 'Search', 'Send', 'Settings', 'Shield', 'ShieldAlert', 'ShieldCheck',
+  'ShieldOff', 'Shuffle', 'Sparkles', 'Star', 'Sun', 'Target', 'Trash2', 'TrendingDown',
+  'TrendingUp', 'Unlink', 'Upload', 'User', 'User2', 'Users', 'Wallet', 'X', 'XCircle',
   'Zap',
 ];
 
