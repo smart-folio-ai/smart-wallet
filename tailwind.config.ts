@@ -26,6 +26,7 @@ export default {
       fontWeight: {
         bold: '600',
         extrabold: '600',
+        black: '600',
       },
       keyframes: {
         float: {

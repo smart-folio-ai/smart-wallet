@@ -12,7 +12,7 @@ export const BRAND = {
 } as const;
 
 export const FONT_IMPORT_URL =
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap';
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap';
 
 export function readLogoSvg(): string {
   return readFileSync(

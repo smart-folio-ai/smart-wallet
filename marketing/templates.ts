@@ -45,8 +45,8 @@ function page(format: Format, body: string): string {
     overflow: hidden;
   }
   .heading {
-    font-family: Manrope, sans-serif;
-    font-weight: 800;
+    font-family: Inter, sans-serif;
+    font-weight: 600;
     letter-spacing: -0.03em;
     line-height: 1.05;
     font-size: ${Math.round(scale * 0.072)}px;
@@ -60,11 +60,11 @@ function page(format: Format, body: string): string {
   .logo svg { width: ${Math.round(scale * 0.18)}px; height: auto; }
   .stack { display: flex; flex-direction: column; gap: ${Math.round(scale * 0.035)}px; }
   .item-title {
-    font-family: Manrope, sans-serif;
-    font-weight: 700;
+    font-family: Inter, sans-serif;
+    font-weight: 600;
     font-size: ${Math.round(scale * 0.038)}px;
   }
-  .price { font-family: Manrope, sans-serif; font-weight: 800; }
+  .price { font-family: Inter, sans-serif; font-weight: 600; }
   .price-value { font-size: ${Math.round(scale * 0.06)}px; }
   .rule {
     height: 1px;
