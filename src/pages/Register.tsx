@@ -4,12 +4,16 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
 import {
+  ArrowRight,
+  Buildings,
   Eye,
   EyeOff,
-  ArrowRight,
-  BarChart3,
-  Cpu,
-  ShieldCheck,
+  LockSimple,
+  MailSimple,
+  Receipt,
+  Sparkles,
+  Stack,
+  User,
 } from '@/components/ui/icons';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
@@ -25,11 +29,12 @@ import {Checkbox} from '@/components/ui/checkbox';
 import {toast} from 'sonner';
 import {ICreateUser} from '@/interface/authentication';
 import AuthenticationService from '../services/authentication';
-import Loader from '@/components/loader';
 import {AxiosError} from 'axios';
 import {AppLogo} from '@/components/AppLogo';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
+import {GoogleLoginButton} from '@/components/GoogleLoginButton';
 import {AuthTabs} from '@/components/auth/AuthTabs';
+import {ThemeToggle} from '@/components/ThemeToggle';
 
 const formSchema = z
   .object({
@@ -59,6 +64,39 @@ const formSchema = z
   });
 
 type FormValues = z.infer<typeof formSchema>;
+
+const proofPoints = [
+  {
+    icon: Stack,
+    title: 'Consolidação multi-corretora',
+    body: 'B3, corretoras nacionais e cripto em um único patrimônio, sem planilha.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Copiloto com trilha de auditoria',
+    body: 'Cada insight traz fonte, janela de dados e nível de confiança do modelo.',
+  },
+  {
+    icon: Receipt,
+    title: 'Fiscal calculado, não estimado',
+    body: 'Apuração mensal, prejuízo compensado e DARF com o valor a pagar.',
+  },
+];
+
+const trustStats = [
+  {value: '99,98%', label: 'uptime 12 meses'},
+  {value: 'AES-256', label: 'dados cifrados'},
+  {value: 'SOC 2', label: 'Type II'},
+  {value: 'LGPD', label: 'conformidade'},
+];
+
+// Gradiente do painel esquerdo — traduzido dos valores RGB literais do
+// handoff (fixos, só tema escuro) para tokens, pra funcionar nos dois temas.
+const panelGradient = {
+  backgroundImage:
+    'linear-gradient(140deg, hsl(var(--brand) / 0.42) 0%, hsl(var(--benchmark) / 0.16) 46%, hsl(var(--background) / 0.9) 100%)',
+  backgroundColor: 'hsl(var(--surface-input))',
+};
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -120,36 +158,59 @@ export default function Register() {
   return (
     <div
       id="register-page"
-      className="dark min-h-screen flex"
+      className="relative min-h-screen flex"
       style={{fontFamily: 'var(--font-body)'}}>
+      <div className="fixed right-4 top-4 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Painel esquerdo - editorial */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14 bg-surface-panel">
+      <div
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
+        style={panelGradient}>
         {/* Glow ambiental */}
         <div
-          className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
+          aria-hidden
+          className="pointer-events-none absolute"
           style={{
+            left: '14%',
+            top: '8%',
+            width: 720,
+            height: 380,
+            transform: 'translate(-50%, -50%)',
             background:
-              'radial-gradient(circle, hsl(var(--brand) / 0.07) 0%, transparent 70%)',
+              'radial-gradient(circle, hsl(var(--brand) / 0.34) 0%, transparent 66%)',
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute"
+          style={{
+            left: '88%',
+            top: '96%',
+            width: 620,
+            height: 340,
+            transform: 'translate(-50%, -50%)',
+            background:
+              'radial-gradient(circle, hsl(var(--accent-positive) / 0.20) 0%, transparent 66%)',
           }}
         />
 
         {/* Logo */}
-        <div className="relative z-10">
-          <AppLogo size="lg" />
+        <div className="relative z-10 flex items-center gap-2.5">
+          <AppLogo variant="icon" size="md" />
+          <div className="flex flex-col">
+            <span className="font-heading text-lg font-semibold tracking-tight text-on-surface">
+              Trackerr
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-muted/70">
+              Enterprise Wealth Intelligence
+            </span>
+          </div>
         </div>
 
         {/* Conteúdo central */}
         <div className="relative z-10 flex-1 flex flex-col justify-center">
-          <div className="mb-6 inline-flex">
-            <span
-              className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full text-on-surface-accent bg-brand/[0.12]"
-              style={{
-                fontFamily: 'var(--font-body)',
-                letterSpacing: '0.12em',
-              }}>
-              Nova Conta
-            </span>
-          </div>
           <h1
             className="font-bold leading-tight mb-5 text-on-surface"
             style={{
@@ -157,7 +218,18 @@ export default function Register() {
               fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
             }}>
-            Comece sua jornada de investimentos hoje.
+            A carteira inteira,
+            <br />
+            <span
+              style={{
+                background:
+                  'linear-gradient(120deg, hsl(var(--brand)) 0%, hsl(var(--benchmark)) 58%, hsl(var(--accent-positive)) 100%)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}>
+              lida por uma IA que explica.
+            </span>
           </h1>
           <p
             className="leading-relaxed text-on-surface-muted/75"
@@ -165,46 +237,26 @@ export default function Register() {
               fontSize: '1rem',
               lineHeight: '1.7',
             }}>
-            Crie sua conta em menos de 2 minutos. Acesso imediato ao terminal
-            completo, análises em tempo real e inteligência artificial para
-            impulsionar seus resultados.
+            Consolidação multi-corretora, risco quantitativo e apuração
+            fiscal em uma leitura só — na profundidade certa para o seu
+            nível de investidor.
           </p>
 
-          {/* Features */}
-          <div className="mt-10 space-y-4">
-            {[
-              {
-                icon: <BarChart3 className="w-5 h-5" />,
-                title: 'Dashboard completo',
-                desc: 'Visão consolidada do seu portfólio',
-              },
-              {
-                icon: <Cpu className="w-5 h-5" />,
-                title: 'IA integrada',
-                desc: 'Insights inteligentes sobre seus ativos',
-              },
-              {
-                icon: <ShieldCheck className="w-5 h-5" />,
-                title: 'Segurança avançada',
-                desc: 'Autenticação de dois fatores inclusa',
-              },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-surface-raised/80 bg-surface-raised">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-brand/10 text-brand">
-                  {item.icon}
-                </div>
+          {/* Prova social */}
+          <div className="mt-8 flex flex-col gap-4">
+            {proofPoints.map((item) => (
+              <div key={item.title} className="flex items-start gap-3">
+                <span
+                  aria-hidden
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                  <item.icon className="h-4 w-4" weight="fill" />
+                </span>
                 <div>
-                  <div
-                    className="font-semibold text-sm mb-0.5 text-on-surface"
-                    style={{
-                      fontFamily: 'var(--font-heading)',
-                    }}>
+                  <div className="text-sm font-semibold text-on-surface">
                     {item.title}
                   </div>
-                  <div className="text-xs text-on-surface-muted/60">
-                    {item.desc}
+                  <div className="mt-0.5 text-xs leading-relaxed text-on-surface-muted/60">
+                    {item.body}
                   </div>
                 </div>
               </div>
@@ -212,14 +264,28 @@ export default function Register() {
           </div>
         </div>
 
-        {/* Rodapé */}
-        <p className="text-xs relative z-10 text-on-surface-muted/40">
-          © 2025 Trackerr. Plataforma de análise de investimentos.
-        </p>
+        {/* Rodapé de confiança */}
+        <div className="relative z-10 flex flex-wrap items-center gap-6 border-t border-on-surface/10 pt-5">
+          {trustStats.map((stat) => (
+            <div key={stat.label}>
+              <div
+                className="font-semibold text-sm text-on-surface"
+                style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
+                {stat.value}
+              </div>
+              <div className="mt-0.5 text-[10.5px] text-on-surface-muted/60">
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Painel direito - formulário */}
-      <div className="flex-1 flex items-center justify-center overflow-y-auto bg-background p-8">
+      <div className="relative flex-1 flex items-center justify-center overflow-y-auto bg-background p-8">
         <div className="w-full max-w-md my-8">
           {/* Logo mobile */}
           <div className="mb-8 flex justify-center lg:hidden">
@@ -229,25 +295,45 @@ export default function Register() {
           <AuthTabs active="register" />
 
           {/* Cabeçalho do form */}
-          <div className="mb-8 mt-6">
+          <div className="mb-6 mt-6">
             <h2
               className="font-bold mb-2 text-foreground"
               style={{
-                fontSize: '1.875rem',
+                fontSize: '1.5rem',
                 fontFamily: 'var(--font-heading)',
                 letterSpacing: '-0.02em',
               }}>
-              Criar conta
+              Comece em minutos
             </h2>
-            <p className="text-muted-foreground" style={{fontSize: '0.9rem'}}>
-              Já possui uma conta?{' '}
-              <button
-                id="register-goto-signin"
-                onClick={() => navigate('/signin')}
-                className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline text-brand">
-                Faça login
-              </button>
+            <p className="text-sm text-muted-foreground">
+              Crie a conta, conecte uma corretora e receba a primeira leitura
+              de risco e concentração.
             </p>
+          </div>
+
+          {/* SSO */}
+          <div className="flex flex-col gap-3">
+            <GoogleLoginButton />
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-center gap-2 text-muted-foreground"
+              onClick={() =>
+                toast.info(
+                  'SSO corporativo (SAML) em breve. Fale com o time comercial para o piloto Enterprise.',
+                )
+              }>
+              <Buildings className="h-4 w-4" />
+              Criar conta com SSO corporativo
+            </Button>
+          </div>
+
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground">
+              Ou com e-mail
+            </span>
+            <span className="h-px flex-1 bg-border" />
           </div>
 
           {/* Formulário */}
@@ -263,20 +349,24 @@ export default function Register() {
                   render={({field}) => (
                     <FormItem>
                       <FormLabel
-                        className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
-                        style={{
-                          letterSpacing: '0.1em',
-                        }}>
+                        htmlFor="register-firstname"
+                        className="text-xs font-medium text-muted-foreground">
                         Nome
                       </FormLabel>
-                      <FormControl>
-                        <Input
-                          id="register-firstname"
-                          placeholder="João"
-                          {...field}
-                          className="h-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                      <div className="relative">
+                        <User
+                          aria-hidden
+                          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                         />
-                      </FormControl>
+                        <FormControl>
+                          <Input
+                            id="register-firstname"
+                            placeholder="João"
+                            {...field}
+                            className="h-11 pl-10 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                          />
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -287,10 +377,8 @@ export default function Register() {
                   render={({field}) => (
                     <FormItem>
                       <FormLabel
-                        className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
-                        style={{
-                          letterSpacing: '0.1em',
-                        }}>
+                        htmlFor="register-lastname"
+                        className="text-xs font-medium text-muted-foreground">
                         Sobrenome
                       </FormLabel>
                       <FormControl>
@@ -298,7 +386,7 @@ export default function Register() {
                           id="register-lastname"
                           placeholder="Silva"
                           {...field}
-                          className="h-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                          className="h-11 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                         />
                       </FormControl>
                       <FormMessage />
@@ -313,20 +401,24 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
-                      style={{
-                        letterSpacing: '0.1em',
-                      }}>
+                      htmlFor="register-email"
+                      className="text-xs font-medium text-muted-foreground">
                       E-mail
                     </FormLabel>
-                    <FormControl>
-                      <Input
-                        id="register-email"
-                        placeholder="seu@email.com"
-                        {...field}
-                        className="h-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                    <div className="relative">
+                      <MailSimple
+                        aria-hidden
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                       />
-                    </FormControl>
+                      <FormControl>
+                        <Input
+                          id="register-email"
+                          placeholder="voce@empresa.com"
+                          {...field}
+                          className="h-11 pl-10 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                        />
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -338,27 +430,29 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
-                      style={{
-                        letterSpacing: '0.1em',
-                      }}>
+                      htmlFor="register-password"
+                      className="text-xs font-medium text-muted-foreground">
                       Senha
                     </FormLabel>
                     <div className="relative">
+                      <LockSimple
+                        aria-hidden
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                      />
                       <FormControl>
                         <Input
                           id="register-password"
                           type={showPassword ? 'text' : 'password'}
-                          placeholder="••••••••"
+                          placeholder="mínimo 8 caracteres"
                           {...field}
-                          className="h-12 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                          className="h-11 pl-10 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                         />
                       </FormControl>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-1 top-1 h-10 w-10 text-muted-foreground hover:bg-transparent"
+                        className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:bg-transparent"
                         onClick={() => setShowPassword(!showPassword)}>
                         {showPassword ? (
                           <EyeOff className="h-4 w-4" />
@@ -381,27 +475,29 @@ export default function Register() {
                 render={({field}) => (
                   <FormItem>
                     <FormLabel
-                      className="uppercase tracking-widest text-xs font-bold text-muted-foreground"
-                      style={{
-                        letterSpacing: '0.1em',
-                      }}>
-                      Confirmar Senha
+                      htmlFor="register-confirm-password"
+                      className="text-xs font-medium text-muted-foreground">
+                      Confirmar senha
                     </FormLabel>
                     <div className="relative">
+                      <LockSimple
+                        aria-hidden
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                      />
                       <FormControl>
                         <Input
                           id="register-confirm-password"
                           type={showConfirmPassword ? 'text' : 'password'}
-                          placeholder="••••••••"
+                          placeholder="repita a senha"
                           {...field}
-                          className="h-12 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                          className="h-11 pl-10 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                         />
                       </FormControl>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-1 top-1 h-10 w-10 text-muted-foreground hover:bg-transparent"
+                        className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:bg-transparent"
                         onClick={() =>
                           setShowConfirmPassword(!showConfirmPassword)
                         }>
@@ -476,7 +572,9 @@ export default function Register() {
                         required
                       />
                     </FormControl>
-                    <FormLabel className="font-medium text-sm leading-snug cursor-pointer text-muted-foreground">
+                    <FormLabel
+                      htmlFor="register-accept-terms"
+                      className="font-medium text-sm leading-snug cursor-pointer text-muted-foreground">
                       Eu li e concordo com os{' '}
                       <a
                         href="#"
@@ -489,6 +587,8 @@ export default function Register() {
                         className="font-semibold text-brand hover:underline underline-offset-4 decoration-primary/30 transition-colors">
                         Política de Privacidade
                       </a>
+                      . O Trackerr não é consultoria de investimento e não
+                      recomenda ativos.
                     </FormLabel>
                   </FormItem>
                 )}
@@ -504,13 +604,13 @@ export default function Register() {
               <Button
                 id="register-submit"
                 type="submit"
-                className="w-full h-12 font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-blue-500/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))] text-brand-foreground"
+                className="w-full h-11 font-semibold text-sm gap-2 transition-all duration-200 shadow-lg shadow-brand/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))] text-brand-foreground"
                 disabled={loading}>
                 {loading ? (
-                  'Criando Conta...'
+                  'Criando conta...'
                 ) : (
                   <>
-                    Criar Conta no Terminal
+                    Criar minha conta
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
@@ -518,10 +618,25 @@ export default function Register() {
             </form>
           </Form>
 
-          {/* Rodapé */}
-          <p className="text-xs text-center mt-8 text-muted-foreground">
-            Copyright © 2025 Trackerr. Todos os direitos reservados.
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Já possui uma conta?{' '}
+            <button
+              id="register-goto-signin"
+              onClick={() => navigate('/signin')}
+              className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline text-brand">
+              Faça login
+            </button>
           </p>
+
+          <p className="mt-2 text-center text-xs text-muted-foreground/70">
+            Grátis até 10 ativos. Sem cartão de crédito para começar.
+          </p>
+
+          {/* Rodapé de confiança */}
+          <div className="mt-8 flex items-center justify-center gap-2 border-t border-border/50 pt-6 text-[11px] text-muted-foreground">
+            <LockSimple aria-hidden className="h-3.5 w-3.5 text-positive" />
+            <span>Conexão cifrada · 2FA disponível · SOC 2 Type II · LGPD</span>
+          </div>
         </div>
       </div>
     </div>

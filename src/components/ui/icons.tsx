@@ -107,5 +107,14 @@ export {
 // Additional aliases for missing icons
 export {Clock as CalendarClock, Question as HelpCircle} from '@phosphor-icons/react';
 
+// Ícones próprios (não-alias) usados na fidelidade pixel-a-pixel do handoff
+// Auth — README pede ph-envelope-simple/ph-lock-simple/ph-buildings/ph-stack.
+export {
+  Buildings,
+  Stack,
+  LockSimple,
+  EnvelopeSimple as MailSimple,
+} from '@phosphor-icons/react';
+
 // Type export for compatibility with lucide-react
 export type {Icon as LucideIcon} from '@phosphor-icons/react';

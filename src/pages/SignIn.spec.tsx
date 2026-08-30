@@ -54,10 +54,10 @@ describe('SignIn', () => {
 
   it('deve renderizar o formulário de login corretamente', () => {
     renderSignIn();
-    expect(screen.getByRole('heading', {name: /Entrar no Terminal/i})).toBeDefined();
+    expect(screen.getByRole('heading', {name: /Bem-vindo de volta/i})).toBeDefined();
     expect(screen.getByLabelText(/E-mail/i)).toBeDefined();
     expect(screen.getByLabelText(/Senha/i)).toBeDefined();
-    expect(screen.getByRole('button', {name: /Entrar no Terminal/i})).toBeDefined();
+    expect(screen.getByRole('button', {name: /Entrar na plataforma/i})).toBeDefined();
     expect(screen.getByTestId('google-login-button')).toBeDefined();
     expect(screen.getByRole('link', {name: 'Entrar'})).toHaveAttribute('aria-current', 'page');
   });
@@ -72,7 +72,7 @@ describe('SignIn', () => {
 
   it('deve exibir erros de validação ao submeter o formulário vazio', async () => {
     renderSignIn();
-    const submitBtn = screen.getByRole('button', {name: /Entrar no Terminal/i});
+    const submitBtn = screen.getByRole('button', {name: /Entrar na plataforma/i});
     await userEvent.click(submitBtn);
     await waitFor(() => {
       expect(screen.getByText(/Digite um email válido/i)).toBeDefined();
@@ -102,7 +102,7 @@ describe('SignIn', () => {
 
     await userEvent.type(screen.getByLabelText(/E-mail/i), 'test@email.com');
     await userEvent.type(screen.getByLabelText(/Senha/i), 'senha123');
-    await userEvent.click(screen.getByRole('button', {name: /Entrar no Terminal/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Entrar na plataforma/i}));
 
     await waitFor(() => {
       expect(AuthenticationService.authenticate).toHaveBeenCalledWith(
@@ -123,7 +123,7 @@ describe('SignIn', () => {
 
     await userEvent.type(screen.getByLabelText(/E-mail/i), 'test@email.com');
     await userEvent.type(screen.getByLabelText(/Senha/i), 'senha123');
-    await userEvent.click(screen.getByRole('button', {name: /Entrar no Terminal/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Entrar na plataforma/i}));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/2fa-verify', {replace: true});
@@ -140,14 +140,14 @@ describe('SignIn', () => {
 
     await userEvent.type(screen.getByLabelText(/E-mail/i), 'wrong@email.com');
     await userEvent.type(screen.getByLabelText(/Senha/i), 'senhaerrada');
-    await userEvent.click(screen.getByRole('button', {name: /Entrar no Terminal/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Entrar na plataforma/i}));
 
     await waitFor(() => {
       expect(AuthenticationService.authenticate).toHaveBeenCalled();
       // O loading da carteira NÃO deve aparecer em caso de erro
       expect(screen.queryByTestId('loading-screen')).toBeNull();
       // O botão deve voltar ao estado normal ou mostrar o erro
-      expect(screen.getByRole('button', {name: /Entrar no Terminal/i})).toBeDefined();
+      expect(screen.getByRole('button', {name: /Entrar na plataforma/i})).toBeDefined();
     });
   });
 
@@ -161,7 +161,7 @@ describe('SignIn', () => {
 
     await userEvent.type(screen.getByLabelText(/E-mail/i), 'test@email.com');
     await userEvent.type(screen.getByLabelText(/Senha/i), 'senha123');
-    await userEvent.click(screen.getByRole('button', {name: /Entrar no Terminal/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Entrar na plataforma/i}));
 
     await waitFor(() => {
       // O loading deve aparecer agora que a autenticação foi bem sucedida

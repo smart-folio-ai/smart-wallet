@@ -44,9 +44,8 @@ const fillBaseForm = async (password: string, confirmPassword = password) => {
   await userEvent.type(getInput('#register-lastname'), 'Silva');
   await userEvent.type(getInput('#register-email'), 'joao@email.com');
 
-  const senhaInputs = screen.getAllByPlaceholderText(/••••••••/);
-  await userEvent.type(senhaInputs[0], password);
-  await userEvent.type(senhaInputs[1], confirmPassword);
+  await userEvent.type(getInput('#register-password'), password);
+  await userEvent.type(getInput('#register-confirm-password'), confirmPassword);
 };
 
 describe('Register', () => {
@@ -56,19 +55,27 @@ describe('Register', () => {
 
   it('deve renderizar estrutura principal do formulário', () => {
     renderRegister();
-    expect(screen.getByRole('heading', {name: /Criar conta/i})).toBeDefined();
+    expect(screen.getByRole('heading', {name: /Comece em minutos/i})).toBeDefined();
     expect(getInput('#register-firstname')).toBeTruthy();
     expect(getInput('#register-lastname')).toBeTruthy();
     expect(getInput('#register-email')).toBeTruthy();
-    expect(screen.getAllByPlaceholderText(/••••••••/)).toHaveLength(2);
+    expect(getInput('#register-password')).toBeTruthy();
+    expect(getInput('#register-confirm-password')).toBeTruthy();
     expect(screen.getByRole('link', {name: 'Criar conta'})).toHaveAttribute('aria-current', 'page');
+    // Os ícones decorativos dentro dos campos (envelope/cadeado) não podem
+    // roubar o id/aria-describedby do FormControl — clicar no <label> tem
+    // que focar o <input>, não o ícone.
+    expect(screen.getByLabelText(/^Senha$/i)).toBe(getInput('#register-password'));
+    expect(screen.getByLabelText(/Confirmar senha/i)).toBe(
+      getInput('#register-confirm-password'),
+    );
   });
 
   it('deve exibir erro para senha sem caractere especial', async () => {
     renderRegister();
     await fillBaseForm('Password1234');
     await userEvent.click(getInput('#register-accept-terms'));
-    await userEvent.click(screen.getByRole('button', {name: /Criar Conta/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Criar minha conta/i}));
 
     await waitFor(() => {
       expect(screen.getByText(/A senha deve conter pelo menos 1 caractere especial/i)).toBeDefined();
@@ -79,7 +86,7 @@ describe('Register', () => {
     renderRegister();
     await fillBaseForm('password123@');
     await userEvent.click(getInput('#register-accept-terms'));
-    await userEvent.click(screen.getByRole('button', {name: /Criar Conta/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Criar minha conta/i}));
 
     await waitFor(() => {
       expect(screen.getByText(/A senha deve conter pelo menos 1 letra maiúscula/i)).toBeDefined();
@@ -90,7 +97,7 @@ describe('Register', () => {
     renderRegister();
     await fillBaseForm('Password123@', 'Different123@');
     await userEvent.click(getInput('#register-accept-terms'));
-    await userEvent.click(screen.getByRole('button', {name: /Criar Conta/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Criar minha conta/i}));
 
     await waitFor(() => {
       expect(screen.getByText(/As senhas não correspondem/i)).toBeDefined();
@@ -103,7 +110,7 @@ describe('Register', () => {
 
     await fillBaseForm('Password123@');
     await userEvent.click(getInput('#register-accept-terms'));
-    await userEvent.click(screen.getByRole('button', {name: /Criar Conta/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Criar minha conta/i}));
 
     await waitFor(() => {
       expect(AuthenticationService.register).toHaveBeenCalledWith({
@@ -122,7 +129,7 @@ describe('Register', () => {
 
     await fillBaseForm('Password123@');
     await userEvent.click(getInput('#register-accept-terms'));
-    await userEvent.click(screen.getByRole('button', {name: /Criar Conta/i}));
+    await userEvent.click(screen.getByRole('button', {name: /Criar minha conta/i}));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard');

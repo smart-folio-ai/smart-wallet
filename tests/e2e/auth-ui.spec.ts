@@ -6,7 +6,7 @@ test.describe('Auth UI — Telas de Autenticação', () => {
     test('renderiza o formulário de login com todos os elementos', async ({page}) => {
       await page.goto('/signin');
 
-      await expect(page.getByRole('heading', {name: 'Entrar no Terminal'})).toBeVisible();
+      await expect(page.getByRole('heading', {name: 'Bem-vindo de volta'})).toBeVisible();
       await expect(page.locator('#signin-email')).toBeVisible();
       await expect(page.locator('#signin-password')).toBeVisible();
       await expect(page.locator('#signin-submit')).toBeVisible();
@@ -35,7 +35,7 @@ test.describe('Auth UI — Telas de Autenticação', () => {
       await page.locator('#signin-goto-register').click();
       await expect(page).toHaveURL(/register/);
       await expect(
-        page.getByRole('heading', {name: 'Criar conta', exact: true}),
+        page.getByRole('heading', {name: 'Comece em minutos', exact: true}),
       ).toBeVisible();
     });
 
@@ -60,7 +60,7 @@ test.describe('Auth UI — Telas de Autenticação', () => {
       await page.goto('/register');
 
       await expect(
-        page.getByRole('heading', {name: 'Criar conta', exact: true}),
+        page.getByRole('heading', {name: 'Comece em minutos', exact: true}),
       ).toBeVisible();
       await expect(page.locator('#register-firstname')).toBeVisible();
       await expect(page.locator('#register-lastname')).toBeVisible();
