@@ -41,6 +41,7 @@ import {CustomTooltip} from '@/components/ui/custom-tooltip';
 import {PremiumBlur} from '@/components/ui/premium-blur';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {useSubscription} from '@/hooks/useSubscription';
+import {useAdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
 import {
   buildAiCacheSignature,
   deriveDashboardHighlights,
@@ -217,6 +218,7 @@ const toIsoDate = (value: unknown): string | null => {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const {level} = useAdaptiveLevel();
   const {
     planName,
     isSubscribed,
@@ -1029,6 +1031,20 @@ const Dashboard = () => {
     return item.value.toLocaleString('pt-BR');
   };
 
+  const pnlLabel =
+    level === 'iniciante'
+      ? 'Como está indo'
+      : level === 'avancado'
+        ? 'P&L (custo médio)'
+        : 'P&L do período';
+
+  const pnlSub =
+    summary.totalPnl === null || summary.totalPnlPercentage === null
+      ? 'custo médio indisponível'
+      : level === 'iniciante'
+        ? 'desde o preço médio'
+        : `${summary.totalPnlPercentage >= 0 ? '+' : '-'}${Math.abs(summary.totalPnlPercentage).toFixed(2)}%`;
+
   return (
     <div className="container py-8 animate-fade-in">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1055,8 +1071,11 @@ const Dashboard = () => {
           label="Patrimônio total"
           value={formatCurrency(summary.totalValue || 0)}
         />
+        {/* Prova de conceito de useAdaptiveLevel() — só este card reage ao nível
+            nesta etapa. Quando o redesenho de cada tela chegar, o padrão de consumo
+            é este: ler `level`, variar só texto/formato, nunca o valor numérico. */}
         <MetricCell
-          label="P&L do período"
+          label={pnlLabel}
           value={
             summary.totalPnl === null || summary.totalPnlPercentage === null
               ? '—'
@@ -1071,13 +1090,7 @@ const Dashboard = () => {
                 ? 'positive'
                 : 'negative'
           }
-          sub={
-            summary.totalPnl === null || summary.totalPnlPercentage === null
-              ? 'custo médio indisponível'
-              : `${summary.totalPnlPercentage >= 0 ? '+' : '-'}${Math.abs(
-                  summary.totalPnlPercentage,
-                ).toFixed(2)}%`
-          }
+          sub={pnlSub}
         />
         <MetricCell
           label="Dividendos no ano"

@@ -35,43 +35,59 @@ function renderSidebar() {
 }
 
 describe('AppSidebar', () => {
-  it('renders exactly two fixed nav sections for a non-admin user', () => {
+  it('renders the four fixed nav sections for a non-admin user', () => {
     renderSidebar();
-    expect(screen.getByText('Investir')).toBeInTheDocument();
-    expect(screen.getByText('Inteligência')).toBeInTheDocument();
-    expect(screen.queryByText('Visão Geral')).not.toBeInTheDocument();
-    expect(screen.queryByText('Análise')).not.toBeInTheDocument();
-    expect(screen.queryByText('Carteira')).not.toBeInTheDocument();
-    expect(screen.queryByText('Conectar')).not.toBeInTheDocument();
+    const groupLabelSelector = '[data-sidebar="group-label"]';
+    expect(
+      screen.getByText('Carteira', {selector: groupLabelSelector}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Inteligência', {selector: groupLabelSelector}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Planejamento', {selector: groupLabelSelector}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Conta', {selector: groupLabelSelector}),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Investir')).not.toBeInTheDocument();
     expect(screen.queryByText('Administração')).not.toBeInTheDocument();
   });
 
-  it('does not render Configurações or Assinatura links in the sidebar', () => {
+  it('renders Configurações and Assinatura links, and no Sair link', () => {
     renderSidebar();
-    expect(screen.queryByText('Configurações')).not.toBeInTheDocument();
-    expect(screen.queryByText('Assinatura')).not.toBeInTheDocument();
-    expect(screen.getByText('Sair')).toBeInTheDocument();
+    expect(screen.getByText('Configurações')).toBeInTheDocument();
+    expect(screen.getByText('Assinatura')).toBeInTheDocument();
+    expect(screen.queryByText('Sair')).not.toBeInTheDocument();
   });
 
-  it('keeps every previously available route reachable in the two sections', () => {
+  it('shows the SOC 2 · LGPD badge in the footer', () => {
+    renderSidebar();
+    expect(screen.getByText('SOC 2 · LGPD')).toBeInTheDocument();
+  });
+
+  it('keeps every previously available route reachable across the four sections', () => {
     renderSidebar();
     const expectedLabels = [
       'Dashboard',
       'Portfólio',
-      'Adicionar Ativo',
       'Dividendos',
       'Transações',
-      'Planejamento',
-      'Comparador',
+      'Adicionar Ativo',
       'IA Insights',
       'Chat Inteligente',
       'Buscar Ativos',
       'RI Inteligente',
+      'Planejamento',
+      'Comparador',
       'Fiscal',
-      'Sincronizar Contas',
+      'Contas Conectadas',
+      'Configurações',
+      'Assinatura',
     ];
     for (const label of expectedLabels) {
-      expect(screen.getByText(label)).toBeInTheDocument();
+      const matches = screen.getAllByText(label);
+      expect(matches.some((el) => el.closest('a'))).toBe(true);
     }
   });
 });

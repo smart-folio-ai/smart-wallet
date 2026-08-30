@@ -3,8 +3,22 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bell, Search, Settings, Sparkles } from '@/components/ui/icons';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { LogOut, User } from '@/components/ui/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useAdaptiveLevel, type AdaptiveLevel } from '@/contexts/AdaptiveLevelContext';
+import { cn } from '@/lib/utils';
+import { useCommandPalette } from '@/hooks/useCommandPalette';
+import { CommandPalette } from './CommandPalette';
+import { CommandShortcut } from '@/components/ui/command';
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': {
@@ -53,6 +67,16 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   },
 };
 
+const LEVEL_OPTIONS: { id: AdaptiveLevel; label: string }[] = [
+  { id: 'iniciante', label: 'Iniciante' },
+  { id: 'intermediario', label: 'Intermediário' },
+  { id: 'avancado', label: 'Avançado' },
+];
+
+const isMac =
+  typeof navigator !== 'undefined' &&
+  /Mac|iPhone|iPad/.test(navigator.platform ?? navigator.userAgent);
+
 function getPageMeta(pathname: string) {
   if (pathname.startsWith('/portfolio/asset')) {
     return {
@@ -88,6 +112,12 @@ export function AppTopbar() {
   const navigate = useNavigate();
   const meta = getPageMeta(pathname);
   const { displayPlanName, isSubscribed, isLoading } = useSubscription();
+  const { data: profile } = useCurrentUserProfile();
+  const { level, setLevel } = useAdaptiveLevel();
+  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
+  const initials = profile
+    ? `${profile.firstName?.[0] ?? ''}${profile.lastName?.[0] ?? ''}`.toUpperCase()
+    : '';
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/95 backdrop-blur-xl">
@@ -107,10 +137,11 @@ export function AppTopbar() {
             variant="outline"
             size="sm"
             className="hidden border-border/70 bg-transparent text-muted-foreground hover:text-foreground lg:flex"
-            onClick={() => navigate('/asset-search')}
+            onClick={() => setPaletteOpen(true)}
           >
             <Search className="mr-2 h-3.5 w-3.5" />
-            Buscar ativos
+            Buscar
+            <CommandShortcut className="ml-2">{isMac ? '⌘K' : 'Ctrl+K'}</CommandShortcut>
           </Button>
 
           {isLoading ? (
@@ -154,8 +185,65 @@ export function AppTopbar() {
             <Bell className="h-4 w-4" />
             <span className="sr-only">Notificações</span>
           </Button>
+
+          <Separator orientation="vertical" className="hidden h-6 sm:block" />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="flex h-11 items-center gap-2 px-2 text-muted-foreground hover:text-foreground">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand/15 text-xs font-semibold text-brand">
+                  {initials || <User className="h-3.5 w-3.5" />}
+                </span>
+                <span className="hidden text-sm font-medium text-foreground md:inline">
+                  {profile?.firstName ?? ''}
+                </span>
+                <span className="sr-only">Menu do usuário</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Configurações
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/signout')}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
+      <div className="flex items-center gap-3 border-t border-border/50 px-4 py-1.5 md:px-6">
+        <div
+          role="radiogroup"
+          aria-label="Nível de detalhe"
+          className="inline-flex gap-1 rounded-md bg-muted p-0.5">
+          {LEVEL_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              role="radio"
+              aria-checked={opt.id === level}
+              onClick={() => setLevel(opt.id)}
+              className={cn(
+                'rounded px-2.5 py-1 text-[11px] font-medium transition-all',
+                opt.id === level
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <span className="text-[10.5px] text-muted-foreground/70">
+          Preferência salva
+        </span>
+      </div>
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </header>
   );
 }

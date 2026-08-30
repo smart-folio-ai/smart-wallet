@@ -4,6 +4,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import Dashboard from './Index';
 import {AI_GENERATED_NOTICE_TEXT} from '@/components/ui/ai-generated-notice';
+import {AdaptiveLevelProvider} from '@/contexts/AdaptiveLevelContext';
 
 vi.mock('@/services/portfolio', () => ({
   default: {
@@ -38,6 +39,7 @@ vi.mock('@/hooks/useSubscription', () => ({
 }));
 
 beforeEach(() => {
+  localStorage.removeItem('adaptive-level');
   useSubscriptionMock.mockReturnValue({
     planName: null,
     isSubscribed: false,
@@ -52,7 +54,9 @@ function renderDashboard() {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <Dashboard />
+        <AdaptiveLevelProvider>
+          <Dashboard />
+        </AdaptiveLevelProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   );

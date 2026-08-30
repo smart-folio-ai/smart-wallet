@@ -20,6 +20,13 @@ if (typeof window !== 'undefined') {
   window.scrollTo = () => {};
 }
 
+// jsdom também não implementa Element.scrollIntoView — o cmdk (usado pelo
+// CommandPalette) chama isso ao montar/realçar itens. Stub vazio global,
+// mesmo padrão do scrollTo acima.
+if (typeof HTMLElement !== 'undefined' && !HTMLElement.prototype.scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = () => {};
+}
+
 afterEach(() => {
   cleanup();
 });

@@ -9,6 +9,7 @@ import {AppSidebar} from '@/components/app-sidebar';
 import {AppTopbar} from '@/components/layout/AppTopbar';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import {ConsentProvider} from '@/contexts/ConsentContext';
+import {AdaptiveLevelProvider} from '@/contexts/AdaptiveLevelContext';
 import {CookieConsentBanner} from '@/components/CookieConsentBanner';
 
 import Index from './pages/Index';
@@ -111,6 +112,7 @@ const App = () => (
             path="*"
             element={
               <ProtectedRoute>
+                <AdaptiveLevelProvider>
                 <SidebarProvider>
                   <div className="relative flex min-h-screen w-full bg-background">
                     <AppSidebar />
@@ -220,6 +222,7 @@ const App = () => (
                     </SidebarInset>
                   </div>
                 </SidebarProvider>
+                </AdaptiveLevelProvider>
               </ProtectedRoute>
             }
           />

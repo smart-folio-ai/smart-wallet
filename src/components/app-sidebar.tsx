@@ -13,68 +13,13 @@ import {
 import {AppLogo} from '@/components/AppLogo';
 import {ThemeToggle} from '@/components/ThemeToggle';
 import {
-  BarChart3,
-  Calculator,
   CircleDollarSign,
-  FileText,
-  FileSpreadsheet,
-  GitCompare,
-  Layers,
-  LogOut,
-  MessageSquare,
-  Plus,
   ShieldCheck,
-  Search,
-  Star,
   Users,
-  Wallet,
-  type LucideIcon,
 } from '@/components/ui/icons';
 import {NavLink} from 'react-router-dom';
 import {useAuth} from '@/hooks/useAuth';
-
-type NavItem = {
-  to: string;
-  label: string;
-  icon: LucideIcon;
-};
-
-type NavSection = {
-  label: string;
-  items: NavItem[];
-};
-
-const sections: NavSection[] = [
-  {
-    label: 'Investir',
-    items: [
-      {to: '/dashboard', label: 'Dashboard', icon: BarChart3},
-      {to: '/portfolio', label: 'Portfólio', icon: Layers},
-      {to: '/add-asset', label: 'Adicionar Ativo', icon: Plus},
-      {to: '/dividends', label: 'Dividendos', icon: Wallet},
-      {to: '/transactions', label: 'Transações', icon: Wallet},
-      {to: '/planning', label: 'Planejamento', icon: Calculator},
-      {to: '/comparator', label: 'Comparador', icon: GitCompare},
-    ],
-  },
-  {
-    label: 'Inteligência',
-    items: [
-      {to: '/ai-insights', label: 'IA Insights', icon: Star},
-      {to: '/chat-inteligente', label: 'Chat Inteligente', icon: MessageSquare},
-      {to: '/asset-search', label: 'Buscar Ativos', icon: Search},
-      {to: '/ri-inteligente', label: 'RI Inteligente', icon: FileText},
-      {to: '/fiscal', label: 'Fiscal', icon: FileSpreadsheet},
-      {
-        to: '/sync-accounts',
-        label: 'Sincronizar Contas',
-        icon: CircleDollarSign,
-      },
-    ],
-  },
-];
-
-const footerItems: NavItem[] = [{to: '/signout', label: 'Sair', icon: LogOut}];
+import {sections, type NavItem} from './layout/nav-data';
 
 function SidebarLink({to, label, icon: Icon}: NavItem) {
   return (
@@ -153,12 +98,11 @@ export function AppSidebar() {
         ) : null}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border/60 py-3">
-        <SidebarMenu>
-          {footerItems.map((item) => (
-            <SidebarLink key={item.to} {...item} />
-          ))}
-        </SidebarMenu>
+      <SidebarFooter className="border-t border-sidebar-border/60 px-4 py-3">
+        <p className="flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-[0.1em] text-sidebar-foreground/45">
+          <ShieldCheck className="h-3 w-3" />
+          SOC 2 · LGPD
+        </p>
       </SidebarFooter>
     </Sidebar>
   );
