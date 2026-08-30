@@ -7,7 +7,7 @@ const expectedNames = [
   'ArrowUpDown', 'BadgeCheck', 'BarChart3', 'Bell', 'Bitcoin', 'Bot', 'Brain',
   'Briefcase', 'Building', 'Building2', 'Calculator', 'Calendar', 'CalendarClock',
   'CalendarIcon', 'Camera', 'Check', 'CheckCircle2', 'ChevronDown', 'ChevronLeft',
-  'ChevronRight', 'ChevronUp', 'Circle', 'CircleDollarSign', 'CircleHelp', 'Coins',
+  'ChevronRight', 'ChevronUp', 'Circle', 'CircleDollarSign', 'CircleHelp', 'Clock', 'Coins',
   'Cookie', 'Cpu', 'CreditCard', 'Crown', 'Diamond', 'DollarSign', 'Dot', 'Download',
   'Edit', 'ExternalLink', 'Eye', 'EyeOff', 'FileSearch', 'FileSpreadsheet', 'FileText',
   'GitCompare', 'Globe', 'GripVertical', 'HelpCircle', 'Hexagon', 'Info', 'KeyRound',
