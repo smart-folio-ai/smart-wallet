@@ -714,7 +714,7 @@ const SyncAccounts = () => {
   ];
 
   return (
-    <div className="min-h-screen p-2 md:p-6 relative overflow-hidden font-sans bg-transparent" style={{color: 'inherit'}}>
+    <div className="min-h-screen p-2 md:p-6 relative overflow-hidden font-sans" style={{background: 'transparent', color: 'inherit'}}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       {/* Background Glows */}
       <div style={{position: 'absolute', top: 0, left: 0, width: 500, height: 500, borderRadius: '50%', pointerEvents: 'none', opacity: 0.4, background: 'radial-gradient(circle, rgba(145,132,217,0.15) 0%, transparent 70%)'}} />
@@ -1059,7 +1059,7 @@ const SyncAccounts = () => {
               </div>
               <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'}}>
                 <div style={{width: 48, height: 48, borderRadius: '50%', background: 'rgba(76,201,240,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12}}>
-                  <i className="ph-fill ph-currency-circle-dollar" style={{fontSize: 24, color: 'rgba(76,201,240,0.30)'}} />
+                  <i className="ph-fill ph-currency-circle-dollar" style={{fontSize: 24, color: 'var(--ac)'}} />
                 </div>
                 <h3 style={{fontWeight: 500, margin: '0 0 8px 0', fontSize: 14}}>Dados Atualizados</h3>
                 <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
