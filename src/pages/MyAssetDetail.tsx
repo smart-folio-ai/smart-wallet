@@ -1,38 +1,6 @@
 import {useState} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
 import {
-  ArrowLeft,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  BarChart3,
-  Target,
-  Wallet,
-  ExternalLink,
-  Receipt,
-  Sparkles,
-  Calculator,
-} from '@/components/ui/icons';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {Button} from '@/components/ui/button';
-import {Badge} from '@/components/ui/badge';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import {Input} from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   LineChart,
   Line,
   BarChart as RechartsBarChart,
@@ -57,6 +25,7 @@ import {
   getDefaultProjectionAnnualReturn,
   getDefaultProjectionTaxRate,
 } from './asset-projection.utils';
+import {DataTable, TD_STYLE, TD_RIGHT} from '@/components/shared';
 
 interface Transaction {
   _id: string;
@@ -67,6 +36,12 @@ interface Transaction {
   date: string;
   symbol?: string;
 }
+
+const tabDefs = [
+  {id: 'overview', label: 'Visão Geral'},
+  {id: 'movements', label: 'Movimentações'},
+  {id: 'charts', label: 'Gráficos'},
+];
 
 const MyAssetDetail = () => {
   const {assetId, symbol: symbolParam} = useParams<{assetId?: string; symbol?: string}>();
@@ -153,20 +128,24 @@ const MyAssetDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh'}}>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{width:40, height:40, borderRadius:'50%', border:'3px solid var(--surf-3)', borderTopColor:'var(--ac)', animation:'spin 0.8s linear infinite'}} />
       </div>
     );
   }
 
   if (!asset) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <h1 className="text-2xl font-bold">Ativo não encontrado</h1>
-        <Button onClick={() => navigate('/portfolio')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+      <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'100vh', gap:16}}>
+        <h1 style={{fontSize:24, fontWeight:700}}>Ativo não encontrado</h1>
+        <button
+          type="button"
+          onClick={() => navigate('/portfolio')}
+          style={{display:'flex', alignItems:'center', gap:8, padding:'8px 16px', borderRadius:8, border:'1px solid var(--hair)', background:'var(--surf-3)', cursor:'pointer', fontSize:14}}>
+          <i className="ph-fill ph-arrow-left" style={{fontSize:16}} />
           Voltar ao Portfólio
-        </Button>
+        </button>
       </div>
     );
   }
@@ -264,131 +243,159 @@ const MyAssetDetail = () => {
     return rawName;
   })();
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    height: 38,
+    paddingLeft: 10,
+    paddingRight: 10,
+    border: '1px solid var(--hair)',
+    borderRadius: 7,
+    background: 'var(--surf-3)',
+    fontSize: 13,
+    color: 'inherit',
+    outline: 'none',
+    boxSizing: 'border-box',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'var(--color-neutral-500)',
+  };
+
+  const cardStyle: React.CSSProperties = {
+    border: '1px solid var(--hair)',
+    borderRadius: 12,
+    background: 'var(--nk-card)',
+    padding: 24,
+  };
+
+  const cardTitleStyle: React.CSSProperties = {
+    fontFamily: 'var(--font-heading)',
+    fontSize: 15,
+    fontWeight: 600,
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div style={{minHeight:'100vh', background:'var(--surf-1)'}}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{maxWidth:1280, margin:'0 auto', padding:'24px 16px'}}>
+
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
+        <div style={{display:'flex', alignItems:'center', gap:16, marginBottom:24, flexWrap:'wrap'}}>
+          <button
+            type="button"
             onClick={() => navigate('/portfolio')}
-            className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
+            style={{display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:8, border:'1px solid var(--hair)', background:'transparent', cursor:'pointer', fontSize:13, color:'inherit'}}>
+            <i className="ph-fill ph-arrow-left" style={{fontSize:15}} />
             Portfólio
-          </Button>
-          <div className="flex items-center gap-3">
+          </button>
+          <div style={{display:'flex', alignItems:'center', gap:12}}>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-3xl font-bold">{displaySymbol}</h1>
-                <Badge variant="secondary">{typeLabel}</Badge>
+              <div style={{display:'flex', alignItems:'center', gap:8}}>
+                <h1 style={{fontSize:28, fontWeight:700, margin:0}}>{displaySymbol}</h1>
+                <span style={{padding:'2px 8px', borderRadius:5, fontSize:11, fontWeight:500, background:'var(--surf-3)', color:'var(--color-neutral-400)'}}>
+                  {typeLabel}
+                </span>
               </div>
               {secondaryName ? (
-                <p className="text-muted-foreground">{secondaryName}</p>
+                <p style={{color:'var(--color-neutral-500)', margin:0, fontSize:13}}>{secondaryName}</p>
               ) : (
-                <p className="text-muted-foreground">{asset.symbol}</p>
+                <p style={{color:'var(--color-neutral-500)', margin:0, fontSize:13}}>{asset.symbol}</p>
               )}
             </div>
           </div>
-          <div className="ml-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/asset/${asset.symbol}`)}>
-              <ExternalLink className="h-4 w-4 mr-2" />
+          <div style={{marginLeft:'auto'}}>
+            <button
+              type="button"
+              onClick={() => navigate(`/asset/${asset.symbol}`)}
+              style={{display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:8, border:'1px solid var(--hair)', background:'transparent', cursor:'pointer', fontSize:13, color:'inherit'}}>
+              <i className="ph-fill ph-link-simple" style={{fontSize:15}} />
               Ver no Mercado
-            </Button>
+            </button>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground">
-                  Valor Investido
-                </span>
-                <Wallet className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="text-xl font-bold">
-                {formatCurrency(investedValue)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                PM: {formatCurrency(asset.avgPrice || asset.purchasePrice || 0)}
-              </p>
-            </CardContent>
-          </Card>
+        <div style={{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:12, marginBottom:24}}>
+          {/* Valor Investido */}
+          <div style={{...cardStyle, padding:16}}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4}}>
+              <span style={{fontSize:11, color:'var(--color-neutral-500)'}}>Valor Investido</span>
+              <i className="ph-fill ph-wallet" style={{fontSize:15, color:'var(--color-neutral-500)'}} />
+            </div>
+            <p style={{fontSize:20, fontWeight:700, margin:0}}>{formatCurrency(investedValue)}</p>
+            <p style={{fontSize:11, color:'var(--color-neutral-500)', margin:0}}>
+              PM: {formatCurrency(asset.avgPrice || asset.purchasePrice || 0)}
+            </p>
+          </div>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground">
-                  Saldo Bruto
-                </span>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="text-xl font-bold">{formatCurrency(currentValue)}</p>
-              <p className="text-xs text-muted-foreground">
-                {formatCurrency(asset.price)} / un
-              </p>
-            </CardContent>
-          </Card>
+          {/* Saldo Bruto */}
+          <div style={{...cardStyle, padding:16}}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4}}>
+              <span style={{fontSize:11, color:'var(--color-neutral-500)'}}>Saldo Bruto</span>
+              <i className="ph-fill ph-currency-dollar" style={{fontSize:15, color:'var(--color-neutral-500)'}} />
+            </div>
+            <p style={{fontSize:20, fontWeight:700, margin:0}}>{formatCurrency(currentValue)}</p>
+            <p style={{fontSize:11, color:'var(--color-neutral-500)', margin:0}}>
+              {formatCurrency(asset.price)} / un
+            </p>
+          </div>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground">Quantidade</span>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="text-xl font-bold">
-                {(asset.quantity || asset.amount || 0).toLocaleString('pt-BR')}
-              </p>
-              <p className="text-xs text-muted-foreground">unidades</p>
-            </CardContent>
-          </Card>
+          {/* Quantidade */}
+          <div style={{...cardStyle, padding:16}}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4}}>
+              <span style={{fontSize:11, color:'var(--color-neutral-500)'}}>Quantidade</span>
+              <i className="ph-fill ph-chart-bar" style={{fontSize:15, color:'var(--color-neutral-500)'}} />
+            </div>
+            <p style={{fontSize:20, fontWeight:700, margin:0}}>
+              {(asset.quantity || asset.amount || 0).toLocaleString('pt-BR')}
+            </p>
+            <p style={{fontSize:11, color:'var(--color-neutral-500)', margin:0}}>unidades</p>
+          </div>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground">
-                  P&L (sem proventos)
-                </span>
-                {isPositive ? (
-                  <TrendingUp className="h-4 w-4 text-success" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                )}
-              </div>
-              <p
-                className={`text-xl font-bold ${isPositive ? 'text-success' : 'text-destructive'}`}>
-                {formatCurrency(profitLoss)}
-              </p>
-              <p
-                className={`text-xs ${isPositive ? 'text-success' : 'text-destructive'}`}>
-                {formatPercentage(profitLossPercent)}
-              </p>
-            </CardContent>
-          </Card>
+          {/* P&L */}
+          <div style={{...cardStyle, padding:16}}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4}}>
+              <span style={{fontSize:11, color:'var(--color-neutral-500)'}}>P&L (sem proventos)</span>
+              {isPositive ? (
+                <i className="ph-fill ph-trend-up" style={{fontSize:15, color:'var(--pos)'}} />
+              ) : (
+                <i className="ph-fill ph-trend-down" style={{fontSize:15, color:'var(--neg)'}} />
+              )}
+            </div>
+            <p style={{fontSize:20, fontWeight:700, margin:0, color: isPositive ? 'var(--pos)' : 'var(--neg)'}}>
+              {formatCurrency(profitLoss)}
+            </p>
+            <p style={{fontSize:11, margin:0, color: isPositive ? 'var(--pos)' : 'var(--neg)'}}>
+              {formatPercentage(profitLossPercent)}
+            </p>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="movements">Movimentações</TabsTrigger>
-            <TabsTrigger value="charts">Gráficos</TabsTrigger>
-          </TabsList>
+        {/* Pill Tabs */}
+        <div style={{display:'flex', gap:4, background:'var(--surf-3)', borderRadius:10, padding:4, flexWrap:'wrap', marginBottom:16}}>
+          {tabDefs.map(({id, label}) => (
+            <button key={id} type="button" onClick={() => setActiveTab(id)}
+              style={{padding:'7px 16px', borderRadius:7, border:'none', cursor:'pointer', fontSize:13, fontWeight:500,
+                background: activeTab === id ? 'var(--ac)' : 'transparent',
+                color: activeTab === id ? '#fff' : 'var(--color-neutral-400)'}}>
+              {label}
+            </button>
+          ))}
+        </div>
 
-          {/* Overview */}
-          <TabsContent value="overview">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="text-lg">Posição na Carteira</CardTitle>
-                  <CardDescription>Métricas pessoais do investidor</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+        {/* Overview */}
+        {activeTab === 'overview' && (
+          <div style={{display:'flex', flexDirection:'column', gap:24}}>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:24}}>
+              {/* Posição na Carteira */}
+              <div style={cardStyle}>
+                <span style={cardTitleStyle}>Posição na Carteira</span>
+                <p style={{fontSize:12, color:'var(--color-neutral-500)', margin:'4px 0 16px'}}>Métricas pessoais do investidor</p>
+                <div style={{display:'flex', flexDirection:'column', gap:12}}>
                   {[
                     {label: 'Preço Médio', value: formatCurrency(asset.avgPrice || asset.purchasePrice || 0)},
                     {label: 'Preço Atual', value: formatCurrency(asset.price || 0)},
@@ -397,424 +404,392 @@ const MyAssetDetail = () => {
                     {label: 'Saldo Bruto', value: formatCurrency(currentValue)},
                     {label: 'Alocação', value: `${(asset.allocation || 0).toFixed(1)}%`},
                   ].map(({label, value}) => (
-                    <div key={label} className="flex justify-between items-center">
-                      <span className="text-muted-foreground">{label}</span>
-                      <span className="font-medium">{value}</span>
+                    <div key={label} style={{display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid var(--hair-soft)', paddingBottom:8}}>
+                      <span style={{color:'var(--color-neutral-500)', fontSize:13}}>{label}</span>
+                      <span style={{fontWeight:500, fontSize:13}}>{value}</span>
                     </div>
                   ))}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="text-lg">Resultado</CardTitle>
-                  <CardDescription>Performance do investimento</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-center p-6 bg-muted/30 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">P&L Total (sem proventos)</p>
-                    <p
-                      className={`text-3xl font-bold ${isPositive ? 'text-success' : 'text-destructive'}`}>
-                      {formatCurrency(profitLoss)}
-                    </p>
-                    <p
-                      className={`text-sm mt-1 flex items-center justify-center gap-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
-                      {isPositive ? (
-                        <TrendingUp className="h-4 w-4" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4" />
-                      )}
-                      {formatPercentage(profitLossPercent)}
-                    </p>
-                  </div>
+              {/* Resultado */}
+              <div style={cardStyle}>
+                <span style={cardTitleStyle}>Resultado</span>
+                <p style={{fontSize:12, color:'var(--color-neutral-500)', margin:'4px 0 16px'}}>Performance do investimento</p>
+                <div style={{textAlign:'center', padding:24, background:'var(--surf-3)', borderRadius:8, marginBottom:16}}>
+                  <p style={{fontSize:12, color:'var(--color-neutral-500)', marginBottom:4}}>P&L Total (sem proventos)</p>
+                  <p style={{fontSize:28, fontWeight:700, color: isPositive ? 'var(--pos)' : 'var(--neg)', margin:0}}>
+                    {formatCurrency(profitLoss)}
+                  </p>
+                  <p style={{fontSize:13, marginTop:4, display:'flex', alignItems:'center', justifyContent:'center', gap:4, color: isPositive ? 'var(--pos)' : 'var(--neg)'}}>
+                    {isPositive ? (
+                      <i className="ph-fill ph-trend-up" style={{fontSize:14}} />
+                    ) : (
+                      <i className="ph-fill ph-trend-down" style={{fontSize:14}} />
+                    )}
+                    {formatPercentage(profitLossPercent)}
+                  </p>
+                </div>
 
+                <div style={{display:'flex', flexDirection:'column', gap:12}}>
                   {(asset.dividendYield) && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Dividend Yield</span>
-                      <span className="font-medium text-success">
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                      <span style={{color:'var(--color-neutral-500)', fontSize:13}}>Dividend Yield</span>
+                      <span style={{fontWeight:500, fontSize:13, color:'var(--pos)'}}>
                         {formatPercentage(asset.dividendYield)}
                       </span>
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Variação 24h</span>
-                    <span
-                      className={`font-medium ${(asset.change24h || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <span style={{color:'var(--color-neutral-500)', fontSize:13}}>Variação 24h</span>
+                    <span style={{fontWeight:500, fontSize:13, color: (asset.change24h || 0) >= 0 ? 'var(--pos)' : 'var(--neg)'}}>
                       {formatPercentage(asset.change24h || 0)}
                     </span>
                   </div>
 
                   {asset.targetPrice && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Target className="h-3.5 w-3.5" />
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                      <span style={{color:'var(--color-neutral-500)', fontSize:13, display:'flex', alignItems:'center', gap:4}}>
+                        <i className="ph-fill ph-target" style={{fontSize:13}} />
                         Preço Alvo
                       </span>
-                      <span className="font-medium">
+                      <span style={{fontWeight:500, fontSize:13}}>
                         {formatCurrency(asset.targetPrice)}
                       </span>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
+
+            {/* Premium Projection */}
             <PremiumBlur
               locked={!hasAiInsights}
               className="mt-6"
               title="Projeção Premium do Ativo"
               description="Faça upgrade para simular cenários com aportes mensais, inflação e imposto estimado.">
-              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/60 border-primary/10 shadow-2xl shadow-primary/5 overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
+              <div style={cardStyle}>
+                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+                  <i className="ph-fill ph-sparkle" style={{fontSize:18, color:'var(--ac)'}} />
+                  <span style={cardTitleStyle}>
                     Projeção de Valor Futuro ({asset.symbol})
-                  </CardTitle>
-                  <CardDescription>
-                    Estimativa para {projectionYears} anos com aporte mensal ajustável. Aplicável para Ações, FIIs, ETFs, Cripto e outros ativos.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                        Aporte mensal (R$)
-                      </p>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="50"
-                        value={monthlyContribution}
-                        onChange={(event) =>
-                          setMonthlyContribution(
-                            Math.max(0, Number(event.target.value || 0)),
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                        Prazo (anos)
-                      </p>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={40}
-                        value={projectionYears}
-                        onChange={(event) =>
-                          setProjectionYears(
-                            Math.max(1, Number(event.target.value || 1)),
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                        Retorno anual (%)
-                      </p>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.1"
-                        value={annualReturnRatePercent ?? defaultAnnualReturnRatePercent}
-                        onChange={(event) =>
-                          setAnnualReturnRatePercent(
-                            Number(event.target.value || defaultAnnualReturnRatePercent),
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                        Inflação anual (%)
-                      </p>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.1"
-                        value={annualInflationRatePercent}
-                        onChange={(event) =>
-                          setAnnualInflationRatePercent(
-                            Math.max(0, Number(event.target.value || 0)),
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                        IR no ganho (%)
-                      </p>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={30}
-                        step="0.5"
-                        value={annualTaxRatePercent ?? defaultTaxRatePercent}
-                        onChange={(event) =>
-                          setAnnualTaxRatePercent(
-                            Math.max(0, Number(event.target.value || defaultTaxRatePercent)),
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
+                  </span>
+                </div>
+                <p style={{fontSize:12, color:'var(--color-neutral-500)', margin:'4px 0 20px'}}>
+                  Estimativa para {projectionYears} anos com aporte mensal ajustável. Aplicável para Ações, FIIs, ETFs, Cripto e outros ativos.
+                </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="rounded-lg border p-3 bg-muted/20">
-                      <p className="text-xs text-muted-foreground">Capital total aportado</p>
-                      <p className="text-lg font-bold">{formatCurrency(projectionResult.totalContributed)}</p>
-                    </div>
-                    <div className="rounded-lg border p-3 bg-muted/20">
-                      <p className="text-xs text-muted-foreground">Valor final estimado (líquido)</p>
-                      <p className="text-lg font-bold text-primary">{formatCurrency(projectionResult.netFinalValue)}</p>
-                    </div>
-                    <div className="rounded-lg border p-3 bg-muted/20">
-                      <p className="text-xs text-muted-foreground">Lucro nominal estimado</p>
-                      <p className="text-lg font-bold text-emerald-500">
-                        {formatCurrency(projectionResult.nominalProfitAfterTax)}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border p-3 bg-muted/20">
-                      <p className="text-xs text-muted-foreground">Valor real (descontando inflação)</p>
-                      <p className="text-lg font-bold">{formatCurrency(projectionResult.realFinalValue)}</p>
-                    </div>
+                {/* Projection inputs */}
+                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:12, marginBottom:20}}>
+                  <div style={{display:'flex', flexDirection:'column', gap:4}}>
+                    <label style={labelStyle}>Aporte mensal (R$)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="50"
+                      value={monthlyContribution}
+                      onChange={(event) =>
+                        setMonthlyContribution(
+                          Math.max(0, Number(event.target.value || 0)),
+                        )
+                      }
+                      style={inputStyle}
+                    />
                   </div>
+                  <div style={{display:'flex', flexDirection:'column', gap:4}}>
+                    <label style={labelStyle}>Prazo (anos)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={40}
+                      value={projectionYears}
+                      onChange={(event) =>
+                        setProjectionYears(
+                          Math.max(1, Number(event.target.value || 1)),
+                        )
+                      }
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div style={{display:'flex', flexDirection:'column', gap:4}}>
+                    <label style={labelStyle}>Retorno anual (%)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      value={annualReturnRatePercent ?? defaultAnnualReturnRatePercent}
+                      onChange={(event) =>
+                        setAnnualReturnRatePercent(
+                          Number(event.target.value || defaultAnnualReturnRatePercent),
+                        )
+                      }
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div style={{display:'flex', flexDirection:'column', gap:4}}>
+                    <label style={labelStyle}>Inflação anual (%)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      value={annualInflationRatePercent}
+                      onChange={(event) =>
+                        setAnnualInflationRatePercent(
+                          Math.max(0, Number(event.target.value || 0)),
+                        )
+                      }
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div style={{display:'flex', flexDirection:'column', gap:4}}>
+                    <label style={labelStyle}>IR no ganho (%)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={30}
+                      step="0.5"
+                      value={annualTaxRatePercent ?? defaultTaxRatePercent}
+                      onChange={(event) =>
+                        setAnnualTaxRatePercent(
+                          Math.max(0, Number(event.target.value || defaultTaxRatePercent)),
+                        )
+                      }
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
 
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
-                      <Calculator className="h-4 w-4 text-primary" />
-                      Leitura da estimativa
-                    </p>
-                    <p className="text-sm">
-                      Com aporte de <strong>{formatCurrency(monthlyContribution)}</strong> por mês, o cenário atual projeta
-                      <strong> {formatCurrency(projectionResult.netFinalValue)}</strong> em {projectionYears} anos para {asset.symbol}, já com
-                      IR estimado de <strong>{formatCurrency(estimatedTaxOnProfit)}</strong> sobre o ganho.
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Retorno real anual estimado: {formatPercentage(projectionResult.annualRealRate * 100)}.
-                      Esta simulação é educativa e não constitui recomendação.
+                {/* Projection summary tiles */}
+                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:12, marginBottom:20}}>
+                  <div style={{borderRadius:8, border:'1px solid var(--hair)', padding:12, background:'var(--surf-3)'}}>
+                    <p style={{fontSize:11, color:'var(--color-neutral-500)', margin:'0 0 4px'}}>Capital total aportado</p>
+                    <p style={{fontSize:17, fontWeight:700, margin:0}}>{formatCurrency(projectionResult.totalContributed)}</p>
+                  </div>
+                  <div style={{borderRadius:8, border:'1px solid var(--hair)', padding:12, background:'var(--surf-3)'}}>
+                    <p style={{fontSize:11, color:'var(--color-neutral-500)', margin:'0 0 4px'}}>Valor final estimado (líquido)</p>
+                    <p style={{fontSize:17, fontWeight:700, margin:0, color:'var(--ac)'}}>{formatCurrency(projectionResult.netFinalValue)}</p>
+                  </div>
+                  <div style={{borderRadius:8, border:'1px solid var(--hair)', padding:12, background:'var(--surf-3)'}}>
+                    <p style={{fontSize:11, color:'var(--color-neutral-500)', margin:'0 0 4px'}}>Lucro nominal estimado</p>
+                    <p style={{fontSize:17, fontWeight:700, margin:0, color:'var(--pos)'}}>
+                      {formatCurrency(projectionResult.nominalProfitAfterTax)}
                     </p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div style={{borderRadius:8, border:'1px solid var(--hair)', padding:12, background:'var(--surf-3)'}}>
+                    <p style={{fontSize:11, color:'var(--color-neutral-500)', margin:'0 0 4px'}}>Valor real (descontando inflação)</p>
+                    <p style={{fontSize:17, fontWeight:700, margin:0}}>{formatCurrency(projectionResult.realFinalValue)}</p>
+                  </div>
+                </div>
+
+                {/* Projection note */}
+                <div style={{borderRadius:8, border:'1px solid var(--hair)', background:'rgba(145,132,217,0.15)', padding:12}}>
+                  <p style={{fontSize:11, fontWeight:600, color:'var(--color-neutral-500)', display:'flex', alignItems:'center', gap:6, margin:'0 0 6px'}}>
+                    <i className="ph-fill ph-calculator" style={{fontSize:14, color:'var(--ac)'}} />
+                    Leitura da estimativa
+                  </p>
+                  <p style={{fontSize:13, margin:'0 0 4px'}}>
+                    Com aporte de <strong>{formatCurrency(monthlyContribution)}</strong> por mês, o cenário atual projeta
+                    <strong> {formatCurrency(projectionResult.netFinalValue)}</strong> em {projectionYears} anos para {asset.symbol}, já com
+                    IR estimado de <strong>{formatCurrency(estimatedTaxOnProfit)}</strong> sobre o ganho.
+                  </p>
+                  <p style={{fontSize:11, color:'var(--color-neutral-500)', margin:0}}>
+                    Retorno real anual estimado: {formatPercentage(projectionResult.annualRealRate * 100)}.
+                    Esta simulação é educativa e não constitui recomendação.
+                  </p>
+                </div>
+              </div>
             </PremiumBlur>
-          </TabsContent>
+          </div>
+        )}
 
-          {/* Movements */}
-          <TabsContent value="movements">
-            <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Receipt className="h-5 w-5" />
-                  Histórico de Movimentações
-                </CardTitle>
-                <CardDescription>
-                  Todas as compras e vendas deste ativo
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {transactions.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Receipt className="h-8 w-8 mx-auto mb-3 opacity-30" />
-                    <p>Nenhuma movimentação registrada</p>
-                    <p className="text-xs mt-1">
-                      As transações aparecerão aqui conforme forem adicionadas
-                    </p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead className="text-right">Quantidade</TableHead>
-                        <TableHead className="text-right">Preço</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {transactions.map((t) => (
-                        <TableRow key={t._id}>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                t.type === 'buy' ? 'default' : 'destructive'
-                              }>
-                              {t.type === 'buy' ? 'Compra' : 'Venda'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(t.date).toLocaleDateString('pt-BR')}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {t.quantity.toLocaleString('pt-BR')}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(t.price)}
-                          </TableCell>
-                          <TableCell
-                            className={`text-right font-medium ${t.type === 'buy' ? 'text-destructive' : 'text-success'}`}>
-                            {t.type === 'buy' ? '-' : '+'}
-                            {formatCurrency(t.total || t.quantity * t.price)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Charts */}
-          <TabsContent value="charts">
-            <div className="grid grid-cols-1 gap-6">
-              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Histórico de Lucro e Receita</CardTitle>
-                    <CardDescription>
-                      Série anual de fundamentos para ativos com demonstrativos financeiros.
-                    </CardDescription>
-                  </div>
-                  <Badge variant="outline">até 5 anos</Badge>
-                </CardHeader>
-                <CardContent>
-                  {financialHistoryData.length < 2 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <BarChart3 className="h-8 w-8 mx-auto mb-3 opacity-30" />
-                      <p>Dados fundamentalistas insuficientes para este ativo</p>
-                      <p className="text-xs mt-1">
-                        Para Ações/FIIs/ETFs, os dados aparecem quando disponíveis no provedor.
-                      </p>
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={320}>
-                      <RechartsBarChart data={financialHistoryData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                        <XAxis dataKey="year" tick={{fontSize: 11}} axisLine={false} tickLine={false} />
-                        <YAxis
-                          tick={{fontSize: 11}}
-                          axisLine={false}
-                          tickLine={false}
-                          tickFormatter={(v) => `R$ ${(Number(v) / 1e9).toFixed(1)}B`}
-                        />
-                        <Tooltip
-                          formatter={(v: any, key: any) => [
-                            formatCurrency(Number(v || 0)),
-                            key === 'profit' ? 'Lucro Líquido' : 'Receita Líquida',
-                          ]}
-                        />
-                        <Legend iconType="circle" />
-                        <Bar dataKey="revenue" name="Receita Líquida" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="profit" name="Lucro Líquido" fill="#10b981" radius={[4, 4, 0, 0]} />
-                      </RechartsBarChart>
-                    </ResponsiveContainer>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="text-lg">Saldo Bruto vs Valor Investido</CardTitle>
-                  <CardDescription>Evolução ao longo do tempo</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {chartData.length < 2 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <BarChart3 className="h-8 w-8 mx-auto mb-3 opacity-30" />
-                      <p>Dados insuficientes para gerar o gráfico</p>
-                      <p className="text-xs mt-1">
-                        Adicione transações para visualizar a evolução
-                      </p>
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={chartData}>
-                        <defs>
-                          <linearGradient id="saldoGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                          </linearGradient>
-                          <linearGradient id="investGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                        <XAxis dataKey="date" tick={{fontSize: 11}} />
-                        <YAxis
-                          tick={{fontSize: 11}}
-                          tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
-                        />
-                        <Tooltip
-                          formatter={(v, name) => [
-                            formatCurrency(Number(v)),
-                            name === 'saldo' ? 'Saldo Bruto' : 'Valor Investido',
-                          ]}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="saldo"
-                          stroke="#22c55e"
-                          strokeWidth={2}
-                          fill="url(#saldoGrad)"
-                          name="saldo"
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="investido"
-                          stroke="#3b82f6"
-                          strokeWidth={2}
-                          fill="url(#investGrad)"
-                          name="investido"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="text-lg">Evolução da Quantidade</CardTitle>
-                  <CardDescription>
-                    Quantidade de ativos ao longo do tempo
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {chartData.length < 2 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p className="text-sm">Dados insuficientes</p>
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                        <XAxis dataKey="date" tick={{fontSize: 11}} />
-                        <YAxis tick={{fontSize: 11}} />
-                        <Tooltip
-                          formatter={(v) => [
-                            `${Number(v).toLocaleString('pt-BR')} un`,
-                            'Quantidade',
-                          ]}
-                        />
-                        <Line
-                          type="stepAfter"
-                          dataKey="quantidade"
-                          stroke="#8b5cf6"
-                          strokeWidth={2}
-                          dot={false}
-                          name="quantidade"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  )}
-                </CardContent>
-              </Card>
+        {/* Movements */}
+        {activeTab === 'movements' && (
+          <div style={cardStyle}>
+            <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+              <i className="ph-fill ph-receipt" style={{fontSize:18}} />
+              <span style={cardTitleStyle}>Histórico de Movimentações</span>
             </div>
-          </TabsContent>
-        </Tabs>
+            <p style={{fontSize:12, color:'var(--color-neutral-500)', margin:'4px 0 20px'}}>
+              Todas as compras e vendas deste ativo
+            </p>
+            {transactions.length === 0 ? (
+              <div style={{textAlign:'center', padding:'32px 0', color:'var(--color-neutral-500)'}}>
+                <i className="ph-fill ph-receipt" style={{fontSize:32, opacity:0.3, display:'block', marginBottom:12}} />
+                <p style={{margin:'0 0 4px'}}>Nenhuma movimentação registrada</p>
+                <p style={{fontSize:11, margin:0}}>
+                  As transações aparecerão aqui conforme forem adicionadas
+                </p>
+              </div>
+            ) : (
+              <DataTable columns={[{label:'Data'},{label:'Tipo'},{label:'Qtd',align:'right'},{label:'Preço',align:'right'},{label:'Total',align:'right'}]}>
+                {transactions.map((tx) => (
+                  <tr key={tx._id || String(tx.date)} style={{borderTop:'1px solid var(--hair-soft)'}}>
+                    <td style={TD_STYLE}>{new Date(tx.date).toLocaleDateString('pt-BR')}</td>
+                    <td style={TD_STYLE}>
+                      <span style={{padding:'2px 8px', borderRadius:5, fontSize:11, fontWeight:500,
+                        background: tx.type === 'buy' ? 'var(--badge-pos-bg)' : 'var(--badge-neg-bg)',
+                        color: tx.type === 'buy' ? 'var(--pos)' : 'var(--neg)'}}>
+                        {tx.type === 'buy' ? 'Compra' : 'Venda'}
+                      </span>
+                    </td>
+                    <td style={TD_RIGHT}>{tx.quantity}</td>
+                    <td style={TD_RIGHT}>{formatCurrency(tx.price)}</td>
+                    <td style={{...TD_RIGHT, fontWeight:600}}>
+                      {tx.type === 'buy' ? '-' : '+'}
+                      {formatCurrency(tx.total || tx.price * tx.quantity)}
+                    </td>
+                  </tr>
+                ))}
+              </DataTable>
+            )}
+          </div>
+        )}
+
+        {/* Charts */}
+        {activeTab === 'charts' && (
+          <div style={{display:'flex', flexDirection:'column', gap:24}}>
+            {/* Financial History Bar Chart */}
+            <div style={cardStyle}>
+              <div style={{display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:16}}>
+                <div>
+                  <span style={cardTitleStyle}>Histórico de Lucro e Receita</span>
+                  <p style={{fontSize:12, color:'var(--color-neutral-500)', margin:'4px 0 0'}}>
+                    Série anual de fundamentos para ativos com demonstrativos financeiros.
+                  </p>
+                </div>
+                <span style={{padding:'2px 8px', borderRadius:5, fontSize:11, fontWeight:500, border:'1px solid var(--hair)', color:'var(--color-neutral-400)'}}>
+                  até 5 anos
+                </span>
+              </div>
+              {financialHistoryData.length < 2 ? (
+                <div style={{textAlign:'center', padding:'32px 0', color:'var(--color-neutral-500)'}}>
+                  <i className="ph-fill ph-chart-bar" style={{fontSize:32, opacity:0.3, display:'block', marginBottom:12}} />
+                  <p style={{margin:'0 0 4px'}}>Dados fundamentalistas insuficientes para este ativo</p>
+                  <p style={{fontSize:11, margin:0}}>
+                    Para Ações/FIIs/ETFs, os dados aparecem quando disponíveis no provedor.
+                  </p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={320}>
+                  <RechartsBarChart data={financialHistoryData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} stroke="var(--hair)" />
+                    <XAxis dataKey="year" tick={{fontSize: 11}} axisLine={false} tickLine={false} />
+                    <YAxis
+                      tick={{fontSize: 11}}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => `R$ ${(Number(v) / 1e9).toFixed(1)}B`}
+                    />
+                    <Tooltip
+                      formatter={(v: any, key: any) => [
+                        formatCurrency(Number(v || 0)),
+                        key === 'profit' ? 'Lucro Líquido' : 'Receita Líquida',
+                      ]}
+                    />
+                    <Legend iconType="circle" />
+                    <Bar dataKey="revenue" name="Receita Líquida" fill="#9184d9" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="profit" name="Lucro Líquido" fill="#2fd6a3" radius={[4, 4, 0, 0]} />
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* Area Chart */}
+            <div style={cardStyle}>
+              <span style={cardTitleStyle}>Saldo Bruto vs Valor Investido</span>
+              <p style={{fontSize:12, color:'var(--color-neutral-500)', margin:'4px 0 16px'}}>Evolução ao longo do tempo</p>
+              {chartData.length < 2 ? (
+                <div style={{textAlign:'center', padding:'32px 0', color:'var(--color-neutral-500)'}}>
+                  <i className="ph-fill ph-chart-bar" style={{fontSize:32, opacity:0.3, display:'block', marginBottom:12}} />
+                  <p style={{margin:'0 0 4px'}}>Dados insuficientes para gerar o gráfico</p>
+                  <p style={{fontSize:11, margin:0}}>
+                    Adicione transações para visualizar a evolução
+                  </p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="saldoGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2fd6a3" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#2fd6a3" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="investGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#9184d9" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#9184d9" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} stroke="var(--hair)" />
+                    <XAxis dataKey="date" tick={{fontSize: 11}} />
+                    <YAxis
+                      tick={{fontSize: 11}}
+                      tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      formatter={(v, name) => [
+                        formatCurrency(Number(v)),
+                        name === 'saldo' ? 'Saldo Bruto' : 'Valor Investido',
+                      ]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="saldo"
+                      stroke="#2fd6a3"
+                      strokeWidth={2}
+                      fill="url(#saldoGrad)"
+                      name="saldo"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="investido"
+                      stroke="#9184d9"
+                      strokeWidth={2}
+                      fill="url(#investGrad)"
+                      name="investido"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* Line Chart - Quantidade */}
+            <div style={cardStyle}>
+              <span style={cardTitleStyle}>Evolução da Quantidade</span>
+              <p style={{fontSize:12, color:'var(--color-neutral-500)', margin:'4px 0 16px'}}>
+                Quantidade de ativos ao longo do tempo
+              </p>
+              {chartData.length < 2 ? (
+                <div style={{textAlign:'center', padding:'32px 0', color:'var(--color-neutral-500)'}}>
+                  <p style={{fontSize:13, margin:0}}>Dados insuficientes</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} stroke="var(--hair)" />
+                    <XAxis dataKey="date" tick={{fontSize: 11}} />
+                    <YAxis tick={{fontSize: 11}} />
+                    <Tooltip
+                      formatter={(v) => [
+                        `${Number(v).toLocaleString('pt-BR')} un`,
+                        'Quantidade',
+                      ]}
+                    />
+                    <Line
+                      type="stepAfter"
+                      dataKey="quantidade"
+                      stroke="#9184d9"
+                      strokeWidth={2}
+                      dot={false}
+                      name="quantidade"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
