@@ -1,30 +1,32 @@
-import {useMemo, useRef, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import {useMutation, useQuery} from '@tanstack/react-query';
-import {Button} from '@/components/ui/button';
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
-import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {Skeleton} from '@/components/ui/skeleton';
 import {useToast} from '@/hooks/use-toast';
 import portfolioService from '@/services/portfolio';
 import {formatCurrency} from '@/utils/formatters';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import {Upload, RefreshCw} from '@/components/ui/icons';
+import {formatDate} from '@/utils';
+import {KpiCard, SectionHeader, DataTable, TD_RIGHT} from '@/components/shared';
+
+const TX_KIND_STYLE: Record<string, React.CSSProperties> = {
+  buy: {padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'rgba(47,214,163,0.15)', color: 'var(--pos)'},
+  sell: {padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'rgba(242,80,107,0.15)', color: 'var(--neg)'},
+  dividend: {padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'rgba(145,132,217,0.15)', color: 'var(--color-accent-200)'},
+};
+const TX_KIND_LABEL: Record<string, string> = {buy: 'Compra', sell: 'Venda', dividend: 'Provento'};
+const TX_ORIGIN_STYLE: Record<string, React.CSSProperties> = {
+  manual: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'rgba(var(--rgb-line),0.08)', color: 'var(--color-neutral-400)'},
+  b3: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'rgba(76,201,240,0.12)', color: 'var(--cy)'},
+  import: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'rgba(145,132,217,0.12)', color: 'var(--color-accent-200)'},
+};
+const TX_FILTERS = [
+  {label: 'Todos', value: 'all'}, {label: 'Compra', value: 'buy'},
+  {label: 'Venda', value: 'sell'}, {label: 'Provento', value: 'dividend'},
+  {label: 'Bonificação', value: 'bonus'},
+];
 
 type Transaction = {
   _id: string;
   symbol: string;
-  type: 'buy' | 'sell';
+  type: 'buy' | 'sell' | 'dividend' | 'bonus';
   side?: 'buy' | 'sell';
   quantity: number;
   price: number;
@@ -32,6 +34,7 @@ type Transaction = {
   total: number;
   date: string;
   provider?: string;
+  account?: string;
 };
 
 export default function Transactions() {
@@ -40,6 +43,7 @@ export default function Transactions() {
   const [year, setYear] = useState<number>(currentYear);
   const [symbol, setSymbol] = useState('');
   const [selectedPortfolio, setSelectedPortfolio] = useState('all');
+  const [txFilter, setTxFilter] = useState('all');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const {data: portfolios = []} = useQuery({
@@ -102,148 +106,117 @@ export default function Transactions() {
     event.target.value = '';
   };
 
+  const stats = useMemo(() => {
+    const buys = transactions.filter((t) => t.type === 'buy');
+    const sells = transactions.filter((t) => t.type === 'sell');
+    const divs = transactions.filter((t) => t.type === 'dividend');
+    const totalBought = buys.reduce((s, t) => s + (t.total || 0), 0);
+    const totalSold = sells.reduce((s, t) => s + (t.total || 0), 0);
+    const totalDividends = divs.reduce((s, t) => s + (t.total || 0), 0);
+    return {
+      totalBought,
+      totalSold,
+      totalDividends,
+      netBalance: totalSold - totalBought + totalDividends,
+      buyCount: buys.length,
+      sellCount: sells.length,
+    };
+  }, [transactions]);
+
+  const filteredTx = useMemo(() => {
+    if (txFilter === 'all') return transactions;
+    return transactions.filter((t) => (t.type || t.side) === txFilter);
+  }, [transactions, txFilter]);
+
+  const accounts = portfolios;
+  const period = String(year);
+  const openImportModal = () => fileInputRef.current?.click();
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold">Transações</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
-        </div>
+    <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        style={{display: 'none'}}
+        onChange={handleUploadFile}
+        disabled={uploadMutation.isPending}
+      />
+
+      {/* Stats */}
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 11.2}}>
+        <KpiCard label="Compras totais" value={formatCurrency(stats.totalBought)} sub={`${stats.buyCount} operações`} />
+        <KpiCard label="Vendas totais" value={formatCurrency(stats.totalSold)} sub={`${stats.sellCount} operações`} />
+        <KpiCard label="Proventos" value={formatCurrency(stats.totalDividends)} sub="recebidos no período" />
+        <KpiCard
+          label="Saldo líquido"
+          value={formatCurrency(stats.netBalance)}
+          deltaStyle={{color: stats.netBalance >= 0 ? 'var(--pos)' : 'var(--neg)'}}
+          sub="compras - vendas + proventos"
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle>Importar Extrato de Negociações B3</CardTitle>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  Como exportar na B3?
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Como Exportar O Extrato Na B3</AlertDialogTitle>
-                  <AlertDialogDescription className="space-y-2 text-sm">
-                    <p>1. Acesse o site da B3: Área do Investidor.</p>
-                    <p>2. Faça login com seu CPF e autenticação.</p>
-                    <p>3. Vá em Extratos ou Negociação.</p>
-                    <p>4. Abra o Extrato de Negociações do período desejado.</p>
-                    <p>5. Clique em Exportar e escolha XLSX/CSV.</p>
-                    <p>6. Envie esse arquivo aqui em Importar transações.</p>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogAction>Entendi</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-              <Label>Carteira</Label>
-              <Select value={selectedPortfolio} onValueChange={setSelectedPortfolio}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a carteira" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Selecione...</SelectItem>
-                  {portfolios.map((portfolio: any) => (
-                    <SelectItem key={portfolio._id || portfolio.id} value={portfolio._id || portfolio.id}>
-                      {portfolio.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      {/* Table */}
+      <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+        <SectionHeader
+          title="Todas as movimentações"
+          subtitle={`${transactions.length} lançamentos · ${accounts.length} contas · ${period}`}
+          action={
+            <div style={{display: 'flex', gap: 8.4, flexWrap: 'wrap', alignItems: 'center'}}>
+              {TX_FILTERS.map((f) => (
+                <span key={f.value} onClick={() => setTxFilter(f.value)}
+                  style={txFilter === f.value
+                    ? {padding: '3px 10px', borderRadius: 20, fontSize: 11.5, cursor: 'pointer', background: 'rgba(145,132,217,0.18)', color: 'var(--color-accent-100)', border: '1px solid rgba(145,132,217,0.45)'}
+                    : {padding: '3px 10px', borderRadius: 20, fontSize: 11.5, cursor: 'pointer', background: 'transparent', color: 'var(--color-neutral-500)', border: '1px solid var(--hair)'}}>
+                  {f.label}
+                </span>
+              ))}
+              <button type="button" onClick={openImportModal} style={{height: 30, padding: '0 11.2px', borderRadius: 8, border: '1px solid var(--color-accent-700)', background: 'transparent', color: 'var(--color-accent-200)', fontSize: 11.5, cursor: 'pointer', fontFamily: 'var(--font-body)'}}>
+                {uploadMutation.isPending ? 'Importando...' : 'Importar arquivo'}
+              </button>
             </div>
-            <div>
-              <Label>Ano</Label>
-              <Input
-                type="number"
-                value={year}
-                onChange={(event) => setYear(Number(event.target.value || currentYear))}
-              />
-            </div>
-            <div>
-              <Label>Filtrar por ativo</Label>
-              <Input
-                placeholder="PETR4"
-                value={symbol}
-                onChange={(event) => setSymbol(event.target.value)}
-              />
-            </div>
-            <div className="flex items-end">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                className="hidden"
-                onChange={handleUploadFile}
-                disabled={uploadMutation.isPending}
-              />
-              <Button
-                className="w-full"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadMutation.isPending}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                {uploadMutation.isPending ? 'Importando...' : 'Importar transações'}
-              </Button>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Aceita Extrato de Negociações B3 em XLSX/XLS/CSV. Este fluxo importa apenas
-            transações (compra/venda), não posição consolidada.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Transações</CardTitle>
-        </CardHeader>
-        <CardContent>
+          }
+        />
+        <DataTable
+          minWidth={820}
+          columns={[
+            {label: 'Data'}, {label: 'Tipo'}, {label: 'Ativo'}, {label: 'Conta'},
+            {label: 'Qtd', align: 'right'}, {label: 'Preço', align: 'right'},
+            {label: 'Total', align: 'right'}, {label: 'Origem', align: 'right'},
+          ]}
+        >
           {loadingTransactions ? (
-            <Skeleton className="h-16 w-full" />
-          ) : transactions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma transação encontrada para os filtros selecionados.</p>
+            <tr>
+              <td colSpan={8} style={{padding: '16.8px', textAlign: 'center', color: 'var(--color-neutral-600)', fontSize: 12.5}}>
+                Carregando...
+              </td>
+            </tr>
+          ) : filteredTx.length === 0 ? (
+            <tr>
+              <td colSpan={8} style={{padding: '16.8px', textAlign: 'center', color: 'var(--color-neutral-600)', fontSize: 12.5}}>
+                Nenhuma transação encontrada.
+              </td>
+            </tr>
           ) : (
-            <div className="overflow-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 pr-2">Data</th>
-                    <th className="text-left py-2 pr-2">Ativo</th>
-                    <th className="text-left py-2 pr-2">Tipo</th>
-                    <th className="text-right py-2 pr-2">Qtd</th>
-                    <th className="text-right py-2 pr-2">Preço</th>
-                    <th className="text-right py-2 pr-2">Taxas</th>
-                    <th className="text-right py-2">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((transaction: Transaction) => (
-                    <tr key={transaction._id} className="border-b">
-                      <td className="py-2 pr-2">{new Date(transaction.date).toLocaleDateString('pt-BR')}</td>
-                      <td className="py-2 pr-2 font-medium">{transaction.symbol}</td>
-                      <td className="py-2 pr-2">{(transaction.type || transaction.side) === 'sell' ? 'Venda' : 'Compra'}</td>
-                      <td className="py-2 pr-2 text-right">{Number(transaction.quantity || 0).toLocaleString('pt-BR')}</td>
-                      <td className="py-2 pr-2 text-right">{formatCurrency(transaction.price || 0)}</td>
-                      <td className="py-2 pr-2 text-right">{formatCurrency(transaction.fees || 0)}</td>
-                      <td className="py-2 text-right">{formatCurrency(transaction.total || 0)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            filteredTx.map((t) => (
+              <tr key={t._id} style={{borderTop: '1px solid var(--hair-soft)'}} className="hover:bg-[rgba(145,132,217,0.06)]">
+                <td style={{padding: '9.8px 16.8px', color: 'var(--color-neutral-400)', fontVariantNumeric: 'tabular-nums'}}>{formatDate(t.date)}</td>
+                <td style={{padding: '9.8px 16.8px'}}>
+                  <span style={TX_KIND_STYLE[t.type] ?? TX_KIND_STYLE['buy']}>{TX_KIND_LABEL[t.type] ?? t.type}</span>
+                </td>
+                <td style={{padding: '9.8px 16.8px', fontWeight: 600}}>{t.symbol}</td>
+                <td style={{padding: '9.8px 16.8px', color: 'var(--color-neutral-500)', fontSize: 11.5}}>{t.account ?? '—'}</td>
+                <td style={TD_RIGHT}>{t.quantity}</td>
+                <td style={TD_RIGHT}>{formatCurrency(t.price)}</td>
+                <td style={{...TD_RIGHT, fontWeight: 600, color: t.type === 'buy' ? 'var(--neg)' : 'var(--pos)'}}>{formatCurrency(t.total)}</td>
+                <td style={{...TD_RIGHT}}>
+                  <span style={TX_ORIGIN_STYLE[t.provider ?? 'manual'] ?? TX_ORIGIN_STYLE['manual']}>{t.provider ?? 'Manual'}</span>
+                </td>
+              </tr>
+            ))
           )}
-        </CardContent>
-      </Card>
+        </DataTable>
+      </section>
     </div>
   );
 }
