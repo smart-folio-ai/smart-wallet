@@ -1,16 +1,5 @@
 import {useState, type ReactNode} from 'react';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
-import {Button} from '@/components/ui/button';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {Calculator, PiggyBank, TrendingUp, ArrowRight, CircleHelp} from '@/components/ui/icons';
 import {
   calculateFixedIncomeComparison,
   type FixedIncomeScenarioResult,
@@ -20,7 +9,13 @@ import {
 
 function ResultCard({children}: {children: ReactNode}) {
   return (
-    <div className="rounded-xl p-5 mt-1 bg-primary/5 border-l-[3px] border-l-primary/60">
+    <div style={{
+      borderRadius: 10,
+      padding: '18px 20px',
+      marginTop: 4,
+      background: 'rgba(145,132,217,0.15)',
+      borderLeft: '3px solid var(--ac)',
+    }}>
       {children}
     </div>
   );
@@ -62,34 +57,20 @@ function FieldGroup({
   inputType?: 'number' | 'text';
 }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <Label
-          htmlFor={id}
-          className="text-xs uppercase tracking-widest text-muted-foreground font-medium"
-          style={{letterSpacing: '0.1em'}}>
+    <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8}}>
+        <label htmlFor={id} style={{fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-neutral-500)', fontWeight: 500}}>
           {label}
-        </Label>
+        </label>
         {helpText ? (
-          <TooltipProvider delayDuration={100}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={`Ajuda: ${label}`}
-                  className="inline-flex h-4 w-4 items-center justify-center text-muted-foreground/80 hover:text-primary transition-colors">
-                  <CircleHelp className="h-3.5 w-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="end" className="max-w-[280px] text-xs leading-relaxed">
-                {helpText}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <button type="button" title={helpText} aria-label={`Ajuda: ${label}`}
+            style={{background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--color-neutral-500)'}}>
+            <i className="ph-fill ph-question" style={{fontSize: 13}} />
+          </button>
         ) : null}
       </div>
-      <div className="relative">
-        <Input
+      <div style={{position: 'relative'}}>
+        <input
           id={id}
           type={inputType}
           step={step}
@@ -97,10 +78,22 @@ function FieldGroup({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           inputMode={inputType === 'text' ? 'numeric' : 'decimal'}
-          className="h-11 text-sm bg-background border-input focus-visible:ring-1 focus-visible:ring-primary pr-12 transition-all"
+          style={{
+            width: '100%',
+            height: 42,
+            paddingLeft: 12,
+            paddingRight: suffix ? 40 : 12,
+            border: '1px solid var(--hair)',
+            borderRadius: 8,
+            background: 'var(--surf-3)',
+            fontSize: 13,
+            color: 'inherit',
+            outline: 'none',
+            boxSizing: 'border-box',
+          }}
         />
         {suffix && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none font-medium">
+          <span style={{position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11.5, color: 'var(--color-neutral-500)', pointerEvents: 'none', fontWeight: 500}}>
             {suffix}
           </span>
         )}
@@ -112,6 +105,9 @@ function FieldGroup({
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 const Planning = () => {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'aposentadoria' | 'mensal' | 'juros' | 'renda-fixa'>('aposentadoria');
+
   // Calculadora de aposentadoria
   const [retirementAge, setRetirementAge] = useState<string>('65');
   const [currentAge, setCurrentAge] = useState<string>('30');
@@ -186,82 +182,64 @@ const Planning = () => {
   };
 
   return (
-    <div className="min-h-screen p-2 md:p-6 relative overflow-hidden font-sans bg-transparent text-foreground">
-      {/* Background Glows (se adaptam ao tema claro ou escuro) */}
-      <div className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-40 bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-primary/10 to-transparent" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-30 bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-primary/5 to-transparent" />
+    <div style={{minHeight: '100vh', padding: '8px', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)', background: 'transparent', color: 'inherit'}}>
+      {/* Background Glows */}
+      <div style={{position: 'absolute', top: 0, left: 0, width: 500, height: 500, borderRadius: '50%', pointerEvents: 'none', opacity: 0.4, background: 'radial-gradient(circle, rgba(145,132,217,0.15) 0%, transparent 70%)'}} />
+      <div style={{position: 'absolute', bottom: 0, right: 0, width: 500, height: 500, borderRadius: '50%', pointerEvents: 'none', opacity: 0.3, background: 'radial-gradient(circle, rgba(145,132,217,0.15) 0%, transparent 70%)'}} />
 
-      <div className="relative z-10 max-w-5xl mx-auto space-y-8">
+      <div style={{position: 'relative', zIndex: 10, maxWidth: 960, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 32}}>
         {/* Cabeçalho da página */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary shadow-lg shadow-primary/20">
-                <Calculator className="h-5 w-5 text-primary-foreground" />
+            <div style={{display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8}}>
+              <div style={{width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--ac)', flexShrink: 0}}>
+                <i className="ph-fill ph-calculator" style={{fontSize: 20, color: '#fff'}} />
               </div>
-              <h1 className="font-bold text-3xl md:text-4xl tracking-tight font-heading">
+              <h1 style={{fontWeight: 700, fontSize: 32, letterSpacing: '-0.02em', fontFamily: 'var(--font-heading)', margin: 0}}>
                 Planejamento Financeiro
               </h1>
             </div>
-            <p className="text-sm md:text-base ml-0 md:ml-14 text-muted-foreground">
+            <p style={{fontSize: 14, color: 'var(--color-neutral-500)', margin: 0, marginLeft: 52}}>
               Calculadoras de precisão institucional para simular seu amanhã
             </p>
           </div>
 
-          <span className="text-xs font-medium uppercase tracking-widest px-4 py-2 rounded-full w-fit bg-primary/10 text-primary border border-primary/20">
+          <span style={{fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '6px 16px', borderRadius: 999, width: 'fit-content', background: 'rgba(145,132,217,0.15)', color: 'var(--ac)', border: '1px solid rgba(145,132,217,0.35)'}}>
             Terminal de Simulação
           </span>
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="retirement" className="space-y-6">
-          <TabsList className="grid w-full h-14 grid-cols-4 p-1.5 rounded-2xl bg-card border shadow-sm">
-            {[
-              {
-                value: 'retirement',
-                label: 'Aposentadoria',
-                icon: <PiggyBank className="h-4 w-4" />,
-              },
-              {
-                value: 'investment',
-                label: 'Inv. Mensal',
-                icon: <TrendingUp className="h-4 w-4" />,
-              },
-              {
-                value: 'compound',
-                label: 'Juros Compostos',
-                icon: <Calculator className="h-4 w-4" />,
-              },
-              {
-                value: 'fixed_income',
-                label: 'Renda Fixa',
-                icon: <TrendingUp className="h-4 w-4" />,
-              },
-            ].map((tab) => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className="flex items-center gap-2 text-sm font-medium rounded-xl transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-2.5 font-heading">
-                {tab.icon}
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-              </TabsTrigger>
+        <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+          {/* Pill tab container */}
+          <div style={{display: 'flex', gap: 4, background: 'var(--surf-3)', borderRadius: 10, padding: 4, flexWrap: 'wrap'}}>
+            {(['aposentadoria', 'mensal', 'juros', 'renda-fixa'] as const).map((tab, i) => (
+              <button key={tab} type="button"
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: '7px 16px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                  background: activeTab === tab ? 'var(--ac)' : 'transparent',
+                  color: activeTab === tab ? '#fff' : 'var(--color-neutral-400)',
+                  transition: 'background 0.15s',
+                }}>
+                {(['Aposentadoria', 'Inv. Mensal', 'Juros Compostos', 'Renda Fixa'] as const)[i]}
+              </button>
             ))}
-          </TabsList>
+          </div>
 
           {/* ── Aposentadoria ──────────────────────────────────────────────── */}
-          <TabsContent value="retirement">
-            <div className="rounded-2xl p-6 md:p-8 space-y-8 bg-card border border-border/50 shadow-xl shadow-primary/5 relative overflow-hidden group">
+          {activeTab === 'aposentadoria' && (
+            <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24, display: 'flex', flexDirection: 'column', gap: 32, position: 'relative', overflow: 'hidden'}}>
               {/* Header do card */}
-              <div className="flex items-center gap-4 pb-6 border-b border-border/40">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary shadow-inner">
-                  <PiggyBank className="h-6 w-6" />
+              <div style={{display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 24, borderBottom: '1px solid var(--hair-soft)'}}>
+                <div style={{width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(145,132,217,0.15)', color: 'var(--ac)'}}>
+                  <i className="ph-fill ph-piggy-bank" style={{fontSize: 18}} />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-lg md:text-xl font-heading text-foreground">
+                  <h2 style={{fontWeight: 600, fontSize: 18, fontFamily: 'var(--font-heading)', margin: 0}}>
                     Calculadora de Independência Financeira
                   </h2>
-                  <p className="text-sm mt-1 text-muted-foreground">
+                  <p style={{fontSize: 13, marginTop: 4, color: 'var(--color-neutral-500)', margin: '4px 0 0'}}>
                     Descubra o patrimônio necessário para aposentadoria baseado
                     na regra dos 25x (Safe Withdrawal Rate de 4%)
                   </p>
@@ -269,7 +247,7 @@ const Planning = () => {
               </div>
 
               {/* Inputs */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16}}>
                 <FieldGroup
                   label="Idade atual"
                   id="currentAge"
@@ -296,51 +274,48 @@ const Planning = () => {
                 />
               </div>
 
-              <Button
-                onClick={calculateRetirement}
-                className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-300 shadow-md shadow-primary/20 hover:scale-[1.01]">
+              <button type="button" onClick={calculateRetirement}
+                style={{height: 40, padding: '0 20px', borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%'}}>
                 Calcular
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+                <i className="ph-fill ph-arrow-right" style={{fontSize: 16}} />
+              </button>
 
               {retirementResult && (
                 <ResultCard>
-                  <p
-                    className="text-xs uppercase tracking-widest mb-2 text-muted-foreground"
-                    style={{letterSpacing: '0.1em'}}>
+                  <p style={{fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, color: 'var(--color-neutral-500)', margin: '0 0 8px'}}>
                     Patrimônio necessário
                   </p>
-                  <p className="text-2xl font-bold font-heading text-primary">
+                  <p style={{fontSize: 24, fontWeight: 700, fontFamily: 'var(--font-heading)', color: 'var(--ac)', margin: 0}}>
                     {formatCurrency(retirementResult)}
                   </p>
-                  <p className="text-xs mt-2 text-muted-foreground">
+                  <p style={{fontSize: 12, marginTop: 8, color: 'var(--color-neutral-500)', margin: '8px 0 0'}}>
                     Baseado na regra dos 25x — você poderá retirar 4% ao ano sem
                     esgotar o capital
                   </p>
                 </ResultCard>
               )}
             </div>
-          </TabsContent>
+          )}
 
           {/* ── Investimento Mensal ─────────────────────────────────────────── */}
-          <TabsContent value="investment">
-            <div className="rounded-2xl p-6 md:p-8 space-y-8 bg-card border border-border/50 shadow-xl shadow-primary/5 relative overflow-hidden">
-              <div className="flex items-center gap-4 pb-6 border-b border-border/40">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary shadow-inner">
-                  <TrendingUp className="h-6 w-6" />
+          {activeTab === 'mensal' && (
+            <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24, display: 'flex', flexDirection: 'column', gap: 32, position: 'relative', overflow: 'hidden'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 24, borderBottom: '1px solid var(--hair-soft)'}}>
+                <div style={{width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(145,132,217,0.15)', color: 'var(--ac)'}}>
+                  <i className="ph-fill ph-trend-up" style={{fontSize: 18}} />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-lg md:text-xl font-heading text-foreground">
+                  <h2 style={{fontWeight: 600, fontSize: 18, fontFamily: 'var(--font-heading)', margin: 0}}>
                     Acelerador de Metas
                   </h2>
-                  <p className="text-sm mt-1 text-muted-foreground">
+                  <p style={{fontSize: 13, marginTop: 4, color: 'var(--color-neutral-500)', margin: '4px 0 0'}}>
                     Simule o tempo exato para alcançar seu alvo patrimonial
                     (estimado a 10% a.a.)
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16}}>
                 <FieldGroup
                   label="Renda mensal"
                   id="monthlyIncome"
@@ -367,24 +342,21 @@ const Planning = () => {
                 />
               </div>
 
-              <Button
-                onClick={calculateMonthlyInvestment}
-                className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-300 shadow-md shadow-primary/20 hover:scale-[1.01]">
+              <button type="button" onClick={calculateMonthlyInvestment}
+                style={{height: 40, padding: '0 20px', borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%'}}>
                 Calcular
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+                <i className="ph-fill ph-arrow-right" style={{fontSize: 16}} />
+              </button>
 
               {investmentResult && (
                 <ResultCard>
-                  <p
-                    className="text-xs uppercase tracking-widest mb-2 text-muted-foreground"
-                    style={{letterSpacing: '0.1em'}}>
+                  <p style={{fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-neutral-500)', margin: '0 0 8px'}}>
                     Tempo estimado para atingir a meta
                   </p>
-                  <p className="text-2xl font-bold font-heading text-primary">
+                  <p style={{fontSize: 24, fontWeight: 700, fontFamily: 'var(--font-heading)', color: 'var(--ac)', margin: 0}}>
                     {investmentResult.toFixed(1)} anos
                   </p>
-                  <p className="text-xs mt-2 text-muted-foreground">
+                  <p style={{fontSize: 12, marginTop: 8, color: 'var(--color-neutral-500)', margin: '8px 0 0'}}>
                     Investindo{' '}
                     {formatCurrency(
                       (parseFloat(monthlyIncome) *
@@ -396,27 +368,27 @@ const Planning = () => {
                 </ResultCard>
               )}
             </div>
-          </TabsContent>
+          )}
 
           {/* ── Juros Compostos ─────────────────────────────────────────────── */}
-          <TabsContent value="compound">
-            <div className="rounded-2xl p-6 md:p-8 space-y-8 bg-card border border-border/50 shadow-xl shadow-primary/5 relative overflow-hidden">
-              <div className="flex items-center gap-4 pb-6 border-b border-border/40">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary shadow-inner">
-                  <Calculator className="h-6 w-6" />
+          {activeTab === 'juros' && (
+            <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24, display: 'flex', flexDirection: 'column', gap: 32, position: 'relative', overflow: 'hidden'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 24, borderBottom: '1px solid var(--hair-soft)'}}>
+                <div style={{width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(145,132,217,0.15)', color: 'var(--ac)'}}>
+                  <i className="ph-fill ph-calculator" style={{fontSize: 18}} />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-lg md:text-xl font-heading text-foreground">
+                  <h2 style={{fontWeight: 600, fontSize: 18, fontFamily: 'var(--font-heading)', margin: 0}}>
                     Poder dos Juros Compostos
                   </h2>
-                  <p className="text-sm mt-1 text-muted-foreground">
+                  <p style={{fontSize: 13, marginTop: 4, color: 'var(--color-neutral-500)', margin: '4px 0 0'}}>
                     A 8ª maravilha do mundo trabalhando a favor do seu capital
                     no longo prazo
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16}}>
                 <FieldGroup
                   label="Valor inicial"
                   id="initialAmount"
@@ -452,12 +424,11 @@ const Planning = () => {
                 />
               </div>
 
-              <Button
-                onClick={calculateCompoundInterest}
-                className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-300 shadow-md shadow-primary/20 hover:scale-[1.01]">
+              <button type="button" onClick={calculateCompoundInterest}
+                style={{height: 40, padding: '0 20px', borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%'}}>
                 Calcular
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+                <i className="ph-fill ph-arrow-right" style={{fontSize: 16}} />
+              </button>
 
               {compoundResult &&
                 (() => {
@@ -469,34 +440,28 @@ const Planning = () => {
                   const profit = compoundResult - totalInvested;
                   return (
                     <ResultCard>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 16}}>
                         <div>
-                          <p
-                            className="text-xs uppercase tracking-widest mb-1 text-muted-foreground"
-                            style={{letterSpacing: '0.1em'}}>
+                          <p style={{fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4, color: 'var(--color-neutral-500)', margin: '0 0 4px'}}>
                             Valor final
                           </p>
-                          <p className="text-xl font-bold font-heading text-primary">
+                          <p style={{fontSize: 20, fontWeight: 700, fontFamily: 'var(--font-heading)', color: 'var(--ac)', margin: 0}}>
                             {formatCurrency(compoundResult)}
                           </p>
                         </div>
                         <div>
-                          <p
-                            className="text-xs uppercase tracking-widest mb-1 text-muted-foreground"
-                            style={{letterSpacing: '0.1em'}}>
+                          <p style={{fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4, color: 'var(--color-neutral-500)', margin: '0 0 4px'}}>
                             Total investido
                           </p>
-                          <p className="text-xl font-bold font-heading text-foreground">
+                          <p style={{fontSize: 20, fontWeight: 700, fontFamily: 'var(--font-heading)', margin: 0}}>
                             {formatCurrency(totalInvested)}
                           </p>
                         </div>
                         <div>
-                          <p
-                            className="text-xs uppercase tracking-widest mb-1 text-muted-foreground"
-                            style={{letterSpacing: '0.1em'}}>
+                          <p style={{fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4, color: 'var(--color-neutral-500)', margin: '0 0 4px'}}>
                             Lucro
                           </p>
-                          <p className="text-xl font-bold font-heading text-green-500">
+                          <p style={{fontSize: 20, fontWeight: 700, fontFamily: 'var(--font-heading)', color: 'var(--pos)', margin: 0}}>
                             {formatCurrency(profit)}
                           </p>
                         </div>
@@ -505,26 +470,26 @@ const Planning = () => {
                   );
                 })()}
             </div>
-          </TabsContent>
+          )}
 
           {/* ── Comparador de Renda Fixa ───────────────────────────────────── */}
-          <TabsContent value="fixed_income">
-            <div className="rounded-2xl p-6 md:p-8 space-y-8 bg-card border border-border/50 shadow-xl shadow-primary/5 relative overflow-hidden">
-              <div className="flex items-center gap-4 pb-6 border-b border-border/40">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary shadow-inner">
-                  <TrendingUp className="h-6 w-6" />
+          {activeTab === 'renda-fixa' && (
+            <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24, display: 'flex', flexDirection: 'column', gap: 32, position: 'relative', overflow: 'hidden'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 24, borderBottom: '1px solid var(--hair-soft)'}}>
+                <div style={{width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(145,132,217,0.15)', color: 'var(--ac)'}}>
+                  <i className="ph-fill ph-trend-up" style={{fontSize: 18}} />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-lg md:text-xl font-heading text-foreground">
+                  <h2 style={{fontWeight: 600, fontSize: 18, fontFamily: 'var(--font-heading)', margin: 0}}>
                     Planejador de Renda Fixa (Tesouro + LCA)
                   </h2>
-                  <p className="text-sm mt-1 text-muted-foreground">
+                  <p style={{fontSize: 13, marginTop: 4, color: 'var(--color-neutral-500)', margin: '4px 0 0'}}>
                     Compare Prefixado, IPCA+, Selic+ e LCA com efeito de inflação e imposto.
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16}}>
                 <FieldGroup
                   label="Capital inicial"
                   id="fixedIncomeInitial"
@@ -556,7 +521,7 @@ const Planning = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16}}>
                 <FieldGroup
                   label="Prefixado anual"
                   id="prefixRate"
@@ -599,7 +564,7 @@ const Planning = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16}}>
                 <FieldGroup
                   label="LCA anual (isento)"
                   id="lcaRate"
@@ -622,72 +587,70 @@ const Planning = () => {
                 />
               </div>
 
-              <Button
-                onClick={calculateFixedIncomePlanner}
-                className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-300 shadow-md shadow-primary/20 hover:scale-[1.01]">
+              <button type="button" onClick={calculateFixedIncomePlanner}
+                style={{height: 40, padding: '0 20px', borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%'}}>
                 Comparar Cenários
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+                <i className="ph-fill ph-arrow-right" style={{fontSize: 16}} />
+              </button>
 
               {fixedIncomeResult && fixedIncomeResult.length > 0 && (
                 <ResultCard>
-                  <p
-                    className="text-xs uppercase tracking-widest mb-3 text-muted-foreground"
-                    style={{letterSpacing: '0.1em'}}>
+                  <p style={{fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-neutral-500)', margin: '0 0 12px'}}>
                     Resultado comparativo (líquido de IR e inflação)
                   </p>
-                  <div className="space-y-3">
+                  <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
                     {[...fixedIncomeResult]
                       .sort((a, b) => b.realFinalValue - a.realFinalValue)
                       .map((scenario, idx) => (
                         <div
                           key={scenario.key}
-                          className={`rounded-lg border px-3 py-3 ${
-                            idx === 0
-                              ? 'border-emerald-500/50 bg-emerald-500/10'
-                              : 'border-border/70 bg-background'
-                          }`}>
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-center gap-2">
-                              <p className="font-semibold">{scenario.label}</p>
+                          style={{
+                            borderRadius: 8,
+                            border: idx === 0 ? '1px solid rgba(47,214,163,0.20)' : '1px solid var(--hair)',
+                            padding: '12px',
+                            background: idx === 0 ? 'rgba(47,214,163,0.20)' : 'var(--surf-2)',
+                          }}>
+                          <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8}}>
+                            <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                              <p style={{fontWeight: 600, margin: 0}}>{scenario.label}</p>
                               {idx === 0 ? (
-                                <span className="text-[10px] uppercase tracking-widest text-emerald-600 font-bold">
+                                <span style={{fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--pos)', fontWeight: 700}}>
                                   Melhor Retorno Real
                                 </span>
                               ) : null}
                             </div>
-                            <div className="text-right">
-                              <p className="text-sm font-bold text-primary">
+                            <div style={{textAlign: 'right'}}>
+                              <p style={{fontSize: 13, fontWeight: 700, color: 'var(--ac)', margin: 0}}>
                                 {formatCurrency(scenario.realFinalValue)} (real)
                               </p>
-                              <p className="text-xs text-muted-foreground">
+                              <p style={{fontSize: 12, color: 'var(--color-neutral-500)', margin: 0}}>
                                 {formatCurrency(scenario.nominalFinalValue)} (nominal)
                               </p>
                             </div>
                           </div>
-                          <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                            <p className="text-muted-foreground">
+                          <div style={{marginTop: 8, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8, fontSize: 12}}>
+                            <p style={{color: 'var(--color-neutral-500)', margin: 0}}>
                               Taxa bruta anual: {formatPercentage(scenario.annualGrossRate * 100)}
                             </p>
-                            <p className="text-muted-foreground">
+                            <p style={{color: 'var(--color-neutral-500)', margin: 0}}>
                               IR aplicado: {formatPercentage(scenario.taxRate * 100)}
                             </p>
-                            <p className="text-muted-foreground">
+                            <p style={{color: 'var(--color-neutral-500)', margin: 0}}>
                               Ganho real anual: {formatPercentage(scenario.annualRealRate * 100)}
                             </p>
                           </div>
                         </div>
                       ))}
                   </div>
-                  <p className="text-xs mt-3 text-muted-foreground">
+                  <p style={{fontSize: 12, marginTop: 12, color: 'var(--color-neutral-500)', margin: '12px 0 0'}}>
                     Observação: Prefixado a 14% para 2029 rende nominalmente 14% ao ano. O ganho real depende da inflação no período.
                     Ex.: retorno real aproximado = (1 + taxa nominal) / (1 + inflação) - 1.
                   </p>
                 </ResultCard>
               )}
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
     </div>
   );
