@@ -86,6 +86,65 @@
     --chart-3: var(--warning);
     --chart-4: 250 29% 45%;
     --chart-5: var(--accent-negative);
+
+    /* ──────────────────────────────────────────────────────────────
+     * Nocturne raw design tokens (light mode values)
+     * These power handoff-style components alongside shadcn tokens.
+     * ────────────────────────────────────────────────────────────── */
+    --pos: #0e9873;
+    --neg: #cf1e42;
+    --warn: #9a6a06;
+    --cy: #1a7ba6;
+    --ac: #6f5ed9;
+    --ac-soft: #5d5294;
+    --ac-strong: #6f5ed9;
+    --rgb-bg: 236,237,245;
+    --rgb-surf: 255,255,255;
+    --rgb-surf-2: 253,253,255;
+    --rgb-line: 26,27,36;
+    --rgb-accent-deep: 209,203,247;
+    --rgb-deep: 32,33,45;
+    --surf: #fdfdff;
+    --surf-2: #f7f7fc;
+    --surf-3: #f1f1f8;
+    --surf-4: #fafaff;
+    --sunk: #ebecf3;
+    --bg-solid: #f4f4f9;
+    --neb-1: #e6e2f8;
+    --neb-2: #e3e7fb;
+    --nk-card: linear-gradient(180deg, var(--surf) 0%, var(--surf-2) 100%);
+    --grad-aurora: linear-gradient(120deg, var(--ac) 0%, var(--cy) 58%, var(--pos) 100%);
+    --grad-violet: linear-gradient(140deg, var(--ac-strong) 0%, var(--ac-soft) 100%);
+    --grad-ember: linear-gradient(120deg, var(--warn) 0%, var(--neg) 100%);
+    --hair: rgba(var(--rgb-line),0.13);
+    --hair-soft: rgba(var(--rgb-line),0.07);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.18);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.15);
+    --aurora-glow: rgba(26,123,166,0.30);
+    --color-bg: #f4f4f9;
+    --color-text: #1a1b24;
+    --color-neutral-100: #292b31;
+    --color-neutral-200: #3f424d;
+    --color-neutral-300: #595d6c;
+    --color-neutral-400: #6b6f81;
+    --color-neutral-500: #7d8194;
+    --color-neutral-600: #8b8fa2;
+    --color-neutral-700: #b2b6ca;
+    --color-accent: #6f5ed9;
+    --color-accent-100: #2b2741;
+    --color-accent-200: #423a6a;
+    --color-accent-300: #5d5294;
+    --color-accent-400: #796cbf;
+    --color-accent-600: #b5abfc;
+    --color-accent-700: rgba(111,94,217,0.25);
+    --color-accent-800: rgba(111,94,217,0.15);
+    --risk-low-bg: rgba(14,152,115,0.12);
+    --risk-med-bg: rgba(154,106,6,0.10);
+    --risk-high-bg: rgba(207,30,66,0.10);
+    --badge-pos-bg: rgba(14,152,115,0.15);
+    --badge-neg-bg: rgba(207,30,66,0.15);
+    --badge-warn-bg: rgba(154,106,6,0.15);
+    --badge-cy-bg: rgba(26,123,166,0.12);
   }
 
   .dark {
@@ -158,6 +217,62 @@
     --chart-3: var(--warning);
     --chart-4: 247 93% 83%;
     --chart-5: var(--accent-negative);
+
+    /* Nocturne raw design tokens (dark mode values) */
+    --pos: #2fd6a3;
+    --neg: #f2506b;
+    --warn: #f0b32e;
+    --cy: #4cc9f0;
+    --ac: #9184d9;
+    --ac-soft: #b5abfc;
+    --ac-strong: #6f5ed9;
+    --rgb-bg: 22,24,38;
+    --rgb-surf: 35,37,50;
+    --rgb-surf-2: 30,32,48;
+    --rgb-line: 233,233,237;
+    --rgb-accent-deep: 66,58,106;
+    --rgb-deep: 12,13,22;
+    --surf: #232532;
+    --surf-2: #1e2030;
+    --surf-3: #1c1e2c;
+    --surf-4: #20222f;
+    --sunk: #14161f;
+    --bg-solid: #161826;
+    --neb-1: #2b2741;
+    --neb-2: #232752;
+    --nk-card: linear-gradient(180deg, var(--surf) 0%, var(--surf-2) 100%);
+    --grad-aurora: linear-gradient(120deg, var(--ac) 0%, var(--cy) 58%, var(--pos) 100%);
+    --grad-violet: linear-gradient(140deg, var(--ac-strong) 0%, var(--ac-soft) 100%);
+    --grad-ember: linear-gradient(120deg, var(--warn) 0%, var(--neg) 100%);
+    --hair: rgba(var(--rgb-line),0.10);
+    --hair-soft: rgba(var(--rgb-line),0.06);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.18);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.38);
+    --aurora-glow: rgba(76,201,240,0.30);
+    --color-bg: #161826;
+    --color-text: #e8e9f2;
+    --color-neutral-100: #e8e9f2;
+    --color-neutral-200: #c8cad8;
+    --color-neutral-300: #a5a8bc;
+    --color-neutral-400: #7e8199;
+    --color-neutral-500: #5e6175;
+    --color-neutral-600: #464959;
+    --color-neutral-700: #333548;
+    --color-accent: #9184d9;
+    --color-accent-100: #c5c0f8;
+    --color-accent-200: #b5abfc;
+    --color-accent-300: #9a8ef5;
+    --color-accent-400: #8578e8;
+    --color-accent-600: #5244c0;
+    --color-accent-700: rgba(145,132,217,0.25);
+    --color-accent-800: rgba(145,132,217,0.15);
+    --risk-low-bg: rgba(47,214,163,0.12);
+    --risk-med-bg: rgba(240,179,46,0.10);
+    --risk-high-bg: rgba(242,80,107,0.10);
+    --badge-pos-bg: rgba(47,214,163,0.15);
+    --badge-neg-bg: rgba(242,80,107,0.15);
+    --badge-warn-bg: rgba(240,179,46,0.15);
+    --badge-cy-bg: rgba(76,201,240,0.12);
   }
 }
 

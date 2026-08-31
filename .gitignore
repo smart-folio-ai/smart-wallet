@@ -23,6 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 
+# Git worktrees (isolated dev workspaces)
+.worktrees/
+
+# SDD scratch workspace
+.superpowers/
+
 # dotenv environment variable files
 .env
 .env.development.local

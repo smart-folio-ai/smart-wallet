@@ -17,6 +17,7 @@ import {
   Zap,
   Landmark,
 } from '@/components/ui/icons';
+import {SectionHeader, DataTable, TD_STYLE, TD_RIGHT} from '@/components/shared';
 import {
   Card,
   CardContent,
@@ -93,6 +94,7 @@ export default function AssetDetail() {
   const navigate = useNavigate();
   const {hasAiInsights} = useSubscription();
   const [period, setPeriod] = useState('3mo');
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Fetch real data from Brapi
   const {data: stockData, isLoading} = useQuery({
@@ -592,905 +594,547 @@ export default function AssetDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh'}}>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary" />
       </div>
     );
   }
 
   if (!asset) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <h1 className="text-2xl font-bold mb-4">Ativo não encontrado</h1>
-        <Button onClick={() => navigate('/asset-search')}>
-          Buscar Outro Ativo
-        </Button>
+      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: 16}}>
+        <h1 style={{fontSize: 22, fontWeight: 600}}>Ativo não encontrado</h1>
+        <Button onClick={() => navigate('/asset-search')}>Buscar Outro Ativo</Button>
+      </div>
+    );
+  }
+
+  const currentPrice = asset.price;
+  const priceChange = asset.changeAbsolute;
+  const priceChangePct = Math.abs(asset.change24h).toFixed(2);
+  const name = asset.name;
+  const sector = asset.sector;
+
+  const ASSET_TABS = [
+    {id: 'overview', label: 'Visão geral'},
+    {id: 'fundamentals', label: 'Indicadores'},
+    {id: 'balance', label: 'Balanço'},
+    {id: 'results', label: 'Resultados'},
+    {id: 'dividends', label: 'Dividendos'},
+    {id: 'about', label: 'Sobre'},
+  ];
+
+  const heroStats = [
+    {label: 'Qtd de ações', value: '—'},
+    {label: 'P&L total', value: '—'},
+    {label: 'Peso', value: '—'},
+  ];
+
+  const positionStats = [
+    {label: 'Qtd', value: '—'},
+    {label: 'Preço médio', value: '—'},
+    {label: 'Valor investido', value: '—'},
+    {label: 'Valor atual', value: '—'},
+    {label: 'P&L total', value: '—'},
+  ];
+
+  const onRegisterOp = () => navigate('/portfolio');
+
+  // ── Tab content functions (defined as closures to access component vars) ──
+
+  function AssetOverviewTab() {
+    return (
+      <div style={{display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 22.4, alignItems: 'start'}}>
+        {/* Left: chart + quick info + AI opinion */}
+        <div style={{display: 'flex', flexDirection: 'column', gap: 22.4}}>
+          {/* Chart card */}
+          <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+            <SectionHeader
+              title="Cotação"
+              action={
+                <div style={{display: 'flex', gap: 2.8, padding: 2.8, border: '1px solid var(--hair)', borderRadius: 8, background: 'rgba(var(--rgb-bg),0.8)'}}>
+                  {['5d','1mo','3mo','6mo','1y','5y'].map((p) => (
+                    <button key={p} type="button" onClick={() => setPeriod(p)}
+                      style={period === p
+                        ? {height: 26, padding: '0 10px', fontSize: 11, border: 'none', borderRadius: 6, background: 'var(--nk-card)', color: 'var(--color-neutral-100)', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)', fontWeight: 600}
+                        : {height: 26, padding: '0 10px', fontSize: 11, border: 'none', borderRadius: 6, background: 'transparent', color: 'var(--color-neutral-500)', cursor: 'pointer', fontFamily: 'var(--font-body)'}}>
+                      {p.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              }
+            />
+            <div style={{padding: '16px 16.8px'}}>
+              <div style={{height: 320}}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={asset.history}>
+                    <defs>
+                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={asset.change24h >= 0 ? 'rgb(16,185,129)' : 'rgb(244,63,94)'} stopOpacity={0.15} />
+                        <stop offset="95%" stopColor={asset.change24h >= 0 ? 'rgb(16,185,129)' : 'rgb(244,63,94)'} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 600}} minTickGap={40} dy={10} />
+                    <YAxis hide domain={['auto', 'auto']} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area type="monotone" dataKey="price" stroke={asset.change24h >= 0 ? '#10b981' : '#f43f5e'} strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" animationDuration={1500} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick info grid */}
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 11.2}}>
+            {[
+              {label: 'Market Cap', value: s?.marketCap, formatter: (v: number) => `R$ ${(v / 1e9).toFixed(2)}B`, Icon: Building2},
+              {label: 'Volume (24h)', value: s?.regularMarketVolume, formatter: (v: number) => `R$ ${(v / 1e6).toFixed(2)}M`, Icon: BarChart3},
+              {label: 'Mín 52s', value: s?.fiftyTwoWeekLow, formatter: formatCurrency, Icon: TrendingDown},
+              {label: 'Máx 52s', value: s?.fiftyTwoWeekHigh, formatter: formatCurrency, Icon: TrendingUp},
+            ].map((item, idx) => (
+              <div key={idx} style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', padding: '14px 16.8px'}}>
+                <div style={{fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-neutral-500)', marginBottom: 8}}>{item.label}</div>
+                <div style={{fontSize: 15, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{item.value ? item.formatter(item.value) : '—'}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* AI Opinion */}
+          <PremiumBlur locked={!hasAiInsights} title="Opinião Trackerr IA é Premium" description="Faça upgrade para acessar análise contextual com IA no detalhe do ativo.">
+            <div className="rounded-lg" style={{border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+              <SectionHeader
+                title="Opinião Trackerr IA"
+                subtitle="Análise contextual baseada em fundamentos e sentimento de mercado"
+                action={<span style={{fontSize: 10.5, fontWeight: 600, color: 'var(--color-accent-100)', border: '1px solid rgba(145,132,217,0.45)', borderRadius: 6, padding: '2px 7px', background: 'rgba(145,132,217,0.16)'}}>Premium</span>}
+              />
+              <div style={{padding: '14px 16.8px', display: 'flex', flexDirection: 'column', gap: 14}}>
+                <div style={{display: 'flex', gap: 14, padding: 14, borderRadius: 8, background: 'var(--surf-2)', border: '1px solid var(--hair-soft)'}}>
+                  <div style={{width: 36, height: 36, borderRadius: '50%', background: 'rgba(145,132,217,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>
+                    <RobotIcon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+                    <p style={{fontSize: 13, lineHeight: 1.5, color: 'var(--color-neutral-300)'}}>
+                      {isLoadingAssetOpinion ? 'Gerando análise da IA para este ativo...' : assetOpinion?.summary || 'Análise contextual indisponível no momento.'}
+                    </p>
+                    {Array.isArray(assetOpinion?.tags) && assetOpinion.tags.length > 0 && (
+                      <div style={{display: 'flex', flexWrap: 'wrap', gap: 6}}>
+                        {assetOpinion.tags.map((tag) => {
+                          const tagStyle = getOpinionTagStyle(tag);
+                          return <span key={tag} className={`rounded-full px-2 py-1 text-[11px] font-bold ${tagStyle.className}`}>{tagStyle.label}</span>;
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11.2}}>
+                  <div style={{padding: 14, borderRadius: 8, background: 'var(--surf-2)', border: '1px solid var(--hair-soft)'}}>
+                    <p style={{fontSize: 10, fontWeight: 700, color: 'var(--pos)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6}}>Ponto Forte</p>
+                    <p style={{fontSize: 12, color: 'var(--color-neutral-400)'}}>
+                      {isLoadingAssetOpinion ? 'Carregando ponto forte...' : assetOpinion?.strength || 'A leitura atual mostra sinais operacionais mistos.'}
+                    </p>
+                  </div>
+                  <div style={{padding: 14, borderRadius: 8, background: 'var(--surf-2)', border: '1px solid var(--hair-soft)'}}>
+                    <p style={{fontSize: 10, fontWeight: 700, color: 'var(--warn)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6}}>Atenção</p>
+                    <p style={{fontSize: 12, color: 'var(--color-neutral-400)'}}>
+                      {isLoadingAssetOpinion ? 'Carregando ponto de atenção...' : assetOpinion?.attention || 'Monitore fundamentos e contexto macro para validar a tese.'}
+                    </p>
+                  </div>
+                </div>
+                <div style={{paddingTop: 11.2, borderTop: '1px solid var(--hair-soft)'}}>
+                  <RagAskPanel
+                    contextLabel={asset.symbol}
+                    placeholder={`Pergunte sobre ${asset.symbol} na sua carteira...`}
+                    quickPrompts={[`${asset.symbol} faz sentido pra minha carteira?`, `Qual o peso de ${asset.symbol} na minha carteira?`]}
+                  />
+                </div>
+              </div>
+            </div>
+          </PremiumBlur>
+        </div>
+
+        {/* Right: indicators + graham + bank capital */}
+        <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
+          {/* Indicators card */}
+          <div data-testid="indicators-card" style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+            <SectionHeader title="Indicadores" />
+            <div style={{padding: '14px 16.8px', display: 'flex', flexDirection: 'column', gap: 22.4}}>
+              <div>
+                <div style={{fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-accent-100)', marginBottom: 11.2}}>Valuation</div>
+                <IndicatorItem label="DIVIDEND YIELD" value={asset.dividendYield} isRestricted={isDividendsRestricted} formatter={formatPercentage} />
+                <FundamentalRow label="P/L (PREÇO/LUCRO)" fundamentals={fundamentals} indicatorKey="priceEarnings" formatter={(v: number) => v.toFixed(2)} />
+                <FundamentalRow label="P/VP" fundamentals={fundamentals} indicatorKey="priceToBook" formatter={(v: number) => v.toFixed(2)} />
+                <FundamentalRow label="EV/EBITDA" fundamentals={fundamentals} indicatorKey="evEbitda" formatter={(v: number) => v.toFixed(2)} />
+              </div>
+              <div>
+                <div style={{fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-accent-100)', marginBottom: 11.2}}>Eficiência &amp; Rentabilidade</div>
+                <FundamentalRow label="ROE" fundamentals={fundamentals} indicatorKey="returnOnEquity" formatter={formatPercentage} />
+                <FundamentalRow label="ROIC" fundamentals={fundamentals} indicatorKey="roic" formatter={formatPercentage} />
+                <FundamentalRow label="MARGEM LÍQUIDA" fundamentals={fundamentals} indicatorKey="netMargin" formatter={formatPercentage} />
+                <FundamentalRow label="DÍVIDA LÍQUIDA" fundamentals={fundamentals} indicatorKey="netDebt" formatter={formatCurrency} />
+              </div>
+              <div>
+                <div style={{fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-accent-100)', marginBottom: 11.2}}>Dividendos</div>
+                <IndicatorItem label="ÚLTIMO DIVIDENDO" value={asset.lastDividend} isRestricted={isDividendsRestricted} formatter={formatCurrency} />
+                <FundamentalRow label="PAYOUT" fundamentals={fundamentals} indicatorKey="payout" formatter={formatPercentage} />
+                {asset.dividendHistory.length > 0 && !isDividendsRestricted && (
+                  <div style={{marginTop: 11.2, paddingTop: 11.2, borderTop: '1px solid var(--hair-soft)'}}>
+                    <div style={{fontSize: 10, fontWeight: 600, color: 'var(--color-neutral-500)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em'}}>Histórico recente</div>
+                    <div style={{display: 'flex', flexWrap: 'wrap', gap: 6}}>
+                      {asset.dividendHistory.slice(0, 3).map((d: any, i: number) => (
+                        <div key={i} style={{padding: '3px 8px', background: 'var(--surf-2)', borderRadius: 6, fontSize: 10.5, fontWeight: 600}}>
+                          {d.date}: {formatCurrency(d.value)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Graham gauge card */}
+          <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+            <SectionHeader
+              title="Preço Justo (Graham)"
+              action={<Calculator className="h-4 w-4" style={{color: 'var(--color-accent-100)'}} />}
+            />
+            <div style={{padding: '14px 16.8px'}}>
+              {isFundamentalRestricted ? (
+                <div style={{display: 'flex', justifyContent: 'center', padding: '28px 0'}}>
+                  <Badge variant="outline" className="border-dashed opacity-50">EM BREVE</Badge>
+                </div>
+              ) : (
+                <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div>
+                      <div style={{fontSize: 10, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4}}>Valor Intrínseco</div>
+                      <div style={{fontSize: 28, fontWeight: 700, fontFamily: 'var(--font-heading)', color: 'var(--color-accent-100)', fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(grahamValue)}</div>
+                    </div>
+                    <div style={{textAlign: 'right'}}>
+                      <div style={{fontSize: 10, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4}}>Preço Atual</div>
+                      <div style={{fontSize: 18, fontWeight: 600, fontFamily: 'var(--font-heading)', fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(asset.price)}</div>
+                    </div>
+                  </div>
+                  <GrahamGauge price={asset.price} fairValue={grahamValue} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bank capital card */}
+          {bankCapital && (
+            <div data-testid="bank-capital-card" style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+              <SectionHeader
+                title={`Capital Regulatório — ${bankCapital.bankName}${bankCapitalPeriod ? ` · ${bankCapitalPeriod}` : ''}`}
+                action={<Landmark className="h-4 w-4" style={{color: 'var(--color-accent-100)'}} />}
+              />
+              <div style={{padding: '14px 16.8px', display: 'flex', flexDirection: 'column', gap: 22.4}}>
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16.8}}>
+                  <CapitalRatioGauge label="ÍNDICE DE BASILEIA" value={bankCapital.basileia} maxScale={30} />
+                  <CapitalRatioGauge label="ÍNDICE DE IMOBILIZAÇÃO" value={bankCapital.imobilizacao} maxScale={60} dangerAbove={50} />
+                </div>
+                {bankCapitalSummary && (
+                  <p style={{fontSize: 11, textAlign: 'center', color: 'var(--color-neutral-500)'}}>{bankCapitalSummary}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Company website */}
+          {asset.company.website && (
+            <a href={asset.company.website} target="_blank" rel="noopener noreferrer"
+              style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16.8px', borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', textDecoration: 'none', color: 'inherit'}}>
+              <span style={{fontSize: 13, fontWeight: 600, color: 'var(--color-neutral-300)'}}>Site de RI da Empresa</span>
+              <ExternalLink className="h-4 w-4" style={{color: 'var(--color-neutral-500)'}} />
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function AssetFundamentalsTab() {
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
+        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+          <SectionHeader title="Valuation" />
+          <div style={{padding: '8px 16.8px 14px'}}>
+            <FundamentalRow label="P/L (PREÇO/LUCRO)" fundamentals={fundamentals} indicatorKey="priceEarnings" formatter={(v: number) => v.toFixed(2)} />
+            <FundamentalRow label="P/VP" fundamentals={fundamentals} indicatorKey="priceToBook" formatter={(v: number) => v.toFixed(2)} />
+            <FundamentalRow label="EV/EBITDA" fundamentals={fundamentals} indicatorKey="evEbitda" formatter={(v: number) => v.toFixed(2)} />
+            <IndicatorItem label="DIVIDEND YIELD" value={asset.dividendYield} isRestricted={isDividendsRestricted} formatter={formatPercentage} />
+          </div>
+        </div>
+        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+          <SectionHeader title="Eficiência &amp; Rentabilidade" />
+          <div style={{padding: '8px 16.8px 14px'}}>
+            <FundamentalRow label="ROE" fundamentals={fundamentals} indicatorKey="returnOnEquity" formatter={formatPercentage} />
+            <FundamentalRow label="ROIC" fundamentals={fundamentals} indicatorKey="roic" formatter={formatPercentage} />
+            <FundamentalRow label="MARGEM LÍQUIDA" fundamentals={fundamentals} indicatorKey="netMargin" formatter={formatPercentage} />
+            <FundamentalRow label="DÍVIDA LÍQUIDA" fundamentals={fundamentals} indicatorKey="netDebt" formatter={formatCurrency} />
+            <IndicatorItem label="ÚLTIMO DIVIDENDO" value={asset.lastDividend} isRestricted={isDividendsRestricted} formatter={formatCurrency} />
+            <FundamentalRow label="PAYOUT" fundamentals={fundamentals} indicatorKey="payout" formatter={formatPercentage} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function AssetBalanceTab() {
+    return (
+      <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+        <SectionHeader title="Balanço Patrimonial" subtitle="Resultados anuais" />
+        {isFundamentalRestricted ? (
+          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '44px 0', gap: 8, opacity: 0.5}}>
+            <Clock className="h-10 w-10" style={{color: 'var(--color-neutral-500)'}} />
+            <p style={{fontWeight: 600, fontSize: 13}}>Dados financeiros detalhados em breve</p>
+            <p style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>Requer upgrade no plano da API Brapi</p>
+          </div>
+        ) : (
+          <DataTable columns={[{label: 'Item'}, {label: 'Valor', align: 'right'}]}>
+            <tr><td style={TD_STYLE}>Receita Líquida</td><td style={TD_RIGHT}>{formatCurrency(asset.financial.revenue)}</td></tr>
+            <tr><td style={TD_STYLE}>Lucro Líquido</td><td style={TD_RIGHT}>{formatCurrency(asset.financial.net_income)}</td></tr>
+            <tr><td style={TD_STYLE}>Patrimônio Líquido</td><td style={TD_RIGHT}>{formatCurrency(asset.financial.shareholders_equity)}</td></tr>
+            <tr><td style={TD_STYLE}>Ativo Total</td><td style={TD_RIGHT}>{formatCurrency(asset.financial.total_assets)}</td></tr>
+            <tr><td style={TD_STYLE}>Dívida Total</td><td style={TD_RIGHT}>{formatCurrency(asset.financial.total_debt)}</td></tr>
+          </DataTable>
+        )}
+      </div>
+    );
+  }
+
+  function AssetResultsTab() {
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
+        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+          <SectionHeader title="Histórico de Lucro e Receita" action={<Badge variant="outline">5 anos</Badge>} />
+          <div style={{padding: 16.8, height: 360}}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={financialHistoryData} margin={{top: 20, right: 30, left: 20, bottom: 5}}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                <XAxis dataKey="year" axisLine={false} tickLine={false} />
+                <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => formatCurrency(Number(v))} />
+                <Tooltip cursor={{fill: 'transparent'}} content={({active, payload, label}) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div style={{background: 'var(--nk-card)', border: '1px solid var(--hair)', borderRadius: 8, padding: 14}}>
+                        <p style={{fontWeight: 700, marginBottom: 8}}>{label}</p>
+                        {payload.map((p: any, i: number) => (
+                          <div key={i} style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600}}>
+                            <div style={{width: 8, height: 8, borderRadius: '50%', background: p.color}} />
+                            <span style={{color: 'var(--color-neutral-500)'}}>{p.name}:</span>
+                            <span>{formatCurrency(Number(p.value || 0))}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return null;
+                }} />
+                <Legend iconType="circle" />
+                <Bar dataKey="revenue" name="Receita Líquida" fill="#3b82f6" radius={[4,4,0,0]} barSize={40} />
+                <Bar dataKey="profit" name="Lucro Líquido" fill="#10b981" radius={[4,4,0,0]} barSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+          <SectionHeader title="Balanço — Comparativo" />
+          <DataTable columns={[
+            {label: 'Ano'},
+            {label: 'P/L', align: 'right'},
+            {label: 'P/VP', align: 'right'},
+            {label: 'VPA', align: 'right'},
+            {label: 'Margem Líq.', align: 'right'},
+            {label: 'ROE', align: 'right'},
+            {label: 'Div. Yield', align: 'right'},
+          ]} minWidth={640}>
+            {financialHistoryData.slice().reverse().map((row: any) => {
+              const rowYear = Number(row.year || 0);
+              const rowRevenue = Number(row.revenue || 0);
+              const rowProfit = Number(row.profit || 0);
+              const rowEquity = Number(row.shareholdersEquity || 0);
+              const rowRoe = rowEquity > 0 ? (rowProfit / rowEquity) * 100 : 0;
+              const rowNetMargin = rowRevenue > 0 ? (rowProfit / rowRevenue) * 100 : 0;
+              return (
+                <tr key={rowYear}>
+                  <td style={TD_STYLE}><strong>{rowYear || '-'}</strong></td>
+                  <td style={TD_RIGHT}>{asset.price > 0 && rowProfit > 0 ? ((asset.price * (Number(s?.sharesOutstanding || 0) || 1)) / rowProfit).toFixed(2) : '—'}</td>
+                  <td style={TD_RIGHT}>{rowEquity > 0 && asset.price > 0 ? (asset.price / (rowEquity / (Number(s?.sharesOutstanding || 0) || 1))).toFixed(2) : '—'}</td>
+                  <td style={TD_RIGHT}>{rowEquity > 0 && Number(s?.sharesOutstanding || 0) > 0 ? formatCurrency(rowEquity / Number(s?.sharesOutstanding || 1)) : '—'}</td>
+                  <td style={{...TD_RIGHT, color: 'var(--pos)'}}>{Number.isFinite(rowNetMargin) ? `${rowNetMargin.toFixed(2)}%` : '—'}</td>
+                  <td style={{...TD_RIGHT, color: 'var(--pos)'}}>{Number.isFinite(rowRoe) ? `${rowRoe.toFixed(2)}%` : '—'}</td>
+                  <td style={{...TD_RIGHT, color: 'var(--cy)'}}>{asset.dividendYield ? `${asset.dividendYield.toFixed(2)}%` : '—'}</td>
+                </tr>
+              );
+            })}
+          </DataTable>
+          {financialHistoryData.length === 0 && (
+            <p style={{padding: 16.8, fontSize: 11, color: 'var(--color-neutral-500)'}}>Ainda não recebemos histórico financeiro para este ativo nas fontes atuais.</p>
+          )}
+        </div>
+        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+          <SectionHeader title="Demonstrativo de Fluxo de Caixa" subtitle="Dados reais do ano mais recente. '—' indica ausência de dados." />
+          <DataTable columns={[
+            {label: 'Categoria'},
+            ...cashflowYears.map((y) => ({label: `Valor ${y}`, align: 'right' as const})),
+          ]} minWidth={560}>
+            {cashflowRows.map((row) => (
+              <tr key={row.label}>
+                <td style={TD_STYLE}>{row.label}</td>
+                {cashflowYears.map((year) => {
+                  const val = row.values[year as keyof typeof row.values];
+                  return <td key={year} style={TD_RIGHT}>{typeof val === 'number' ? formatCurrency(val) : '—'}</td>;
+                })}
+              </tr>
+            ))}
+          </DataTable>
+          {!hasAnyCashflowData && (
+            <p style={{padding: 16.8, fontSize: 11, color: 'var(--color-neutral-500)'}}>Ainda não recebemos dados de fluxo de caixa para este ativo nas fontes atuais.</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function AssetDividendsTab() {
+    return (
+      <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+        <SectionHeader title="Histórico de Dividendos" />
+        {isDividendsRestricted ? (
+          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '44px 0', gap: 8, opacity: 0.5}}>
+            <p style={{fontWeight: 600, fontSize: 13}}>Dados de dividendos em breve</p>
+          </div>
+        ) : asset.dividendHistory.length === 0 ? (
+          <p style={{padding: 16.8, fontSize: 12, color: 'var(--color-neutral-500)'}}>Sem histórico de dividendos disponível.</p>
+        ) : (
+          <DataTable columns={[{label: 'Data'}, {label: 'Valor por ação', align: 'right'}]}>
+            {asset.dividendHistory.map((d: any, i: number) => (
+              <tr key={i}>
+                <td style={TD_STYLE}>{d.date}</td>
+                <td style={TD_RIGHT}>{formatCurrency(d.value)}</td>
+              </tr>
+            ))}
+          </DataTable>
+        )}
+      </div>
+    );
+  }
+
+  function AssetAboutTab() {
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
+        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
+          <SectionHeader title="Descrição do Negócio" />
+          <div style={{padding: 16.8}}>
+            <p style={{fontSize: 14, lineHeight: 1.65, color: 'var(--color-neutral-400)', maxWidth: '72ch'}}>
+              {asset.company.description || 'Descrição indisponível no momento.'}
+            </p>
+            <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22.4, marginTop: 28, paddingTop: 22.4, borderTop: '1px solid var(--hair-soft)'}}>
+              {[
+                {label: 'Setor / Indústria', value: `${asset.company.sector} / ${asset.company.industry}`},
+                {label: 'Sede', value: asset.company.headquarters || 'Não informado'},
+                {label: 'Funcionários', value: asset.company.employees > 0 ? asset.company.employees.toLocaleString() : '—'},
+              ].map((item) => (
+                <div key={item.label}>
+                  <div style={{fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-neutral-500)', marginBottom: 6}}>{item.label}</div>
+                  <div style={{fontWeight: 600, fontSize: 13}}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] dark:bg-background text-foreground transition-colors duration-300">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Breadcrumb / Back */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/portfolio')}
-          className="mb-8 hover:bg-white dark:hover:bg-accent group transition-all">
-          <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          Voltar para Carteira
-        </Button>
+    <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
 
-        {/* AUVP Style Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-card shadow-sm flex items-center justify-center border border-border">
-              <span className="text-2xl font-black text-primary">
-                {asset.symbol.substring(0, 1)}
-              </span>
-            </div>
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-4xl font-black tracking-tight">
-                  {asset.symbol}
-                </h1>
-                <Badge
-                  variant="secondary"
-                  className="font-bold uppercase tracking-wider text-[10px]">
-                  {asset.type}
-                </Badge>
+      {/* Hero */}
+      <section style={{position: 'relative', border: '1px solid rgba(145,132,217,0.30)', borderRadius: 8, overflow: 'hidden', background: 'linear-gradient(115deg, rgba(111,94,217,0.34) 0%, rgba(76,201,240,0.16) 48%, rgba(var(--rgb-surf-2),0.85) 100%), var(--surf-2)'}}>
+        <div style={{position: 'absolute', inset: 0, background: 'radial-gradient(520px 240px at 88% -20%, rgba(47,214,163,0.20), rgba(47,214,163,0) 70%)', pointerEvents: 'none'}} />
+        <div style={{position: 'relative', padding: 22.4, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 22.4, alignItems: 'center'}}>
+          {/* Left: identity + price */}
+          <div>
+            <div style={{display: 'flex', alignItems: 'center', gap: 11.2}}>
+              <div style={{width: 40, height: 40, borderRadius: 8, background: 'var(--grad-violet)', display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 700, color: 'var(--sunk)', boxShadow: '0 0 24px rgba(145,132,217,0.40)'}}>
+                {symbol?.slice(0, 4)}
               </div>
-              <p className="text-lg text-muted-foreground font-medium">
-                {asset.name}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-end gap-10">
-            <div className="text-right">
-              <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
-                Preço Atual
-              </p>
-              <div className="flex items-center gap-3">
-                <span className="text-4xl font-black">
-                  {formatCurrency(asset.price)}
-                </span>
-                <div
-                  className={`flex items-center gap-1 font-bold ${asset.change24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                  {asset.change24h >= 0 ? (
-                    <TrendingUp className="h-4 w-4" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4" />
-                  )}
-                  <span>{formatPercentage(asset.change24h)}</span>
+              <div>
+                <div style={{display: 'flex', alignItems: 'center', gap: 8.4}}>
+                  <span style={{fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em'}}>{symbol}</span>
+                  <span style={{fontSize: 10.5, color: 'var(--color-accent-100)', border: '1px solid rgba(145,132,217,0.45)', borderRadius: 6, padding: '2px 7px', background: 'rgba(145,132,217,0.16)'}}>{sector}</span>
                 </div>
+                <div style={{fontSize: 12, color: 'var(--color-neutral-400)', marginTop: 3}}>{name} · B3 · lote padrão</div>
+              </div>
+            </div>
+            <div style={{display: 'flex', alignItems: 'flex-end', gap: 16.8, marginTop: 16.8, flexWrap: 'wrap'}}>
+              <div>
+                <div style={{fontFamily: 'var(--font-heading)', fontSize: 34, fontWeight: 600, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1}}>
+                  {formatCurrency(currentPrice)}
+                </div>
+                <div style={{display: 'flex', alignItems: 'center', gap: 8.4, marginTop: 5.6, fontSize: 12.5}}>
+                  <span style={{color: priceChange >= 0 ? 'var(--pos)' : 'var(--neg)'}}>{priceChange >= 0 ? '+' : '-'}{priceChangePct}%</span>
+                  <span style={{color: 'var(--color-neutral-500)'}}>hoje · {formatCurrency(priceChange)}</span>
+                </div>
+              </div>
+              <div style={{display: 'flex', gap: 22.4, paddingLeft: 22.4, borderLeft: '1px solid var(--hair)'}}>
+                {heroStats.map((stat) => (
+                  <div key={stat.label}>
+                    <div style={{fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-neutral-500)'}}>{stat.label}</div>
+                    <div style={{fontSize: 15, fontWeight: 600, marginTop: 4, fontVariantNumeric: 'tabular-nums', color: (stat as any).color ?? 'var(--color-neutral-200)'}}>{stat.value}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Chart & More */}
-          <div className="lg:col-span-2 space-y-8">
-            <Card className="border-none shadow-sm bg-white dark:bg-card overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div>
-                  <CardTitle className="text-xl font-bold">Cotação</CardTitle>
+          {/* Right: position mini-card */}
+          <div style={{border: '1px solid rgba(var(--rgb-line),0.14)', borderRadius: 8, background: 'rgba(var(--rgb-bg),0.62)', backdropFilter: 'blur(8px)', padding: '14px 16.8px'}}>
+            <div style={{fontSize: 10.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-neutral-500)'}}>Sua posição</div>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 8.4, marginTop: 11.2}}>
+              {positionStats.map((p) => (
+                <div key={p.label} style={{display: 'flex', alignItems: 'baseline', gap: 11.2, fontSize: 12.5}}>
+                  <span style={{flex: 1, color: 'var(--color-neutral-500)'}}>{p.label}</span>
+                  <span style={{fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: (p as any).color ?? 'var(--color-neutral-200)'}}>{p.value}</span>
                 </div>
-                <div className="flex gap-1 p-1 bg-muted rounded-xl">
-                  {['5d', '1mo', '3mo', '6mo', '1y', '5y'].map((p) => (
-                    <Button
-                      key={p}
-                      variant={period === p ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setPeriod(p)}
-                      className={`text-[10px] h-7 px-3 rounded-lg font-bold uppercase ${period === p ? 'shadow-sm' : ''}`}>
-                      {p}
-                    </Button>
-                  ))}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[400px] w-full pt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={asset.history}>
-                      <defs>
-                        <linearGradient
-                          id="colorPrice"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1">
-                          <stop
-                            offset="5%"
-                            stopColor={
-                              asset.change24h >= 0
-                                ? 'rgb(16, 185, 129)'
-                                : 'rgb(244, 63, 94)'
-                            }
-                            stopOpacity={0.15}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor={
-                              asset.change24h >= 0
-                                ? 'rgb(16, 185, 129)'
-                                : 'rgb(244, 63, 94)'
-                            }
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        opacity={0.1}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{fontSize: 10, fontWeight: 600}}
-                        minTickGap={40}
-                        dy={10}
-                      />
-                      <YAxis hide domain={['auto', 'auto']} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Area
-                        type="monotone"
-                        dataKey="price"
-                        stroke={asset.change24h >= 0 ? '#10b981' : '#f43f5e'}
-                        strokeWidth={3}
-                        fillOpacity={1}
-                        fill="url(#colorPrice)"
-                        animationDuration={1500}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Info Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                {
-                  label: 'Market Cap',
-                  value: s?.marketCap,
-                  formatter: (v: any) => `R$ ${(v / 1e9).toFixed(2)}B`,
-                  icon: Building2,
-                },
-                {
-                  label: 'Volume (24h)',
-                  value: s?.regularMarketVolume,
-                  formatter: (v: any) => `R$ ${(v / 1e6).toFixed(2)}M`,
-                  icon: BarChart3,
-                },
-                {
-                  label: 'Min (52s)',
-                  value: s?.fiftyTwoWeekLow,
-                  formatter: formatCurrency,
-                  icon: TrendingDown,
-                },
-                {
-                  label: 'Max (52s)',
-                  value: s?.fiftyTwoWeekHigh,
-                  formatter: formatCurrency,
-                  icon: TrendingUp,
-                },
-              ].map((item, idx) => (
-                <Card
-                  key={idx}
-                  className="border-none shadow-sm bg-white dark:bg-card">
-                  <CardContent className="p-5">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-primary/5 rounded-lg">
-                        <item.icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        {item.label}
-                      </span>
-                    </div>
-                    <p className="text-lg font-black">
-                      {item.value ? item.formatter(item.value) : '---'}
-                    </p>
-                  </CardContent>
-                </Card>
               ))}
             </div>
-
-            {/* Trackerr Opinion - AI Section */}
-            <PremiumBlur
-              locked={!hasAiInsights}
-              title="Opinião Trackerr IA é Premium"
-              description="Faça upgrade para acessar análise contextual com IA no detalhe do ativo.">
-              <Card className="border-none shadow-sm bg-white dark:bg-card">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-primary fill-primary" />
-                      <CardTitle className="text-xl font-black">
-                        Opinião Trackerr IA
-                      </CardTitle>
-                    </div>
-                    <Badge className="bg-primary hover:bg-primary text-[10px] font-bold uppercase tracking-widest">
-                      Premium
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    Análise contextual baseada em fundamentos e sentimento de
-                    mercado
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-6">
-                  <div className="flex gap-4 p-4 rounded-2xl bg-white/50 dark:bg-card/50 border border-primary/10">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <RobotIcon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium leading-relaxed">
-                        {isLoadingAssetOpinion
-                          ? 'Gerando análise da IA para este ativo...'
-                          : assetOpinion?.summary ||
-                            'Análise contextual indisponível no momento.'}
-                      </p>
-                      {Array.isArray(assetOpinion?.tags) &&
-                        assetOpinion.tags.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-primary uppercase tracking-widest">
-                            {assetOpinion.tags.map((tag) => {
-                              const tagStyle = getOpinionTagStyle(tag);
-                              return (
-                                <span
-                                  key={tag}
-                                  className={`rounded-full px-2 py-1 ${tagStyle.className}`}>
-                                  {tagStyle.label}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                      <p className="text-[10px] font-black text-emerald-600 uppercase mb-2">
-                        Ponto Forte
-                      </p>
-                      <p className="text-xs font-medium">
-                        {isLoadingAssetOpinion
-                          ? 'Carregando ponto forte...'
-                          : assetOpinion?.strength ||
-                            'A leitura atual mostra sinais operacionais mistos.'}
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10">
-                      <p className="text-[10px] font-black text-amber-600 uppercase mb-2">
-                        Atenção
-                      </p>
-                      <p className="text-xs font-medium">
-                        {isLoadingAssetOpinion
-                          ? 'Carregando ponto de atenção...'
-                          : assetOpinion?.attention ||
-                            'Monitore fundamentos e contexto macro para validar a tese.'}
-                      </p>
-                    </div>
-                  </div>
-                  {/* Sem AiGeneratedNotice: AssetOpinionService é
-                      determinístico (TRA-9), nenhum caminho hoje produz
-                      texto de modelo. Volta quando a narrativa por IA
-                      validada existir. */}
-
-                  {/* Pergunta contextual ao RAG sobre este ativo (TRA-39). */}
-                  <div className="pt-2 border-t border-primary/10">
-                    <RagAskPanel
-                      contextLabel={asset.symbol}
-                      placeholder={`Pergunte sobre ${asset.symbol} na sua carteira...`}
-                      quickPrompts={[
-                        `${asset.symbol} faz sentido pra minha carteira?`,
-                        `Qual o peso de ${asset.symbol} na minha carteira?`,
-                      ]}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </PremiumBlur>
-          </div>
-
-          {/* Right Column: Indicators */}
-          <div className="space-y-6">
-            <Card
-              className="border-none shadow-sm bg-white dark:bg-card"
-              data-testid="indicators-card">
-              <CardHeader className="pb-3 border-b border-border/50">
-                <CardTitle className="text-lg font-black">
-                  Indicadores
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-8">
-                {/* Valuation Group */}
-                <div className="space-y-4">
-                  <h4 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4">
-                    Valuation
-                  </h4>
-                  <div className="space-y-1">
-                    <IndicatorItem
-                      label="DIVIDEND YIELD"
-                      value={asset.dividendYield}
-                      isRestricted={isDividendsRestricted}
-                      formatter={formatPercentage}
-                    />
-                    <FundamentalRow
-                      label="P/L (PREÇO/LUCRO)"
-                      fundamentals={fundamentals}
-                      indicatorKey="priceEarnings"
-                      formatter={(v: number) => v.toFixed(2)}
-                    />
-                    <FundamentalRow
-                      label="P/VP"
-                      fundamentals={fundamentals}
-                      indicatorKey="priceToBook"
-                      formatter={(v: number) => v.toFixed(2)}
-                    />
-                    <FundamentalRow
-                      label="EV/EBITDA"
-                      fundamentals={fundamentals}
-                      indicatorKey="evEbitda"
-                      formatter={(v: number) => v.toFixed(2)}
-                    />
-                  </div>
-                </div>
-
-                {/* Efficiency Group */}
-                <div className="space-y-4">
-                  <h4 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4">
-                    Eficiência & Rentabilidade
-                  </h4>
-                  <div className="space-y-1">
-                    <FundamentalRow
-                      label="ROE"
-                      fundamentals={fundamentals}
-                      indicatorKey="returnOnEquity"
-                      formatter={formatPercentage}
-                    />
-                    <FundamentalRow
-                      label="ROIC"
-                      fundamentals={fundamentals}
-                      indicatorKey="roic"
-                      formatter={formatPercentage}
-                    />
-                    <FundamentalRow
-                      label="MARGEM LÍQUIDA"
-                      fundamentals={fundamentals}
-                      indicatorKey="netMargin"
-                      formatter={formatPercentage}
-                    />
-                    <FundamentalRow
-                      label="DÍVIDA LÍQUIDA"
-                      fundamentals={fundamentals}
-                      indicatorKey="netDebt"
-                      formatter={formatCurrency}
-                    />
-                  </div>
-                </div>
-
-                {/* Dividend Group */}
-                <div className="space-y-4">
-                  <h4 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4">
-                    Dividendos
-                  </h4>
-                  <div className="space-y-1">
-                    <IndicatorItem
-                      label="ÚLTIMO DIVIDENDO"
-                      value={asset.lastDividend}
-                      isRestricted={isDividendsRestricted}
-                      formatter={formatCurrency}
-                    />
-                    <FundamentalRow
-                      label="PAYOUT"
-                      fundamentals={fundamentals}
-                      indicatorKey="payout"
-                      formatter={formatPercentage}
-                    />
-                  </div>
-                  {asset.dividendHistory.length > 0 &&
-                    !isDividendsRestricted && (
-                      <div className="mt-4 pt-4 border-t border-border/50">
-                        <p className="text-[10px] font-bold text-muted-foreground mb-3 uppercase">
-                          Histórico Recente
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {asset.dividendHistory
-                            .slice(0, 3)
-                            .map((d: any, i: number) => (
-                              <div
-                                key={i}
-                                className="px-2 py-1 bg-muted rounded text-[10px] font-bold">
-                                {d.date}: {formatCurrency(d.value)}
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                </div>
-
-                {/* Graham Fair Value Card */}
-                <div className="pt-6 border-t border-border">
-                  <Card className="border-none bg-gradient-to-br from-white to-primary/5 dark:from-card dark:to-primary/10 shadow-lg overflow-hidden ring-1 ring-primary/20">
-                    <CardHeader className="pb-2 border-b border-border/10 bg-primary/5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                          Preço Justo (Graham)
-                        </span>
-                        <div className="p-1.5 bg-primary/10 rounded-lg">
-                          <Calculator className="h-4 w-4 text-primary" />
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-8">
-                      {isFundamentalRestricted ? (
-                        <div className="text-center py-8">
-                          <Badge
-                            variant="outline"
-                            className="border-dashed opacity-50">
-                            EM BREVE
-                          </Badge>
-                        </div>
-                      ) : (
-                        <div className="space-y-6">
-                          <div className="flex flex-col items-center justify-between gap-4 px-1 sm:px-4 md:flex-row md:gap-6">
-                            <div className="text-center md:text-left">
-                              <p className="text-[10px] font-bold text-muted-foreground mb-1 uppercase tracking-tighter">
-                                Valor Intrínseco
-                              </p>
-                              <p className="text-3xl font-black text-primary sm:text-4xl">
-                                {formatCurrency(grahamValue)}
-                              </p>
-                            </div>
-                            <div className="text-center md:text-right">
-                              <p className="text-[10px] font-bold text-muted-foreground mb-1 uppercase tracking-tighter">
-                                Preço Atual
-                              </p>
-                              <p className="text-xl font-black sm:text-2xl">
-                                {formatCurrency(asset.price)}
-                              </p>
-                            </div>
-                          </div>
-
-                          <GrahamGauge
-                            price={asset.price}
-                            fairValue={grahamValue}
-                          />
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {bankCapital && (
-                  <div className="pt-6 border-t border-border">
-                    <Card
-                      data-testid="bank-capital-card"
-                      className="border-none bg-gradient-to-br from-white to-primary/5 dark:from-card dark:to-primary/10 shadow-lg overflow-hidden ring-1 ring-primary/20">
-                      <CardHeader className="pb-2 border-b border-border/10 bg-primary/5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                            Capital Regulatório — {bankCapital.bankName}
-                            {bankCapitalPeriod && ` · ${bankCapitalPeriod}`}
-                          </span>
-                          <Landmark className="h-4 w-4 text-primary" />
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-8 space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                          <CapitalRatioGauge
-                            label="ÍNDICE DE BASILEIA"
-                            value={bankCapital.basileia}
-                            maxScale={30}
-                          />
-                          <CapitalRatioGauge
-                            label="ÍNDICE DE IMOBILIZAÇÃO"
-                            value={bankCapital.imobilizacao}
-                            maxScale={60}
-                            dangerAbove={50}
-                          />
-                        </div>
-                        {bankCapitalSummary && (
-                          <p className="text-xs text-center text-muted-foreground">
-                            {bankCapitalSummary}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Company Link */}
-            {asset.company.website && (
-              <a
-                href={asset.company.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-4 bg-white dark:bg-card rounded-2xl shadow-sm hover:ring-2 ring-primary/20 transition-all group">
-                <span className="text-sm font-bold">Site de RI da Empresa</span>
-                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              </a>
-            )}
+            <div style={{display: 'flex', gap: 8.4, marginTop: 14}}>
+              <button type="button" onClick={onRegisterOp} style={{flex: 1, height: 32, borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: 'var(--sunk)', fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, cursor: 'pointer'}}>
+                Registrar operação
+              </button>
+              <button type="button" style={{height: 32, padding: '0 11.2px', borderRadius: 8, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-300)', fontFamily: 'var(--font-body)', fontSize: 12, cursor: 'pointer'}}>
+                Alertas
+              </button>
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* Financial Section Tabs */}
-        <div className="mt-12">
-          <Tabs defaultValue="company" className="w-full">
-            <TabsList className="w-full justify-start bg-transparent h-auto p-0 border-b border-border rounded-none mb-8 gap-8">
-              <TabsTrigger
-                value="company"
-                className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-primary rounded-none px-0 pb-4 h-auto text-sm font-bold uppercase tracking-widest shadow-none">
-                Sobre a Empresa
-              </TabsTrigger>
-              <TabsTrigger
-                value="financial"
-                className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-primary rounded-none px-0 pb-4 h-auto text-sm font-bold uppercase tracking-widest shadow-none">
-                Dados Financeiros
-              </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-primary rounded-none px-0 pb-4 h-auto text-sm font-bold uppercase tracking-widest shadow-none">
-                Histórico
-              </TabsTrigger>
-              <TabsTrigger
-                value="cashflow"
-                className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-primary rounded-none px-0 pb-4 h-auto text-sm font-bold uppercase tracking-widest shadow-none">
-                Fluxo de Caixa
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="company" className="mt-0">
-              <Card className="border-none shadow-sm bg-white dark:bg-card">
-                <CardContent className="p-8">
-                  <h3 className="text-2xl font-black mb-6">
-                    Descrição do Negócio
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed text-lg max-w-4xl">
-                    {asset.company.description ||
-                      'Descrição indisponível no momento.'}
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 pt-8 border-t border-border">
-                    <div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
-                        Setor / Indústria
-                      </p>
-                      <p className="font-bold">
-                        {asset.company.sector} / {asset.company.industry}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
-                        Sede
-                      </p>
-                      <p className="font-bold">
-                        {asset.company.headquarters || 'Não informado'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
-                        Funcionários
-                      </p>
-                      <p className="font-bold">
-                        {asset.company.employees > 0
-                          ? asset.company.employees.toLocaleString()
-                          : '---'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="financial" className="mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <Card className="border-none shadow-sm bg-white dark:bg-card">
-                  <CardHeader>
-                    <CardTitle>
-                      Balanço Patrimonial (Resultados Anuais)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {isFundamentalRestricted ? (
-                      <div className="flex flex-col items-center justify-center py-12 text-center opacity-50">
-                        <Clock className="h-12 w-12 mb-4 text-muted-foreground" />
-                        <p className="font-bold">
-                          Dados financeiros detalhados em breve
-                        </p>
-                        <p className="text-xs">
-                          Requer upgrade no plano da API Brapi
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex justify-between py-2 border-b border-border">
-                          <span className="text-sm font-medium">
-                            Receita Líquida
-                          </span>
-                          <span className="font-bold">
-                            {formatCurrency(asset.financial.revenue)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b border-border">
-                          <span className="text-sm font-medium">
-                            Lucro Líquido
-                          </span>
-                          <span className="font-bold">
-                            {formatCurrency(asset.financial.net_income)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b border-border">
-                          <span className="text-sm font-medium">
-                            Patrimônio Líquido
-                          </span>
-                          <span className="font-bold">
-                            {formatCurrency(
-                              asset.financial.shareholders_equity,
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b border-border">
-                          <span className="text-sm font-medium">
-                            Ativo Total
-                          </span>
-                          <span className="font-bold">
-                            {formatCurrency(asset.financial.total_assets)}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="history" className="mt-0 space-y-8">
-              <Card className="border-none shadow-sm bg-white dark:bg-card p-6">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-xl font-black flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    HISTÓRICO DE LUCRO E RECEITA
-                  </CardTitle>
-                  <Badge variant="outline">5 anos</Badge>
-                </CardHeader>
-                <CardContent className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={financialHistoryData}
-                      margin={{top: 20, right: 30, left: 20, bottom: 5}}>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        opacity={0.1}
-                      />
-                      <XAxis dataKey="year" axisLine={false} tickLine={false} />
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(v) => formatCurrency(Number(v))}
-                      />
-                      <Tooltip
-                        cursor={{fill: 'transparent'}}
-                        content={({active, payload, label}) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="bg-white dark:bg-card p-4 rounded-xl shadow-xl border border-border">
-                                <p className="font-black mb-2">{label}</p>
-                                {payload.map((p: any, i: number) => (
-                                  <div
-                                    key={i}
-                                    className="flex items-center gap-2 text-sm font-bold">
-                                    <div
-                                      className="w-2 h-2 rounded-full"
-                                      style={{backgroundColor: p.color}}
-                                    />
-                                    <span className="text-muted-foreground">
-                                      {p.name}:
-                                    </span>
-                                    <span>
-                                      {formatCurrency(Number(p.value || 0))}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend iconType="circle" />
-                      <Bar
-                        dataKey="revenue"
-                        name="Receita Líquida"
-                        fill="#3b82f6"
-                        radius={[4, 4, 0, 0]}
-                        barSize={40}
-                      />
-                      <Bar
-                        dataKey="profit"
-                        name="Lucro Líquido"
-                        fill="#10b981"
-                        radius={[4, 4, 0, 0]}
-                        barSize={40}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card className="border-none shadow-sm bg-white dark:bg-card overflow-x-auto">
-                <CardHeader>
-                  <CardTitle className="text-xl font-black">
-                    BALANÇO | COMPARATIVO
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border/50 text-[10px] font-black text-muted-foreground uppercase opacity-70">
-                        <th className="text-left py-4 px-2">Ano</th>
-                        <th className="text-right py-4 px-2">P/L</th>
-                        <th className="text-right py-4 px-2">P/VP</th>
-                        <th className="text-right py-4 px-2">VPA</th>
-                        <th className="text-right py-4 px-2">Margem Líq.</th>
-                        <th className="text-right py-4 px-2">ROE</th>
-                        <th className="text-right py-4 px-2">Dividend Yield</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {financialHistoryData
-                        .slice()
-                        .reverse()
-                        .map((row: any) => {
-                          const year = Number(row.year || 0);
-                          const revenue = Number(row.revenue || 0);
-                          const profit = Number(row.profit || 0);
-                          const totalAssets = Number(row.totalAssets || 0);
-                          const equity = Number(row.shareholdersEquity || 0);
-                          const roe = equity > 0 ? (profit / equity) * 100 : 0;
-                          const netMargin =
-                            revenue > 0 ? (profit / revenue) * 100 : 0;
-                          return (
-                            <tr
-                              key={year}
-                              className="border-b border-border/20 hover:bg-muted/30 transition-colors">
-                              <td className="py-4 px-2 font-black">
-                                {year || '-'}
-                              </td>
-                              <td className="py-4 px-2 text-right font-medium">
-                                {asset.price > 0 && profit > 0
-                                  ? (
-                                      (asset.price *
-                                        (Number(s?.sharesOutstanding || 0) ||
-                                          1)) /
-                                      profit
-                                    ).toFixed(2)
-                                  : '—'}
-                              </td>
-                              <td className="py-4 px-2 text-right font-medium">
-                                {equity > 0 && asset.price > 0
-                                  ? (
-                                      asset.price /
-                                      (equity /
-                                        (Number(s?.sharesOutstanding || 0) ||
-                                          1))
-                                    ).toFixed(2)
-                                  : '—'}
-                              </td>
-                              <td className="py-4 px-2 text-right font-medium">
-                                {equity > 0 &&
-                                Number(s?.sharesOutstanding || 0) > 0
-                                  ? formatCurrency(
-                                      equity /
-                                        Number(s?.sharesOutstanding || 1),
-                                    )
-                                  : '—'}
-                              </td>
-                              <td className="py-4 px-2 text-right font-medium text-emerald-500">
-                                {Number.isFinite(netMargin)
-                                  ? `${netMargin.toFixed(2)}%`
-                                  : '—'}
-                              </td>
-                              <td className="py-4 px-2 text-right font-medium text-emerald-500">
-                                {Number.isFinite(roe)
-                                  ? `${roe.toFixed(2)}%`
-                                  : '—'}
-                              </td>
-                              <td className="py-4 px-2 text-right font-medium text-blue-500">
-                                {asset.dividendYield
-                                  ? `${asset.dividendYield.toFixed(2)}%`
-                                  : '—'}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                  {financialHistoryData.length === 0 && (
-                    <p className="mt-4 text-xs text-muted-foreground">
-                      Ainda não recebemos histórico financeiro para este ativo
-                      nas fontes atuais.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="cashflow" className="mt-0">
-              <Card className="border-none shadow-sm bg-white dark:bg-card overflow-x-auto">
-                <CardHeader>
-                  <CardTitle className="text-xl font-black uppercase tracking-wider text-primary">
-                    Demonstrativo de Fluxo de Caixa
-                  </CardTitle>
-                  <CardDescription>
-                    Dados reais do ano mais recente da API. Quando não houver
-                    histórico disponível, exibimos "—" em vez de R$ 0,00.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="text-left py-3 px-4 rounded-tl-xl font-black uppercase text-[10px] tracking-widest text-muted-foreground">
-                          Categoria
-                        </th>
-                        {cashflowYears.map((y) => (
-                          <th
-                            key={y}
-                            className="text-right py-3 px-4 font-black text-[10px] tracking-widest text-muted-foreground">
-                            VALOR {y}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/20">
-                      {cashflowRows.map((row) => (
-                        <tr
-                          key={row.label}
-                          className="hover:bg-muted/20 transition-colors">
-                          <td className="py-4 px-4 font-bold text-muted-foreground">
-                            {row.label}
-                          </td>
-                          {cashflowYears.map((year) => {
-                            const value =
-                              row.values[year as keyof typeof row.values];
-                            return (
-                              <td
-                                key={year}
-                                className="py-4 px-4 text-right font-black">
-                                {typeof value === 'number'
-                                  ? formatCurrency(value)
-                                  : '—'}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  {!hasAnyCashflowData && (
-                    <p className="mt-4 text-xs text-muted-foreground">
-                      Ainda não recebemos dados de fluxo de caixa para este
-                      ativo nas fontes atuais (brapi/fallback).
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+      {/* Tab bar */}
+      <div style={{display: 'flex', alignItems: 'center', gap: 11.2, flexWrap: 'wrap', borderBottom: '1px solid var(--hair)', paddingBottom: 11.2}}>
+        <div style={{display: 'flex', gap: 2.8, padding: 2.8, border: '1px solid var(--hair)', borderRadius: 8, background: 'rgba(var(--rgb-bg),0.8)'}}>
+          {ASSET_TABS.map((t) => (
+            <button key={t.id} type="button" onClick={() => setActiveTab(t.id)}
+              style={activeTab === t.id
+                ? {height: 30, padding: '0 14px', fontSize: 12.5, border: 'none', borderRadius: 6, background: 'var(--nk-card)', color: 'var(--color-neutral-100)', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)'}
+                : {height: 30, padding: '0 14px', fontSize: 12.5, border: 'none', borderRadius: 6, background: 'transparent', color: 'var(--color-neutral-500)', cursor: 'pointer', fontFamily: 'var(--font-body)'}}>
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
+
+      {/* Tab content */}
+      {activeTab === 'overview' && <AssetOverviewTab />}
+      {activeTab === 'fundamentals' && <AssetFundamentalsTab />}
+      {activeTab === 'balance' && <AssetBalanceTab />}
+      {activeTab === 'results' && <AssetResultsTab />}
+      {activeTab === 'dividends' && <AssetDividendsTab />}
+      {activeTab === 'about' && <AssetAboutTab />}
     </div>
   );
 }

@@ -1,34 +1,16 @@
 import {useEffect, useMemo, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {useQuery} from '@tanstack/react-query';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {Badge} from '@/components/ui/badge';
-import {Button} from '@/components/ui/button';
-import {Skeleton} from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import portfolioService from '@/services/portfolio';
 import {formatCurrency} from '@/utils';
-import {ChevronRight, Landmark} from '@/components/ui/icons';
+import {
+  KpiCard,
+  SectionHeader,
+  AiInsightBanner,
+  DataTable,
+  TD_STYLE,
+  TD_RIGHT,
+} from '@/components/shared';
 
 type DividendEventType = 'JCP' | 'Dividendo';
 
@@ -74,6 +56,8 @@ const parseDate = (dateValue: unknown): Date | null => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
+const MONTH_LABELS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
 const Dividends = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -109,11 +93,11 @@ const Dividends = () => {
   const apiAssets = useMemo(() => {
     if (!portfolioPayload) return [];
     if (Array.isArray(portfolioPayload)) return portfolioPayload;
-    return portfolioPayload.assets ?? [];
+    return (portfolioPayload as {assets?: unknown[]}).assets ?? [];
   }, [portfolioPayload]);
 
   const allDividendEvents = useMemo<DividendEvent[]>(() => {
-    return apiAssets
+    return (apiAssets as any[])
       .flatMap((asset: any) => {
         const quantity = Number(asset?.quantity || 0);
         const history = Array.isArray(asset?.dividendHistory)
@@ -152,213 +136,299 @@ const Dividends = () => {
       });
   }, [apiAssets]);
 
-  const latestDividends = allDividendEvents.slice(0, 8);
-  const totalPaid = allDividendEvents.reduce((sum, item) => sum + item.totalValue, 0);
-  const totalJcp = allDividendEvents
-    .filter((item) => item.eventType === 'JCP')
-    .reduce((sum, item) => sum + item.totalValue, 0);
-  const totalDividends = allDividendEvents
-    .filter((item) => item.eventType === 'Dividendo')
-    .reduce((sum, item) => sum + item.totalValue, 0);
+  // ── Derived data for Nocturne layout ──────────────────────────────────────
+
+  const now = useMemo(() => new Date(), []);
+  const currentMonthIdx = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  /** 12 months: 9 past + current + 2 future (oldest → newest), projected = future */
+  const monthlyData = useMemo(() => {
+    const result: {label: string; value: number; projected: boolean}[] = [];
+    for (let i = 9; i >= -2; i--) {
+      const d = new Date(currentYear, currentMonthIdx - i, 1);
+      const yr = d.getFullYear();
+      const mo = d.getMonth();
+      const label = MONTH_LABELS[mo];
+      const isProjected = yr > currentYear || (yr === currentYear && mo > currentMonthIdx);
+      const value = isProjected
+        ? 0
+        : allDividendEvents
+            .filter((ev) => {
+              const parsed = parseDate(ev.date);
+              return parsed && parsed.getFullYear() === yr && parsed.getMonth() === mo;
+            })
+            .reduce((sum, ev) => sum + ev.totalValue, 0);
+      result.push({label, value, projected: isProjected});
+    }
+    return result;
+  }, [allDividendEvents, currentMonthIdx, currentYear]);
+
+  const maxMonthValue = useMemo(
+    () => Math.max(...monthlyData.map((m) => m.value), 1),
+    [monthlyData],
+  );
+
+  const currentMonthLabel = MONTH_LABELS[currentMonthIdx];
+
+  /** Upcoming 45-day agenda from dividend events with future/today pay dates */
+  const agenda = useMemo(() => {
+    const cutoff = new Date(now.getTime() + 45 * 24 * 60 * 60 * 1000);
+    return allDividendEvents
+      .filter((ev) => {
+        const d = parseDate(ev.date);
+        return d && d >= now && d <= cutoff;
+      })
+      .map((ev) => {
+        const d = parseDate(ev.date)!;
+        return {
+          symbol: ev.symbol,
+          day: String(d.getDate()).padStart(2, '0'),
+          month: MONTH_LABELS[d.getMonth()],
+          type: ev.eventType,
+          comDate: d.toLocaleDateString('pt-BR'),
+          value: formatCurrency(ev.totalValue),
+          perShare: `${formatCurrency(ev.valuePerUnit)}/cota`,
+        };
+      });
+  }, [allDividendEvents, now]);
+
+  /** Income grouped by asset symbol */
+  const incomeByAsset = useMemo(() => {
+    const map = new Map<string, {total: number; count: number}>();
+    allDividendEvents.forEach((ev) => {
+      const cur = map.get(ev.symbol) ?? {total: 0, count: 0};
+      map.set(ev.symbol, {total: cur.total + ev.totalValue, count: cur.count + 1});
+    });
+    return Array.from(map.entries())
+      .map(([symbol, {total, count}]) => ({
+        symbol,
+        total,
+        dy: '—',
+        yoc: '—',
+        count,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [allDividendEvents]);
+
+  /** Last-12-months total and previous-year total for growth delta */
+  const total12m = useMemo(() => {
+    const from = new Date(currentYear - 1, currentMonthIdx + 1, 1);
+    const to = new Date(currentYear, currentMonthIdx + 1, 1);
+    return allDividendEvents
+      .filter((ev) => {
+        const d = parseDate(ev.date);
+        return d && d >= from && d < to;
+      })
+      .reduce((sum, ev) => sum + ev.totalValue, 0);
+  }, [allDividendEvents, currentMonthIdx, currentYear]);
+
+  const prev12m = useMemo(() => {
+    const from = new Date(currentYear - 2, currentMonthIdx + 1, 1);
+    const to = new Date(currentYear - 1, currentMonthIdx + 1, 1);
+    return allDividendEvents
+      .filter((ev) => {
+        const d = parseDate(ev.date);
+        return d && d >= from && d < to;
+      })
+      .reduce((sum, ev) => sum + ev.totalValue, 0);
+  }, [allDividendEvents, currentMonthIdx, currentYear]);
+
+  const growth12m = prev12m > 0
+    ? `${total12m >= prev12m ? '+' : ''}${(((total12m - prev12m) / prev12m) * 100).toFixed(1)}%`
+    : undefined;
+
+  const growth = prev12m > 0 ? total12m - prev12m : 0;
+
+  const avgDY = '—';
+  const yoc = '—';
+
+  const nextDiv = useMemo(() => {
+    const upcoming = allDividendEvents
+      .filter((ev) => {
+        const d = parseDate(ev.date);
+        return d && d >= now;
+      })
+      .sort((a, b) => {
+        const da = parseDate(a.date)!;
+        const db = parseDate(b.date)!;
+        return da.getTime() - db.getTime();
+      });
+    if (upcoming.length === 0) return {value: '—', symbol: '—', payDate: '—'};
+    const nxt = upcoming[0];
+    const d = parseDate(nxt.date)!;
+    return {
+      value: formatCurrency(nxt.totalValue),
+      symbol: nxt.symbol,
+      payDate: d.toLocaleDateString('pt-BR'),
+    };
+  }, [allDividendEvents, now]);
+
+  const fiisTotal = useMemo(
+    () =>
+      allDividendEvents
+        .filter((ev) => ev.assetType?.toLowerCase().includes('fii'))
+        .reduce((s, ev) => s + ev.totalValue, 0),
+    [allDividendEvents],
+  );
+
+  const passiveIncomeInsight = useMemo(() => {
+    if (total12m <= 0)
+      return {text: 'Ainda não há proventos registrados para análise de renda passiva.'};
+    const fiisShare = total12m > 0 ? ((fiisTotal / total12m) * 100).toFixed(0) : '0';
+    return {
+      text: `Suas FIIs geraram ${fiisShare}% do total de proventos nos últimos 12 meses. Diversificar entre FIIs, ações e BDRs pode melhorar a consistência da renda.`,
+    };
+  }, [total12m, fiisTotal]);
+
+  const showAdvancedInsight = true;
+
+  const chartSubtitle = `${MONTH_LABELS[(currentMonthIdx + 1) % 12].toUpperCase()} ${currentYear - 1} – ${MONTH_LABELS[currentMonthIdx].toUpperCase()} ${currentYear}`;
+  const tableSubtitle = `${allDividendEvents.length} evento${allDividendEvents.length !== 1 ? 's' : ''} registrado${allDividendEvents.length !== 1 ? 's' : ''}`;
+
+  // ── JSX ───────────────────────────────────────────────────────────────────
+
+  if (isLoading) {
+    return <div style={{padding: 24, color: 'var(--color-neutral-500)'}}>Carregando...</div>;
+  }
 
   return (
-    <div className="container py-8 animate-fade-in">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dividendos</h1>
-          <p className="text-sm text-muted-foreground">
-            Ultimos proventos recebidos e historico completo de JCP e dividendos
-          </p>
-        </div>
-        <Select
-          value={selectedPortfolioId}
-          onValueChange={(value) => setSelectedPortfolioId(value)}>
-          <SelectTrigger className="w-full sm:w-72">
-            <SelectValue placeholder="Selecione a carteira" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as Carteiras</SelectItem>
-            {portfolios.map((p: any) => (
-              <SelectItem key={p.id || p._id} value={p.id || p._id}>
-                {p.name}
-              </SelectItem>
+    <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
+
+      {/* 1. KPI cards */}
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 11.2}}>
+        <KpiCard label="DY médio" value={avgDY} sub="ponderado por posição" />
+        <KpiCard
+          label="Proventos 12m"
+          value={formatCurrency(total12m)}
+          delta={growth12m}
+          sub="vs ano anterior"
+          deltaStyle={{color: growth >= 0 ? 'var(--pos)' : 'var(--neg)'}}
+        />
+        <KpiCard
+          label="Yield on Cost"
+          value={yoc}
+          sub="sobre preço médio pago"
+          tooltip={{title: 'Yield on Cost', body: 'Rendimento sobre o custo histórico de aquisição', formula: 'YoC = Proventos acumulados / Custo médio total × 100'}}
+        />
+        <KpiCard label="Próximo provento" value={nextDiv.value} sub={`${nextDiv.symbol} · pag. ${nextDiv.payDate}`} />
+      </div>
+
+      {/* 2. Bar chart — Proventos por mês */}
+      <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+        <SectionHeader
+          title="Proventos recebidos por mês"
+          subtitle={chartSubtitle}
+          action={
+            <div style={{display: 'flex', gap: 14}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 5.6, fontSize: 11, color: 'var(--color-neutral-400)'}}>
+                <span style={{width: 10, height: 10, borderRadius: 2, background: 'var(--pos)', display: 'inline-block'}} /> recebido
+              </div>
+              <div style={{display: 'flex', alignItems: 'center', gap: 5.6, fontSize: 11, color: 'var(--color-neutral-400)'}}>
+                <span style={{width: 10, height: 10, borderRadius: 2, background: 'rgba(145,132,217,0.45)', border: '1px dashed var(--color-accent-400)', display: 'inline-block'}} /> previsto
+              </div>
+            </div>
+          }
+        />
+        <div style={{padding: 16.8}}>
+          {/* 12-bar CSS grid chart */}
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 8.4, alignItems: 'end', height: 168}}>
+            {monthlyData.map((m) => (
+              <div key={m.label} style={{display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%', gap: 5.6}}>
+                <span style={{fontSize: 10, color: 'var(--color-neutral-500)', textAlign: 'center', fontVariantNumeric: 'tabular-nums'}}>
+                  {m.label === currentMonthLabel ? formatCurrency(m.value) : ''}
+                </span>
+                <div
+                  style={{
+                    background: m.projected ? 'rgba(145,132,217,0.45)' : 'var(--pos)',
+                    borderRadius: '3px 3px 0 0',
+                    height: `${(m.value / maxMonthValue) * 100}%`,
+                    border: m.projected ? '1px dashed var(--color-accent-400)' : 'none',
+                    minHeight: m.value > 0 ? 4 : 0,
+                  }}
+                />
+              </div>
             ))}
-          </SelectContent>
-        </Select>
+          </div>
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 8.4, marginTop: 8.4}}>
+            {monthlyData.map((m) => (
+              <span key={m.label} style={{fontSize: 10.5, color: 'var(--color-neutral-600)', textAlign: 'center'}}>{m.label}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Agenda + Renda por ativo */}
+      <div style={{display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.2fr)', gap: 16.8, alignItems: 'start'}}>
+        <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+          <SectionHeader title="Agenda · próximos 45 dias" subtitle="Data-com, pagamento e valor líquido previsto" />
+          <div style={{padding: '5.6px 0'}}>
+            {agenda.length === 0 ? (
+              <div style={{padding: '16.8px', fontSize: 12.5, color: 'var(--color-neutral-600)', textAlign: 'center'}}>
+                Nenhum provento previsto para os próximos 45 dias.
+              </div>
+            ) : (
+              agenda.map((d) => (
+                <div key={`${d.symbol}-${d.comDate}`} style={{display: 'flex', alignItems: 'center', gap: 11.2, padding: '9.8px 16.8px'}}>
+                  <div style={{width: 38, flexShrink: 0, textAlign: 'center', border: '1px solid var(--hair)', borderRadius: 6, padding: '4px 0', background: 'rgba(var(--rgb-bg),0.6)'}}>
+                    <div style={{fontSize: 13, fontWeight: 600, lineHeight: 1, fontVariantNumeric: 'tabular-nums'}}>{d.day}</div>
+                    <div style={{fontSize: 9, color: 'var(--color-neutral-600)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>{d.month}</div>
+                  </div>
+                  <div style={{flex: 1, minWidth: 0}}>
+                    <div style={{fontSize: 12.5, fontWeight: 600}}>{d.symbol}</div>
+                    <div style={{fontSize: 10.5, color: 'var(--color-neutral-600)'}}>{d.type} · data-com {d.comDate}</div>
+                  </div>
+                  <div style={{textAlign: 'right'}}>
+                    <div style={{fontSize: 12.5, fontWeight: 600, color: 'var(--pos)', fontVariantNumeric: 'tabular-nums'}}>{d.value}</div>
+                    <div style={{fontSize: 10.5, color: 'var(--color-neutral-600)', fontVariantNumeric: 'tabular-nums'}}>{d.perShare}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+          <SectionHeader
+            title="Renda por ativo · 12 meses"
+            subtitle={tableSubtitle}
+            action={
+              <button
+                type="button"
+                style={{height: 30, padding: '0 11.2px', border: '1px solid var(--color-accent-700)', borderRadius: 8, background: 'transparent', color: 'var(--color-accent-200)', fontSize: 11.5, cursor: 'pointer', fontFamily: 'var(--font-body)'}}
+              >
+                Informe de rendimentos
+              </button>
+            }
+          />
+          <DataTable
+            minWidth={560}
+            columns={[
+              {label: 'Ativo'}, {label: 'Total R$', align: 'right'}, {label: 'DY', align: 'right'},
+              {label: 'YoC', align: 'right'}, {label: 'Nº', align: 'right'},
+            ]}
+          >
+            {incomeByAsset.map((r) => (
+              <tr key={r.symbol} style={{borderTop: '1px solid var(--hair-soft)'}} className="hover:bg-[rgba(145,132,217,0.06)]">
+                <td style={{...TD_STYLE, fontWeight: 600}}>{r.symbol}</td>
+                <td style={TD_RIGHT}>{formatCurrency(r.total)}</td>
+                <td style={TD_RIGHT}>{r.dy}</td>
+                <td style={{...TD_RIGHT, fontWeight: 600, color: 'var(--pos)'}}>{r.yoc}</td>
+                <td style={{...TD_RIGHT, color: 'var(--color-neutral-500)'}}>{r.count}</td>
+              </tr>
+            ))}
+          </DataTable>
+        </section>
       </div>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
-        <Card className="border-emerald-300/40 bg-gradient-to-r from-emerald-50 to-white dark:border-emerald-400/20 dark:from-emerald-950/30 dark:to-slate-950">
-          <CardHeader className="pb-2">
-            <CardDescription>Total recebido (Dividendos + JCP)</CardDescription>
-            <CardTitle className="text-2xl text-emerald-700 dark:text-emerald-300">
-              {formatCurrency(totalPaid)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="border-sky-300/40 bg-gradient-to-r from-sky-50 to-white dark:border-sky-400/20 dark:from-sky-950/30 dark:to-slate-950">
-          <CardHeader className="pb-2">
-            <CardDescription>Total em JCP</CardDescription>
-            <CardTitle className="text-2xl text-sky-700 dark:text-sky-300">
-              {formatCurrency(totalJcp)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="border-violet-300/40 bg-gradient-to-r from-violet-50 to-white dark:border-violet-400/20 dark:from-violet-950/30 dark:to-slate-950">
-          <CardHeader className="pb-2">
-            <CardDescription>Total em Dividendos</CardDescription>
-            <CardTitle className="text-2xl text-violet-300">
-              {formatCurrency(totalDividends)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      <Card className="mb-6 overflow-hidden rounded-2xl border border-primary/10 bg-gradient-to-br from-card to-card/70">
-        <CardHeader>
-          <CardTitle>Ultimos dividendos disponiveis</CardTitle>
-          <CardDescription>Clique em um ativo para abrir todos os detalhes</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-2">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : latestDividends.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border/70 p-6 text-sm text-muted-foreground">
-              Nenhum evento de dividendo encontrado para esta selecao.
-            </div>
-          ) : (
-            <div className="overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Ativo</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead className="text-right">Valor recebido</TableHead>
-                    <TableHead className="text-right">Acao</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {latestDividends.map((event, index) => (
-                    <TableRow
-                      key={`${event.symbol}-${event.date}-${index}`}
-                      className="cursor-pointer"
-                      onClick={() =>
-                        navigate(
-                          `/dividends/${event.symbol}?portfolioId=${selectedPortfolioId}`,
-                        )
-                      }>
-                      <TableCell>
-                        {parseDate(event.date)?.toLocaleDateString('pt-BR') || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="min-w-[180px]">
-                          <p className="font-medium">{event.symbol}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {event.assetName}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{event.eventType}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(event.totalValue)}
-                      </TableCell>
-                      <TableCell className="text-right text-primary">
-                        <span className="inline-flex items-center text-xs font-semibold">
-                          Ver detalhes <ChevronRight className="ml-1 h-4 w-4" />
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="overflow-hidden rounded-2xl border border-primary/10 bg-card/60">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Landmark className="h-5 w-5 text-primary" />
-            Historico completo
-          </CardTitle>
-          <CardDescription>
-            Todos os eventos de proventos da carteira selecionada
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-2">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : allDividendEvents.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border/70 p-6 text-sm text-muted-foreground">
-              Sem historico de dividendos para mostrar.
-            </div>
-          ) : (
-            <div className="overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Ativo</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead className="text-right">Qtd</TableHead>
-                    <TableHead className="text-right">Valor por cota</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allDividendEvents.map((event, index) => (
-                    <TableRow key={`${event.symbol}-${event.date}-${event.eventType}-${index}`}>
-                      <TableCell>
-                        {parseDate(event.date)?.toLocaleDateString('pt-BR') || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <button
-                          type="button"
-                          className="font-medium text-primary hover:underline"
-                          onClick={() =>
-                            navigate(
-                              `/dividends/${event.symbol}?portfolioId=${selectedPortfolioId}`,
-                            )
-                          }>
-                          {event.symbol}
-                        </button>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{event.eventType}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{event.quantity}</TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(event.valuePerUnit)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(event.totalValue)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="mt-6 flex justify-end">
-        <Button variant="outline" onClick={() => navigate('/dashboard')}>
-          Voltar para dashboard
-        </Button>
-      </div>
+      {/* 4. AI banner */}
+      {showAdvancedInsight && (
+        <AiInsightBanner
+          text={passiveIncomeInsight.text}
+          actionLabel="Abrir planejamento"
+          onAction={() => navigate('/planning')}
+        />
+      )}
     </div>
   );
 };
