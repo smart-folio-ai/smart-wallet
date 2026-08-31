@@ -1,22 +1,61 @@
 import {useMemo, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {Button} from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {Badge} from '@/components/ui/badge';
-import {Separator} from '@/components/ui/separator';
-import {GitCompare, Plus, X, TrendingUp, TrendingDown} from '@/components/ui/icons';
 import {PremiumBlur} from '@/components/ui/premium-blur';
-import {formatCurrency, formatPercentage} from '@/utils/formatters';
+import {formatCurrency} from '@/utils/formatters';
 import {useSubscription} from '@/hooks/useSubscription';
 import Stock from '@/services/stocks';
 import {StockAutocompleteInput} from '@/components/stocks/StockAutocompleteInput';
 import {normalizeStockSymbol} from '@/components/stocks/stock-autocomplete.utils';
+import {DataTable, TD_STYLE, TD_RIGHT, SectionHeader} from '@/components/shared';
+
+// ─── Module-level constants ────────────────────────────────────────────────
+
+const KEY_MAP: Record<string, string> = {
+  close: 'regularMarketPrice',
+  change: 'regularMarketChangePercent',
+  pl: 'priceEarnings',
+  pvp: 'priceToBook',
+  dy: 'dividendYield',
+  roe: 'returnOnEquity',
+  dividaPatrimonio: 'debtToEquity',
+};
+
+function getQuoteValue(
+  quotesData: Record<string, any> | undefined,
+  symbol: string,
+  key: string,
+): number | null {
+  const q = quotesData?.[symbol];
+  if (!q) return null;
+  const mappedKey = KEY_MAP[key] ?? key;
+  const val = q[mappedKey] ?? q?.quote?.[mappedKey];
+  return typeof val === 'number' ? val : null;
+}
+
+const COMPARISON_ROWS: Array<{
+  key: string;
+  label: string;
+  higherIsBetter: boolean;
+  format: (v: number) => string;
+}> = [
+  {key: 'close', label: 'Preço Atual', higherIsBetter: false, format: (v) => formatCurrency(v)},
+  {key: 'change', label: 'Variação', higherIsBetter: true, format: (v) => `${v >= 0 ? '+' : ''}${v?.toFixed(2)}%`},
+  {key: 'pl', label: 'P/L', higherIsBetter: false, format: (v) => v?.toFixed(1)},
+  {key: 'pvp', label: 'P/VP', higherIsBetter: false, format: (v) => v?.toFixed(2)},
+  {key: 'dy', label: 'Dividend Yield', higherIsBetter: true, format: (v) => `${v?.toFixed(1)}%`},
+  {key: 'roe', label: 'ROE', higherIsBetter: true, format: (v) => `${v?.toFixed(1)}%`},
+  {key: 'dividaPatrimonio', label: 'Dívida/Patrimônio', higherIsBetter: false, format: (v) => v?.toFixed(2)},
+];
+
+const RF_INSTRUMENTS = [
+  {name: 'Tesouro IPCA+ 2029', kind: 'Tesouro', rate: 'IPCA+6.2%'},
+  {name: 'CDB Banco Inter 110% CDI', kind: 'CDB', rate: '110% CDI'},
+  {name: 'LCI Itaú 95% CDI', kind: 'LCI', rate: '95% CDI', exempt: true},
+  {name: 'LCA Bradesco 93% CDI', kind: 'LCA', rate: '93% CDI', exempt: true},
+  {name: 'CRI 13.5% a.a.', kind: 'CRI', rate: '13.5%', exempt: true},
+];
+
+// ─── Types ─────────────────────────────────────────────────────────────────
 
 type SelectedAsset = {
   symbol: string;
@@ -24,10 +63,24 @@ type SelectedAsset = {
   logo?: string;
 };
 
+type CompMode = 'equity' | 'fixed';
+
+// ─── Page component ────────────────────────────────────────────────────────
+
 export default function Comparator() {
   const [selectedAssets, setSelectedAssets] = useState<SelectedAsset[]>([]);
   const [inputValue, setInputValue] = useState('');
   const {hasComparator} = useSubscription();
+
+  // Mode toggle state
+  const [compMode, setCompMode] = useState<CompMode>('equity');
+
+  // Renda Fixa form state (UI-only, no API)
+  const [rfPrincipal, setRfPrincipal] = useState('10000');
+  const [rfPrazo, setRfPrazo] = useState('24');
+  const [rfIPCA, setRfIPCA] = useState('4.5');
+  const [rfCDI, setRfCDI] = useState('10.5');
+
   const normalizedSearch = String(inputValue || '').trim().toUpperCase();
 
   const {data: stocksSearchData} = useQuery({
@@ -149,7 +202,7 @@ export default function Comparator() {
     [selectedAssets],
   );
 
-  const {data: quoteBySymbol = {}, isLoading: loadingQuotes} = useQuery({
+  const {data: quotesData = {}} = useQuery({
     queryKey: ['comparator-quotes', symbolList.join('|')],
     queryFn: async () => {
       const entries = await Promise.all(
@@ -173,293 +226,339 @@ export default function Comparator() {
     staleTime: 3 * 60 * 1000,
   });
 
-  const comparisonData = selectedAssets.map((asset) => {
-    const q: any = quoteBySymbol[asset.symbol];
-    return {
-      symbol: asset.symbol,
-      name: q?.longName || q?.shortName || asset.name || 'Dados não encontrados',
-      logo: q?.logourl || asset.logo || '',
-      price: Number(q?.regularMarketPrice || 0),
-      change: Number(q?.regularMarketChangePercent || 0),
-      marketCap: Number(q?.marketCap || 0),
-      pe: Number(q?.priceEarnings || 0),
-      pb: Number(q?.priceToBook || 0),
-      dividendYield: Number(q?.dividendYield || 0),
-      roe: Number(q?.returnOnEquity || 0),
-      debtEquity: Number(q?.debtToEquity || 0),
-      sector: q?.sector || 'N/A',
-    };
-  });
-
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <GitCompare className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Comparador de Ativos</h1>
-            <p className="text-muted-foreground">
-              Compare ativos lado a lado com autocomplete e dados de mercado.
-            </p>
-          </div>
+    <div style={{maxWidth: 1200, margin: '0 auto', padding: '28px 16px', display: 'flex', flexDirection: 'column', gap: 20}}>
+      {/* Header row: title + mode toggle */}
+      <div style={{display: 'flex', alignItems: 'center', gap: 16}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: 9}}>
+          <i className="ph-fill ph-git-diff" style={{fontSize: 18, color: 'var(--ac)'}} />
+          <span style={{fontFamily: 'var(--font-heading)', fontSize: 18, fontWeight: 600}}>Comparador</span>
         </div>
+        {/* Mode toggle */}
+        <div style={{display: 'inline-flex', border: '1px solid var(--hair)', borderRadius: 8, overflow: 'hidden'}}>
+          {([['equity', 'Renda Variável'], ['fixed', 'Renda Fixa']] as const).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={compMode === mode}
+              onClick={() => setCompMode(mode)}
+              style={{
+                padding: '7px 18px',
+                fontSize: 12.5,
+                fontWeight: 500,
+                cursor: 'pointer',
+                border: 'none',
+                background: compMode === mode ? 'var(--ac)' : 'transparent',
+                color: compMode === mode ? '#fff' : 'var(--color-neutral-400)',
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        <Card className="mb-6 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/20 shadow-xl">
-          <CardHeader>
-            <CardTitle>Adicionar Ativos para Comparação</CardTitle>
-            <CardDescription>
-              Use o mesmo autocomplete do Adicionar Ativo para buscar e incluir símbolos.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2 mb-4">
-              <div className="flex-1">
+      {compMode === 'equity' ? (
+        <>
+          {/* Asset selector */}
+          <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)', padding: '14px 16px'}}>
+            <div style={{display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center'}}>
+              {selectedAssets.map((a) => (
+                <div
+                  key={a.symbol}
+                  style={{display: 'flex', alignItems: 'center', gap: 6, height: 28, padding: '0 10px', borderRadius: 14, background: 'var(--badge-cy-bg)', color: 'var(--cy)', fontSize: 12}}>
+                  {a.symbol}
+                  <button
+                    type="button"
+                    onClick={() => removeAsset(a.symbol)}
+                    style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cy)', padding: 0, display: 'flex'}}>
+                    <i className="ph-fill ph-x" style={{fontSize: 11}} />
+                  </button>
+                </div>
+              ))}
+              {/* Autocomplete input */}
+              <div style={{position: 'relative'}}>
                 <StockAutocompleteInput
                   value={inputValue}
                   stocks={autocompleteItems}
-                  placeholder="Digite o símbolo (ex: PETR4)"
+                  placeholder="+ adicionar ativo"
                   onValueChange={setInputValue}
-                  onSelect={(item) => {
-                    addAsset(item.stock);
-                  }}
+                  onSelect={(item) => addAsset(item.stock)}
                   onEnter={() => addAsset()}
                 />
               </div>
-              <Button onClick={() => addAsset()} disabled={!inputValue.trim()}>
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar
-              </Button>
             </div>
+          </section>
 
-            {selectedAssets.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {selectedAssets.map((asset) => (
-                  <Badge
-                    key={asset.symbol}
-                    variant="secondary"
-                    className="flex items-center gap-2">
-                    {asset.logo ? (
-                      <img
-                        src={asset.logo}
-                        alt={asset.symbol}
-                        className="h-4 w-4 rounded-full object-cover"
-                      />
-                    ) : null}
-                    {asset.symbol}
-                    <X
-                      className="h-3 w-3 cursor-pointer hover:text-destructive"
-                      onClick={() => removeAsset(asset.symbol)}
-                    />
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {selectedAssets.length > 0 && (
+          {/* Comparison table — PremiumBlur gate */}
           <PremiumBlur
             locked={!hasComparator}
-            title="Comparador de Ativos - Premium"
+            title="Comparador de Ativos — Premium"
             description="Acesse comparações detalhadas com mais de 20 indicadores financeiros">
-            <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/20 shadow-xl overflow-hidden">
-              <CardHeader>
-                <CardTitle>Comparação Detalhada</CardTitle>
-                <CardDescription>
-                  {loadingQuotes
-                    ? 'Atualizando cotações e fundamentos...'
-                    : 'Análise completa dos ativos selecionados'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2 font-medium">Indicador</th>
-                        {comparisonData.map((asset) => (
-                          <th
-                            key={asset.symbol}
-                            className="text-center p-2 font-medium min-w-[180px]">
-                            <div className="flex items-center justify-center gap-2">
-                              {asset.logo ? (
-                                <img
-                                  src={asset.logo}
-                                  alt={asset.symbol}
-                                  className="h-6 w-6 rounded-full object-cover border border-border"
-                                />
-                              ) : null}
-                              <div>
-                                <div className="font-bold">{asset.symbol}</div>
-                                <div className="text-xs text-muted-foreground font-normal">
-                                  {asset.name}
-                                </div>
+            {selectedAssets.length > 0 && (
+              <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+                <SectionHeader
+                  title="Comparação lado a lado"
+                  subtitle={`${selectedAssets.length} ativos selecionados`}
+                />
+                <DataTable
+                  minWidth={720}
+                  columns={[
+                    {label: 'Indicador'},
+                    ...selectedAssets.map((a) => ({label: a.symbol, align: 'right' as const})),
+                  ]}>
+                  {COMPARISON_ROWS.map((row) => {
+                    const values = selectedAssets.map((a) =>
+                      getQuoteValue(quotesData, a.symbol, row.key),
+                    );
+                    const numericValues = values.filter((v): v is number => v !== null);
+                    const best =
+                      numericValues.length > 0
+                        ? row.higherIsBetter
+                          ? Math.max(...numericValues)
+                          : Math.min(...numericValues)
+                        : null;
+                    return (
+                      <tr key={row.key} style={{borderTop: '1px solid var(--hair-soft)'}}>
+                        <td style={TD_STYLE}>
+                          <span style={{fontSize: 12.5, color: 'var(--color-neutral-400)'}}>{row.label}</span>
+                        </td>
+                        {selectedAssets.map((a) => {
+                          const val = getQuoteValue(quotesData, a.symbol, row.key);
+                          const isBest =
+                            val !== null &&
+                            best !== null &&
+                            val === best &&
+                            numericValues.length > 1;
+                          return (
+                            <td key={a.symbol} style={TD_RIGHT}>
+                              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3}}>
+                                {val !== null && best !== null && best !== 0 && (
+                                  <div style={{width: 80, height: 4, borderRadius: 2, background: 'var(--sunk)', overflow: 'hidden'}}>
+                                    <div
+                                      style={{
+                                        height: '100%',
+                                        width: `${Math.min(Math.abs(val / best) * 100, 100)}%`,
+                                        background: isBest ? 'var(--pos)' : 'var(--ac)',
+                                        borderRadius: 2,
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                <span
+                                  style={{
+                                    fontSize: 12.5,
+                                    fontVariantNumeric: 'tabular-nums',
+                                    fontWeight: isBest ? 600 : 400,
+                                    color: isBest ? 'var(--pos)' : undefined,
+                                  }}>
+                                  {val !== null ? row.format(val) : '—'}
+                                </span>
                               </div>
-                            </div>
-                          </th>
-                        ))}
+                            </td>
+                          );
+                        })}
                       </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b">
-                        <td className="p-2 font-medium">Preço Atual</td>
-                        {comparisonData.map((asset) => (
-                          <td key={asset.symbol} className="text-center p-2">
-                            {formatCurrency(asset.price)}
-                          </td>
-                        ))}
-                      </tr>
-
-                      <tr className="border-b">
-                        <td className="p-2 font-medium">Variação</td>
-                        {comparisonData.map((asset) => (
-                          <td key={asset.symbol} className="text-center p-2">
-                            <div
-                              className={`flex items-center justify-center ${
-                                asset.change >= 0 ? 'text-emerald-500' : 'text-rose-500'
-                              }`}>
-                              {asset.change >= 0 ? (
-                                <TrendingUp className="h-3 w-3 mr-1" />
-                              ) : (
-                                <TrendingDown className="h-3 w-3 mr-1" />
-                              )}
-                              {formatPercentage(asset.change)}
-                            </div>
-                          </td>
-                        ))}
-                      </tr>
-
-                      <tr className="border-b">
-                        <td className="p-2 font-medium">Setor</td>
-                        {comparisonData.map((asset) => (
-                          <td key={asset.symbol} className="text-center p-2">
-                            <Badge variant="outline">{asset.sector}</Badge>
-                          </td>
-                        ))}
-                      </tr>
-
-                      <tr className="border-b">
-                        <td className="p-2 font-medium">Market Cap</td>
-                        {comparisonData.map((asset) => (
-                          <td key={asset.symbol} className="text-center p-2">
-                            {asset.marketCap > 0
-                              ? `${formatCurrency(asset.marketCap / 1e9)}B`
-                              : 'N/A'}
-                          </td>
-                        ))}
-                      </tr>
-
-                      <tr className="border-b">
-                        <td className="p-2 font-medium">P/L</td>
-                        {comparisonData.map((asset) => (
-                          <td key={asset.symbol} className="text-center p-2">
-                            {asset.pe > 0 ? asset.pe.toFixed(1) : 'N/A'}
-                          </td>
-                        ))}
-                      </tr>
-
-                      <tr className="border-b">
-                        <td className="p-2 font-medium">P/VP</td>
-                        {comparisonData.map((asset) => (
-                          <td key={asset.symbol} className="text-center p-2">
-                            {asset.pb > 0 ? asset.pb.toFixed(1) : 'N/A'}
-                          </td>
-                        ))}
-                      </tr>
-
-                      <tr className="border-b">
-                        <td className="p-2 font-medium">Dividend Yield</td>
-                        {comparisonData.map((asset) => (
-                          <td key={asset.symbol} className="text-center p-2">
-                            {asset.dividendYield > 0
-                              ? formatPercentage(asset.dividendYield)
-                              : 'N/A'}
-                          </td>
-                        ))}
-                      </tr>
-
-                      <tr className="border-b">
-                        <td className="p-2 font-medium">ROE</td>
-                        {comparisonData.map((asset) => (
-                          <td key={asset.symbol} className="text-center p-2">
-                            {asset.roe > 0 ? formatPercentage(asset.roe * 100) : 'N/A'}
-                          </td>
-                        ))}
-                      </tr>
-
-                      <tr>
-                        <td className="p-2 font-medium">Dívida/Patrimônio</td>
-                        {comparisonData.map((asset) => (
-                          <td key={asset.symbol} className="text-center p-2">
-                            {asset.debtEquity > 0 ? asset.debtEquity.toFixed(2) : 'N/A'}
-                          </td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <Separator className="my-6" />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {comparisonData.map((asset) => (
-                    <Card
-                      key={asset.symbol}
-                      className="p-4 rounded-2xl bg-card/50 border-primary/20 shadow-sm">
-                      <div className="mb-2 flex items-center gap-2">
-                        {asset.logo ? (
-                          <img
-                            src={asset.logo}
-                            alt={asset.symbol}
-                            className="h-5 w-5 rounded-full object-cover border border-border"
-                          />
-                        ) : null}
-                        <h3 className="font-bold text-lg">{asset.symbol}</h3>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>P/L:</span>
-                          <span className={asset.pe > 0 && asset.pe < 15 ? 'text-emerald-500' : 'text-rose-500'}>
-                            {asset.pe > 0 ? asset.pe.toFixed(1) : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>ROE:</span>
-                          <span className={asset.roe > 0.15 ? 'text-emerald-500' : 'text-rose-500'}>
-                            {asset.roe > 0 ? formatPercentage(asset.roe * 100) : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Div. Yield:</span>
-                          <span className={asset.dividendYield > 0.05 ? 'text-emerald-500' : 'text-rose-500'}>
-                            {asset.dividendYield > 0
-                              ? formatPercentage(asset.dividendYield)
-                              : 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    );
+                  })}
+                </DataTable>
+              </section>
+            )}
           </PremiumBlur>
-        )}
+        </>
+      ) : (
+        <>
+          {/* Renda Fixa: Assumptions form */}
+          <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)', padding: '14px 16px'}}>
+            <SectionHeader title="Parâmetros da simulação" />
+            <div style={{display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, padding: '14px 16px'}}>
+              {[
+                {label: 'Principal (R$)', value: rfPrincipal, set: setRfPrincipal, placeholder: '10.000'},
+                {label: 'Prazo (meses)', value: rfPrazo, set: setRfPrazo, placeholder: '24'},
+                {label: 'IPCA (% a.a.)', value: rfIPCA, set: setRfIPCA, placeholder: '4.5'},
+                {label: 'CDI (% a.a.)', value: rfCDI, set: setRfCDI, placeholder: '10.5'},
+                {label: 'IR padrão (%)', value: '15', set: () => {}, placeholder: '15'},
+              ].map((f) => (
+                <div key={f.label}>
+                  <label
+                    style={{
+                      fontSize: 10.5,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: 'var(--color-neutral-600)',
+                      display: 'block',
+                      marginBottom: 5,
+                    }}>
+                    {f.label}
+                  </label>
+                  <input
+                    value={f.value}
+                    onChange={(e) => f.set(e.target.value)}
+                    placeholder={f.placeholder}
+                    style={{
+                      width: '100%',
+                      height: 34,
+                      border: '1px solid var(--hair)',
+                      borderRadius: 6,
+                      background: 'var(--surf-3)',
+                      padding: '0 10px',
+                      fontSize: 12.5,
+                      color: 'inherit',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
 
-        {selectedAssets.length === 0 && (
-          <Card className="text-center py-12 rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/20 shadow-xl overflow-hidden">
-            <CardContent>
-              <GitCompare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Nenhum ativo selecionado</h3>
-              <p className="text-muted-foreground">
-                Adicione pelo menos um ativo para começar a comparação.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+          {/* Fixed income comparison table */}
+          <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+            <SectionHeader title="Renda fixa lado a lado" />
+            <DataTable
+              minWidth={900}
+              columns={[
+                {label: 'Ativo'},
+                {label: 'Tipo'},
+                {label: 'Taxa'},
+                {label: 'Bruto', align: 'right'},
+                {label: 'Imposto', align: 'right'},
+                {label: 'Líquido', align: 'right'},
+                {label: 'Real', align: 'right'},
+                {label: 'Tag'},
+              ]}>
+              {RF_INSTRUMENTS.map((inst) => {
+                const principal = parseFloat(rfPrincipal.replace(/\D/g, '')) || 10000;
+                const months = parseInt(rfPrazo) || 24;
+                const cdi = parseFloat(rfCDI) / 100;
+                const ipca = parseFloat(rfIPCA) / 100;
+                const bruto =
+                  principal *
+                    (1 +
+                      (inst.rate.includes('CDI')
+                        ? cdi * (parseFloat(inst.rate) / 100)
+                        : ipca + 0.062)) **
+                      (months / 12) -
+                  principal;
+                const ir = inst.exempt
+                  ? 0
+                  : bruto *
+                    (months <= 6 ? 0.225 : months <= 12 ? 0.20 : months <= 24 ? 0.175 : 0.15);
+                const liquido = bruto - ir;
+                const real = liquido - principal * ((1 + ipca) ** (months / 12) - 1);
+                const pct = (liquido / principal) * 100;
+                const maxPct = 25;
+                return (
+                  <tr key={inst.name} style={{borderTop: '1px solid var(--hair-soft)'}}>
+                    <td style={TD_STYLE}>
+                      <span style={{fontSize: 12.5, fontWeight: 500}}>{inst.name}</span>
+                    </td>
+                    <td style={TD_STYLE}>
+                      <span style={{fontSize: 11, padding: '2px 7px', borderRadius: 10, background: 'var(--badge-cy-bg)', color: 'var(--cy)'}}>
+                        {inst.kind}
+                      </span>
+                    </td>
+                    <td style={TD_STYLE}>
+                      <span style={{fontSize: 12, color: 'var(--color-neutral-400)'}}>{inst.rate}</span>
+                    </td>
+                    <td style={TD_RIGHT}>{formatCurrency(bruto)}</td>
+                    <td style={{...TD_RIGHT, color: 'var(--neg)'}}>
+                      {inst.exempt ? 'Isento' : formatCurrency(ir)}
+                    </td>
+                    <td style={TD_RIGHT}>
+                      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3}}>
+                        <div style={{width: 80, height: 4, borderRadius: 2, background: 'var(--sunk)', overflow: 'hidden'}}>
+                          <div
+                            style={{
+                              height: '100%',
+                              width: `${Math.min((pct / maxPct) * 100, 100)}%`,
+                              background: 'var(--pos)',
+                              borderRadius: 2,
+                            }}
+                          />
+                        </div>
+                        <span style={{fontVariantNumeric: 'tabular-nums', fontSize: 12.5}}>
+                          {formatCurrency(liquido)}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{...TD_RIGHT, color: real >= 0 ? 'var(--pos)' : 'var(--neg)', fontSize: 12}}>
+                      {formatCurrency(real)}
+                    </td>
+                    <td style={TD_STYLE}>
+                      {inst.exempt && (
+                        <span style={{fontSize: 10.5, padding: '2px 7px', borderRadius: 10, background: 'var(--badge-pos-bg)', color: 'var(--pos)'}}>
+                          Isento IR
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </DataTable>
+          </section>
+
+          {/* AI verdict + IR regressive table */}
+          <div style={{display: 'grid', gridTemplateColumns: 'minmax(0,1.25fr) minmax(0,1fr)', gap: 16}}>
+            {/* AI verdict */}
+            <div
+              style={{
+                border: '1px solid rgba(145,132,217,0.35)',
+                borderRadius: 8,
+                background: 'linear-gradient(135deg, rgba(111,94,217,0.10) 0%, rgba(76,201,240,0.06) 100%)',
+                padding: '16px',
+              }}>
+              <div style={{display: 'flex', gap: 8, alignItems: 'flex-start'}}>
+                <i className="ph-fill ph-sparkle" style={{fontSize: 16, color: 'var(--ac)', flexShrink: 0, marginTop: 2}} />
+                <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+                  <div style={{fontSize: 13, fontWeight: 600}}>
+                    Para {rfPrazo} meses com R$ {Number(rfPrincipal).toLocaleString('pt-BR')}
+                  </div>
+                  <ul style={{margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 5}}>
+                    <li style={{fontSize: 12, color: 'var(--color-neutral-400)'}}>
+                      CDB 110% CDI tende a superar LCI em prazos acima de 24 meses.
+                    </li>
+                    <li style={{fontSize: 12, color: 'var(--color-neutral-400)'}}>
+                      LCI/LCA isentos de IR são vantajosos em alíquotas de 20–22,5%.
+                    </li>
+                    <li style={{fontSize: 12, color: 'var(--color-neutral-400)'}}>
+                      Tesouro IPCA+ protege contra inflação acima de {rfIPCA}% a.a.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* IR regressive table */}
+            <div style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)', padding: '14px 16px'}}>
+              <div style={{fontFamily: 'var(--font-heading)', fontSize: 13, fontWeight: 600, marginBottom: 12}}>
+                IR Regressivo
+              </div>
+              {[
+                {prazo: 'Até 6 meses', aliq: '22,5%'},
+                {prazo: '6 a 12 meses', aliq: '20,0%'},
+                {prazo: '12 a 24 meses', aliq: '17,5%'},
+                {prazo: 'Acima de 24 meses', aliq: '15,0%'},
+              ].map((row, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '6px 0',
+                    borderTop: i > 0 ? '1px solid var(--hair-soft)' : undefined,
+                    fontSize: 12,
+                  }}>
+                  <span style={{color: 'var(--color-neutral-500)'}}>{row.prazo}</span>
+                  <span style={{fontVariantNumeric: 'tabular-nums', color: 'var(--neg)'}}>{row.aliq}</span>
+                </div>
+              ))}
+              <div style={{marginTop: 10, fontSize: 10.5, color: 'var(--color-neutral-600)', lineHeight: 1.5}}>
+                LCI, LCA, CRI e CRA são isentos de IR para pessoa física.
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
