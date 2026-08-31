@@ -1,40 +1,6 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {
-  Bell,
-  Camera,
-  Check,
-  Crown,
-  Edit,
-  Eye,
-  EyeOff,
-  Globe,
-  Loader2,
-  QrCode,
-  Save,
-  Shield,
-  ShieldCheck,
-  ShieldOff,
-  User,
-  X,
-} from '@/components/ui/icons';
-import {Button} from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {Badge} from '@/components/ui/badge';
-import {Switch} from '@/components/ui/switch';
-import {Label} from '@/components/ui/label';
-import {Input} from '@/components/ui/input';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {PrivacySettings} from '@/components/settings/PrivacySettings';
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {Skeleton} from '@/components/ui/skeleton';
 import {z} from 'zod';
 import Profile from '@/services/profile';
 import Address from '@/services/address';
@@ -71,12 +37,79 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  border: '1px solid var(--hair)',
+  borderRadius: 8,
+  background: 'var(--surf-3)',
+  color: 'inherit',
+  padding: '8px 12px',
+  fontSize: 13,
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 500,
+  color: 'var(--color-neutral-500)',
+  display: 'block',
+  marginBottom: 4,
+};
+
+function NkSwitch({
+  checked,
+  onChange,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => !disabled && onChange(!checked)}
+      style={{
+        width: 44,
+        height: 24,
+        borderRadius: 12,
+        padding: 2,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        background: checked ? 'var(--ac)' : 'var(--surf-3)',
+        border: '1px solid var(--hair)',
+        transition: 'background 0.2s',
+        display: 'inline-flex',
+        alignItems: 'center',
+        opacity: disabled ? 0.5 : 1,
+        flexShrink: 0,
+      }}>
+      <div
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: '50%',
+          background: '#fff',
+          transform: checked ? 'translateX(20px)' : 'translateX(0)',
+          transition: 'transform 0.2s',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+        }}
+      />
+    </button>
+  );
+}
+
 export default function Settings() {
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<
+    'profile' | 'subscription' | 'notifications' | 'security' | 'privacy'
+  >('profile');
 
   // Avatar state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -396,7 +429,7 @@ export default function Settings() {
     },
   });
 
-  const formatDate = (dateString: Date | string) => {
+  const formatDateLocal = (dateString: Date | string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       year: 'numeric',
       month: 'long',
@@ -436,7 +469,7 @@ export default function Settings() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await api.post('/profile/avatar', formData, {
+      await api.post('/profile/avatar', formData, {
         headers: {'Content-Type': 'multipart/form-data'},
       });
 
@@ -531,576 +564,1164 @@ export default function Settings() {
 
   const isLoading = userLoading;
 
+  const tabs = [
+    {id: 'profile', label: 'Perfil'},
+    {id: 'subscription', label: 'Assinatura'},
+    {id: 'notifications', label: 'Notificações'},
+    {id: 'security', label: 'Segurança'},
+    {id: 'privacy', label: 'Privacidade'},
+  ] as const;
+
   return (
-    <div className="container py-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Configurações</h1>
-        <p className="text-muted-foreground">
+    <div style={{maxWidth: 900, margin: '0 auto', padding: '32px 16px'}}>
+      <style>{`@keyframes nk-spin{to{transform:rotate(360deg)}}`}</style>
+
+      <div style={{marginBottom: 32}}>
+        <h1
+          style={{
+            fontSize: 28,
+            fontWeight: 700,
+            fontFamily: 'var(--font-heading)',
+            margin: 0,
+          }}>
+          Configurações
+        </h1>
+        <p style={{color: 'var(--color-neutral-400)', marginTop: 6, fontSize: 14}}>
           Gerencie suas preferências e informações da conta
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">Perfil</TabsTrigger>
-          <TabsTrigger value="subscription">Assinatura</TabsTrigger>
-          <TabsTrigger value="notifications">Notificações</TabsTrigger>
-          <TabsTrigger value="security">Segurança</TabsTrigger>
-          <TabsTrigger value="privacy">Privacidade</TabsTrigger>
-        </TabsList>
+      {/* Custom pill tabs */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 4,
+          background: 'var(--surf-3)',
+          borderRadius: 10,
+          padding: 4,
+          width: 'fit-content',
+          flexWrap: 'wrap',
+          marginBottom: 24,
+        }}>
+        {tabs.map(({id, label}) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActiveTab(id)}
+            style={{
+              padding: '7px 16px',
+              borderRadius: 7,
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 500,
+              background: activeTab === id ? 'var(--ac)' : 'transparent',
+              color:
+                activeTab === id ? '#fff' : 'var(--color-neutral-400)',
+            }}>
+            {label}
+          </button>
+        ))}
+      </div>
 
-        {/* ── Perfil ── */}
-        <TabsContent value="profile" className="space-y-6">
-          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  {isLoading ? (
-                    <Skeleton className="h-16 w-16 rounded-full" />
-                  ) : (
-                    <div className="relative group">
-                      <Avatar className="h-16 w-16">
-                        {avatarPreview ? (
-                          <AvatarImage
-                            src={avatarPreview}
-                            alt="Foto de perfil"
-                          />
-                        ) : (
-                          <AvatarFallback className="text-xl font-bold bg-primary/10 text-primary">
-                            {initials}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <button
-                        type="button"
-                        onClick={() => avatarInputRef.current?.click()}
-                        disabled={avatarUploading}
-                        className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                        {avatarUploading ? (
-                          <Loader2 className="h-5 w-5 text-white animate-spin" />
-                        ) : (
-                          <Camera className="h-5 w-5 text-white" />
-                        )}
-                      </button>
-                      <input
-                        ref={avatarInputRef}
-                        type="file"
-                        accept="image/jpg,image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        onChange={handleAvatarChange}
-                      />
-                    </div>
-                  )}
-                  <div>
-                    <CardTitle>Informações do Perfil</CardTitle>
-                    <CardDescription>
-                      {isLoading ? (
-                        <Skeleton className="h-4 w-40 mt-1" />
+      {/* ── Perfil ── */}
+      {activeTab === 'profile' && (
+        <div
+          style={{
+            border: '1px solid var(--hair)',
+            borderRadius: 14,
+            background: 'var(--nk-card)',
+            overflow: 'hidden',
+          }}>
+          {/* CardHeader */}
+          <div
+            style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--hair-soft)',
+            }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 16}}>
+                {isLoading ? (
+                  <div
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: '50%',
+                      background: 'var(--surf-3)',
+                    }}
+                  />
+                ) : (
+                  <div style={{position: 'relative'}}>
+                    {/* Avatar */}
+                    <div
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '50%',
+                        background: 'var(--surf-3)',
+                        border: '2px solid var(--hair)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                      {avatarPreview ? (
+                        <img
+                          src={avatarPreview}
+                          alt=""
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                          }}
+                          onError={(e) => {
+                            (
+                              e.target as HTMLImageElement
+                            ).style.display = 'none';
+                          }}
+                        />
                       ) : (
-                        user && `Membro desde ${formatDate(user.createdAt)}`
+                        <span
+                          style={{
+                            fontSize: 22,
+                            fontWeight: 700,
+                            color: 'var(--ac)',
+                            fontFamily: 'var(--font-heading)',
+                          }}>
+                          {initials}
+                        </span>
                       )}
-                    </CardDescription>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(!isEditing)}>
-                  {isEditing ? (
-                    <X className="h-4 w-4" />
-                  ) : (
-                    <Edit className="h-4 w-4" />
-                  )}
-                  {isEditing ? 'Cancelar' : 'Editar'}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Dados Pessoais */}
-              <div>
-                <h3 className="text-lg font-medium mb-4">Dados Pessoais</h3>
-                {isLoading ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    {[1, 2, 3, 4].map((i) => (
-                      <Skeleton key={i} className="h-10" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nome</Label>
-                      <Input
-                        id="name"
-                        value={profileData.firstName}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            firstName: e.target.value,
-                          })
-                        }
-                        disabled={!isEditing}
-                      />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Sobrenome</Label>
-                      <Input
-                        id="lastName"
-                        value={profileData.lastName}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            lastName: e.target.value,
-                          })
-                        }
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={profileData.email}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            email: e.target.value,
-                          })
-                        }
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cpf">CPF</Label>
-                      <Input
-                        id="cpf"
-                        value={profileData.cpf}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            cpf: formatCPF(e.target.value),
-                          })
-                        }
-                        disabled={!isEditing}
-                        maxLength={14}
-                      />
-                    </div>
+                    {/* Camera overlay */}
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={avatarUploading}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.55)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0,
+                        cursor: avatarUploading ? 'not-allowed' : 'pointer',
+                        border: 'none',
+                        transition: 'opacity 0.2s',
+                      }}
+                      onMouseEnter={(e) =>
+                        ((e.currentTarget as HTMLButtonElement).style.opacity =
+                          '1')
+                      }
+                      onMouseLeave={(e) =>
+                        ((e.currentTarget as HTMLButtonElement).style.opacity =
+                          '0')
+                      }>
+                      {avatarUploading ? (
+                        <i
+                          className="ph-fill ph-spinner"
+                          style={{
+                            fontSize: 20,
+                            color: '#fff',
+                            animation: 'nk-spin 0.8s linear infinite',
+                          }}
+                        />
+                      ) : (
+                        <i
+                          className="ph-fill ph-camera"
+                          style={{fontSize: 20, color: '#fff'}}
+                        />
+                      )}
+                    </button>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/jpg,image/jpeg,image/png,image/webp"
+                      style={{display: 'none'}}
+                      onChange={handleAvatarChange}
+                    />
                   </div>
                 )}
-              </div>
-
-              {/* Endereço */}
-              <div>
-                <h3 className="text-lg font-medium mb-4">Endereço</h3>
-                {isLoading ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    {[1, 2, 3, 4].map((i) => (
-                      <Skeleton key={i} className="h-10" />
-                    ))}
+                <div>
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-heading)',
+                    }}>
+                    Informações do Perfil
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="street">Rua</Label>
-                      <Input
-                        id="street"
-                        value={profileData.address.street}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            address: {
-                              ...profileData.address,
-                              street: e.target.value,
-                            },
-                          })
-                        }
-                        disabled={!isEditing}
+                  <div style={{color: 'var(--color-neutral-400)', fontSize: 13, marginTop: 2}}>
+                    {isLoading ? (
+                      <div
+                        style={{
+                          height: 14,
+                          width: 160,
+                          borderRadius: 6,
+                          background: 'var(--surf-3)',
+                          marginTop: 4,
+                        }}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="number">Número</Label>
-                      <Input
-                        id="number"
-                        value={profileData.address.number}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            address: {
-                              ...profileData.address,
-                              number: e.target.value,
-                            },
-                          })
-                        }
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="complement">Complemento</Label>
-                      <Input
-                        id="complement"
-                        value={profileData.address.complement}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            address: {
-                              ...profileData.address,
-                              complement: e.target.value,
-                            },
-                          })
-                        }
-                        disabled={!isEditing}
-                        placeholder="Opcional"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="city">Cidade</Label>
-                      <Input
-                        id="city"
-                        value={profileData.address.city}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            address: {
-                              ...profileData.address,
-                              city: e.target.value,
-                            },
-                          })
-                        }
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="state">Estado</Label>
-                      <Input
-                        id="state"
-                        value={profileData.address.state}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            address: {
-                              ...profileData.address,
-                              state: e.target.value.toUpperCase(),
-                            },
-                          })
-                        }
-                        disabled={!isEditing}
-                        maxLength={2}
-                        placeholder="SP"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="zipCode">CEP</Label>
-                      <Input
-                        id="zipCode"
-                        value={profileData.address.zipCode}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            address: {
-                              ...profileData.address,
-                              zipCode: formatZipCode(e.target.value),
-                            },
-                          })
-                        }
-                        disabled={!isEditing}
-                        maxLength={9}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-            {isEditing && (
-              <CardFooter>
-                <Button
-                  onClick={() => saveProfileMutation.mutate(profileData)}
-                  disabled={saveProfileMutation.isPending}
-                  className="ml-auto">
-                  <Save className="h-4 w-4 mr-2" />
-                  {saveProfileMutation.isPending
-                    ? 'Salvando...'
-                    : 'Salvar Alterações'}
-                </Button>
-              </CardFooter>
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* ── Assinatura ── */}
-        <TabsContent value="subscription" className="space-y-6">
-          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <Crown className="h-5 w-5 text-primary" />
-                <CardTitle>Plano Atual</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {subLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-8 w-40" />
-                  <Skeleton className="h-5 w-24" />
-                  <Skeleton className="h-4 w-56" />
-                </div>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold">
-                      {displayPlanName ||
-                        (planName
-                          ? planName.replace(/\b\w/g, (c) => c.toUpperCase())
-                          : 'Free')}
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Status:{' '}
-                      <Badge variant="default">
-                        {subscriptionStatus === 'active' ||
-                        subscriptionStatus === 'trialing'
-                          ? 'Ativo'
-                          : 'Inativo'}
-                      </Badge>
-                    </p>
-                    {currentPeriodEnd && (
-                      <p className="text-sm text-muted-foreground">
-                        Expira em: {formatDate(currentPeriodEnd)}
-                      </p>
+                    ) : (
+                      user && `Membro desde ${formatDateLocal(user.createdAt)}`
                     )}
                   </div>
-                  <Button asChild>
-                    <a href="/subscription">Gerenciar Plano</a>
-                  </Button>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                style={{
+                  height: 34,
+                  padding: '0 14px',
+                  borderRadius: 8,
+                  border: '1px solid var(--hair)',
+                  background: 'transparent',
+                  color: 'inherit',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                {isEditing ? (
+                  <i className="ph-fill ph-x" style={{fontSize: 14}} />
+                ) : (
+                  <i
+                    className="ph-fill ph-pencil-simple"
+                    style={{fontSize: 14}}
+                  />
+                )}
+                {isEditing ? 'Cancelar' : 'Editar'}
+              </button>
+            </div>
+          </div>
+
+          {/* CardContent */}
+          <div style={{padding: '20px'}}>
+            {/* Dados Pessoais */}
+            <div style={{marginBottom: 28}}>
+              <h3 style={{fontSize: 15, fontWeight: 600, marginBottom: 16, marginTop: 0}}>
+                Dados Pessoais
+              </h3>
+              {isLoading ? (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 12,
+                  }}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      style={{
+                        height: 40,
+                        borderRadius: 6,
+                        background: 'var(--surf-3)',
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: 12,
+                  }}>
+                  <div>
+                    <label htmlFor="name" style={labelStyle}>
+                      Nome
+                    </label>
+                    <input
+                      id="name"
+                      style={{
+                        ...inputStyle,
+                        opacity: !isEditing ? 0.6 : 1,
+                      }}
+                      value={profileData.firstName}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          firstName: e.target.value,
+                        })
+                      }
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" style={labelStyle}>
+                      Sobrenome
+                    </label>
+                    <input
+                      id="lastName"
+                      style={{
+                        ...inputStyle,
+                        opacity: !isEditing ? 0.6 : 1,
+                      }}
+                      value={profileData.lastName}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          lastName: e.target.value,
+                        })
+                      }
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" style={labelStyle}>
+                      Email
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      style={{
+                        ...inputStyle,
+                        opacity: !isEditing ? 0.6 : 1,
+                      }}
+                      value={profileData.email}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          email: e.target.value,
+                        })
+                      }
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="cpf" style={labelStyle}>
+                      CPF
+                    </label>
+                    <input
+                      id="cpf"
+                      style={{
+                        ...inputStyle,
+                        opacity: !isEditing ? 0.6 : 1,
+                      }}
+                      value={profileData.cpf}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          cpf: formatCPF(e.target.value),
+                        })
+                      }
+                      disabled={!isEditing}
+                      maxLength={14}
+                    />
+                  </div>
                 </div>
               )}
+            </div>
 
-              {subscriptionFeatures && subscriptionFeatures.length > 0 && (
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-2">Recursos inclusos:</h4>
-                  <ul className="space-y-1">
-                    {subscriptionFeatures.map((feature, index) => (
-                      <li key={index} className="flex items-center space-x-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+            {/* Endereço */}
+            <div>
+              <h3 style={{fontSize: 15, fontWeight: 600, marginBottom: 16, marginTop: 0}}>
+                Endereço
+              </h3>
+              {isLoading ? (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 12,
+                  }}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      style={{
+                        height: 40,
+                        borderRadius: 6,
+                        background: 'var(--surf-3)',
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: 12,
+                  }}>
+                  <div style={{gridColumn: '1 / -1'}}>
+                    <label htmlFor="street" style={labelStyle}>
+                      Rua
+                    </label>
+                    <input
+                      id="street"
+                      style={{
+                        ...inputStyle,
+                        opacity: !isEditing ? 0.6 : 1,
+                      }}
+                      value={profileData.address.street}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            street: e.target.value,
+                          },
+                        })
+                      }
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="number" style={labelStyle}>
+                      Número
+                    </label>
+                    <input
+                      id="number"
+                      style={{
+                        ...inputStyle,
+                        opacity: !isEditing ? 0.6 : 1,
+                      }}
+                      value={profileData.address.number}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            number: e.target.value,
+                          },
+                        })
+                      }
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="complement" style={labelStyle}>
+                      Complemento
+                    </label>
+                    <input
+                      id="complement"
+                      style={{
+                        ...inputStyle,
+                        opacity: !isEditing ? 0.6 : 1,
+                      }}
+                      value={profileData.address.complement}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            complement: e.target.value,
+                          },
+                        })
+                      }
+                      disabled={!isEditing}
+                      placeholder="Opcional"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="city" style={labelStyle}>
+                      Cidade
+                    </label>
+                    <input
+                      id="city"
+                      style={{
+                        ...inputStyle,
+                        opacity: !isEditing ? 0.6 : 1,
+                      }}
+                      value={profileData.address.city}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            city: e.target.value,
+                          },
+                        })
+                      }
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="state" style={labelStyle}>
+                      Estado
+                    </label>
+                    <input
+                      id="state"
+                      style={{
+                        ...inputStyle,
+                        opacity: !isEditing ? 0.6 : 1,
+                      }}
+                      value={profileData.address.state}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            state: e.target.value.toUpperCase(),
+                          },
+                        })
+                      }
+                      disabled={!isEditing}
+                      maxLength={2}
+                      placeholder="SP"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="zipCode" style={labelStyle}>
+                      CEP
+                    </label>
+                    <input
+                      id="zipCode"
+                      style={{
+                        ...inputStyle,
+                        opacity: !isEditing ? 0.6 : 1,
+                      }}
+                      value={profileData.address.zipCode}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          address: {
+                            ...profileData.address,
+                            zipCode: formatZipCode(e.target.value),
+                          },
+                        })
+                      }
+                      disabled={!isEditing}
+                      maxLength={9}
+                    />
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </div>
 
-        {/* ── Notificações ── */}
-        <TabsContent value="notifications" className="space-y-6">
-          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <Bell className="h-5 w-5" />
-                <CardTitle>Notificações</CardTitle>
+          {/* CardFooter */}
+          {isEditing && (
+            <div
+              style={{
+                padding: '12px 20px',
+                borderTop: '1px solid var(--hair-soft)',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}>
+              <button
+                type="button"
+                onClick={() => saveProfileMutation.mutate(profileData)}
+                disabled={saveProfileMutation.isPending}
+                style={{
+                  height: 36,
+                  padding: '0 16px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: 'var(--grad-violet)',
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: saveProfileMutation.isPending
+                    ? 'not-allowed'
+                    : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  opacity: saveProfileMutation.isPending ? 0.5 : 1,
+                }}>
+                {saveProfileMutation.isPending ? (
+                  <i
+                    className="ph-fill ph-spinner"
+                    style={{
+                      fontSize: 14,
+                      animation: 'nk-spin 0.8s linear infinite',
+                    }}
+                  />
+                ) : (
+                  <i className="ph-fill ph-floppy-disk" style={{fontSize: 14}} />
+                )}
+                {saveProfileMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Assinatura ── */}
+      {activeTab === 'subscription' && (
+        <div
+          style={{
+            border: '1px solid var(--hair)',
+            borderRadius: 14,
+            background: 'var(--nk-card)',
+            overflow: 'hidden',
+          }}>
+          <div
+            style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--hair-soft)',
+            }}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+              <i className="ph-fill ph-crown" style={{fontSize: 18, color: 'var(--ac)'}} />
+              <span
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-heading)',
+                }}>
+                Plano Atual
+              </span>
+            </div>
+          </div>
+          <div style={{padding: '20px'}}>
+            {subLoading ? (
+              <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+                <div
+                  style={{height: 32, width: 160, borderRadius: 6, background: 'var(--surf-3)'}}
+                />
+                <div
+                  style={{height: 20, width: 96, borderRadius: 6, background: 'var(--surf-3)'}}
+                />
+                <div
+                  style={{height: 16, width: 224, borderRadius: 6, background: 'var(--surf-3)'}}
+                />
               </div>
-              <CardDescription>
-                Configure como você deseja receber atualizações
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="email-notifications">
-                      Notificações por Email
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receba resumos e atualizações importantes por email
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}>
+                <div>
+                  <h3 style={{fontSize: 20, fontWeight: 600, margin: '0 0 6px 0'}}>
+                    {displayPlanName ||
+                      (planName
+                        ? planName.replace(/\b\w/g, (c) => c.toUpperCase())
+                        : 'Free')}
+                  </h3>
+                  <p style={{margin: '0 0 4px 0', fontSize: 13, color: 'var(--color-neutral-400)'}}>
+                    Status:{' '}
+                    <span
+                      style={{
+                        padding: '3px 10px',
+                        borderRadius: 6,
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        background:
+                          subscriptionStatus === 'active' ||
+                          subscriptionStatus === 'trialing'
+                            ? 'var(--badge-pos-bg)'
+                            : 'var(--surf-3)',
+                        color:
+                          subscriptionStatus === 'active' ||
+                          subscriptionStatus === 'trialing'
+                            ? 'var(--pos)'
+                            : 'var(--color-neutral-400)',
+                      }}>
+                      {subscriptionStatus === 'active' ||
+                      subscriptionStatus === 'trialing'
+                        ? 'Ativo'
+                        : 'Inativo'}
+                    </span>
+                  </p>
+                  {currentPeriodEnd && (
+                    <p style={{margin: 0, fontSize: 13, color: 'var(--color-neutral-400)'}}>
+                      Expira em: {formatDate(currentPeriodEnd)}
                     </p>
-                  </div>
-                  <Switch
-                    id="email-notifications"
-                    checked={settings.notifications.email}
-                    onCheckedChange={(checked) =>
-                      setSettings({
-                        ...settings,
-                        notifications: {
-                          ...settings.notifications,
-                          email: checked,
-                        },
-                      })
-                    }
-                  />
+                  )}
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="push-notifications">
-                      Notificações Push
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receba notificações em tempo real no navegador
-                    </p>
-                  </div>
-                  <Switch
-                    id="push-notifications"
-                    checked={settings.notifications.push}
-                    onCheckedChange={(checked) =>
-                      setSettings({
-                        ...settings,
-                        notifications: {
-                          ...settings.notifications,
-                          push: checked,
-                        },
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="market-alerts">Alertas de Mercado</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Notificações sobre mudanças significativas no mercado
-                    </p>
-                  </div>
-                  <Switch
-                    id="market-alerts"
-                    checked={settings.notifications.marketAlerts}
-                    onCheckedChange={(checked) =>
-                      setSettings({
-                        ...settings,
-                        notifications: {
-                          ...settings.notifications,
-                          marketAlerts: checked,
-                        },
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="portfolio-updates">
-                      Atualizações de Portfólio
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Notificações sobre mudanças na sua carteira
-                    </p>
-                  </div>
-                  <Switch
-                    id="portfolio-updates"
-                    checked={settings.notifications.portfolioUpdates}
-                    onCheckedChange={(checked) =>
-                      setSettings({
-                        ...settings,
-                        notifications: {
-                          ...settings.notifications,
-                          portfolioUpdates: checked,
-                        },
-                      })
-                    }
-                  />
-                </div>
+                <a
+                  href="/subscription"
+                  style={{
+                    height: 36,
+                    padding: '0 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'var(--grad-violet)',
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    textDecoration: 'none',
+                  }}>
+                  Gerenciar Plano
+                </a>
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button
-                onClick={() => saveSettingsMutation.mutate()}
-                disabled={saveSettingsMutation.isPending}
-                className="ml-auto">
-                <Save className="h-4 w-4 mr-2" />
-                {saveSettingsMutation.isPending
-                  ? 'Salvando...'
-                  : 'Salvar Configurações'}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
+            )}
 
-        {/* ── Segurança ── */}
-        <TabsContent value="security" className="space-y-6">
-          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <Shield className="h-5 w-5" />
-                <CardTitle>Segurança</CardTitle>
+            {subscriptionFeatures && subscriptionFeatures.length > 0 && (
+              <div
+                style={{
+                  borderTop: '1px solid var(--hair-soft)',
+                  marginTop: 16,
+                  paddingTop: 16,
+                }}>
+                <h4 style={{fontSize: 14, fontWeight: 600, margin: '0 0 8px 0'}}>
+                  Recursos inclusos:
+                </h4>
+                <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
+                  {subscriptionFeatures.map((feature, index) => (
+                    <li
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        marginBottom: 4,
+                        fontSize: 13,
+                      }}>
+                      <i
+                        className="ph-fill ph-check"
+                        style={{fontSize: 14, color: 'var(--pos)', flexShrink: 0}}
+                      />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <CardDescription>Mantenha sua conta segura</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Notificações ── */}
+      {activeTab === 'notifications' && (
+        <div
+          style={{
+            border: '1px solid var(--hair)',
+            borderRadius: 14,
+            background: 'var(--nk-card)',
+            overflow: 'hidden',
+          }}>
+          <div
+            style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--hair-soft)',
+            }}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+              <i className="ph-fill ph-bell" style={{fontSize: 18}} />
+              <span
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-heading)',
+                }}>
+                Notificações
+              </span>
+            </div>
+            <p style={{fontSize: 13, color: 'var(--color-neutral-400)', margin: '4px 0 0 0'}}>
+              Configure como você deseja receber atualizações
+            </p>
+          </div>
+
+          <div style={{padding: '20px'}}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 20}}>
+              {/* Email notifications */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                }}>
+                <div>
+                  <label style={{...labelStyle, fontSize: 13, color: 'inherit'}}>
+                    Notificações por Email
+                  </label>
+                  <p style={{margin: 0, fontSize: 12, color: 'var(--color-neutral-400)'}}>
+                    Receba resumos e atualizações importantes por email
+                  </p>
+                </div>
+                <NkSwitch
+                  checked={settings.notifications.email}
+                  onChange={(checked) =>
+                    setSettings({
+                      ...settings,
+                      notifications: {
+                        ...settings.notifications,
+                        email: checked,
+                      },
+                    })
+                  }
+                />
+              </div>
+
+              {/* Push notifications */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                }}>
+                <div>
+                  <label style={{...labelStyle, fontSize: 13, color: 'inherit'}}>
+                    Notificações Push
+                  </label>
+                  <p style={{margin: 0, fontSize: 12, color: 'var(--color-neutral-400)'}}>
+                    Receba notificações em tempo real no navegador
+                  </p>
+                </div>
+                <NkSwitch
+                  checked={settings.notifications.push}
+                  onChange={(checked) =>
+                    setSettings({
+                      ...settings,
+                      notifications: {
+                        ...settings.notifications,
+                        push: checked,
+                      },
+                    })
+                  }
+                />
+              </div>
+
+              {/* Market alerts */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                }}>
+                <div>
+                  <label style={{...labelStyle, fontSize: 13, color: 'inherit'}}>
+                    Alertas de Mercado
+                  </label>
+                  <p style={{margin: 0, fontSize: 12, color: 'var(--color-neutral-400)'}}>
+                    Notificações sobre mudanças significativas no mercado
+                  </p>
+                </div>
+                <NkSwitch
+                  checked={settings.notifications.marketAlerts}
+                  onChange={(checked) =>
+                    setSettings({
+                      ...settings,
+                      notifications: {
+                        ...settings.notifications,
+                        marketAlerts: checked,
+                      },
+                    })
+                  }
+                />
+              </div>
+
+              {/* Portfolio updates */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                }}>
+                <div>
+                  <label style={{...labelStyle, fontSize: 13, color: 'inherit'}}>
+                    Atualizações de Portfólio
+                  </label>
+                  <p style={{margin: 0, fontSize: 12, color: 'var(--color-neutral-400)'}}>
+                    Notificações sobre mudanças na sua carteira
+                  </p>
+                </div>
+                <NkSwitch
+                  checked={settings.notifications.portfolioUpdates}
+                  onChange={(checked) =>
+                    setSettings({
+                      ...settings,
+                      notifications: {
+                        ...settings.notifications,
+                        portfolioUpdates: checked,
+                      },
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: '12px 20px',
+              borderTop: '1px solid var(--hair-soft)',
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}>
+            <button
+              type="button"
+              onClick={() => saveSettingsMutation.mutate()}
+              disabled={saveSettingsMutation.isPending}
+              style={{
+                height: 36,
+                padding: '0 16px',
+                borderRadius: 8,
+                border: 'none',
+                background: 'var(--grad-violet)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: saveSettingsMutation.isPending
+                  ? 'not-allowed'
+                  : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                opacity: saveSettingsMutation.isPending ? 0.5 : 1,
+              }}>
+              {saveSettingsMutation.isPending ? (
+                <i
+                  className="ph-fill ph-spinner"
+                  style={{
+                    fontSize: 14,
+                    animation: 'nk-spin 0.8s linear infinite',
+                  }}
+                />
+              ) : (
+                <i className="ph-fill ph-floppy-disk" style={{fontSize: 14}} />
+              )}
+              {saveSettingsMutation.isPending ? 'Salvando...' : 'Salvar Configurações'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Segurança ── */}
+      {activeTab === 'security' && (
+        <div
+          style={{
+            border: '1px solid var(--hair)',
+            borderRadius: 14,
+            background: 'var(--nk-card)',
+            overflow: 'hidden',
+          }}>
+          <div
+            style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--hair-soft)',
+            }}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+              <i className="ph-fill ph-shield" style={{fontSize: 18}} />
+              <span
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-heading)',
+                }}>
+                Segurança
+              </span>
+            </div>
+            <p style={{fontSize: 13, color: 'var(--color-neutral-400)', margin: '4px 0 0 0'}}>
+              Mantenha sua conta segura
+            </p>
+          </div>
+
+          <div style={{padding: '20px'}}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+              {/* 2FA section */}
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    marginBottom: 12,
+                  }}>
                   <div>
-                    <Label className="text-base">
+                    <div style={{fontSize: 14, fontWeight: 600, marginBottom: 4}}>
                       Autenticação de Dois Fatores (2FA)
-                    </Label>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    </div>
+                    <p style={{fontSize: 13, color: 'var(--color-neutral-400)', margin: 0}}>
                       Proteja sua conta exigindo um código adicional do seu
                       aplicativo autenticador ao fazer login.
                     </p>
                   </div>
                   {settings.security.twoFactorEnabled ? (
-                    <Badge
-                      variant="default"
-                      className="bg-success text-success-foreground">
-                      <ShieldCheck className="h-3 w-3 mr-1" /> Habilitado
-                    </Badge>
+                    <span
+                      style={{
+                        padding: '3px 10px',
+                        borderRadius: 6,
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        background: 'var(--badge-pos-bg)',
+                        color: 'var(--pos)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        whiteSpace: 'nowrap',
+                      }}>
+                      <i className="ph-fill ph-shield-check" style={{fontSize: 12}} />
+                      Habilitado
+                    </span>
                   ) : (
-                    <Badge variant="outline" className="text-muted-foreground">
-                      <ShieldOff className="h-3 w-3 mr-1" /> Desabilitado
-                    </Badge>
+                    <span
+                      style={{
+                        padding: '3px 10px',
+                        borderRadius: 6,
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        background: 'var(--surf-3)',
+                        color: 'var(--color-neutral-400)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        whiteSpace: 'nowrap',
+                      }}>
+                      <i className="ph-fill ph-shield-slash" style={{fontSize: 12}} />
+                      Desabilitado
+                    </span>
                   )}
                 </div>
 
                 {!settings.security.twoFactorEnabled && !twoFASetup && (
-                  <Button onClick={setup2FA} disabled={twoFALoading}>
+                  <button
+                    type="button"
+                    onClick={setup2FA}
+                    disabled={twoFALoading}
+                    style={{
+                      height: 36,
+                      padding: '0 16px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: 'var(--grad-violet)',
+                      color: '#fff',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: twoFALoading ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      opacity: twoFALoading ? 0.5 : 1,
+                    }}>
                     {twoFALoading && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <i
+                        className="ph-fill ph-spinner"
+                        style={{
+                          fontSize: 14,
+                          animation: 'nk-spin 0.8s linear infinite',
+                        }}
+                      />
                     )}
-                    <QrCode className="mr-2 h-4 w-4" />
+                    <i className="ph-fill ph-qr-code" style={{fontSize: 14}} />
                     Configurar 2FA
-                  </Button>
+                  </button>
                 )}
 
                 {twoFASetup && (
-                  <div className="p-4 bg-muted/50 rounded-lg space-y-4 border border-border">
-                    <div className="flex flex-col sm:flex-row items-center gap-6">
-                      <div className="bg-white p-2 rounded-lg">
+                  <div
+                    style={{
+                      padding: 16,
+                      background: 'var(--surf-3)',
+                      borderRadius: 10,
+                      border: '1px solid var(--hair)',
+                    }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 24,
+                      }}>
+                      <div
+                        style={{
+                          background: '#fff',
+                          padding: 8,
+                          borderRadius: 8,
+                        }}>
                         <img
                           src={twoFASetup.qrCodeDataUrl}
                           alt="QR Code 2FA"
-                          className="w-40 h-40"
+                          style={{width: 160, height: 160, display: 'block'}}
                         />
                       </div>
-                      <div className="space-y-2 flex-1">
-                        <h4 className="font-medium">1. Escaneie o QR Code</h4>
-                        <p className="text-sm text-muted-foreground">
+                      <div style={{flex: 1, minWidth: 200}}>
+                        <h4 style={{fontSize: 14, fontWeight: 600, margin: '0 0 6px 0'}}>
+                          1. Escaneie o QR Code
+                        </h4>
+                        <p
+                          style={{
+                            fontSize: 13,
+                            color: 'var(--color-neutral-400)',
+                            margin: '0 0 8px 0',
+                          }}>
                           Use o Google Authenticator, Authy ou similar. Se não
                           puder escanear, use a chave abaixo:
                         </p>
-                        <code className="bg-background px-2 py-1 rounded text-xs select-all">
+                        <code
+                          style={{
+                            background: 'var(--sunk)',
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            fontSize: 11,
+                            userSelect: 'all',
+                            display: 'inline-block',
+                            marginBottom: 12,
+                          }}>
                           {twoFASetup.secret}
                         </code>
 
-                        <div className="pt-2 space-y-2">
-                          <h4 className="font-medium">2. Insira o código</h4>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="000000"
-                              value={twoFACode}
-                              onChange={(e) =>
-                                setTwoFACode(
-                                  e.target.value.replace(/\D/g, '').slice(0, 6),
-                                )
-                              }
-                              maxLength={6}
-                              className="w-32 text-center tracking-widest font-mono"
-                            />
-                            <Button
-                              onClick={verify2FA}
-                              disabled={twoFACode.length !== 6 || twoFALoading}>
-                              {twoFALoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                'Verificar e Ativar'
-                              )}
-                            </Button>
-                          </div>
+                        <h4 style={{fontSize: 14, fontWeight: 600, margin: '0 0 8px 0'}}>
+                          2. Insira o código
+                        </h4>
+                        <div style={{display: 'flex', gap: 8}}>
+                          <input
+                            placeholder="000000"
+                            value={twoFACode}
+                            onChange={(e) =>
+                              setTwoFACode(
+                                e.target.value.replace(/\D/g, '').slice(0, 6),
+                              )
+                            }
+                            maxLength={6}
+                            style={{
+                              ...inputStyle,
+                              width: 128,
+                              textAlign: 'center',
+                              letterSpacing: '0.2em',
+                              fontFamily: 'monospace',
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={verify2FA}
+                            disabled={twoFACode.length !== 6 || twoFALoading}
+                            style={{
+                              height: 36,
+                              padding: '0 14px',
+                              borderRadius: 8,
+                              border: 'none',
+                              background: 'var(--grad-violet)',
+                              color: '#fff',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor:
+                                twoFACode.length !== 6 || twoFALoading
+                                  ? 'not-allowed'
+                                  : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              opacity:
+                                twoFACode.length !== 6 || twoFALoading ? 0.5 : 1,
+                              whiteSpace: 'nowrap',
+                            }}>
+                            {twoFALoading ? (
+                              <i
+                                className="ph-fill ph-spinner"
+                                style={{
+                                  fontSize: 14,
+                                  animation: 'nk-spin 0.8s linear infinite',
+                                }}
+                              />
+                            ) : (
+                              'Verificar e Ativar'
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1108,16 +1729,28 @@ export default function Settings() {
                 )}
 
                 {settings.security.twoFactorEnabled && (
-                  <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 space-y-3">
-                    <h4 className="font-medium text-destructive">
+                  <div
+                    style={{
+                      padding: 16,
+                      background: 'var(--badge-neg-bg)',
+                      borderRadius: 10,
+                      border: '1px solid var(--neg)',
+                    }}>
+                    <h4
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: 'var(--neg)',
+                        margin: '0 0 6px 0',
+                      }}>
                       Desativar 2FA
                     </h4>
-                    <p className="text-sm text-muted-foreground">
+                    <p style={{fontSize: 13, color: 'var(--color-neutral-400)', margin: '0 0 10px 0'}}>
                       Para desativar a autenticação em dois fatores, insira o
                       código atual do seu aplicativo.
                     </p>
-                    <div className="flex gap-2">
-                      <Input
+                    <div style={{display: 'flex', gap: 8}}>
+                      <input
                         placeholder="000000"
                         value={disable2FACode}
                         onChange={(e) =>
@@ -1126,28 +1759,62 @@ export default function Settings() {
                           )
                         }
                         maxLength={6}
-                        className="w-32 text-center tracking-widest font-mono"
+                        style={{
+                          ...inputStyle,
+                          width: 128,
+                          textAlign: 'center',
+                          letterSpacing: '0.2em',
+                          fontFamily: 'monospace',
+                        }}
                       />
-                      <Button
-                        variant="destructive"
+                      <button
+                        type="button"
                         onClick={disable2FA}
-                        disabled={disable2FACode.length !== 6 || disabling2FA}>
+                        disabled={disable2FACode.length !== 6 || disabling2FA}
+                        style={{
+                          height: 36,
+                          padding: '0 14px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: 'var(--neg)',
+                          color: '#fff',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor:
+                            disable2FACode.length !== 6 || disabling2FA
+                              ? 'not-allowed'
+                              : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          opacity:
+                            disable2FACode.length !== 6 || disabling2FA ? 0.5 : 1,
+                        }}>
                         {disabling2FA ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <i
+                            className="ph-fill ph-spinner"
+                            style={{
+                              fontSize: 14,
+                              animation: 'nk-spin 0.8s linear infinite',
+                            }}
+                          />
                         ) : (
                           'Desativar 2FA'
                         )}
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>Alterar Senha</Label>
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Input
+              {/* Password section */}
+              <div>
+                <label style={{...labelStyle, fontSize: 14, color: 'inherit', fontWeight: 600}}>
+                  Alterar Senha
+                </label>
+                <div style={{display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8}}>
+                  <div style={{position: 'relative'}}>
+                    <input
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Senha atual"
                       value={passwordData.currentPassword}
@@ -1157,20 +1824,32 @@ export default function Settings() {
                           currentPassword: e.target.value,
                         })
                       }
+                      style={{...inputStyle, paddingRight: 40}}
                     />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3"
-                      onClick={() => setShowPassword(!showPassword)}>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: 10,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--color-neutral-400)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: 0,
+                      }}>
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
+                        <i className="ph-fill ph-eye-slash" style={{fontSize: 16}} />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <i className="ph-fill ph-eye" style={{fontSize: 16}} />
                       )}
-                    </Button>
+                    </button>
                   </div>
-                  <Input
+                  <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Nova senha"
                     value={passwordData.newPassword}
@@ -1180,8 +1859,9 @@ export default function Settings() {
                         newPassword: e.target.value,
                       })
                     }
+                    style={inputStyle}
                   />
-                  <Input
+                  <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Confirmar nova senha"
                     value={passwordData.confirmPassword}
@@ -1191,30 +1871,63 @@ export default function Settings() {
                         confirmPassword: e.target.value,
                       })
                     }
+                    style={inputStyle}
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <button
+                    type="button"
                     onClick={() => updatePasswordMutation.mutate()}
                     disabled={
                       updatePasswordMutation.isPending ||
                       !passwordData.currentPassword ||
                       !passwordData.newPassword
-                    }>
+                    }
+                    style={{
+                      height: 34,
+                      padding: '0 14px',
+                      borderRadius: 8,
+                      border: '1px solid var(--hair)',
+                      background: 'transparent',
+                      color: 'inherit',
+                      fontSize: 13,
+                      fontWeight: 500,
+                      cursor:
+                        updatePasswordMutation.isPending ||
+                        !passwordData.currentPassword ||
+                        !passwordData.newPassword
+                          ? 'not-allowed'
+                          : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      width: 'fit-content',
+                      opacity:
+                        updatePasswordMutation.isPending ||
+                        !passwordData.currentPassword ||
+                        !passwordData.newPassword
+                          ? 0.5
+                          : 1,
+                    }}>
                     {updatePasswordMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <i
+                        className="ph-fill ph-spinner"
+                        style={{
+                          fontSize: 14,
+                          animation: 'nk-spin 0.8s linear infinite',
+                        }}
+                      />
                     ) : (
                       'Alterar Senha'
                     )}
-                  </Button>
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="session-timeout">
+              {/* Session timeout */}
+              <div>
+                <label htmlFor="session-timeout" style={{...labelStyle, fontSize: 14, color: 'inherit', fontWeight: 600}}>
                   Timeout de Sessão (minutos)
-                </Label>
-                <Input
+                </label>
+                <input
                   id="session-timeout"
                   type="number"
                   value={settings.security.sessionTimeout}
@@ -1227,17 +1940,31 @@ export default function Settings() {
                       },
                     })
                   }
+                  style={{...inputStyle, marginTop: 6}}
                 />
               </div>
 
-              {/* Preferências de idioma */}
-              <div className="space-y-2">
-                <Label>
-                  <Globe className="inline h-4 w-4 mr-1" />
+              {/* Language preference */}
+              <div>
+                <label
+                  style={{
+                    ...labelStyle,
+                    fontSize: 14,
+                    color: 'inherit',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}>
+                  <i className="ph-fill ph-globe" style={{fontSize: 16}} />
                   Idioma
-                </Label>
+                </label>
                 <select
-                  className="border rounded-md px-3 py-2 text-sm bg-background w-full"
+                  style={{
+                    ...inputStyle,
+                    marginTop: 6,
+                    appearance: 'auto',
+                  }}
                   value={settings.preferences.language}
                   onChange={(e) =>
                     setSettings((p) => ({
@@ -1253,30 +1980,70 @@ export default function Settings() {
                   <option value="es-ES">Español</option>
                 </select>
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button
-                onClick={() => saveSettingsMutation.mutate()}
-                disabled={saveSettingsMutation.isPending}
-                className="ml-auto">
-                <Save className="h-4 w-4 mr-2" />
-                {saveSettingsMutation.isPending
-                  ? 'Salvando...'
-                  : 'Salvar Configurações'}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
+            </div>
+          </div>
 
-        {/* ── Privacidade ── */}
-        <TabsContent value="privacy" className="space-y-6">
-          <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-            <CardContent className="pt-6">
-              <PrivacySettings />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          <div
+            style={{
+              padding: '12px 20px',
+              borderTop: '1px solid var(--hair-soft)',
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}>
+            <button
+              type="button"
+              onClick={() => saveSettingsMutation.mutate()}
+              disabled={saveSettingsMutation.isPending}
+              style={{
+                height: 36,
+                padding: '0 16px',
+                borderRadius: 8,
+                border: 'none',
+                background: 'var(--grad-violet)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: saveSettingsMutation.isPending
+                  ? 'not-allowed'
+                  : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                opacity: saveSettingsMutation.isPending ? 0.5 : 1,
+              }}>
+              {saveSettingsMutation.isPending ? (
+                <i
+                  className="ph-fill ph-spinner"
+                  style={{
+                    fontSize: 14,
+                    animation: 'nk-spin 0.8s linear infinite',
+                  }}
+                />
+              ) : (
+                <i className="ph-fill ph-floppy-disk" style={{fontSize: 14}} />
+              )}
+              {saveSettingsMutation.isPending
+                ? 'Salvando...'
+                : 'Salvar Configurações'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Privacidade ── */}
+      {activeTab === 'privacy' && (
+        <div
+          style={{
+            border: '1px solid var(--hair)',
+            borderRadius: 14,
+            background: 'var(--nk-card)',
+            overflow: 'hidden',
+          }}>
+          <div style={{padding: '20px'}}>
+            <PrivacySettings />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
