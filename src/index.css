@@ -137,6 +137,9 @@
     --color-accent-600: #b5abfc;
     --color-accent-700: rgba(111,94,217,0.25);
     --color-accent-800: rgba(111,94,217,0.15);
+    --risk-low-bg: rgba(14,152,115,0.12);
+    --risk-med-bg: rgba(154,106,6,0.10);
+    --risk-high-bg: rgba(207,30,66,0.10);
   }
 
   .dark {
@@ -257,6 +260,9 @@
     --color-accent-600: #5244c0;
     --color-accent-700: rgba(145,132,217,0.25);
     --color-accent-800: rgba(145,132,217,0.15);
+    --risk-low-bg: rgba(47,214,163,0.12);
+    --risk-med-bg: rgba(240,179,46,0.10);
+    --risk-high-bg: rgba(242,80,107,0.10);
   }
 }
 

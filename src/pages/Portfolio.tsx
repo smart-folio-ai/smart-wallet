@@ -367,9 +367,9 @@ const Portfolio = () => {
   const riskBuckets = useMemo(() => {
     if (assets.length === 0) {
       return [
-        {label: 'Baixo', pct: 40, bg: 'rgba(47,214,163,0.12)', textColor: 'var(--pos)'},
-        {label: 'Médio', pct: 35, bg: 'rgba(240,179,46,0.10)', textColor: 'var(--warn)'},
-        {label: 'Alto', pct: 25, bg: 'rgba(242,80,107,0.10)', textColor: 'var(--neg)'},
+        {label: 'Baixo', pct: 40, bg: 'var(--risk-low-bg)', textColor: 'var(--pos)'},
+        {label: 'Médio', pct: 35, bg: 'var(--risk-med-bg)', textColor: 'var(--warn)'},
+        {label: 'Alto', pct: 25, bg: 'var(--risk-high-bg)', textColor: 'var(--neg)'},
       ];
     }
     const lowTypes = new Set(['fund', 'etf', 'other']);
@@ -382,9 +382,9 @@ const Portfolio = () => {
     });
     const total = lowVal + medVal + highVal || 1;
     return [
-      {label: 'Baixo', pct: Math.round((lowVal / total) * 100), bg: 'rgba(47,214,163,0.12)', textColor: 'var(--pos)'},
-      {label: 'Médio', pct: Math.round((medVal / total) * 100), bg: 'rgba(240,179,46,0.10)', textColor: 'var(--warn)'},
-      {label: 'Alto', pct: Math.round((highVal / total) * 100), bg: 'rgba(242,80,107,0.10)', textColor: 'var(--neg)'},
+      {label: 'Baixo', pct: Math.round((lowVal / total) * 100), bg: 'var(--risk-low-bg)', textColor: 'var(--pos)'},
+      {label: 'Médio', pct: Math.round((medVal / total) * 100), bg: 'var(--risk-med-bg)', textColor: 'var(--warn)'},
+      {label: 'Alto', pct: Math.round((highVal / total) * 100), bg: 'var(--risk-high-bg)', textColor: 'var(--neg)'},
     ];
   }, [assets]);
 
@@ -491,7 +491,7 @@ const Portfolio = () => {
             onClick={() => setGroupTab(tab)}
             style={
               groupTab === tab
-                ? {height: 32, padding: '0 14px', fontSize: 12.5, border: 'none', borderRadius: 6, background: 'var(--nk-card)', color: 'var(--color-neutral-100)', boxShadow: '0 1px 3px rgba(0,0,0,0.18)', cursor: 'pointer', fontFamily: 'var(--font-body)'}
+                ? {height: 32, padding: '0 14px', fontSize: 12.5, border: 'none', borderRadius: 6, background: 'var(--nk-card)', color: 'var(--color-neutral-100)', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)'}
                 : {height: 32, padding: '0 14px', fontSize: 12.5, border: 'none', borderRadius: 6, background: 'transparent', color: 'var(--color-neutral-500)', cursor: 'pointer', fontFamily: 'var(--font-body)'}
             }>
             {tab}
