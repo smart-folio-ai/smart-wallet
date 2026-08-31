@@ -1,49 +1,5 @@
 import {useEffect, useState, useCallback} from 'react';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import {Badge} from '@/components/ui/badge';
-import {Skeleton} from '@/components/ui/skeleton';
-import {
-  Check,
-  CircleDollarSign,
-  RefreshCw,
-  Star,
-  Unlink,
-  Wallet,
-  Clock,
-  AlertCircle,
-  Info,
-  Upload,
-  FileText,
-  Loader2,
-  Landmark,
-  Briefcase,
-  TrendingUp,
-  Diamond,
-  PiggyBank,
-  Hexagon,
-  Bitcoin,
-  Coins,
-  CircleHelp,
-} from '@/components/ui/icons';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {api} from '@/server/api/api';
 import useAppToast from '@/hooks/use-app-toast';
 import {useNavigate} from 'react-router-dom';
@@ -53,7 +9,7 @@ const BROKERAGES = [
   {
     id: 'b3',
     name: 'B3',
-    icon: <Landmark className="h-5 w-5 text-primary" />,
+    icon: <i className="ph-fill ph-bank" style={{fontSize: 20, color: 'var(--ac)'}} />,
     description: 'Relatório consolidado B3',
     type: 'brokerage',
     supportsUpload: true,
@@ -61,7 +17,7 @@ const BROKERAGES = [
   {
     id: 'btg',
     name: 'BTG Pactual',
-    icon: <Briefcase className="h-5 w-5 text-blue-500" />,
+    icon: <i className="ph-fill ph-briefcase" style={{fontSize: 20, color: 'var(--ac)'}} />,
     description: 'Nota de corretagem BTG',
     type: 'brokerage',
     supportsUpload: true,
@@ -69,7 +25,7 @@ const BROKERAGES = [
   {
     id: 'xp',
     name: 'XP Investimentos',
-    icon: <TrendingUp className="h-5 w-5 text-yellow-500" />,
+    icon: <i className="ph-fill ph-trend-up" style={{fontSize: 20, color: 'var(--ac)'}} />,
     description: 'Nota de corretagem XP',
     type: 'brokerage',
     supportsUpload: true,
@@ -77,7 +33,7 @@ const BROKERAGES = [
   {
     id: 'clear',
     name: 'Clear',
-    icon: <Diamond className="h-5 w-5 text-blue-400" />,
+    icon: <i className="ph-fill ph-diamond" style={{fontSize: 20, color: 'var(--ac)'}} />,
     description: 'Nota de corretagem Clear',
     type: 'brokerage',
     supportsUpload: true,
@@ -85,7 +41,7 @@ const BROKERAGES = [
   {
     id: 'rico',
     name: 'Rico',
-    icon: <PiggyBank className="h-5 w-5 text-orange-500" />,
+    icon: <i className="ph-fill ph-piggy-bank" style={{fontSize: 20, color: 'var(--ac)'}} />,
     description: 'Nota de corretagem Rico',
     type: 'brokerage',
     supportsUpload: true,
@@ -93,7 +49,7 @@ const BROKERAGES = [
   {
     id: 'nuinvest',
     name: 'NuInvest',
-    icon: <Hexagon className="h-5 w-5 text-purple-500" />,
+    icon: <i className="ph-fill ph-hexagon" style={{fontSize: 20, color: 'var(--ac)'}} />,
     description: 'Nota de corretagem NuInvest',
     type: 'brokerage',
     supportsUpload: true,
@@ -104,28 +60,28 @@ const CRYPTO_EXCHANGES = [
   {
     id: 'binance',
     name: 'Binance',
-    icon: <Bitcoin className="h-5 w-5 text-yellow-500" />,
+    icon: <i className="ph-fill ph-bitcoin" style={{fontSize: 20, color: 'var(--ac)'}} />,
     description: 'A maior exchange do mundo',
     type: 'crypto',
   },
   {
     id: 'coinbase',
     name: 'Coinbase',
-    icon: <Coins className="h-5 w-5 text-blue-500" />,
+    icon: <i className="ph-fill ph-coins" style={{fontSize: 20, color: 'var(--ac)'}} />,
     description: 'Exchange americana premium',
     type: 'crypto',
   },
   {
     id: 'mercadobitcoin',
     name: 'Mercado Bitcoin',
-    icon: <CircleDollarSign className="h-5 w-5 text-orange-500" />,
+    icon: <i className="ph-fill ph-currency-circle-dollar" style={{fontSize: 20, color: 'var(--ac)'}} />,
     description: 'Maior do Brasil',
     type: 'crypto',
   },
   {
     id: 'bitso',
     name: 'Bitso',
-    icon: <Wallet className="h-5 w-5 text-green-600" />,
+    icon: <i className="ph-fill ph-wallet" style={{fontSize: 20, color: 'var(--ac)'}} />,
     description: 'Exchange Latino-americana',
     type: 'crypto',
   },
@@ -440,34 +396,48 @@ const SyncAccounts = () => {
     const disconnecting = disconnectMutation.isPending;
 
     return (
-      <Card
-        className={`overflow-hidden transition-all duration-300 border bg-card border-border/50 ${
-          !linked ? 'cursor-pointer' : ''
-        } ${
-          !linked && selectedProvider === provider.id
-            ? 'ring-2 ring-primary border-transparent'
-            : 'hover:border-primary/40'
-        }`}
-        onClick={() => !linked && setSelectedProvider(provider.id)}>
-        <div className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+      <div
+        onClick={() => !linked && setSelectedProvider(provider.id)}
+        style={{
+          border: selectedProvider === provider.id && !linked
+            ? '2px solid var(--ac)'
+            : '1px solid var(--hair)',
+          borderRadius: 14,
+          background: 'var(--nk-card)',
+          overflow: 'hidden',
+          cursor: !linked ? 'pointer' : 'default',
+          transition: 'border-color 0.2s',
+        }}>
+        <div style={{padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              background: 'rgba(145,132,217,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
               {provider.icon}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-medium">{provider.name}</h3>
+              <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                <h3 style={{fontWeight: 500, margin: 0, fontSize: 14}}>{provider.name}</h3>
                 {linked && (
-                  <Badge
-                    variant={
-                      conn?.status === 'error' ? 'destructive' : 'default'
-                    }
-                    className="text-xs">
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: 5,
+                    fontSize: 11,
+                    fontWeight: 500,
+                    background: conn?.status === 'error' ? 'var(--badge-neg-bg)' : 'var(--badge-pos-bg)',
+                    color: conn?.status === 'error' ? 'var(--neg)' : 'var(--pos)',
+                  }}>
                     {conn?.status === 'error' ? 'Erro de sync' : 'Conectado'}
-                  </Badge>
+                  </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p style={{fontSize: 12, color: 'var(--color-neutral-500)', margin: 0, marginTop: 2}}>
                 {linked && conn?.lastSync
                   ? `Última sync: ${formatLastSync(conn.lastSync)}`
                   : linked && conn?.status === 'error'
@@ -478,22 +448,32 @@ const SyncAccounts = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
             {linked ? (
               <>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
+                  type="button"
                   title="Sincronizar"
                   disabled={syncing}
                   onClick={(e) => {
                     e.stopPropagation();
                     syncMutation.mutate(provider.id);
+                  }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    border: '1px solid var(--hair)',
+                    background: 'transparent',
+                    cursor: syncing ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: syncing ? 0.5 : 1,
+                    color: 'inherit',
                   }}>
-                  <RefreshCw
-                    className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`}
-                  />
-                </Button>
+                  <i className="ph-fill ph-arrows-clockwise" style={{fontSize: 16, animation: syncing ? 'spin 0.8s linear infinite' : undefined}} />
+                </button>
                 {/* Upload button for brokerages */}
                 {'supportsUpload' in provider && provider.supportsUpload && (
                   <>
@@ -501,12 +481,11 @@ const SyncAccounts = () => {
                       type="file"
                       accept=".pdf,.csv,.xlsx,.xls"
                       id={`upload-${provider.id}`}
-                      className="hidden"
+                      style={{display: 'none'}}
                       onChange={(e) => handleBrokerageUpload(provider.id, e)}
                     />
-                    <Button
-                      variant="ghost"
-                      size="icon"
+                    <button
+                      type="button"
                       title="Upload Nota de Corretagem"
                       disabled={uploadProgress[provider.id]}
                       onClick={(e) => {
@@ -514,54 +493,80 @@ const SyncAccounts = () => {
                         document
                           .getElementById(`upload-${provider.id}`)
                           ?.click();
+                      }}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        border: '1px solid var(--hair)',
+                        background: 'transparent',
+                        cursor: uploadProgress[provider.id] ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: uploadProgress[provider.id] ? 0.5 : 1,
+                        color: 'inherit',
                       }}>
                       {uploadProgress[provider.id] ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <i className="ph-fill ph-spinner" style={{fontSize: 16, animation: 'spin 0.8s linear infinite'}} />
                       ) : (
-                        <Upload className="h-4 w-4 text-primary" />
+                        <i className="ph-fill ph-upload-simple" style={{fontSize: 16, color: 'var(--ac)'}} />
                       )}
-                    </Button>
+                    </button>
                   </>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
+                  type="button"
                   title="Desconectar"
                   disabled={disconnecting}
                   onClick={(e) => {
                     e.stopPropagation();
                     disconnectMutation.mutate(provider.id);
+                  }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    border: '1px solid var(--hair)',
+                    background: 'transparent',
+                    cursor: disconnecting ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: disconnecting ? 0.5 : 1,
+                    color: 'inherit',
                   }}>
-                  <Unlink className="h-4 w-4 text-destructive" />
-                </Button>
+                  <i className="ph-fill ph-link-break" style={{fontSize: 16, color: 'var(--neg)'}} />
+                </button>
               </>
             ) : selectedProvider === provider.id ? (
-              <Check className="h-5 w-5 text-primary" />
+              <i className="ph-fill ph-check" style={{fontSize: 20, color: 'var(--ac)'}} />
             ) : null}
           </div>
         </div>
-      </Card>
+      </div>
     );
   };
 
   const ConnectForm = ({isBrokerage}: {isBrokerage: boolean}) => (
-    <div className="mt-4 space-y-4 p-4 bg-card/30 rounded-lg border border-border/50">
-      <h3 className="font-medium flex items-center gap-2">
-        <AlertCircle className="h-4 w-4 text-amber-500" />
+    <div style={{marginTop: 16, padding: 16, background: 'var(--surf-3)', borderRadius: 10, border: '1px solid var(--hair)'}}>
+      <h3 style={{fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 16px 0', fontSize: 14}}>
+        <i className="ph-fill ph-warning-circle" style={{fontSize: 16, color: 'var(--warn)'}} />
         Conectar {selectedProvider?.toUpperCase()}
       </h3>
 
       {isBrokerage ? (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="cpf-connect">
+        <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
+            <label htmlFor="cpf-connect" style={{fontSize: 12, fontWeight: 500, color: 'var(--color-neutral-500)'}}>
               CPF (opcional – só para sincronização B3)
-            </Label>
-            <Input
+            </label>
+            <input
               id="cpf-connect"
               placeholder="000.000.000-00"
               value={cpf}
               onChange={(e) => setCpf(e.target.value)}
+              style={{width: '100%', border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--surf-3)', color: 'inherit', padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box'}}
             />
           </div>
 
@@ -569,33 +574,46 @@ const SyncAccounts = () => {
           {selectedProvider &&
             BROKERAGES.find((b) => b.id === selectedProvider)
               ?.supportsUpload && (
-              <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="h-4 w-4 text-primary" />
-                  <h4 className="font-medium text-sm">
+              <div style={{borderRadius: 10, border: '1px dashed var(--ac)', background: 'rgba(145,132,217,0.15)', padding: 16}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8}}>
+                  <i className="ph-fill ph-file-text" style={{fontSize: 16, color: 'var(--ac)'}} />
+                  <h4 style={{fontWeight: 500, fontSize: 13, margin: 0}}>
                     Upload de Nota de Corretagem
                   </h4>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3">
+                <p style={{fontSize: 12, color: 'var(--color-neutral-500)', marginBottom: 12, margin: '0 0 12px 0'}}>
                   Faça upload direto da nota de corretagem (PDF, CSV ou XLSX). O
                   sistema extrai automaticamente os ativos, quantidades, preços
                   e datas.
                 </p>
-                <div className="flex items-center gap-2">
+                <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
                   <input
                     type="file"
                     accept=".pdf,.csv,.xlsx,.xls"
                     id={`upload-form-${selectedProvider}`}
-                    className="hidden"
+                    style={{display: 'none'}}
                     onChange={(e) =>
                       handleBrokerageUpload(selectedProvider!, e)
                     }
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
+                    style={{
+                      height: 36,
+                      padding: '0 16px',
+                      borderRadius: 8,
+                      border: '1px solid var(--hair)',
+                      background: 'transparent',
+                      fontSize: 13,
+                      cursor: uploadProgress[selectedProvider] ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      width: '100%',
+                      justifyContent: 'center',
+                      opacity: uploadProgress[selectedProvider] ? 0.5 : 1,
+                      color: 'inherit',
+                    }}
                     disabled={uploadProgress[selectedProvider]}
                     onClick={() =>
                       document
@@ -603,17 +621,17 @@ const SyncAccounts = () => {
                         ?.click()
                     }>
                     {uploadProgress[selectedProvider] ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <i className="ph-fill ph-spinner" style={{fontSize: 16, animation: 'spin 0.8s linear infinite'}} />
                     ) : (
-                      <Upload className="mr-2 h-4 w-4" />
+                      <i className="ph-fill ph-upload-simple" style={{fontSize: 16}} />
                     )}
                     {uploadProgress[selectedProvider]
                       ? 'Enviando...'
                       : 'Selecionar Arquivo'}
-                  </Button>
+                  </button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <Info className="h-3 w-3" />
+                <p style={{fontSize: 12, color: 'var(--color-neutral-500)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4}}>
+                  <i className="ph-fill ph-info" style={{fontSize: 12}} />
                   Aceita: nota_corretagem.pdf, extrato_corretora.csv,
                   relatorio_b3.xlsx
                 </p>
@@ -622,211 +640,239 @@ const SyncAccounts = () => {
         </div>
       ) : (
         <>
-          <div className="space-y-2">
-            <Label htmlFor="api-key">Chave API (somente leitura)</Label>
-            <Input
+          <div style={{display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16}}>
+            <label htmlFor="api-key" style={{fontSize: 12, fontWeight: 500, color: 'var(--color-neutral-500)'}}>Chave API (somente leitura)</label>
+            <input
               id="api-key"
               placeholder="Sua chave API"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
+              style={{width: '100%', border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--surf-3)', color: 'inherit', padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box'}}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="api-secret">Senha API</Label>
-            <Input
+          <div style={{display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16}}>
+            <label htmlFor="api-secret" style={{fontSize: 12, fontWeight: 500, color: 'var(--color-neutral-500)'}}>Senha API</label>
+            <input
               id="api-secret"
               type="password"
               placeholder="Sua senha API"
               value={apiSecret}
               onChange={(e) => setApiSecret(e.target.value)}
+              style={{width: '100%', border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--surf-3)', color: 'inherit', padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box'}}
             />
           </div>
-          <p className="text-xs text-muted-foreground flex items-start gap-1">
-            <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          <p style={{fontSize: 12, color: 'var(--color-neutral-500)', display: 'flex', alignItems: 'flex-start', gap: 4, marginBottom: 16}}>
+            <i className="ph-fill ph-info" style={{fontSize: 12, marginTop: 2, flexShrink: 0}} />
             Use apenas chaves com permissão de leitura. Nunca compartilhe
             credenciais de saques.
           </p>
         </>
       )}
 
-      <div className="flex gap-2 justify-end">
-        <Button variant="outline" onClick={() => setSelectedProvider(null)}>
+      <div style={{display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8}}>
+        <button
+          type="button"
+          onClick={() => setSelectedProvider(null)}
+          style={{height: 36, padding: '0 16px', borderRadius: 8, border: '1px solid var(--hair)', background: 'transparent', fontSize: 13, cursor: 'pointer', color: 'inherit'}}>
           Cancelar
-        </Button>
-        <Button onClick={handleConnect} disabled={connectMutation.isPending}>
+        </button>
+        <button
+          type="button"
+          onClick={handleConnect}
+          disabled={connectMutation.isPending}
+          style={{
+            height: 36,
+            padding: '0 16px',
+            borderRadius: 8,
+            border: 'none',
+            background: 'var(--grad-violet)',
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: connectMutation.isPending ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            opacity: connectMutation.isPending ? 0.7 : 1,
+          }}>
           {connectMutation.isPending ? (
             <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              <i className="ph-fill ph-arrows-clockwise" style={{fontSize: 14, animation: 'spin 0.8s linear infinite'}} />
               Conectando...
             </>
           ) : (
             'Conectar'
           )}
-        </Button>
+        </button>
       </div>
     </div>
   );
 
-  const UpgradePlanModal = () => (
-    <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Star className="h-5 w-5 text-primary fill-primary" />
-            Recurso Premium
-          </DialogTitle>
-          <DialogDescription>
-            A sincronização automática de contas é um recurso disponível apenas
-            nos planos Premium. Atualize agora para centralizar todo o seu
-            patrimônio automaticamente.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-4 py-4">
-          <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
-            <h4 className="font-medium text-sm mb-1">Por que assinar?</h4>
-            <ul className="text-xs space-y-2 text-muted-foreground">
-              <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-primary" /> Sincronização em
-                tempo real com Binance e outras
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-primary" /> Insights avançados
-                com Inteligência Artificial
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-primary" /> Suporte a notas de
-                corretagem ilimitadas
-              </li>
-            </ul>
-          </div>
-        </div>
-        <DialogFooter className="flex sm:justify-between gap-2">
-          <Button variant="ghost" onClick={() => setShowUpgradeModal(false)}>
-            Agora não
-          </Button>
-          <Button onClick={() => navigate('/subscription')}>Ver Planos</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-
-  const BrokerageNoteHelpModal = () => (
-    <Dialog
-      open={showBrokerageNoteHelp}
-      onOpenChange={setShowBrokerageNoteHelp}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Por que subir nota de corretagem?</DialogTitle>
-          <DialogDescription>
-            A nota de corretagem melhora a precisão da sua carteira e dos
-            cálculos fiscais.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 text-sm text-muted-foreground">
-          <p>
-            Quando você envia a nota, o sistema consegue identificar operações
-            reais de compra e venda com mais detalhe do que uma sincronização
-            simples de saldo.
-          </p>
-          <div className="space-y-2">
-            <p className="font-medium text-foreground">
-              O que melhora na prática:
-            </p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Preço médio correto por ativo e por movimentação.</li>
-              <li>
-                Quantidade atualizada com base em compras, vendas e ajustes.
-              </li>
-              <li>
-                Base fiscal mais confiável para apuração de IR e compensação de
-                prejuízo.
-              </li>
-              <li>
-                Histórico auditável das operações por data, ativo e corretora.
-              </li>
-              <li>
-                Menos risco de divergência entre carteira real e carteira no
-                app.
-              </li>
-            </ul>
-          </div>
-          <div className="rounded-lg border border-border/60 p-3 bg-card/40">
-            <p className="font-medium text-foreground mb-1">
-              Segurança e uso dos dados
-            </p>
-            <p>
-              O arquivo é usado para extrair informações de movimentação (ativo,
-              quantidade, preço e data) e atualizar sua carteira. Não é
-              necessário compartilhar senha da corretora para esse processo.
-            </p>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button onClick={() => setShowBrokerageNoteHelp(false)}>
-            Entendi
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-
-  const SyncSuccessModal = () => (
-    <Dialog
-      open={syncSuccess.open}
-      onOpenChange={(open) => setSyncSuccess((prev) => ({...prev, open}))}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Sincronização bem-sucedida</DialogTitle>
-          <DialogDescription>
-            {syncSuccess.providerName} sincronizado com sucesso.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="rounded-lg border border-border/60 bg-card/40 p-4 space-y-2">
-          <p className="text-sm text-foreground">
-            {syncSuccess.syncedAssets} ativo(s) foram atualizados para a
-            carteira{' '}
-            <span className="font-semibold">{syncSuccess.providerName}</span>.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Você já pode ver seus ativos em{' '}
-            <span className="font-semibold">Portfólio</span>, selecionando a
-            carteira da {syncSuccess.providerName}.
-          </p>
-        </div>
-        <DialogFooter className="flex gap-2 sm:justify-end">
-          <Button
-            variant="outline"
-            onClick={() => setSyncSuccess((prev) => ({...prev, open: false}))}>
-            Fechar
-          </Button>
-          <Button
-            onClick={() => {
-              setSyncSuccess((prev) => ({...prev, open: false}));
-              navigate('/portfolio');
-            }}>
-            Ver no Portfólio
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+  const tabDefs = [
+    {id: 'brokerages', label: 'Corretoras'},
+    {id: 'crypto', label: 'Exchanges Cripto'},
+  ];
 
   return (
-    <div className="min-h-screen p-2 md:p-6 relative overflow-hidden font-sans bg-transparent text-foreground">
-      {/* Background Glows (se adaptam ao tema claro ou escuro) */}
-      <div className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-40 bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-primary/10 to-transparent" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-30 bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-primary/5 to-transparent" />
+    <div className="min-h-screen p-2 md:p-6 relative overflow-hidden font-sans bg-transparent" style={{color: 'inherit'}}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      {/* Background Glows */}
+      <div style={{position: 'absolute', top: 0, left: 0, width: 500, height: 500, borderRadius: '50%', pointerEvents: 'none', opacity: 0.4, background: 'radial-gradient(circle, rgba(145,132,217,0.15) 0%, transparent 70%)'}} />
+      <div style={{position: 'absolute', bottom: 0, right: 0, width: 500, height: 500, borderRadius: '50%', pointerEvents: 'none', opacity: 0.3, background: 'radial-gradient(circle, rgba(145,132,217,0.15) 0%, transparent 70%)'}} />
 
-      <div className="relative z-10 max-w-5xl mx-auto space-y-8">
-        <UpgradePlanModal />
-        <BrokerageNoteHelpModal />
-        <SyncSuccessModal />
+      <div style={{position: 'relative', zIndex: 10, maxWidth: 960, margin: '0 auto'}}>
 
-        <div className="flex flex-col mb-8">
-          <h1 className="text-3xl md:text-4xl font-heading font-bold tracking-tight mb-2">
+        {/* UpgradePlanModal */}
+        {showUpgradeModal && (
+          <div
+            style={{position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)'}}
+            onClick={(e) => {if (e.target === e.currentTarget) setShowUpgradeModal(false);}}>
+            <div style={{background: 'var(--nk-card)', border: '1px solid var(--hair)', borderRadius: 14, padding: 24, maxWidth: 440, width: '90%', boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', gap: 16}}>
+              <h3 style={{fontFamily: 'var(--font-heading)', fontSize: 17, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8}}>
+                <i className="ph-fill ph-star" style={{fontSize: 20, color: 'var(--ac)'}} />
+                Recurso Premium
+              </h3>
+              <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
+                A sincronização automática de contas é um recurso disponível apenas
+                nos planos Premium. Atualize agora para centralizar todo o seu
+                patrimônio automaticamente.
+              </p>
+              <div style={{background: 'rgba(145,132,217,0.15)', padding: 16, borderRadius: 10, border: '1px solid rgba(145,132,217,0.35)'}}>
+                <h4 style={{fontWeight: 500, fontSize: 13, margin: '0 0 8px 0'}}>Por que assinar?</h4>
+                <ul style={{fontSize: 12, color: 'var(--color-neutral-500)', listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8}}>
+                  <li style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                    <i className="ph-fill ph-check" style={{fontSize: 12, color: 'var(--ac)'}} /> Sincronização em
+                    tempo real com Binance e outras
+                  </li>
+                  <li style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                    <i className="ph-fill ph-check" style={{fontSize: 12, color: 'var(--ac)'}} /> Insights avançados
+                    com Inteligência Artificial
+                  </li>
+                  <li style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                    <i className="ph-fill ph-check" style={{fontSize: 12, color: 'var(--ac)'}} /> Suporte a notas de
+                    corretagem ilimitadas
+                  </li>
+                </ul>
+              </div>
+              <div style={{display: 'flex', gap: 10, justifyContent: 'flex-end'}}>
+                <button type="button" onClick={() => setShowUpgradeModal(false)}
+                  style={{height: 38, padding: '0 16px', borderRadius: 8, border: '1px solid var(--hair)', background: 'transparent', fontSize: 13, cursor: 'pointer', color: 'inherit'}}>
+                  Agora não
+                </button>
+                <button type="button" onClick={() => navigate('/subscription')}
+                  style={{height: 38, padding: '0 16px', borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer'}}>
+                  Ver Planos
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BrokerageNoteHelpModal */}
+        {showBrokerageNoteHelp && (
+          <div
+            style={{position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)'}}
+            onClick={(e) => {if (e.target === e.currentTarget) setShowBrokerageNoteHelp(false);}}>
+            <div style={{background: 'var(--nk-card)', border: '1px solid var(--hair)', borderRadius: 14, padding: 24, maxWidth: 600, width: '90%', boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', gap: 16}}>
+              <h3 style={{fontFamily: 'var(--font-heading)', fontSize: 17, fontWeight: 700, margin: 0}}>Por que subir nota de corretagem?</h3>
+              <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
+                A nota de corretagem melhora a precisão da sua carteira e dos
+                cálculos fiscais.
+              </p>
+              <div style={{display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13, color: 'var(--color-neutral-500)'}}>
+                <p style={{margin: 0}}>
+                  Quando você envia a nota, o sistema consegue identificar operações
+                  reais de compra e venda com mais detalhe do que uma sincronização
+                  simples de saldo.
+                </p>
+                <div>
+                  <p style={{fontWeight: 500, color: 'inherit', marginBottom: 8, margin: '0 0 8px 0'}}>
+                    O que melhora na prática:
+                  </p>
+                  <ul style={{listStyleType: 'disc', paddingLeft: 20, margin: 0, display: 'flex', flexDirection: 'column', gap: 4}}>
+                    <li>Preço médio correto por ativo e por movimentação.</li>
+                    <li>
+                      Quantidade atualizada com base em compras, vendas e ajustes.
+                    </li>
+                    <li>
+                      Base fiscal mais confiável para apuração de IR e compensação de
+                      prejuízo.
+                    </li>
+                    <li>
+                      Histórico auditável das operações por data, ativo e corretora.
+                    </li>
+                    <li>
+                      Menos risco de divergência entre carteira real e carteira no
+                      app.
+                    </li>
+                  </ul>
+                </div>
+                <div style={{borderRadius: 10, border: '1px solid var(--hair)', padding: 12, background: 'var(--surf-3)'}}>
+                  <p style={{fontWeight: 500, color: 'inherit', marginBottom: 4, margin: '0 0 4px 0'}}>
+                    Segurança e uso dos dados
+                  </p>
+                  <p style={{margin: 0}}>
+                    O arquivo é usado para extrair informações de movimentação (ativo,
+                    quantidade, preço e data) e atualizar sua carteira. Não é
+                    necessário compartilhar senha da corretora para esse processo.
+                  </p>
+                </div>
+              </div>
+              <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+                <button type="button" onClick={() => setShowBrokerageNoteHelp(false)}
+                  style={{height: 38, padding: '0 16px', borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer'}}>
+                  Entendi
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SyncSuccessModal */}
+        {syncSuccess.open && (
+          <div
+            style={{position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)'}}
+            onClick={(e) => {if (e.target === e.currentTarget) setSyncSuccess((prev) => ({...prev, open: false}));}}>
+            <div style={{background: 'var(--nk-card)', border: '1px solid var(--hair)', borderRadius: 14, padding: 24, maxWidth: 440, width: '90%', boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', gap: 16}}>
+              <h3 style={{fontFamily: 'var(--font-heading)', fontSize: 17, fontWeight: 700, margin: 0}}>Sincronização bem-sucedida</h3>
+              <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
+                {syncSuccess.providerName} sincronizado com sucesso.
+              </p>
+              <div style={{borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surf-3)', padding: 16, display: 'flex', flexDirection: 'column', gap: 8}}>
+                <p style={{fontSize: 13, margin: 0}}>
+                  {syncSuccess.syncedAssets} ativo(s) foram atualizados para a
+                  carteira{' '}
+                  <span style={{fontWeight: 600}}>{syncSuccess.providerName}</span>.
+                </p>
+                <p style={{fontSize: 12, color: 'var(--color-neutral-500)', margin: 0}}>
+                  Você já pode ver seus ativos em{' '}
+                  <span style={{fontWeight: 600}}>Portfólio</span>, selecionando a
+                  carteira da {syncSuccess.providerName}.
+                </p>
+              </div>
+              <div style={{display: 'flex', gap: 10, justifyContent: 'flex-end'}}>
+                <button type="button" onClick={() => setSyncSuccess((prev) => ({...prev, open: false}))}
+                  style={{height: 38, padding: '0 16px', borderRadius: 8, border: '1px solid var(--hair)', background: 'transparent', fontSize: 13, cursor: 'pointer', color: 'inherit'}}>
+                  Fechar
+                </button>
+                <button type="button"
+                  onClick={() => {
+                    setSyncSuccess((prev) => ({...prev, open: false}));
+                    navigate('/portfolio');
+                  }}
+                  style={{height: 38, padding: '0 16px', borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer'}}>
+                  Ver no Portfólio
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{display: 'flex', flexDirection: 'column', marginBottom: 32}}>
+          <h1 style={{fontFamily: 'var(--font-heading)', fontSize: 32, fontWeight: 700, letterSpacing: '-0.5px', margin: '0 0 8px 0'}}>
             Sincronizar Contas
           </h1>
-          <p className="text-sm md:text-base text-muted-foreground">
+          <p style={{fontSize: 14, color: 'var(--color-neutral-500)', margin: 0}}>
             Conecte corretoras e exchanges para centralizar seu portfólio de
             forma rápida e segura.
           </p>
@@ -834,123 +880,128 @@ const SyncAccounts = () => {
 
         {/* Status das conexões */}
         {connections.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <Card className="rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5 overflow-hidden p-6 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <Check className="h-5 w-5 text-emerald-500" />
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 24}}>
+            <div style={{borderRadius: 16, background: 'var(--nk-card)', border: '1px solid var(--hair)', boxShadow: 'var(--shadow-sm)', padding: 24, display: 'flex', alignItems: 'center', gap: 16}}>
+              <div style={{width: 40, height: 40, borderRadius: '50%', background: 'rgba(47,214,163,0.20)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <i className="ph-fill ph-check" style={{fontSize: 20, color: 'var(--pos)'}} />
               </div>
               <div>
-                <p className="text-3xl font-bold font-heading text-foreground">
+                <p style={{fontSize: 28, fontWeight: 700, fontFamily: 'var(--font-heading)', margin: 0}}>
                   {connections.length}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
                   Contas conectadas
                 </p>
               </div>
-            </Card>
-            <Card className="rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5 overflow-hidden p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-primary" />
+            </div>
+            <div style={{borderRadius: 16, background: 'var(--nk-card)', border: '1px solid var(--hair)', boxShadow: 'var(--shadow-sm)', padding: 24, display: 'flex', alignItems: 'center', gap: 16}}>
+              <div style={{width: 48, height: 48, borderRadius: 12, background: 'rgba(145,132,217,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <i className="ph-fill ph-clock" style={{fontSize: 24, color: 'var(--ac)'}} />
               </div>
               <div>
-                <p className="text-base font-medium font-heading text-foreground">
+                <p style={{fontSize: 15, fontWeight: 500, fontFamily: 'var(--font-heading)', margin: 0}}>
                   Última sincronização
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
                   {connections[0]?.lastSync
                     ? formatLastSync(connections[0].lastSync)
                     : 'Nunca'}
                 </p>
               </div>
-            </Card>
+            </div>
           </div>
         )}
 
         {uploads.length > 0 && (
-          <Card className="rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5 overflow-hidden mb-8">
-            <CardHeader className="border-b border-border/40">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <CardTitle className="font-heading tracking-tight text-foreground">
-                    Processamento assíncrono de arquivos
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    Acompanhe o status de uploads como `nota_corretagem.pdf` e
-                    `relatorio_b3.xlsx`.
-                  </CardDescription>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Entender nota de corretagem"
-                  title="Por que subir nota de corretagem?"
-                  onClick={() => setShowBrokerageNoteHelp(true)}
-                  className="shrink-0 rounded-full border border-border/60">
-                  <CircleHelp className="h-4 w-4" />
-                </Button>
+          <div style={{border: '1px solid var(--hair)', borderRadius: 16, background: 'var(--nk-card)', overflow: 'hidden', marginBottom: 32}}>
+            <div style={{padding: '16px 20px', borderBottom: '1px solid var(--hair-soft)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12}}>
+              <div>
+                <h2 style={{fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700, margin: '0 0 4px 0'}}>
+                  Processamento assíncrono de arquivos
+                </h2>
+                <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
+                  Acompanhe o status de uploads como `nota_corretagem.pdf` e
+                  `relatorio_b3.xlsx`.
+                </p>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
+              <button
+                type="button"
+                aria-label="Entender nota de corretagem"
+                title="Por que subir nota de corretagem?"
+                onClick={() => setShowBrokerageNoteHelp(true)}
+                style={{flexShrink: 0, width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--hair)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'inherit'}}>
+                <i className="ph-fill ph-question" style={{fontSize: 16}} />
+              </button>
+            </div>
+            <div style={{padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8}}>
               {uploads.slice(0, 5).map((u: any) => (
                 <div
                   key={u._id}
-                  className="flex items-center justify-between rounded-lg border p-3">
+                  style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 10, border: '1px solid var(--hair)', padding: 12}}>
                   <div>
-                    <p className="text-sm font-medium">{u.originalName}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p style={{fontSize: 13, fontWeight: 500, margin: 0}}>{u.originalName}</p>
+                    <p style={{fontSize: 12, color: 'var(--color-neutral-500)', margin: 0}}>
                       {u.provider} • {u.kind || 'brokerage_note'}
                     </p>
                   </div>
-                  <Badge
-                    variant={
-                      u.status === 'processed'
-                        ? 'default'
-                        : u.status === 'failed'
-                          ? 'destructive'
-                          : 'secondary'
-                    }>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: 5,
+                    fontSize: 11,
+                    fontWeight: 500,
+                    background: u.status === 'processed'
+                      ? 'var(--badge-pos-bg)'
+                      : u.status === 'failed'
+                        ? 'var(--badge-neg-bg)'
+                        : 'var(--surf-3)',
+                    color: u.status === 'processed'
+                      ? 'var(--pos)'
+                      : u.status === 'failed'
+                        ? 'var(--neg)'
+                        : 'var(--color-neutral-400)',
+                  }}>
                     {u.status}
-                  </Badge>
+                  </span>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
-        <Card className="rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5 overflow-hidden mb-8">
-          <CardHeader className="border-b border-border/40 mb-6 pb-6 pt-8">
-            <CardTitle className="text-2xl font-heading tracking-tight text-foreground">
+        {/* Add accounts card */}
+        <div style={{border: '1px solid var(--hair)', borderRadius: 16, background: 'var(--nk-card)', overflow: 'hidden', marginBottom: 32}}>
+          <div style={{padding: '24px 20px 20px', borderBottom: '1px solid var(--hair-soft)'}}>
+            <h2 style={{fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px', margin: '0 0 4px 0'}}>
               Adicione suas contas
-            </CardTitle>
-            <CardDescription className="text-base text-muted-foreground">
+            </h2>
+            <p style={{fontSize: 14, color: 'var(--color-neutral-500)', margin: 0}}>
               Conecte corretoras e exchanges para analisar seus investimentos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 mb-8 h-14 p-1.5 rounded-full bg-card border shadow-sm items-center">
-                <TabsTrigger
-                  value="brokerages"
-                  className="flex items-center justify-center gap-2 text-sm font-medium rounded-full h-full transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md font-heading">
-                  Corretoras
-                </TabsTrigger>
-                <TabsTrigger
-                  value="crypto"
-                  className="flex items-center justify-center gap-2 text-sm font-medium rounded-full h-full transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md font-heading">
-                  Exchanges Cripto
-                </TabsTrigger>
-              </TabsList>
+            </p>
+          </div>
+          <div style={{padding: '20px'}}>
+            {/* Tab switcher */}
+            <div style={{display: 'flex', gap: 4, background: 'var(--surf-3)', borderRadius: 10, padding: 4, width: 'fit-content', marginBottom: 24}}>
+              {tabDefs.map(({id, label}) => (
+                <button key={id} type="button" onClick={() => setActiveTab(id as any)}
+                  style={{padding: '7px 16px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                    background: activeTab === id ? 'var(--ac)' : 'transparent',
+                    color: activeTab === id ? '#fff' : 'var(--color-neutral-400)'}}>
+                  {label}
+                </button>
+              ))}
+            </div>
 
-              <TabsContent value="brokerages">
+            {/* Brokerages tab */}
+            {activeTab === 'brokerages' && (
+              <>
                 {isLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16}}>
                     {[1, 2].map((i) => (
-                      <Skeleton key={i} className="h-20" />
+                      <div key={i} style={{height: 80, borderRadius: 10, background: 'var(--surf-3)'}} />
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16}}>
                     {BROKERAGES.map((b) => (
                       <ProviderCard key={b.id} provider={b} type="brokerage" />
                     ))}
@@ -961,17 +1012,20 @@ const SyncAccounts = () => {
                   !hasConnection(selectedProvider) && (
                     <ConnectForm isBrokerage={true} />
                   )}
-              </TabsContent>
+              </>
+            )}
 
-              <TabsContent value="crypto">
+            {/* Crypto tab */}
+            {activeTab === 'crypto' && (
+              <>
                 {isLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16}}>
                     {[1, 2, 3, 4].map((i) => (
-                      <Skeleton key={i} className="h-20" />
+                      <div key={i} style={{height: 80, borderRadius: 10, background: 'var(--surf-3)'}} />
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16}}>
                     {CRYPTO_EXCHANGES.map((e) => (
                       <ProviderCard key={e.id} provider={e} type="crypto" />
                     ))}
@@ -982,58 +1036,59 @@ const SyncAccounts = () => {
                   !hasConnection(selectedProvider) && (
                     <ConnectForm isBrokerage={false} />
                   )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+              </>
+            )}
+          </div>
+        </div>
 
-        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Sobre a integração</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-3">
-                  <Wallet className="h-6 w-6" />
+        {/* About card */}
+        <div style={{border: '1px solid var(--hair)', borderRadius: 16, background: 'var(--nk-card)', overflow: 'hidden'}}>
+          <div style={{padding: '16px 20px', borderBottom: '1px solid var(--hair-soft)'}}>
+            <h2 style={{fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700, margin: 0}}>Sobre a integração</h2>
+          </div>
+          <div style={{padding: '20px'}}>
+            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24}}>
+              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'}}>
+                <div style={{width: 48, height: 48, borderRadius: '50%', background: 'rgba(145,132,217,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12}}>
+                  <i className="ph-fill ph-wallet" style={{fontSize: 24, color: 'var(--ac)'}} />
                 </div>
-                <h3 className="font-medium mb-2">Visualização Unificada</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 style={{fontWeight: 500, margin: '0 0 8px 0', fontSize: 14}}>Visualização Unificada</h3>
+                <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
                   Reúna todos os seus investimentos em um único lugar.
                 </p>
               </div>
-              <div className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 rounded-full bg-info/20 flex items-center justify-center text-info mb-3">
-                  <CircleDollarSign className="h-6 w-6" />
+              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'}}>
+                <div style={{width: 48, height: 48, borderRadius: '50%', background: 'rgba(76,201,240,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12}}>
+                  <i className="ph-fill ph-currency-circle-dollar" style={{fontSize: 24, color: 'rgba(76,201,240,0.30)'}} />
                 </div>
-                <h3 className="font-medium mb-2">Dados Atualizados</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 style={{fontWeight: 500, margin: '0 0 8px 0', fontSize: 14}}>Dados Atualizados</h3>
+                <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
                   Sincronize e mantenha valores e preços em tempo real.
                 </p>
               </div>
-              <div className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center text-success mb-3">
-                  <Star className="h-6 w-6" />
+              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'}}>
+                <div style={{width: 48, height: 48, borderRadius: '50%', background: 'rgba(47,214,163,0.20)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12}}>
+                  <i className="ph-fill ph-star" style={{fontSize: 24, color: 'var(--pos)'}} />
                 </div>
-                <h3 className="font-medium mb-2">Análise Inteligente</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 style={{fontWeight: 500, margin: '0 0 8px 0', fontSize: 14}}>Análise Inteligente</h3>
+                <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
                   Nossa IA analisa sua carteira e fornece insights
                   personalizados.
                 </p>
               </div>
             </div>
-            <div className="mt-6 p-4 bg-card/30 rounded-lg">
-              <h3 className="font-medium mb-2">
+            <div style={{marginTop: 24, padding: 16, background: 'var(--surf-3)', borderRadius: 10}}>
+              <h3 style={{fontWeight: 500, margin: '0 0 8px 0', fontSize: 14}}>
                 🔒 Segurança em primeiro lugar
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
                 Usamos apenas permissões de leitura. Suas credenciais são
                 criptografadas com AES-256 e nunca são compartilhadas com
                 terceiros.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
