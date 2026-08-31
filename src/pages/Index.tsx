@@ -1115,7 +1115,7 @@ const Dashboard = () => {
     },
     {
       label: 'IBOV',
-      color: '#4cc9f0',
+      color: 'var(--cy)',
       value:
         marketComparators?.ibov?.variationPct != null
           ? `${marketComparators.ibov.variationPct >= 0 ? '+' : ''}${marketComparators.ibov.variationPct.toFixed(1)}%`
@@ -1427,7 +1427,7 @@ const Dashboard = () => {
                     type="monotone"
                     dataKey="ibovPerformance"
                     name="IBOV"
-                    stroke="#4cc9f0"
+                    stroke="var(--cy)"
                     strokeWidth={2}
                     dot={false}
                     connectNulls
@@ -1761,9 +1761,6 @@ const Dashboard = () => {
             {label: 'DY', align: 'right'},
           ]}>
           {topPositions.slice(0, 6).map((p) => {
-            const pnlAmt =
-              (p.price - getAveragePrice({averagePrice: p.price * (1 - p.returnSinceAvgPrice / 100)})) *
-              p.amount;
             const pnlPositive = p.returnSinceAvgPrice >= 0;
             return (
               <tr
