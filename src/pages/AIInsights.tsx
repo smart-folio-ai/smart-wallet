@@ -16,8 +16,8 @@ import {
 import {portfolioService, stockServices} from '@/server/api/api';
 import {accumulateCdi} from '@/pages/cdi-performance.utils';
 import {formatCurrency} from '@/utils/formatters';
-import {resolveScoreTone, SCORE_TONE_CLASSES} from '@/utils/score-tone';
-import {cn} from '@/lib/utils';
+import {resolveScoreTone} from '@/utils/score-tone';
+import type {ScoreTone} from '@/utils/score-tone';
 import {useSubscription} from '@/hooks/useSubscription';
 import {RagAskPanel} from '@/components/ai/RagAskPanel';
 import {InvestorProfileBadge} from '@/components/ai/InvestorProfileBadge';
@@ -68,6 +68,14 @@ const PRIORITY_DISPLAY: Record<string, string> = {
   Média: 'MÉDIO',
   Baixa: 'BAIXO',
 };
+
+/** Nocturne-token inline styles for the simulator result panel per ScoreTone */
+const SIM_TONE_STYLE: Record<ScoreTone, React.CSSProperties> = {
+  warning: {background: 'var(--badge-warn-bg)', border: '1px solid var(--warn)'},
+  neutral: {background: 'var(--sunk)', border: '1px solid var(--hair)'},
+  positive: {background: 'var(--badge-pos-bg)', border: '1px solid var(--pos)'},
+};
+
 
 const INSIGHT_TABS = ['Todos', 'Oportunidades', 'Alertas', 'Estratégias'] as const;
 type InsightTab = typeof INSIGHT_TABS[number];
@@ -1140,11 +1148,8 @@ const AIInsights: React.FC = () => {
 
             {/* Result panel */}
             <div
-              className={cn(
-                SCORE_TONE_CLASSES[simulationTone].bg,
-                SCORE_TONE_CLASSES[simulationTone].border,
-              )}
               style={{
+                ...SIM_TONE_STYLE[simulationTone],
                 borderRadius: 16,
                 padding: 24,
                 display: 'flex',
@@ -1152,7 +1157,6 @@ const AIInsights: React.FC = () => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 textAlign: 'center',
-                border: '1px solid var(--hair)',
                 position: 'relative',
               }}>
               {simulation ? (
@@ -1322,24 +1326,19 @@ const AIInsights: React.FC = () => {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 const BadgePremium = () => (
-  <div
+  <span
     style={{
-      background: 'linear-gradient(90deg, #f59e0b, #d97706)',
-      fontSize: 10,
-      fontWeight: 900,
-      color: '#000',
-      padding: '3px 10px',
-      borderRadius: 999,
-      textTransform: 'uppercase',
-      letterSpacing: '-0.02em',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 4,
-      userSelect: 'none',
-      cursor: 'default',
+      fontSize: 9.5,
+      fontWeight: 700,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase' as const,
+      padding: '2px 7px',
+      borderRadius: 10,
+      background: 'var(--grad-ember)',
+      color: '#fff',
     }}>
-    <i className="ph-fill ph-lightning" style={{fontSize: 12}} /> Pro Account
-  </div>
+    Pro Account
+  </span>
 );
 
 const UpgradeBanner = () => (
