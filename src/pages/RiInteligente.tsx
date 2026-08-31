@@ -449,7 +449,7 @@ const RiInteligente = () => {
               className="rounded-lg text-sm space-y-2 p-3"
               style={{
                 border: '1px solid var(--warn)',
-                background: 'rgba(154,106,6,0.10)',
+                background: 'var(--badge-warn-bg)',
                 color: 'var(--warn)',
               }}
               data-testid="ri-notice">
@@ -469,7 +469,7 @@ const RiInteligente = () => {
                         size="sm"
                         style={{
                           border: '1px solid var(--warn)',
-                          background: 'rgba(154,106,6,0.10)',
+                          background: 'var(--badge-warn-bg)',
                           color: 'var(--warn)',
                         }}
                         onClick={() => setTypeFilter(filter)}
@@ -679,7 +679,7 @@ const RiInteligente = () => {
                     className="rounded-md px-3 py-2 text-xs"
                     style={{
                       border: '1px solid var(--warn)',
-                      background: 'rgba(154,106,6,0.10)',
+                      background: 'var(--badge-warn-bg)',
                       color: 'var(--warn)',
                     }}>
                     Limitações: {summary.summary.limitations.join(', ')}

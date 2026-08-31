@@ -220,7 +220,7 @@ const AssetSearch = () => {
               {label: 'Market Cap', align: 'right'},
             ]}>
             {filteredStocks.slice(0, 50).map(asset => (
-              <tr key={asset.stock} onClick={() => navigate(`/ativos/${asset.stock}`)}
+              <tr key={asset.stock} onClick={() => navigate(`/asset/${asset.stock}`)}
                 style={{cursor: 'pointer', borderTop: '1px solid var(--hair-soft)'}}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--surf-3)')}
                 onMouseLeave={e => (e.currentTarget.style.background = '')}>
