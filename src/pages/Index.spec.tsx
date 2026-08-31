@@ -66,11 +66,12 @@ describe('Dashboard KPI strip', () => {
   it('renders four KPI tiles above the main charts', async () => {
     renderDashboard();
     expect(await screen.findByText('Patrimônio total')).toBeInTheDocument();
+    // pnlLabel resolves to 'P&L do período' for the default (intermediário) level
     expect(screen.getByText('P&L do período')).toBeInTheDocument();
-    expect(screen.getByText('Dividendos no ano')).toBeInTheDocument();
-    // "Yield estimado" also appears in the pre-existing dividend detail card
-    // further down the page, so assert at least one instance renders.
-    expect(screen.getAllByText('Yield estimado').length).toBeGreaterThan(0);
+    // Nocturne redesign — label updated from 'Dividendos no ano'
+    expect(screen.getByText('Dividendos recebidos')).toBeInTheDocument();
+    // Nocturne redesign — 4th KPI card is Beta da carteira
+    expect(screen.getByText('Beta da carteira')).toBeInTheDocument();
   });
 });
 
@@ -93,13 +94,10 @@ describe('Dashboard neutral card styling', () => {
   });
 });
 
-// TRA-26: o card "Trackerr IA Hoje" mistura `actionableInsights` (cálculo
-// local, nunca passa por modelo) com `dashboardHighlights` (source: 'ai' para
-// smart_feed, 'derived' para o resto). Sem carteira/plano PRO+ a query de
-// análise nunca dispara, então dashboardHighlights fica vazio e o aviso não
-// tem onde aparecer — é esse caminho vazio que este teste cobre. O caminho
-// com smart_feed populado tem cobertura própria e mais direta em
-// trakkerAi.spec.ts (deriveDashboardHighlights marca source: 'ai').
+// TRA-26: a secção "IA Insights" exibe insights derivados localmente (via
+// actionableInsights). O aviso de conteúdo gerado por IA (AiGeneratedNotice)
+// não é usado no novo layout Nocturne — este teste verifica que o aviso
+// não aparece nem no plano free nem no PRO sem carteira.
 describe('Dashboard sem aviso de IA quando não há highlights de IA', () => {
   it.each([
     ['free', {planName: null, isSubscribed: false, isLoading: false}],
@@ -108,7 +106,8 @@ describe('Dashboard sem aviso de IA quando não há highlights de IA', () => {
     useSubscriptionMock.mockReturnValue(subscription);
 
     renderDashboard();
-    await screen.findByText('Trackerr IA Hoje');
+    // Nocturne redesign — section heading changed from 'Trackerr IA Hoje' to 'IA Insights'
+    await screen.findByText('IA Insights');
 
     expect(screen.queryByText(AI_GENERATED_NOTICE_TEXT)).not.toBeInTheDocument();
   });

@@ -1,27 +1,9 @@
 import {useEffect, useMemo, useState} from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import portfolioService from '@/services/portfolio';
 import {useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 import {fiscalService, stockServices} from '@/server/api/api';
-import {
-  AlertTriangle,
-  Brain,
-  CalendarClock,
-  ShieldAlert,
-  Target,
-} from '@/components/ui/icons';
-import {Skeleton} from '@/components/ui/skeleton';
-import {Button} from '@/components/ui/button';
 import {FeatureTourModal} from '@/components/ui/feature-tour-modal';
-import {MetricCell, MetricCellGrid} from '@/components/ui/metric-cell';
-import {PriorityFeed, PriorityFeedItem} from '@/components/ui/priority-feed';
 import {
   Area,
   Bar,
@@ -29,7 +11,6 @@ import {
   CartesianGrid,
   Cell,
   ComposedChart,
-  Legend,
   Line,
   ResponsiveContainer,
   Tooltip,
@@ -38,8 +19,6 @@ import {
 } from 'recharts';
 import {formatCurrency} from '@/utils';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
-import {PremiumBlur} from '@/components/ui/premium-blur';
-import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {useSubscription} from '@/hooks/useSubscription';
 import {useAdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
 import {
@@ -50,13 +29,6 @@ import {
   getOrCreateAiAnalysis,
   isProOrHigherPlan,
 } from '@/services/ai/trakkerAi';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   getAveragePrice,
   computePnl,
@@ -70,6 +42,13 @@ import {
   getEffectiveHistoryWindow,
   HISTORY_WINDOW_DAYS,
 } from '@/pages/benchmark-window.utils';
+import {
+  KpiCard,
+  SectionHeader,
+  AiInsightBanner,
+  PeriodSelector,
+  DataTable,
+} from '@/components/shared';
 
 interface Asset {
   id: string;
@@ -152,6 +131,14 @@ const ALLOCATION_COLORS = {
   other: 'hsl(var(--chart-3))',
 };
 
+const PERIODS = [
+  {label: '1M', value: '1M'},
+  {label: '3M', value: '3M'},
+  {label: '6M', value: '6M'},
+  {label: '1A', value: '1A'},
+  {label: '2A', value: '2A'},
+];
+
 const formatHistoryDate = (value: unknown): string => {
   const parsed = parseHistoryDate(value);
   return parsed
@@ -214,6 +201,15 @@ const toIsoDate = (value: unknown): string | null => {
   const parsed = parseHistoryDate(value);
   if (!parsed) return null;
   return parsed.toISOString().slice(0, 10);
+};
+
+const classLabel = (type: string): string => {
+  if (type === 'stock') return 'Ação';
+  if (type === 'fii') return 'FII';
+  if (type === 'crypto') return 'Cripto';
+  if (type === 'etf') return 'ETF';
+  if (type === 'fund') return 'Fundo';
+  return 'Outro';
 };
 
 const Dashboard = () => {
@@ -1022,15 +1018,6 @@ const Dashboard = () => {
       .slice(0, 4);
   }, [summary.dividendEntries]);
 
-  const formatComparatorValue = (item: MarketComparator): string => {
-    if (item.value === null) return 'Dados indisponíveis';
-    if (item.key === 'ibov') return `${item.value.toLocaleString('pt-BR')} pts`;
-    if (item.key === 'dollar') return `${formatCurrency(item.value)}`;
-    if (item.key === 'cdi') return `${item.value.toFixed(4)}% a.d.`;
-    if (item.key === 'portfolio') return formatCurrency(item.value);
-    return item.value.toLocaleString('pt-BR');
-  };
-
   const pnlLabel =
     level === 'iniciante'
       ? 'Como está indo'
@@ -1045,67 +1032,147 @@ const Dashboard = () => {
         ? 'desde o preço médio'
         : `${summary.totalPnlPercentage >= 0 ? '+' : '-'}${Math.abs(summary.totalPnlPercentage).toFixed(2)}%`;
 
+  // ── Nocturne layout variables ─────────────────────────────────────────────
+
+  const levelHint =
+    level === 'iniciante'
+      ? 'Modo Iniciante: exibindo métricas essenciais para acompanhar sua carteira.'
+      : level === 'avancado'
+        ? 'Modo Avançado: exibindo métricas quantitativas e análise detalhada da carteira.'
+        : 'Modo Intermediário: exibindo métricas de performance e alocação por classe.';
+
+  const levelMeta =
+    level === 'iniciante'
+      ? 'Nível: Iniciante'
+      : level === 'avancado'
+        ? 'Nível: Avançado'
+        : 'Nível: Intermediário';
+
+  const totalValueDelta =
+    summary.totalPnl !== null
+      ? `${summary.totalPnl >= 0 ? '+' : ''}${formatCurrency(Math.abs(summary.totalPnl))}`
+      : undefined;
+
+  const totalValueDeltaStyle: React.CSSProperties = {
+    fontVariantNumeric: 'tabular-nums',
+    color:
+      summary.totalPnl === null
+        ? 'var(--color-neutral-500)'
+        : summary.totalPnl >= 0
+          ? 'var(--pos)'
+          : 'var(--neg)',
+  };
+
+  const pnlDelta =
+    summary.totalPnlPercentage !== null
+      ? `${summary.totalPnlPercentage >= 0 ? '+' : ''}${summary.totalPnlPercentage.toFixed(2)}%`
+      : undefined;
+
+  const pnlDeltaStyle: React.CSSProperties = {
+    fontVariantNumeric: 'tabular-nums',
+    color:
+      summary.totalPnl === null
+        ? 'var(--color-neutral-500)'
+        : summary.totalPnl >= 0
+          ? 'var(--pos)'
+          : 'var(--neg)',
+  };
+
+  const divYieldDelta =
+    estimatedDividendYieldPct !== null
+      ? `${estimatedDividendYieldPct.toFixed(2)}% DY`
+      : undefined;
+
+  const quantMetrics = [
+    {label: 'Sharpe', value: '—', note: 'dados insuficientes'},
+    {
+      label: 'Volatilidade',
+      value: volatilityPct !== null ? `${volatilityPct.toFixed(2)}%` : '—',
+      note: 'diária',
+    },
+    {label: 'Max DD', value: '—', note: 'máxima retração'},
+    {label: 'Alfa', value: '—', note: 'vs IBOV'},
+    {label: 'VaR 95%', value: '—', note: '1 dia'},
+  ];
+
+  const portfolioPeriodPct =
+    historyByPeriod.length > 1
+      ? ((historyByPeriod[historyByPeriod.length - 1].value -
+          historyByPeriod[0].value) /
+          historyByPeriod[0].value) *
+        100
+      : null;
+
+  const chartLegend = [
+    {
+      label: 'Carteira',
+      color: '#9184d9',
+      value:
+        portfolioPeriodPct !== null
+          ? `${portfolioPeriodPct >= 0 ? '+' : ''}${portfolioPeriodPct.toFixed(1)}%`
+          : '—',
+      positive: portfolioPeriodPct !== null ? portfolioPeriodPct >= 0 : true,
+    },
+    {
+      label: 'IBOV',
+      color: '#4cc9f0',
+      value:
+        marketComparators?.ibov?.variationPct != null
+          ? `${marketComparators.ibov.variationPct >= 0 ? '+' : ''}${marketComparators.ibov.variationPct.toFixed(1)}%`
+          : '—',
+      positive: (marketComparators?.ibov?.variationPct ?? 0) >= 0,
+    },
+    {
+      label: 'CDI',
+      color: 'var(--color-neutral-500)',
+      value:
+        marketComparators?.cdi?.value != null
+          ? `${(marketComparators.cdi.value * 252 * 100).toFixed(1)}% a.a.`
+          : '—',
+      positive: true,
+    },
+  ];
+
+  const allocation = allocationChartData.map((a) => ({
+    label: a.name,
+    color: a.color,
+    pct: `${a.value.toFixed(1)}%`,
+    value: formatCurrency(a.amount),
+  }));
+
+  const allocSub = `${allocationChartData.filter((a) => a.value > 0).length} classes`;
+
+  const insights = actionableInsights.slice(0, 3).map((ins, idx) => ({
+    id: idx,
+    icon:
+      ins.priority === 'Alta'
+        ? 'ph ph-warning-circle'
+        : ins.priority === 'Média'
+          ? 'ph ph-lightbulb'
+          : 'ph ph-info',
+    tag:
+      ins.priority === 'Alta'
+        ? 'Alerta'
+        : ins.priority === 'Média'
+          ? 'Insight'
+          : 'Info',
+    title: ins.title,
+    body: ins.description,
+  }));
+
+  const upcomingDividends = futureDividendEvents.map((d) => ({
+    symbol: d.symbol,
+    type: d.type === 'fii' ? 'FII' : d.type === 'stock' ? 'Ação' : 'Outro',
+    comDate: formatHistoryDate(d.date),
+    value: formatCurrency(d.value),
+    perShare: '—',
+  }));
+
+  // ── End Nocturne layout variables ─────────────────────────────────────────
+
   return (
-    <div className="container py-8 animate-fade-in">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Select
-          value={selectedPortfolioId || ''}
-          onValueChange={setSelectedPortfolioId}>
-          <SelectTrigger className="w-full sm:w-72">
-            <SelectValue placeholder="Selecione a carteira" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as Carteiras</SelectItem>
-            {portfolios.map((p: any) => (
-              <SelectItem key={p.id || p._id} value={p.id || p._id}>
-                {p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <MetricCellGrid className="mb-6">
-        <MetricCell
-          label="Patrimônio total"
-          value={formatCurrency(summary.totalValue || 0)}
-        />
-        {/* Prova de conceito de useAdaptiveLevel() — só este card reage ao nível
-            nesta etapa. Quando o redesenho de cada tela chegar, o padrão de consumo
-            é este: ler `level`, variar só texto/formato, nunca o valor numérico. */}
-        <MetricCell
-          label={pnlLabel}
-          value={
-            summary.totalPnl === null || summary.totalPnlPercentage === null
-              ? '—'
-              : `${summary.totalPnl >= 0 ? '+' : '-'}${formatCurrency(
-                  Math.abs(summary.totalPnl),
-                )}`
-          }
-          tone={
-            summary.totalPnl === null
-              ? 'default'
-              : summary.totalPnl >= 0
-                ? 'positive'
-                : 'negative'
-          }
-          sub={pnlSub}
-        />
-        <MetricCell
-          label="Dividendos no ano"
-          value={formatCurrency(totalDividendsYear)}
-        />
-        <MetricCell
-          label="Yield estimado"
-          value={
-            estimatedDividendYieldPct !== null
-              ? `${estimatedDividendYieldPct.toFixed(2)}%`
-              : '—'
-          }
-        />
-      </MetricCellGrid>
-
+    <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
+      {/* Feature tour (logic preserved, modal invisible until triggered) */}
       <FeatureTourModal
         open={openFeatureTour}
         onOpenChange={setOpenFeatureTour}
@@ -1154,838 +1221,636 @@ const Dashboard = () => {
         }}
       />
 
-      <Card variant="glass" className="mb-8 overflow-hidden">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <CardTitle>Otimizador Fiscal</CardTitle>
-              <CardDescription>
-                Oportunidades para reduzir imposto com prejuízo acumulado
-              </CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/fiscal')}>
-              Abrir Fiscal
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {loadingOptimizer ? (
-            <Skeleton className="h-20 w-full" />
-          ) : (
-            <>
-              <p className="text-sm">
-                Prejuízo acumulado disponível:{' '}
-                <strong>
-                  {formatCurrency(optimizerData?.accumulatedLosses?.total || 0)}
-                </strong>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {optimizerData?.explanation}
-              </p>
-              {(optimizerData?.opportunities || []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Sem oportunidades claras no momento.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {optimizerData?.opportunities?.slice(0, 3).map((item) => (
-                    <div
-                      key={item.symbol}
-                      className="rounded-lg border border-border/40 bg-background/30 p-3 text-sm">
-                      <p className="font-medium">{item.headline}</p>
-                      <p className="text-muted-foreground">
-                        Imposto com compensação:{' '}
-                        {formatCurrency(item.estimatedTaxWithOffset)} |
-                        economia: {formatCurrency(item.taxSaved)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {/* 1. Adaptive level banner */}
+      <AiInsightBanner
+        text={levelHint}
+        meta={levelMeta}
+        actionLabel="Como a IA decidiu"
+        onAction={() => {}}
+      />
 
-      <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
-        <Card variant="glass" className="xl:col-span-2 overflow-hidden">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle>Patrimônio</CardTitle>
-                <CardDescription>
-                  Valor consolidado da carteira com comparativos de mercado
-                </CardDescription>
-              </div>
-              <div className="flex space-x-1 rounded-full bg-secondary/30 p-1">
-                {['7D', '1M', '3M', '6M', '1A', '5A'].map((period) => (
-                  <Button
-                    key={period}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedPeriod(period)}
-                    className={`h-8 rounded-full px-4 text-xs font-bold transition-all ${
-                      selectedPeriod === period
-                        ? 'bg-primary text-primary-foreground hover:brightness-110'
-                        : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
-                    }`}>
-                    {period}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-12 w-56" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-44 w-full" />
-              </div>
-            ) : (
-              <>
-                <h3 className="mb-2 text-4xl font-bold text-primary animate-value">
-                  {formatCurrency(summary.totalValue || 0)}
-                </h3>
-                <p className="mb-4 text-sm text-muted-foreground">
-                  {summary.totalPnl === null ||
-                  summary.totalPnlPercentage === null ? (
-                    <>
-                      P&L acumulado: —{' '}
-                      <span className="text-xs">
-                        (custo médio indisponível)
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      P&L acumulado: {summary.totalPnl >= 0 ? '+' : '-'}
-                      {formatCurrency(Math.abs(summary.totalPnl))} (
-                      {summary.totalPnlPercentage >= 0 ? '+' : '-'}
-                      {Math.abs(summary.totalPnlPercentage).toFixed(2)}%)
-                    </>
-                  )}
-                </p>
-
-                <div className="mb-5 flex flex-wrap gap-2">
-                  {marketComparatorCards.map((item) => (
-                    <div
-                      key={item.key}
-                      className="flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs">
-                      <span className="font-medium text-muted-foreground">
-                        {item.label}
-                      </span>
-                      <span className={`font-semibold ${item.colorClass}`}>
-                        {formatComparatorValue(item)}
-                      </span>
-                      <span
-                        className={
-                          (item.variationPct || 0) > 0
-                            ? 'text-accent-positive'
-                            : (item.variationPct || 0) < 0
-                              ? 'text-accent-negative'
-                              : 'text-muted-foreground'
-                        }>
-                        {item.variationPct !== null
-                          ? `${item.variationPct >= 0 ? '+' : ''}${item.variationPct.toFixed(2)}%`
-                          : '—'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div
-                  className="h-44"
-                  role="img"
-                  aria-label="Gráfico de desempenho percentual da carteira comparado a IBOV, BTC e CDI">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart
-                      data={comparisonChartData}
-                      margin={{top: 10, right: 8, left: 0, bottom: 0}}>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="hsl(var(--muted-foreground)/0.15)"
-                      />
-                      <XAxis dataKey="date" hide />
-                      <YAxis hide domain={['auto', 'auto']} />
-                      <Tooltip
-                        labelFormatter={(label) => formatHistoryDate(label)}
-                        content={
-                          <CustomTooltip
-                            formatter={(value, name) => [
-                              `${Number(value).toFixed(2)}%`,
-                              name,
-                            ]}
-                            labelFormatter={(label) => formatHistoryDate(label)}
-                          />
-                        }
-                      />
-                      <Legend
-                        verticalAlign="top"
-                        align="left"
-                        iconType="circle"
-                        wrapperStyle={{fontSize: 11}}
-                        formatter={(value) =>
-                          value === 'IBOV' && !comparisonAvailability.hasIbov
-                            ? 'IBOV (indisponível no período)'
-                            : value === 'BTC' && !comparisonAvailability.hasBtc
-                              ? 'BTC (indisponível no período)'
-                              : value === 'CDI' &&
-                                  !comparisonAvailability.hasCdi
-                                ? 'CDI (indisponível no período)'
-                                : value
-                        }
-                      />
-                      {/* Carteira usa a cor da marca (hsl(var(--primary))) — o
-                          mesmo azul do chip "Carteira" logo acima do
-                          gráfico. Antes a linha era verde (#22c55e) enquanto
-                          o chip já era azul, e essa mesma linha verde ficava
-                          quase idêntica à do CDI (#10b981) no mesmo gráfico:
-                          duas séries diferentes lendo como uma só. */}
-                      <Area
-                        type="monotone"
-                        dataKey="portfolioPerformance"
-                        name="Carteira"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={2.5}
-                        fillOpacity={0.12}
-                        fill="hsl(var(--primary))"
-                        connectNulls
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="ibovPerformance"
-                        name="IBOV"
-                        stroke="hsl(var(--chart-3))"
-                        strokeWidth={2}
-                        dot={false}
-                        connectNulls
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="btcPerformance"
-                        name="BTC"
-                        stroke="hsl(var(--chart-4))"
-                        strokeWidth={2}
-                        dot={false}
-                        connectNulls
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="cdiPerformance"
-                        name="CDI"
-                        stroke="hsl(var(--chart-2))"
-                        strokeWidth={2}
-                        dot={false}
-                        connectNulls
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-                {periodFallbackActive && effectiveHistoryWindow && (
-                  <p className="mt-2 text-xs text-warning">
-                    Sem dados suficientes para {selectedPeriod} — mostrando os
-                    últimos {effectiveHistoryWindow.days} dias disponíveis.
-                  </p>
-                )}
-                {portfolioSeriesIsFlat && (
-                  <p className="mt-2 text-xs text-warning">
-                    A linha da carteira está parada porque as cotações ainda
-                    não são atualizadas automaticamente — o valor de cada
-                    ativo segue o da última importação. Os comparativos de
-                    mercado acima usam dados ao vivo.
-                  </p>
-                )}
-                {comparisonChartData.length < 2 && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Histórico insuficiente para comparação de rendimento no
-                    período.
-                  </p>
-                )}
-                {comparisonChartData.length >= 2 &&
-                  (!comparisonAvailability.hasIbov ||
-                    !comparisonAvailability.hasBtc ||
-                    !comparisonAvailability.hasCdi) && (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {!comparisonAvailability.hasIbov
-                        ? 'IBOV sem histórico comparável neste período. '
-                        : ''}
-                      {!comparisonAvailability.hasBtc
-                        ? 'BTC sem histórico comparável neste período. '
-                        : ''}
-                      {!comparisonAvailability.hasCdi
-                        ? 'CDI sem histórico comparável neste período.'
-                        : ''}
-                    </p>
-                  )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card variant="glass" className="overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-primary" />
-              Alocação com contexto
-            </CardTitle>
-            <CardDescription>
-              Comparação com meta e alerta de concentração
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-5 w-full" />
-              </div>
-            ) : (
-              <>
-                <div
-                  className="mb-4 h-44"
-                  role="img"
-                  aria-label="Gráfico de barras de alocação por classe de ativo">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={allocationChartData}
-                      layout="vertical"
-                      margin={{top: 8, right: 10, left: 10, bottom: 8}}>
-                      <XAxis
-                        type="number"
-                        domain={[0, 100]}
-                        tickFormatter={(value) => `${value}%`}
-                        tick={{
-                          fontSize: 11,
-                          fill: 'hsl(var(--muted-foreground))',
-                        }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        dataKey="name"
-                        type="category"
-                        width={72}
-                        tick={{fontSize: 12, fill: 'hsl(var(--foreground))'}}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        content={
-                          <CustomTooltip
-                            formatter={(value) => [
-                              `${Number(value).toFixed(2)}%`,
-                              'Alocação',
-                            ]}
-                          />
-                        }
-                      />
-                      <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={18}>
-                        {allocationChartData.map((entry, index) => (
-                          <Cell
-                            key={`allocation-${index}`}
-                            fill={entry.color}
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-2">
-                  {allocationContext.map((row) => (
-                    <div
-                      key={row.label}
-                      className="rounded-lg border border-border/40 p-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{row.label}</span>
-                        <span>{row.current.toFixed(2)}%</span>
-                      </div>
-                      {row.target !== null ? (
-                        <p
-                          className={`text-xs ${row.delta && row.delta > 0 ? 'text-warning' : 'text-accent-positive'}`}>
-                          {row.delta && row.delta > 0 ? 'Acima' : 'Abaixo'} da
-                          meta em {Math.abs(row.delta || 0).toFixed(2)}% (meta{' '}
-                          {row.target.toFixed(2)}%)
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          Meta de alocação não configurada.
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      {/* 2. 4 KPI cards */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, minmax(0,1fr))',
+          gap: 11.2,
+        }}>
+        <KpiCard
+          label="Patrimônio total"
+          value={formatCurrency(summary.totalValue)}
+          delta={totalValueDelta}
+          deltaStyle={totalValueDeltaStyle}
+          sub="total investido"
+        />
+        <KpiCard
+          label={pnlLabel}
+          value={
+            summary.totalPnl === null
+              ? '—'
+              : `${summary.totalPnl >= 0 ? '+' : ''}${formatCurrency(Math.abs(summary.totalPnl))}`
+          }
+          delta={pnlDelta}
+          deltaStyle={pnlDeltaStyle}
+          sub={pnlSub}
+          tooltip={{
+            title: 'P&L',
+            body: 'Ganho/perda realizado + não realizado',
+            formula: '(Cotação - PM) × Qtd',
+          }}
+        />
+        <KpiCard
+          label="Dividendos recebidos"
+          value={formatCurrency(totalDividendsYear)}
+          delta={divYieldDelta}
+          deltaStyle={{color: 'var(--pos)', fontVariantNumeric: 'tabular-nums'}}
+          sub="últimos 12 meses"
+        />
+        <KpiCard
+          label="Beta da carteira"
+          value="—"
+          sub="vs IBOV"
+          tooltip={{
+            title: 'Beta',
+            body: 'Sensibilidade da carteira ao índice de referência',
+            formula: 'β = Cov(carteira, IBOV) / Var(IBOV)',
+            side: 'right',
+          }}
+        />
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-        <Card variant="glass">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-primary" />
-                  Trackerr IA Hoje
-                </CardTitle>
-                <CardDescription>
-                  Prioridades práticas para hoje com base no portfólio atual
-                </CardDescription>
-              </div>
-              {!hasProOrHigher && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/subscription')}>
-                  Upgrade PRO
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loadingSubscription ? (
-              <Skeleton className="h-24 w-full" />
-            ) : (
-              <PremiumBlur
-                locked={!hasProOrHigher}
-                title="Insights exclusivos para PRO+"
-                description="Faça upgrade para liberar alertas diários da Trackerr IA com base nos seus dados reais.">
-                <PriorityFeed>
-                  {actionableInsights.map((item, idx) => (
-                    <PriorityFeedItem
-                      key={`${item.title}-${idx}`}
-                      severity={
-                        item.priority === 'Alta'
-                          ? 'alta'
-                          : item.priority === 'Média'
-                            ? 'media'
-                            : 'baixa'
-                      }
-                      title={item.title}
-                      description={item.description}
-                    />
-                  ))}
-                </PriorityFeed>
-                {(aiDashboardHighlights.length > 0 ||
-                  derivedDashboardHighlights.length > 0) && (
-                  <div className="mt-3 space-y-3">
-                    {aiDashboardHighlights.length > 0 && (
-                      <div className="rounded-lg border border-surface-hairline/[0.1] bg-surface-panel/40 p-3">
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Sinais do Trackerr IA
-                        </p>
-                        <div className="space-y-1">
-                          {aiDashboardHighlights.map((item, idx) => (
-                            <p
-                              key={`${item.title}-${idx}`}
-                              className="text-xs text-muted-foreground">
-                              {item.title}
-                            </p>
-                          ))}
-                        </div>
-                        <AiGeneratedNotice className="mt-2" />
-                      </div>
-                    )}
-                    {derivedDashboardHighlights.length > 0 && (
-                      <div className="rounded-lg border border-surface-hairline/[0.1] bg-surface-panel/40 p-3">
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Sinais de watchlist e cenário
-                        </p>
-                        <div className="space-y-1">
-                          {derivedDashboardHighlights.map((item, idx) => (
-                            <p
-                              key={`${item.title}-${idx}`}
-                              className="text-xs text-muted-foreground">
-                              {item.title}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </PremiumBlur>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card variant="glass">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2">
-              <CalendarClock className="h-4 w-4 text-primary" />
-              Próximas ações recomendadas
-            </CardTitle>
-            <CardDescription>
-              Ações priorizadas para manter a carteira saudável
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recommendedActions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Sem ações pendentes com os dados atuais.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {recommendedActions.map((item) => (
-                  <div
-                    key={item.title}
-                    className="rounded-lg border border-surface-hairline/[0.1] bg-surface-panel/40 p-3">
-                    <p className="text-sm font-semibold">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {item.reason}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card variant="glass" className="p-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4 text-primary" />
-              Risco da carteira
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p className="flex items-center justify-between">
-              <span>Volatilidade diária</span>
-              <strong>
-                {volatilityPct !== null
-                  ? `${volatilityPct.toFixed(2)}%`
-                  : 'Dados insuficientes'}
-              </strong>
-            </p>
-            <p className="flex items-center justify-between">
-              <span>Maior concentração</span>
-              <strong>
-                {concentrationInfo
-                  ? `${concentrationInfo.name} (${concentrationInfo.value.toFixed(2)}%)`
-                  : 'Sem dados'}
-              </strong>
-            </p>
-            <p className="flex items-center justify-between">
-              <span>Exposição por classe</span>
-              <strong>
-                {distributionData.filter((d) => d.value > 0).length} classes
-              </strong>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Correlação detalhada entre ativos ainda não está disponível na API
-              atual.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card variant="glass" className="p-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2">
-              <CalendarClock className="h-4 w-4 text-primary" />
-              Próximos eventos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {futureDividendEvents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Sem eventos futuros disponíveis nas fontes atuais.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {futureDividendEvents.map((event) => (
-                  <div
-                    key={`${event.symbol}-${event.date}`}
-                    className="rounded-lg border border-surface-hairline/[0.1] p-2 text-sm">
-                    <p className="font-medium">{event.symbol}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Provento previsto: {formatCurrency(event.value)} em{' '}
-                      {formatHistoryDate(event.date)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card variant="glass" className="p-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-primary" />
-              Performance vs benchmark
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {benchmarkCards.map((item) => (
+      {/* 3. Quant bar (intermediário/avançado only) */}
+      {level !== 'iniciante' && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, minmax(0,1fr))',
+            gap: 1,
+            border: '1px solid var(--hair)',
+            borderRadius: 8,
+            background: 'var(--hair-soft)',
+            overflow: 'hidden',
+          }}>
+          {quantMetrics.map((q) => (
+            <div
+              key={q.label}
+              style={{padding: '11.2px 16.8px', background: 'var(--surf-3)'}}>
               <div
-                key={item.label}
-                className="flex items-center justify-between rounded-lg border border-surface-hairline/[0.1] p-2 text-sm">
-                <span>{item.label}</span>
-                <strong
-                  className={
-                    item.value === null
-                      ? 'text-muted-foreground'
-                      : item.value >= 0
-                        ? 'text-accent-positive'
-                        : 'text-accent-negative'
-                  }>
-                  {item.value === null
-                    ? 'Indisponível'
-                    : `${item.value >= 0 ? '+' : ''}${item.value.toFixed(2)}%`}
-                </strong>
+                style={{
+                  fontSize: 10.5,
+                  color: 'var(--color-neutral-600)',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}>
+                {q.label}
+              </div>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginTop: 5.6,
+                  fontVariantNumeric: 'tabular-nums',
+                  color: 'var(--color-neutral-100)',
+                }}>
+                {q.value}
+              </div>
+              <div
+                style={{
+                  fontSize: 10.5,
+                  color: 'var(--color-neutral-600)',
+                  marginTop: 2.8,
+                }}>
+                {q.note}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 4. Evolução + Alocação */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0,1.9fr) minmax(0,1fr)',
+          gap: 16.8,
+        }}>
+        <section
+          style={{
+            border: '1px solid var(--hair)',
+            borderRadius: 8,
+            background: 'var(--nk-card)',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+          <SectionHeader
+            title="Evolução patrimonial"
+            subtitle="Retorno % · carteira vs IBOV vs CDI"
+            action={
+              <PeriodSelector
+                periods={PERIODS}
+                value={selectedPeriod}
+                onChange={setSelectedPeriod}
+              />
+            }
+          />
+          <div style={{padding: 16.8}}>
+            {/* Chart legend */}
+            <div
+              style={{display: 'flex', gap: 16.8, marginBottom: 11.2, flexWrap: 'wrap'}}>
+              {chartLegend.map((l) => (
+                <div
+                  key={l.label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5.6,
+                    fontSize: 11,
+                    color: 'var(--color-neutral-400)',
+                  }}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: l.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span>{l.label}</span>
+                  <span
+                    style={{
+                      color: l.positive ? 'var(--pos)' : 'var(--neg)',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
+                    {l.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div
+              role="img"
+              aria-label="Gráfico de desempenho percentual da carteira comparado a IBOV e CDI">
+              <ResponsiveContainer width="100%" height={200}>
+                <ComposedChart
+                  data={comparisonChartData}
+                  margin={{top: 10, right: 8, left: 0, bottom: 0}}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="var(--hair)"
+                  />
+                  <XAxis dataKey="date" hide />
+                  <YAxis hide domain={['auto', 'auto']} />
+                  <Tooltip
+                    labelFormatter={(label) => formatHistoryDate(label)}
+                    content={
+                      <CustomTooltip
+                        formatter={(value, name) => [
+                          `${Number(value).toFixed(2)}%`,
+                          name,
+                        ]}
+                        labelFormatter={(label) => formatHistoryDate(label)}
+                      />
+                    }
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="portfolioPerformance"
+                    name="Carteira"
+                    stroke="#9184d9"
+                    strokeWidth={2.5}
+                    fillOpacity={0.12}
+                    fill="#9184d9"
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="ibovPerformance"
+                    name="IBOV"
+                    stroke="#4cc9f0"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="cdiPerformance"
+                    name="CDI"
+                    stroke="var(--color-neutral-500)"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            {periodFallbackActive && effectiveHistoryWindow && (
+              <p
+                style={{
+                  marginTop: 8,
+                  fontSize: 11,
+                  color: 'var(--color-neutral-500)',
+                }}>
+                Sem dados suficientes para {selectedPeriod} — mostrando os
+                últimos {effectiveHistoryWindow.days} dias disponíveis.
+              </p>
+            )}
+            {portfolioSeriesIsFlat && (
+              <p
+                style={{
+                  marginTop: 8,
+                  fontSize: 11,
+                  color: 'var(--color-neutral-500)',
+                }}>
+                A linha da carteira está parada porque as cotações ainda não são
+                atualizadas automaticamente.
+              </p>
+            )}
+            {comparisonChartData.length < 2 && (
+              <p
+                style={{
+                  marginTop: 8,
+                  fontSize: 11,
+                  color: 'var(--color-neutral-500)',
+                }}>
+                Histórico insuficiente para comparação de rendimento no período.
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section
+          style={{
+            border: '1px solid var(--hair)',
+            borderRadius: 8,
+            background: 'var(--nk-card)',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+          <SectionHeader title="Alocação" subtitle={allocSub} />
+          <div
+            style={{
+              padding: 16.8,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16.8,
+            }}>
+            {/* Allocation bar chart */}
+            <div
+              role="img"
+              aria-label="Gráfico de alocação por classe de ativo">
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart
+                  data={allocationChartData}
+                  layout="vertical"
+                  margin={{top: 4, right: 8, left: 8, bottom: 4}}>
+                  <XAxis
+                    type="number"
+                    domain={[0, 100]}
+                    tickFormatter={(v) => `${v}%`}
+                    tick={{fontSize: 10, fill: 'var(--color-neutral-600)'}}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={56}
+                    tick={{fontSize: 11, fill: 'var(--color-neutral-400)'}}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    content={
+                      <CustomTooltip
+                        formatter={(value) => [
+                          `${Number(value).toFixed(2)}%`,
+                          'Alocação',
+                        ]}
+                      />
+                    }
+                  />
+                  <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={14}>
+                    {allocationChartData.map((entry, index) => (
+                      <Cell key={`alloc-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Allocation list */}
+            <div style={{display: 'flex', flexDirection: 'column', gap: 8.4}}>
+              {allocation.map((a) => (
+                <div
+                  key={a.label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8.4,
+                    fontSize: 12,
+                  }}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 2,
+                      background: a.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{flex: 1, color: 'var(--color-neutral-400)'}}>
+                    {a.label}
+                  </span>
+                  <span
+                    style={{
+                      fontVariantNumeric: 'tabular-nums',
+                      color: 'var(--color-neutral-300)',
+                    }}>
+                    {a.pct}
+                  </span>
+                  <span
+                    style={{
+                      fontVariantNumeric: 'tabular-nums',
+                      color: 'var(--color-neutral-500)',
+                    }}>
+                    {a.value}
+                  </span>
+                </div>
+              ))}
+              {allocation.length === 0 && (
+                <p
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--color-neutral-600)',
+                    textAlign: 'center',
+                  }}>
+                  Sem dados de alocação disponíveis.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* 5. IA Insights */}
+      <section
+        style={{
+          border: '1px solid var(--hair)',
+          borderRadius: 8,
+          background: 'var(--nk-card)',
+        }}>
+        <SectionHeader
+          title="IA Insights"
+          subtitle="Gerado pela análise da sua carteira"
+        />
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0,1fr))',
+            gap: 1,
+            background: 'var(--hair-soft)',
+          }}>
+          {insights.map((ins) => (
+            <div
+              key={ins.id}
+              style={{padding: '14px 16.8px', background: 'var(--nk-card)'}}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8.4,
+                  marginBottom: 8.4,
+                }}>
+                <i
+                  className={ins.icon}
+                  style={{fontSize: 15, color: 'var(--color-accent-300)'}}
+                />
+                <span
+                  style={{
+                    fontSize: 11,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'var(--color-accent-300)',
+                  }}>
+                  {ins.tag}
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--color-neutral-200)',
+                  lineHeight: 1.4,
+                }}>
+                {ins.title}
+              </div>
+              <div
+                style={{
+                  fontSize: 11.5,
+                  color: 'var(--color-neutral-500)',
+                  lineHeight: 1.5,
+                  marginTop: 5.6,
+                }}>
+                {ins.body}
+              </div>
+            </div>
+          ))}
+          {insights.length === 0 && (
+            <div
+              style={{
+                gridColumn: '1 / -1',
+                padding: '14px 16.8px',
+                background: 'var(--nk-card)',
+                color: 'var(--color-neutral-500)',
+                fontSize: 12,
+              }}>
+              Sincronize a carteira para gerar insights da IA.
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 6. Próximos dividendos */}
+      <section
+        style={{
+          border: '1px solid var(--hair)',
+          borderRadius: 8,
+          background: 'var(--nk-card)',
+        }}>
+        <SectionHeader title="Dividendos próximos" subtitle="Próximos 30 dias" />
+        {upcomingDividends.length === 0 ? (
+          <div
+            style={{
+              padding: '14px 16.8px',
+              color: 'var(--color-neutral-500)',
+              fontSize: 12,
+            }}>
+            Sem eventos de dividendos futuros nas fontes atuais.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, minmax(0,1fr))',
+              gap: 1,
+              background: 'var(--hair-soft)',
+            }}>
+            {upcomingDividends.map((d) => (
+              <div
+                key={d.symbol}
+                style={{padding: '14px 16.8px', background: 'var(--nk-card)'}}>
+                <div style={{fontWeight: 600, fontSize: 14}}>{d.symbol}</div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--color-neutral-500)',
+                    marginTop: 2,
+                  }}>
+                  {d.type} · {d.comDate}
+                </div>
+                <div
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 600,
+                    color: 'var(--pos)',
+                    marginTop: 8.4,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                  {d.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: 10.5,
+                    color: 'var(--color-neutral-600)',
+                    marginTop: 2,
+                  }}>
+                  {d.perShare} por ação
+                </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        )}
+      </section>
 
-      <Card variant="glass" className="mb-8 overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle>Dividendos</CardTitle>
-          <CardDescription>
-            Total no ano, média mensal, próximo pagamento e yield estimado
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-            <div className="rounded-lg border border-border/40 p-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Total no ano
-              </p>
-              <p className="text-lg font-semibold">
-                {formatCurrency(totalDividendsYear)}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/40 p-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Média mensal
-              </p>
-              <p className="text-lg font-semibold">
-                {formatCurrency(dividendMonthlyAverage)}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/40 p-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Próximo pagamento
-              </p>
-              <p className="text-sm font-semibold">
-                {nextDividend
-                  ? `${nextDividend.symbol} • ${formatHistoryDate(nextDividend.date)}`
-                  : 'Sem previsão nos dados atuais'}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/40 p-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Yield estimado
-              </p>
-              <p className="text-lg font-semibold">
-                {estimatedDividendYieldPct !== null
-                  ? `${estimatedDividendYieldPct.toFixed(2)}%`
-                  : 'Indisponível'}
-              </p>
-            </div>
-          </div>
-
-          <div
-            className="h-56"
-            role="img"
-            aria-label="Histórico mensal de dividendos recebidos nos últimos 12 meses">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={dividendMonthlyData}
-                margin={{top: 8, right: 8, left: 8, bottom: 8}}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="hsl(var(--muted-foreground)/0.15)"
-                />
-                <XAxis dataKey="label" tick={{fontSize: 11}} />
-                <YAxis
-                  tickFormatter={(value) => formatCurrency(Number(value))}
-                  width={90}
-                  tick={{fontSize: 11}}
-                />
-                <Tooltip
-                  content={
-                    <CustomTooltip
-                      formatter={(value) => [
-                        formatCurrency(Number(value)),
-                        'Dividendos',
-                      ]}
-                      labelFormatter={(label) => String(label)}
-                    />
-                  }
-                />
-                <Bar
-                  dataKey="value"
-                  radius={[6, 6, 0, 0]}
-                  fill="hsl(var(--accent-positive))"
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card variant="glass" className="mb-8 overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle>Ativos em foco</CardTitle>
-          <CardDescription>
-            Top posições, maiores altas/quedas e oportunidades
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-border/40 p-3">
-            <h4 className="mb-2 text-sm font-semibold">
-              Top 5 maiores posições
-            </h4>
-            {topPositions.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Sem ativos carregados.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {topPositions.map((asset) => (
-                  <button
-                    type="button"
-                    key={`position-${asset.id}`}
-                    className="flex w-full items-center justify-between text-left text-sm hover:text-primary"
-                    onClick={() => navigate(`/portfolio/asset/${asset.id}`)}>
-                    <span>{asset.symbol}</span>
-                    <span className="font-semibold">
-                      {formatCurrency(asset.value)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-border/40 p-3">
-            <h4 className="mb-2 text-sm font-semibold">
-              Top 3 maiores altas desde o preço médio
-            </h4>
-            {topGainers.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Sem altas desde o preço médio.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {topGainers.map((asset) => (
-                  <p
-                    key={`gainer-${asset.id}`}
-                    className="flex items-center justify-between text-sm">
-                    <span>{asset.symbol}</span>
-                    <span className="font-semibold text-accent-positive">
-                      +{asset.returnSinceAvgPrice.toFixed(2)}%
-                    </span>
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-border/40 p-3">
-            <h4 className="mb-2 text-sm font-semibold">
-              Top 3 maiores quedas desde o preço médio
-            </h4>
-            {topLosers.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Sem quedas desde o preço médio.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {topLosers.map((asset) => (
-                  <p
-                    key={`loser-${asset.id}`}
-                    className="flex items-center justify-between text-sm">
-                    <span>{asset.symbol}</span>
-                    <span className="font-semibold text-accent-negative">
-                      {asset.returnSinceAvgPrice.toFixed(2)}%
-                    </span>
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-border/40 p-3">
-            <h4 className="mb-2 text-sm font-semibold">Top 3 oportunidades</h4>
-            {visibleOpportunities.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Sem oportunidade clara nos dados atuais.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {visibleOpportunities.slice(0, 3).map((item) => (
-                  <p key={item.key} className="text-sm">
-                    <span className="font-semibold">{item.title}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {item.subtitle}
-                    </span>
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card variant="glass">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-primary" />
-            Resumo fiscal do mês
-          </CardTitle>
-          <CardDescription>Baseado no otimizador fiscal atual</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div className="rounded-lg border border-border/40 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Vendas do mês
-            </p>
-            <p className="text-sm font-semibold">Disponível na tela Fiscal</p>
-          </div>
-          <div className="rounded-lg border border-border/40 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Lucro acumulado
-            </p>
-            <p className="text-sm font-semibold">
-              {summary.totalPnl === null ? '—' : formatCurrency(summary.totalPnl)}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border/40 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Prejuízo compensável
-            </p>
-            <p className="text-sm font-semibold">
-              {formatCurrency(optimizerData?.accumulatedLosses?.total || 0)}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border/40 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Imposto potencial
-            </p>
-            <p className="text-sm font-semibold">
-              {optimizerData?.opportunities?.length
-                ? formatCurrency(
-                    optimizerData.opportunities.reduce(
-                      (sum, item) =>
-                        sum + Number(item.estimatedTaxWithOffset || 0),
-                      0,
-                    ),
-                  )
-                : 'Sem estimativa'}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* 7. Posições em destaque */}
+      <section
+        style={{
+          border: '1px solid var(--hair)',
+          borderRadius: 8,
+          background: 'var(--nk-card)',
+        }}>
+        <SectionHeader
+          title="Posições em destaque"
+          action={
+            <a
+              href="/portfolio"
+              style={{fontSize: 11.5, color: 'var(--color-accent-300)'}}>
+              Ver portfólio completo →
+            </a>
+          }
+        />
+        <DataTable
+          minWidth={700}
+          columns={[
+            {label: 'Ativo'},
+            {label: 'Classe'},
+            {label: 'Cotação', align: 'right'},
+            {label: 'P&L R$', align: 'right'},
+            {label: 'P&L %', align: 'right'},
+            {label: 'Peso', align: 'right'},
+            {label: 'DY', align: 'right'},
+          ]}>
+          {topPositions.slice(0, 6).map((p) => {
+            const pnlAmt =
+              (p.price - getAveragePrice({averagePrice: p.price * (1 - p.returnSinceAvgPrice / 100)})) *
+              p.amount;
+            const pnlPositive = p.returnSinceAvgPrice >= 0;
+            return (
+              <tr
+                key={p.symbol}
+                style={{borderTop: '1px solid var(--hair-soft)'}}
+                className="hover:bg-[rgba(145,132,217,0.06)]">
+                <td style={{padding: '9.8px 16.8px', fontWeight: 600}}>
+                  {p.symbol}
+                </td>
+                <td
+                  style={{
+                    padding: '9.8px 16.8px',
+                    color: 'var(--color-neutral-500)',
+                    fontSize: 11.5,
+                  }}>
+                  {classLabel(p.type)}
+                </td>
+                <td
+                  style={{
+                    padding: '9.8px 16.8px',
+                    textAlign: 'right',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                  {formatCurrency(p.price)}
+                </td>
+                <td
+                  style={{
+                    padding: '9.8px 16.8px',
+                    textAlign: 'right',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: pnlPositive ? 'var(--pos)' : 'var(--neg)',
+                    fontWeight: 600,
+                  }}>
+                  {p.returnSinceAvgPrice !== 0
+                    ? `${pnlPositive ? '+' : ''}${formatCurrency(Math.abs(p.value - p.value / (1 + p.returnSinceAvgPrice / 100)))}`
+                    : '—'}
+                </td>
+                <td
+                  style={{
+                    padding: '9.8px 16.8px',
+                    textAlign: 'right',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: pnlPositive ? 'var(--pos)' : 'var(--neg)',
+                  }}>
+                  {p.returnSinceAvgPrice !== 0
+                    ? `${pnlPositive ? '+' : ''}${p.returnSinceAvgPrice.toFixed(2)}%`
+                    : '—'}
+                </td>
+                <td
+                  style={{
+                    padding: '9.8px 16.8px',
+                    textAlign: 'right',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: 'var(--color-neutral-400)',
+                  }}>
+                  {p.allocation.toFixed(1)}%
+                </td>
+                <td
+                  style={{
+                    padding: '9.8px 16.8px',
+                    textAlign: 'right',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: 'var(--color-neutral-300)',
+                  }}>
+                  {p.dividendYield && p.dividendYield > 0
+                    ? `${p.dividendYield.toFixed(2)}%`
+                    : '—'}
+                </td>
+              </tr>
+            );
+          })}
+          {topPositions.length === 0 && (
+            <tr>
+              <td
+                colSpan={7}
+                style={{
+                  padding: '14px 16.8px',
+                  color: 'var(--color-neutral-500)',
+                  fontSize: 12,
+                  textAlign: 'center',
+                }}>
+                Nenhum ativo encontrado. Sincronize a carteira.
+              </td>
+            </tr>
+          )}
+        </DataTable>
+      </section>
     </div>
   );
 };
