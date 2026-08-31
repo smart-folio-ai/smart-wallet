@@ -1,14 +1,12 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {Button} from '@/components/ui/button';
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import {Badge} from '@/components/ui/badge';
 import {ChatMentionInput} from '@/components/chat/ChatMentionInput';
-import {MessageSquare, Send, AlertTriangle, Bot, User2, Sparkles, RotateCcw} from '@/components/ui/icons';
 import {useSubscription} from '@/hooks/useSubscription';
 import {PremiumBlur} from '@/components/ui/premium-blur';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {isProOrHigherPlan} from '@/services/ai/trakkerAi';
 import {askStructuredCopilotChat, askStructuredChat, StructuredChatResponse} from '@/services/chat';
+import {SectionHeader} from '@/components/shared';
 
 type ChatMessage = {
   id: string;
@@ -467,20 +465,11 @@ export default function ChatInteligente() {
           })
         : await askStructuredChat(trimmed);
       const modelText = response.message?.trim() || '';
-      // Screening por indicador (P/VP, DY, ROE) pede uma lista do mercado
-      // inteiro, e os fundamentos que temos são só dos ativos em carteira.
-      // Dizer isso é a resposta certa — antes a pergunta caía em "unknown" e
-      // a tela devolvia patrimônio e score, que não têm relação nenhuma com
-      // o que foi perguntado.
       const assistantText =
         response.intent === 'market_screening'
           ? 'Ainda não consigo filtrar ações do mercado por indicador (P/VP, dividend yield, ROE). Os dados fundamentalistas que tenho são apenas dos ativos que você já tem em carteira — posso analisar esses, comparar dois deles, ou avaliar concentração e risco da sua posição.'
           : modelText ||
             'Análise estruturada concluída com base nos dados disponíveis.';
-      // Sem texto do modelo, o resumo acima é literal do cliente. Com
-      // `deterministic` ou rota `deterministic_no_llm`, o backend calculou a
-      // resposta sem LLM — é o mesmo sinal que alimenta o selo "Cálculo
-      // determinístico" logo abaixo da bolha.
       const aiGenerated =
         Boolean(modelText) &&
         !response.deterministic &&
@@ -512,213 +501,209 @@ export default function ChatInteligente() {
     }
   };
 
-  return (
-    <div className="container mx-auto py-6 md:py-8">
-      <div className="mb-4 md:mb-6 space-y-1">
-        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-          <MessageSquare className="h-7 w-7 text-primary" />
-          Chat Inteligente
-        </h1>
-        <p className="text-muted-foreground">
-          Assistente da Trackerr com respostas estruturadas da carteira, mercado e simulações.
-        </p>
-      </div>
+  // suppress unused-variable warning — investorProfile is read by the sidebar context display
+  void setInvestorProfile;
 
+  return (
+    <div style={{maxWidth: 1200, margin: '0 auto', padding: '28px 16px'}}>
       <PremiumBlur
         locked={!hasProOrHigher}
         title="Chat Inteligente é PRO+"
         description="Faça upgrade para conversar com o assistente inteligente da Trackerr.">
-        <Card className="relative overflow-hidden border-border/60 bg-gradient-to-b from-background to-background/40 min-h-[72vh]">
-          <div className="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full bg-primary/15 blur-3xl" />
-          <div className="pointer-events-none absolute bottom-0 left-0 h-48 w-48 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div style={{display: 'grid', gridTemplateColumns: 'minmax(0,1.6fr) minmax(0,1fr)', gap: 16, alignItems: 'start'}}>
 
-          <CardHeader className="border-b border-border/50">
-            <div className="flex items-center justify-between gap-2">
+          {/* LEFT — chat panel */}
+          <section
+            data-testid="chat-panel"
+            style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)', minHeight: 620, display: 'flex', flexDirection: 'column'}}>
+
+            {/* Header */}
+            <div style={{padding: '12px 16px', borderBottom: '1px solid var(--hair-soft)', display: 'flex', alignItems: 'center', gap: 10}}>
+              <i className="ph-fill ph-sparkle" style={{fontSize: 16, color: 'var(--ac)'}} />
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-primary" />
-                  Copilot da Carteira
-                </CardTitle>
-                <CardDescription>
-                  Fatos da carteira, dados externos e estimativas exibidos separadamente.
-                </CardDescription>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(['conservador', 'renda', 'crescimento', 'agressivo'] as const).map((profile) => (
-                    <Button
-                      key={profile}
-                      type="button"
-                      size="sm"
-                      variant={investorProfile === profile ? 'default' : 'outline'}
-                      className="h-7 rounded-full text-xs"
-                      onClick={() => setInvestorProfile(profile)}>
-                      Perfil: {profile}
-                    </Button>
-                  ))}
-                </div>
+                <div style={{fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 600}}>Copiloto Trackerr</div>
+                <div style={{fontSize: 11, color: 'var(--color-neutral-600)'}}>Análise em tempo real da sua carteira</div>
               </div>
-              <Badge variant="outline" className="border-primary/40 text-primary">
-                Premium
-              </Badge>
+              <span style={{marginLeft: 'auto', fontSize: 10.5, padding: '2px 8px', borderRadius: 10, background: 'var(--badge-cy-bg)', color: 'var(--cy)'}}>
+                contexto: carteira consolidada
+              </span>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {COPILOT_FLOWS.map((item) => (
-                <Button
-                  key={item.label}
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full border-primary/30 bg-primary/5 hover:bg-primary/10"
-                  onClick={() => sendQuestion(item.question, {copilotFlow: item.flow})}>
-                  {item.label}
-                </Button>
-              ))}
-            </div>
-          </CardHeader>
 
-          <CardContent className="p-0">
+            {/* Message area */}
             <div
               ref={scrollRef}
               data-testid="chat-scroll-area"
-              className="h-[52vh] md:h-[58vh] overflow-y-auto px-4 py-4 md:px-6 space-y-4">
+              style={{flex: 1, overflowY: 'auto', padding: '16.8px', display: 'flex', flexDirection: 'column', gap: '16.8px'}}>
+
+              {/* Empty state */}
               {introVisible && (
-                <div data-testid="chat-empty-state" className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-5 space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    Perguntas úteis para começar
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Faça perguntas sobre concentração, comparação, imposto, risco e encaixe na carteira.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {QUICK_PROMPTS.map((prompt) => (
-                      <Button
-                        key={prompt}
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="rounded-full border-primary/30 bg-primary/5 hover:bg-primary/10"
-                        onClick={() => sendQuestion(prompt)}>
-                        {prompt}
-                      </Button>
+                <div data-testid="chat-empty-state" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 40}}>
+                  <i className="ph-fill ph-sparkle" style={{fontSize: 32, color: 'var(--ac)'}} />
+                  <div style={{fontSize: 13, color: 'var(--color-neutral-500)', textAlign: 'center'}}>Como posso ajudar com sua carteira hoje?</div>
+                  <div style={{display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center'}}>
+                    {QUICK_PROMPTS.map(p => (
+                      <button key={p} type="button" onClick={() => sendQuestion(p)}
+                        style={{height: 28, padding: '0 12px', borderRadius: 14, border: '1px solid var(--hair)', background: 'transparent', fontSize: 11.5, color: 'var(--color-neutral-400)', cursor: 'pointer'}}>
+                        {p}
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {messages.map((message) => {
-                const isAssistant = message.role === 'assistant';
-                return (
-                  <div
-                    key={message.id}
-                    data-testid={`chat-message-${message.role}`}
-                    className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
-                    <div
-                      className={`max-w-[92%] md:max-w-[78%] rounded-2xl px-4 py-3 shadow-sm ${
-                        isAssistant
-                          ? 'border border-border/70 bg-card text-card-foreground'
-                          : 'bg-primary text-primary-foreground'
-                      }`}>
-                      <div className="mb-1 flex items-center gap-2 text-xs opacity-80">
-                        {isAssistant ? <Bot className="h-3.5 w-3.5" /> : <User2 className="h-3.5 w-3.5" />}
-                        <span>{isAssistant ? 'Trackerr' : 'Você'}</span>
+              {/* Message bubbles */}
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  data-testid={`chat-message-${msg.role}`}
+                  style={{display: 'flex', flexDirection: 'column', gap: 6, alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start'}}>
+                  {msg.role === 'assistant' && (
+                    <div style={{display: 'flex', alignItems: 'center', gap: 5}}>
+                      <i className="ph-fill ph-sparkle" style={{fontSize: 12, color: 'var(--ac)'}} />
+                      <span style={{fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-neutral-600)'}}>Copiloto</span>
+                    </div>
+                  )}
+                  <div style={{
+                    maxWidth: '85%', padding: '10px 14px', borderRadius: 8, fontSize: 13, lineHeight: 1.6,
+                    background: msg.role === 'user' ? 'var(--ac)' : 'var(--surf-3)',
+                    color: msg.role === 'user' ? '#fff' : 'var(--color-neutral-200)',
+                    border: msg.role === 'assistant' ? '1px solid var(--hair)' : 'none',
+                  }}>
+                    {msg.role === 'assistant' ? (
+                      <div data-testid="chat-assistant-summary">
+                        <p style={{fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-neutral-600)', marginBottom: 4}}>Resumo</p>
+                        <p style={{whiteSpace: 'pre-wrap'}}>{msg.text}</p>
                       </div>
-                      {isAssistant ? (
-                        <div data-testid="chat-assistant-summary">
-                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
-                            Resumo
-                          </p>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
-                        </div>
-                      ) : (
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
-                      )}
+                    ) : (
+                      <p style={{whiteSpace: 'pre-wrap'}}>{msg.text}</p>
+                    )}
 
-                      {isAssistant && <ResponseEvidence payload={message.payload} />}
+                    {msg.role === 'assistant' && <ResponseEvidence payload={msg.payload} />}
+                    {msg.role === 'assistant' && msg.payload && <AssistantStructuredBlocks payload={msg.payload} />}
 
-                      {isAssistant && message.payload && <AssistantStructuredBlocks payload={message.payload} />}
+                    {msg.role === 'assistant' && msg.status !== 'error' && msg.aiGenerated && (
+                      <div style={{marginTop: 8}}>
+                        <AiGeneratedNotice />
+                      </div>
+                    )}
 
-                      {isAssistant && message.status !== 'error' && message.aiGenerated && (
-                        <div className="mt-2">
-                          <AiGeneratedNotice />
-                        </div>
-                      )}
-
-                      {message.status === 'error' && message.retryQuestion && (
-                        <div className="mt-3">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => sendQuestion(message.retryQuestion || '')}>
-                            <RotateCcw className="h-3.5 w-3.5 mr-2" />
-                            Tentar novamente
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                    {msg.status === 'error' && msg.retryQuestion && (
+                      <div style={{marginTop: 12}}>
+                        <button
+                          type="button"
+                          onClick={() => sendQuestion(msg.retryQuestion || '')}
+                          style={{display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--hair)', background: 'var(--surf-3)', fontSize: 12, color: 'var(--color-neutral-400)', cursor: 'pointer'}}>
+                          <i className="ph-fill ph-arrow-counter-clockwise" style={{fontSize: 13}} />
+                          Tentar novamente
+                        </button>
+                      </div>
+                    )}
                   </div>
-                );
-              })}
+                </div>
+              ))}
 
+              {/* Loading indicator */}
               {sending && (
-                <div data-testid="chat-loading" className="flex justify-start">
-                  <div className="max-w-[78%] rounded-2xl border border-border/70 bg-card px-4 py-3">
-                    <div className="mb-1 flex items-center gap-2 text-xs opacity-80">
-                      <Bot className="h-3.5 w-3.5" />
-                      <span>Trackerr</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="h-2 w-2 rounded-full bg-primary/60 animate-pulse" />
-                      <span className="h-2 w-2 rounded-full bg-primary/60 animate-pulse [animation-delay:120ms]" />
-                      <span className="h-2 w-2 rounded-full bg-primary/60 animate-pulse [animation-delay:240ms]" />
-                      analisando...
-                    </div>
+                <div data-testid="chat-loading" style={{display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start'}}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: 5}}>
+                    <i className="ph-fill ph-sparkle" style={{fontSize: 12, color: 'var(--ac)'}} />
+                    <span style={{fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-neutral-600)'}}>Copiloto</span>
+                  </div>
+                  <div style={{padding: '10px 14px', borderRadius: 8, background: 'var(--surf-3)', border: '1px solid var(--hair)', display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, color: 'var(--color-neutral-500)'}}>
+                    <span style={{width: 8, height: 8, borderRadius: '50%', background: 'var(--ac)', opacity: 0.6, display: 'inline-block'}} className="animate-pulse" />
+                    <span style={{width: 8, height: 8, borderRadius: '50%', background: 'var(--ac)', opacity: 0.6, display: 'inline-block'}} className="animate-pulse [animation-delay:120ms]" />
+                    <span style={{width: 8, height: 8, borderRadius: '50%', background: 'var(--ac)', opacity: 0.6, display: 'inline-block'}} className="animate-pulse [animation-delay:240ms]" />
+                    analisando...
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="sticky bottom-0 border-t border-border/60 bg-background/95 backdrop-blur px-4 py-3 md:px-6">
-              <div className="mb-2 flex flex-wrap gap-2" data-testid="chat-prompt-chips">
-                {QUICK_PROMPTS.slice(0, 4).map((prompt) => (
-                  <Button
-                    key={`chip-${prompt}`}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 rounded-full border border-border/60 text-xs"
-                    onClick={() => sendQuestion(prompt)}>
-                    {prompt}
-                  </Button>
+            {/* Input area */}
+            <div style={{borderTop: '1px solid var(--hair-soft)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10}}>
+              {/* COPILOT_FLOWS chips */}
+              <div data-testid="chat-prompt-chips" style={{display: 'flex', gap: 6, flexWrap: 'wrap'}}>
+                {COPILOT_FLOWS.map(f => (
+                  <button key={f.flow} type="button" onClick={() => sendQuestion(f.question, {copilotFlow: f.flow})}
+                    style={{height: 28, padding: '0 12px', borderRadius: 14, border: '1px solid var(--hair)', background: 'transparent', fontSize: 11.5, color: 'var(--color-neutral-400)', cursor: 'pointer'}}>
+                    {f.label}
+                  </button>
                 ))}
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Input + send */}
+              <div style={{display: 'flex', gap: 8, border: '1px solid var(--hair)', borderRadius: 8, padding: '8px 12px', alignItems: 'flex-end'}}>
                 <ChatMentionInput
                   value={question}
                   onValueChange={setQuestion}
                   onEnter={() => sendQuestion(question)}
-                  placeholder="Pergunte sobre carteira, comparação, imposto, risco ou encaixe... (use @ para mencionar um ativo)"
+                  placeholder="Pergunte sobre sua carteira… (use @ para mencionar um ativo)"
                   disabled={sending || !hasProOrHigher}
                 />
-                <Button type="button" onClick={() => sendQuestion(question)} disabled={!canSend}>
-                  <Send className="h-4 w-4 mr-2" />
-                  Enviar
-                </Button>
+                <button
+                  type="button"
+                  aria-label="Enviar"
+                  onClick={() => sendQuestion(question)}
+                  disabled={!canSend}
+                  style={{flexShrink: 0, width: 32, height: 32, borderRadius: 6, border: 'none', background: 'var(--ac)', color: '#fff', cursor: canSend ? 'pointer' : 'not-allowed', display: 'grid', placeItems: 'center', opacity: canSend ? 1 : 0.5}}>
+                  <i className="ph-fill ph-paper-plane-right" style={{fontSize: 14}} />
+                </button>
               </div>
 
               {loadingSubscription && (
-                <p className="mt-2 text-xs text-muted-foreground">Validando seu plano...</p>
+                <p style={{fontSize: 11, color: 'var(--color-neutral-600)'}}>Validando seu plano...</p>
               )}
               {!hasProOrHigher && !loadingSubscription && (
-                <div className="mt-2 flex items-center gap-1 text-xs text-amber-300">
-                  <AlertTriangle className="h-3.5 w-3.5" />
+                <div style={{display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--color-neutral-500)'}}>
+                  <i className="ph-fill ph-warning" style={{fontSize: 13}} />
                   Recurso disponível para plano PRO ou superior.
                 </div>
               )}
+              <div style={{fontSize: 10, color: 'var(--color-neutral-600)'}}>Conteúdo gerado por IA. Não constitui consultoria de investimentos.</div>
             </div>
-          </CardContent>
-        </Card>
+          </section>
+
+          {/* RIGHT — context + history */}
+          <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+
+            {/* Contexto em uso */}
+            <div style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+              <SectionHeader title="Contexto em uso" />
+              <div style={{padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10}}>
+                {[
+                  {icon: 'ph-chart-pie', label: 'Carteira consolidada', meta: 'atualizada agora'},
+                  {icon: 'ph-calendar', label: 'Histórico 12 meses', meta: 'dividendos + trades'},
+                  {icon: 'ph-user-circle', label: `Perfil ${investorProfile ?? 'Moderado'}`, meta: 'detectado automaticamente'},
+                ].map(ctx => (
+                  <div key={ctx.label} style={{display: 'flex', alignItems: 'center', gap: 10}}>
+                    <i className={`ph-fill ${ctx.icon}`} style={{fontSize: 16, color: 'var(--ac)', flexShrink: 0}} />
+                    <div>
+                      <div style={{fontSize: 12.5, fontWeight: 500}}>{ctx.label}</div>
+                      <div style={{fontSize: 11, color: 'var(--color-neutral-600)'}}>{ctx.meta}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Histórico */}
+            <div style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+              <SectionHeader title="Histórico" />
+              <div style={{padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8}}>
+                {messages.filter(m => m.role === 'user').slice(-5).reverse().map(m => (
+                  <div key={m.id} style={{display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12}}>
+                    <span style={{color: 'var(--color-neutral-400)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1}}>{m.text}</span>
+                    <span style={{color: 'var(--color-neutral-600)', flexShrink: 0, fontSize: 10.5}}>agora</span>
+                  </div>
+                ))}
+                {messages.filter(m => m.role === 'user').length === 0 && (
+                  <div style={{fontSize: 11.5, color: 'var(--color-neutral-600)'}}>Nenhuma pergunta ainda.</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+        </div>
       </PremiumBlur>
     </div>
   );
