@@ -1,30 +1,6 @@
 import React, {useState, useEffect} from 'react';
-import {
-  Zap,
-  Target,
-  ShieldAlert,
-  TrendingUp,
-  RefreshCw,
-  ArrowUp,
-  ArrowRight,
-  TrendingDown,
-  Activity,
-  Shuffle,
-  Info,
-  ChevronRight,
-  Sparkles,
-  PieChart,
-} from '@/components/ui/icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
-import {Progress} from '@/components/ui/progress';
 import {Slider} from '@/components/ui/slider';
 import {Switch} from '@/components/ui/switch';
 import {toast} from 'sonner';
@@ -39,9 +15,8 @@ import {
 } from '@/services/ai';
 import {portfolioService, stockServices} from '@/server/api/api';
 import {accumulateCdi} from '@/pages/cdi-performance.utils';
-import {formatCurrency, formatPercentage} from '@/utils/formatters';
+import {formatCurrency} from '@/utils/formatters';
 import {resolveScoreTone, SCORE_TONE_CLASSES} from '@/utils/score-tone';
-import type {ScoreTone} from '@/utils/score-tone';
 import {cn} from '@/lib/utils';
 import {useSubscription} from '@/hooks/useSubscription';
 import {RagAskPanel} from '@/components/ai/RagAskPanel';
@@ -56,6 +31,9 @@ import {
   getOrCreateAiAnalysis,
   isProOrHigherPlan,
 } from '@/services/ai/trakkerAi';
+import {SectionHeader} from '@/components/shared';
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const ERROR_RADAR_TYPE_LABEL: Record<PortfolioErrorRadarAlertType, string> = {
   concentration: 'Concentração',
@@ -64,8 +42,6 @@ const ERROR_RADAR_TYPE_LABEL: Record<PortfolioErrorRadarAlertType, string> = {
   other: 'Risco',
 };
 
-// POST /ai/future-simulator só aceita estes quatro horizontes — não é um
-// range livre. Selecionável, não deslizante.
 const HORIZON_OPTIONS: {value: FutureSimulatorHorizon; label: string}[] = [
   {value: '6m', label: '6 meses'},
   {value: '1y', label: '1 ano'},
@@ -73,17 +49,53 @@ const HORIZON_OPTIONS: {value: FutureSimulatorHorizon; label: string}[] = [
   {value: '10y', label: '10 anos'},
 ];
 
+const SEVERITY_ORDER: Record<'high' | 'medium' | 'low', number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
+
+/** Maps InsightCard.priority → CSS color token */
+const PRIORITY_COLOR: Record<string, string> = {
+  Alta: 'var(--neg)',
+  Média: 'var(--warn)',
+  Baixa: 'var(--pos)',
+};
+
+/** Maps InsightCard.priority → display chip label */
+const PRIORITY_DISPLAY: Record<string, string> = {
+  Alta: 'ALTO',
+  Média: 'MÉDIO',
+  Baixa: 'BAIXO',
+};
+
+const INSIGHT_TABS = ['Todos', 'Oportunidades', 'Alertas', 'Estratégias'] as const;
+type InsightTab = typeof INSIGHT_TABS[number];
+
+// ─── Local types ─────────────────────────────────────────────────────────────
+
+interface InsightCard {
+  priority: 'Alta' | 'Média' | 'Baixa';
+  category: string;
+  title: string;
+  body: string;
+  note?: string;
+  confidence?: number;
+  sources?: string;
+  when?: string;
+  /** Symbol badge (shown as its own element) */
+  symbol?: string;
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 const AIInsights: React.FC = () => {
   const {planName, isSubscribed, isLoading: subLoading} = useSubscription();
   const [loading, setLoading] = useState(true);
-  const [analysisResult, setAnalysisResult] = useState<AiAnalysisResult | null>(
-    null,
-  );
+  const [analysisResult, setAnalysisResult] = useState<AiAnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [portfolioScore, setPortfolioScore] =
-    useState<PortfolioScoreResponse | null>(null);
-  const [errorRadar, setErrorRadar] =
-    useState<PortfolioErrorRadarResponse | null>(null);
+  const [portfolioScore, setPortfolioScore] = useState<PortfolioScoreResponse | null>(null);
+  const [errorRadar, setErrorRadar] = useState<PortfolioErrorRadarResponse | null>(null);
   // Distingue "ainda nao buscado" (usuario free, fetchData nem tenta) de
   // "buscou e falhou de verdade" — errorRadar === null cobre os dois casos e
   // nao pode ser usado sozinho para decidir se mostra o estado de falha.
@@ -92,9 +104,7 @@ const AIInsights: React.FC = () => {
   // Estados para Simulação
   const [monthlyInvest, setMonthlyInvest] = useState(1000);
   const [horizon, setHorizon] = useState<FutureSimulatorHorizon>('10y');
-  const [simulation, setSimulation] = useState<FutureSimulatorResponse | null>(
-    null,
-  );
+  const [simulation, setSimulation] = useState<FutureSimulatorResponse | null>(null);
   const [simLoading, setSimLoading] = useState(false);
   const [cdiComparison, setCdiComparison] = useState<number | null>(null);
 
@@ -104,11 +114,9 @@ const AIInsights: React.FC = () => {
   // do perfil do investidor e a sugestão de modo avançado baseada nele (ver
   // useEffect abaixo), além do toggle na UI que efetivamente escreve em
   // localStorage. O estado em si não é redeclarado aqui.
-  const [investorProfile, setInvestorProfile] =
-    useState<InvestorProfileResponse | null>(null);
-  const [viewMode, setViewMode] = useState<'standard' | 'advanced'>(
-    'standard',
-  );
+  const [investorProfile, setInvestorProfile] = useState<InvestorProfileResponse | null>(null);
+  const [viewMode, setViewMode] = useState<'standard' | 'advanced'>('standard');
+  const [insightTab, setInsightTab] = useState<InsightTab>('Todos');
 
   useEffect(() => {
     const savedMode = localStorage.getItem('ai_insights_view_mode');
@@ -277,15 +285,27 @@ const AIInsights: React.FC = () => {
     }
   };
 
+  // ─── Loading guard ──────────────────────────────────────────────────────────
+
   if (loading)
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-muted-foreground animate-pulse font-medium">
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '60vh',
+          gap: 16,
+        }}>
+        <i className="ph-fill ph-spinner" style={{fontSize: 40, color: 'var(--ac)'}} />
+        <p style={{color: 'var(--color-neutral-500)', fontWeight: 500}}>
           Trackerr IA está analisando seu patrimônio...
         </p>
       </div>
     );
+
+  // ─── Derived values ─────────────────────────────────────────────────────────
 
   const aiData = analysisResult?.ai_analysis || analysisResult;
   const isPremium = hasProOrHigher;
@@ -293,18 +313,10 @@ const AIInsights: React.FC = () => {
   // Score determinístico (GET /ai/portfolio-score). `overall` é null quando a
   // carteira não tem posição suficiente — nunca 0, que seria lido como
   // "carteira péssima" em vez de "sem dado".
-  const hasScore =
-    portfolioScore?.status === 'ok' && portfolioScore.overall !== null;
-  const overallScore = hasScore ? portfolioScore!.overall! : null;
-  const dimensionScore = (key: 'diversification' | 'risk'): number | null => {
-    const dimension = portfolioScore?.dimensions?.find(
-      (item) => item.key === key,
-    );
-    return typeof dimension?.score === 'number' ? dimension.score : null;
-  };
-
-  const scoreTone = resolveScoreTone(overallScore);
-  const scoreToneClasses = SCORE_TONE_CLASSES[scoreTone];
+  const overallScore =
+    portfolioScore?.status === 'ok' && portfolioScore.overall !== null
+      ? portfolioScore.overall
+      : null;
 
   const simulationTone = simulation
     ? resolveScoreTone(
@@ -315,29 +327,47 @@ const AIInsights: React.FC = () => {
       )
     : 'neutral';
 
+  // ─── Error guard ────────────────────────────────────────────────────────────
+
   if (error && !analysisResult) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <ShieldAlert className="h-12 w-12 text-rose-500" />
-        <h2 className="text-xl font-bold">Ops! Algo deu errado.</h2>
-        <p className="text-muted-foreground text-center max-w-md">{error}</p>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '60vh',
+          gap: 16,
+        }}>
+        <i
+          className="ph-fill ph-shield-warning"
+          style={{fontSize: 48, color: 'var(--neg)'}}
+        />
+        <h2 style={{fontSize: 20, fontWeight: 700, margin: 0}}>
+          Ops! Algo deu errado.
+        </h2>
+        <p
+          style={{
+            color: 'var(--color-neutral-500)',
+            textAlign: 'center',
+            maxWidth: 400,
+            margin: 0,
+          }}>
+          {error}
+        </p>
         <Button onClick={fetchData} variant="outline" className="rounded-xl">
-          <RefreshCw className="mr-2 h-4 w-4" /> Tentar Novamente
+          <i
+            className="ph-fill ph-arrow-clockwise"
+            style={{marginRight: 8, fontSize: 14}}
+          />
+          Tentar Novamente
         </Button>
       </div>
     );
   }
 
-  const SEVERITY_ORDER: Record<'high' | 'medium' | 'low', number> = {
-    high: 0,
-    medium: 1,
-    low: 2,
-  };
-  const SEVERITY_LABEL: Record<'high' | 'medium' | 'low', string> = {
-    high: 'ALTO',
-    medium: 'MÉDIO',
-    low: 'BAIXO',
-  };
+  // ─── Insight derivation ─────────────────────────────────────────────────────
 
   const sortedAlerts = [...(errorRadar?.alerts || [])].sort(
     (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity],
@@ -345,602 +375,1028 @@ const AIInsights: React.FC = () => {
   const highCount = sortedAlerts.filter((a) => a.severity === 'high').length;
   const mediumCount = sortedAlerts.filter((a) => a.severity === 'medium').length;
 
-  return (
-    <div className="container mx-auto py-8 space-y-10 selection:bg-primary/20">
-      {/* Header com Smart Feed */}
-      <header className="space-y-6">
-        <div className="flex justify-between items-end">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-4xl font-black tracking-tight font-heading text-foreground">
-                Insights IA
-              </h1>
-              <button
-                type="button"
-                aria-label="Atualizar análise"
-                onClick={fetchData}
-                className="h-8 w-8 rounded-full border border-border/60 flex items-center justify-center hover:bg-muted/10 transition-colors">
-                <RefreshCw className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </div>
-            <p className="text-muted-foreground font-medium">
-              Visão estratégica e prevenção de erros com inteligência
-              artificial.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <InvestorProfileBadge
-              profile={investorProfile}
-              onOverride={handleProfileOverride}
-            />
-            <div className="flex items-center gap-2">
-              <label
-                htmlFor="view-mode-toggle"
-                className="text-xs font-bold text-muted-foreground">
-                Avançado
-              </label>
-              <Switch
-                id="view-mode-toggle"
-                aria-label="Modo avançado"
-                checked={viewMode === 'advanced'}
-                onCheckedChange={handleViewModeChange}
-              />
-            </div>
-            {isPremium && <BadgePremium />}
-          </div>
-        </div>
+  const alertInsights: InsightCard[] = sortedAlerts.map((a) => ({
+    priority:
+      a.severity === 'high' ? 'Alta' : a.severity === 'medium' ? 'Média' : 'Baixa',
+    category: ERROR_RADAR_TYPE_LABEL[a.type],
+    title: a.message,
+    body: a.symbol ? 'Portfólio concentrado' : 'Portfólio geral',
+    note: `Código: ${a.code}`,
+    symbol: a.symbol,
+  }));
 
-        {/* Smart Feed (Spotify Style) */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {(aiData?.smart_feed || []).length > 0 ? (
-            aiData?.smart_feed?.map((item, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-primary/5 hover:border-primary/20 transition-all group cursor-pointer overflow-hidden relative">
-                <div
-                  className={cn(
-                    'h-12 w-12 rounded-2xl flex items-center justify-center shrink-0',
-                    item.impact === 'positive'
-                      ? 'bg-emerald-500/10 text-emerald-500'
-                      : 'bg-rose-500/10 text-rose-500',
-                  )}>
-                  {item.impact === 'positive' ? (
-                    <TrendingUp className="h-6 w-6" />
-                  ) : (
-                    <TrendingDown className="h-6 w-6" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-sm truncate">{item.title}</h4>
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {item.content}
-                  </p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0" />
-              </div>
-            ))
-          ) : (
-            <div className="md:col-span-3 p-4 rounded-2xl bg-card/50 border border-dashed border-primary/20 text-center text-sm text-muted-foreground">
-              Seu Feed Inteligente será gerado na próxima análise.
+  const oppInsights: InsightCard[] = (aiData?.opportunity_radar ?? []).map((o) => ({
+    priority: 'Média' as const,
+    category: 'Oportunidade',
+    title: `${o.symbol} — ${o.upside.toFixed(1)}% upside`,
+    body: o.rationale,
+    when: `Alvo: ${formatCurrency(o.target_price)}`,
+  }));
+
+  const stratInsights: InsightCard[] = (aiData?.rebalancing?.top_moves ?? []).map(
+    (m) => ({
+      priority: 'Baixa' as const,
+      category: 'Estratégia',
+      title: m,
+      body: 'Movimentação sugerida pelo modelo de rebalanceamento.',
+    }),
+  );
+
+  const allInsights = [...alertInsights, ...oppInsights, ...stratInsights];
+
+  const visibleInsights =
+    insightTab === 'Todos'
+      ? allInsights
+      : insightTab === 'Alertas'
+        ? alertInsights
+        : insightTab === 'Oportunidades'
+          ? oppInsights
+          : stratInsights;
+
+  /** Opp insights are in the current view — show AiGeneratedNotice. */
+  const showOppNotice =
+    oppInsights.length > 0 &&
+    (insightTab === 'Todos' || insightTab === 'Oportunidades');
+
+  // Score signals for the right sidebar (dimensions only — overall shown separately)
+  const scoreSignals = (portfolioScore?.dimensions ?? []).map((d) => ({
+    label: d.key === 'diversification' ? 'Diversificação' : 'Controle de risco',
+    value: d.score,
+    max: 100,
+  }));
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
+
+  return (
+    <div
+      style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        padding: '28px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 20,
+      }}>
+      {/* Page title */}
+      <div style={{display: 'flex', alignItems: 'center', gap: 9}}>
+        <i className="ph-fill ph-sparkle" style={{fontSize: 18, color: 'var(--ac)'}} />
+        <span
+          style={{fontFamily: 'var(--font-heading)', fontSize: 18, fontWeight: 600}}>
+          Insights IA
+        </span>
+        <button
+          type="button"
+          aria-label="Atualizar análise"
+          onClick={fetchData}
+          style={{
+            marginLeft: 4,
+            height: 28,
+            width: 28,
+            borderRadius: '50%',
+            border: '1px solid var(--hair)',
+            background: 'transparent',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}>
+          <i
+            className="ph-fill ph-arrow-clockwise"
+            style={{fontSize: 14, color: 'var(--color-neutral-500)'}}
+          />
+        </button>
+        <div
+          style={{
+            marginLeft: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}>
+          <InvestorProfileBadge
+            profile={investorProfile}
+            onOverride={handleProfileOverride}
+          />
+          <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+            <label
+              htmlFor="view-mode-toggle"
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'var(--color-neutral-500)',
+              }}>
+              Avançado
+            </label>
+            <Switch
+              id="view-mode-toggle"
+              aria-label="Modo avançado"
+              checked={viewMode === 'advanced'}
+              onCheckedChange={handleViewModeChange}
+            />
+          </div>
+          {isPremium && <BadgePremium />}
+        </div>
+      </div>
+
+      {/* Two-column grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0,1.55fr) minmax(0,1fr)',
+          gap: 16,
+          alignItems: 'start',
+        }}>
+        {/* LEFT — insight feed */}
+        <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+          {/* Tab bar */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 6,
+              padding: '0 0 8px',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+            }}>
+            {INSIGHT_TABS.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                aria-pressed={insightTab === tab}
+                onClick={() => setInsightTab(tab)}
+                style={{
+                  height: 28,
+                  padding: '0 12px',
+                  borderRadius: 14,
+                  fontSize: 11.5,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background:
+                    insightTab === tab ? 'var(--ac)' : 'var(--surf-3)',
+                  color:
+                    insightTab === tab ? '#fff' : 'var(--color-neutral-400)',
+                }}>
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Alert summary — always shown when alerts exist (regardless of tab) */}
+          {sortedAlerts.length > 0 && (
+            <p
+              style={{
+                margin: 0,
+                fontSize: 10.5,
+                color: 'var(--color-neutral-600)',
+              }}>
+              {sortedAlerts.length === 1 ? '1 alerta' : `${sortedAlerts.length} alertas`}{' '}
+              — {highCount} alto(s), {mediumCount} médio(s)
+            </p>
+          )}
+
+          {/* No-alerts notice — always shown when radar ok and no alerts */}
+          {errorRadar?.status === 'ok' && sortedAlerts.length === 0 && (
+            <p
+              style={{
+                margin: 0,
+                fontSize: 12.5,
+                color: 'var(--color-neutral-500)',
+              }}>
+              Nenhum alerta no momento — sinais de concentração, diversificação e
+              risco dentro do esperado.
+            </p>
+          )}
+
+          {/* Radar failed notice — always shown when radar couldn't load */}
+          {errorRadarFailed && (
+            <div
+              style={{
+                padding: '12px 16px',
+                border: '1px solid var(--hair)',
+                borderRadius: 8,
+                background: 'var(--nk-card)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}>
+              <span style={{fontSize: 12.5, color: 'var(--color-neutral-500)'}}>
+                Não foi possível carregar o radar.
+              </span>
+              <Button
+                onClick={fetchData}
+                variant="outline"
+                size="sm"
+                className="rounded-xl">
+                Tentar novamente
+              </Button>
             </div>
           )}
-        </section>
-      </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        {/* Lado Esquerdo: Score & Análise (8 colunas) */}
-        <div className="xl:col-span-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Investment Score Gauge */}
-            <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-lg">
-              <CardContent className="p-8 flex flex-col items-center justify-center text-center space-y-6">
-                <div className="relative">
-                  <svg className="h-48 w-48 -rotate-90">
-                    <circle
-                      cx="96"
-                      cy="96"
-                      r="88"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="12"
-                      className="text-muted/10"
-                    />
-                    <circle
-                      cx="96"
-                      cy="96"
-                      r="88"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="12"
-                      strokeDasharray={552.92}
-                      strokeDashoffset={
-                        552.92 * (1 - (overallScore ?? 0) / 100)
-                      }
-                      className={cn(
-                        scoreToneClasses.text,
-                        'transition-all duration-1000 ease-out',
-                      )}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-5xl font-black tracking-tighter">
-                      {overallScore ?? '--'}
-                    </span>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                      Score da carteira
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-bold">
-                    {overallScore === null
-                      ? 'Sem dados suficientes'
-                      : overallScore >= 80
-                        ? 'Excelente'
-                        : overallScore >= 60
-                          ? 'Bom'
-                          : overallScore >= 40
-                            ? 'Regular'
-                            : 'Frágil'}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {overallScore === null
-                      ? 'Adicione ativos à carteira para calcular o score.'
-                      : 'Calculado a partir da diversificação e do risco da sua carteira.'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Empty state */}
+          {visibleInsights.length === 0 && !errorRadarFailed && (
+            <div
+              style={{
+                padding: '24px',
+                border: '1px dashed var(--hair)',
+                borderRadius: 8,
+                textAlign: 'center',
+                fontSize: 12.5,
+                color: 'var(--color-neutral-500)',
+              }}>
+              {insightTab === 'Todos'
+                ? 'Nenhum insight disponível no momento.'
+                : `Nenhum insight na categoria "${insightTab}".`}
+            </div>
+          )}
 
-            {/* Assessment Text */}
-            <Card className="rounded-2xl bg-card border-none shadow-none flex flex-col justify-center">
-              <CardContent className="p-0">
-                <div className="p-6 bg-muted/5 rounded-2xl mb-4 border-l-2 border-border">
-                  <h4 className="flex items-center gap-2 text-sm font-bold mb-3">
-                    <Activity className="h-4 w-4 text-primary" /> Opinião
-                    Trackerr
-                  </h4>
-                  <p className="text-sm leading-relaxed text-muted-foreground italic">
-                    "
-                    {aiData?.portfolio_assessment ||
-                      'Analisando seu portfólio para gerar recomendações personalizadas...'}
-                    "
-                  </p>
-                  {aiData?.portfolio_assessment && (
-                    <AiGeneratedNotice className="pt-2" />
-                  )}
-                </div>
-                {/* Só diversificação e risco: consistência e volatilidade não
-                    têm cálculo determinístico e foram removidas em vez de
-                    exibirem número inventado pelo LLM (TRA-5). */}
-                {hasScore && (
-                  <div className="grid grid-cols-2 gap-4 px-2">
-                    <ScoreRow
-                      label="Diversificação"
-                      val={dimensionScore('diversification')}
-                      tone={resolveScoreTone(dimensionScore('diversification'))}
-                    />
-                    {/* "Controle de risco", não "Risco": a dimensão vem
-                        normalizada para maior = melhor, então uma barra cheia
-                        sob o rótulo "Risco" leria como o oposto do que é. */}
-                    <ScoreRow
-                      label="Controle de risco"
-                      val={dimensionScore('risk')}
-                      tone={resolveScoreTone(dimensionScore('risk'))}
-                    />
-                  </div>
+          {/* Insight cards */}
+          {visibleInsights.map((insight, i) => (
+            <div
+              key={i}
+              style={{
+                border: '1px solid var(--hair)',
+                borderRadius: 8,
+                background: 'var(--nk-card)',
+                padding: '14px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}>
+              {/* Header row: priority badge + symbol + category */}
+              <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: '2px 7px',
+                    borderRadius: 10,
+                    background: PRIORITY_COLOR[insight.priority] + '22',
+                    color: PRIORITY_COLOR[insight.priority],
+                  }}>
+                  {PRIORITY_DISPLAY[insight.priority]}
+                </span>
+                {insight.symbol && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      background: 'var(--surf-3)',
+                      color: 'var(--color-neutral-400)',
+                    }}>
+                    {insight.symbol}
+                  </span>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Pergunta contextual ao RAG sobre a carteira (TRA-39). */}
-          <Card className="rounded-2xl bg-card border-primary/5">
-            <CardContent className="p-6">
-              <RagAskPanel
-                contextLabel="sua carteira"
-                placeholder="Pergunte sobre a sua carteira..."
-                quickPrompts={[
-                  'Por que minha carteira está concentrada?',
-                  'Qual o maior risco da minha carteira hoje?',
-                  'Como estão meus dividendos projetados?',
-                ]}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Auto Rebalancing & Allocation */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Shuffle className="h-5 w-5 text-primary" /> Auto Rebalanceamento
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="rounded-2xl border-primary/5 bg-card/40">
-                <CardContent className="p-6 space-y-4">
-                  <h4 className="text-sm font-bold text-muted-foreground uppercase">
-                    Proposta de Alocação Ideal
-                  </h4>
-                  <div className="space-y-4">
-                    {(aiData?.rebalancing?.ideal_allocation || []).map(
-                      (item, i) => (
-                        <div key={i} className="space-y-1.5">
-                          <div className="flex justify-between text-xs font-bold">
-                            <span>{item.category}</span>
-                            <div className="space-x-2">
-                              <span className="text-muted-foreground line-through decoration-muted-foreground/40">
-                                {item.current.toFixed(1)}%
-                              </span>
-                              <span className="text-primary">
-                                {item.ideal.toFixed(1)}%
-                              </span>
-                            </div>
-                          </div>
-                          <div className="h-1.5 w-full bg-muted/20 rounded-full overflow-hidden flex">
-                            <div
-                              style={{width: `${item.current}%`}}
-                              className="bg-muted-foreground/30 h-full"
-                            />
-                            <div
-                              style={{
-                                width: `${Math.max(0, item.ideal - item.current)}%`,
-                              }}
-                              className="bg-primary h-full opacity-50"
-                            />
-                          </div>
-                        </div>
-                      ),
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-              <div className="space-y-4">
-                <div className="bg-muted/5 rounded-2xl p-6 border border-border/60">
-                  <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" /> Movimentações
-                    Sugeridas
-                  </h4>
-                  <div className="space-y-2">
-                    {(aiData?.rebalancing?.top_moves || []).map((move, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-3 text-sm font-medium">
-                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                        {move}
-                      </div>
-                    ))}
-                  </div>
-                  {(aiData?.rebalancing?.top_moves || []).length > 0 && (
-                    <AiGeneratedNotice className="pt-3" />
-                  )}
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    color: 'var(--color-neutral-600)',
+                    marginLeft: 'auto',
+                  }}>
+                  {insight.category}
+                </span>
+              </div>
+              {/* Title */}
+              <div
+                style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: 14.5,
+                  fontWeight: 600,
+                  lineHeight: 1.35,
+                }}>
+                {insight.title}
+              </div>
+              {/* Body */}
+              <div
+                style={{
+                  fontSize: 12.5,
+                  color: 'var(--color-neutral-400)',
+                  lineHeight: 1.6,
+                }}>
+                {insight.body}
+              </div>
+              {/* Depth note */}
+              {insight.note && (
+                <div
+                  style={{
+                    borderLeft: '2px solid var(--color-accent-700)',
+                    paddingLeft: 10,
+                    fontSize: 11.5,
+                    color: 'var(--color-neutral-500)',
+                    lineHeight: 1.5,
+                  }}>
+                  {insight.note}
                 </div>
+              )}
+              {/* Footer */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 12,
+                  fontSize: 10.5,
+                  color: 'var(--color-neutral-600)',
+                  borderTop: '1px solid var(--hair-soft)',
+                  paddingTop: 8,
+                }}>
+                {insight.confidence !== undefined && (
+                  <span>Confiança: {insight.confidence}%</span>
+                )}
+                {insight.sources && <span>Fontes: {insight.sources}</span>}
+                {insight.when && <span>{insight.when}</span>}
+              </div>
+              {/* Action buttons */}
+              <div style={{display: 'flex', gap: 8}}>
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    height: 32,
+                    borderRadius: 6,
+                    border: '1px solid var(--hair)',
+                    background: 'transparent',
+                    fontSize: 11.5,
+                    color: 'var(--color-neutral-400)',
+                    cursor: 'pointer',
+                  }}>
+                  Trilha de auditoria
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    height: 32,
+                    borderRadius: 6,
+                    border: '1px solid var(--color-accent-700)',
+                    background: 'transparent',
+                    fontSize: 11.5,
+                    color: 'var(--color-accent-300)',
+                    cursor: 'pointer',
+                  }}>
+                  Ver análise completa
+                </button>
               </div>
             </div>
-          </section>
+          ))}
 
-          {/* Radar Anti-Erro */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-rose-500" /> Radar Anti-Erro
-            </h2>
-            {errorRadarFailed && (
-              <div className="p-5 rounded-2xl border border-border/60 bg-muted/5 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Não foi possível carregar o radar.
-                </p>
-                <Button onClick={fetchData} variant="outline" size="sm" className="rounded-xl">
-                  Tentar novamente
-                </Button>
-              </div>
-            )}
-            {errorRadar?.status === 'ok' && sortedAlerts.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Nenhum alerta no momento — sinais de concentração, diversificação e
-                risco dentro do esperado.
-              </p>
-            )}
-            {sortedAlerts.length > 0 && (
-              <p className="text-xs font-bold text-muted-foreground">
-                {sortedAlerts.length}{' '}
-                {sortedAlerts.length === 1 ? 'alerta' : 'alertas'} —{' '}
-                {highCount} alto(s), {mediumCount} médio(s)
-              </p>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {sortedAlerts.map((alert) => (
+          {/* AiGeneratedNotice when opportunity insights are visible */}
+          {showOppNotice && <AiGeneratedNotice />}
+
+          {/* RAG Ask Panel */}
+          <div
+            style={{
+              border: '1px solid var(--hair)',
+              borderRadius: 8,
+              background: 'var(--nk-card)',
+              padding: '16px',
+            }}>
+            <RagAskPanel
+              contextLabel="sua carteira"
+              placeholder="Pergunte sobre a sua carteira..."
+              quickPrompts={[
+                'Por que minha carteira está concentrada?',
+                'Qual o maior risco da minha carteira hoje?',
+                'Como estão meus dividendos projetados?',
+              ]}
+            />
+          </div>
+
+          {!isPremium && <UpgradeBanner />}
+        </div>
+
+        {/* RIGHT — model sidebar */}
+        <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+          {/* Como a IA definiu seu nível */}
+          <div
+            style={{
+              border: '1px solid var(--hair)',
+              borderRadius: 8,
+              background: 'var(--nk-card)',
+            }}>
+            <SectionHeader title="Como a IA definiu seu nível" />
+            <div
+              style={{
+                padding: '12px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}>
+              {/* Score display */}
+              <div style={{textAlign: 'center', padding: '8px 0 4px'}}>
                 <div
-                  key={alert.code}
-                  className={cn(
-                    'p-5 rounded-2xl border transition-all',
-                    alert.severity === 'high'
-                      ? 'bg-warning/5 border-warning/20'
-                      : 'bg-muted/5 border-border/60',
-                  )}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={cn(
-                        'text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest',
-                        alert.severity === 'high'
-                          ? 'bg-warning text-warning-foreground'
-                          : 'bg-muted text-muted-foreground',
-                      )}>
-                      {SEVERITY_LABEL[alert.severity]}
-                    </span>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                      {ERROR_RADAR_TYPE_LABEL[alert.type]}
-                    </span>
-                    {alert.symbol && (
-                      <span className="ml-auto text-[10px] font-bold bg-muted px-2 py-0.5 rounded">
-                        {alert.symbol}
-                      </span>
-                    )}
+                  style={{
+                    fontSize: 40,
+                    fontWeight: 900,
+                    letterSpacing: '-0.02em',
+                    color: 'var(--ac)',
+                    lineHeight: 1,
+                  }}>
+                  {overallScore ?? '--'}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--color-neutral-600)',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    marginTop: 4,
+                  }}>
+                  Score da carteira
+                </div>
+                {portfolioScore?.status === 'insufficient_data' && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: 'var(--color-neutral-500)',
+                      marginTop: 4,
+                    }}>
+                    Sem dados suficientes
                   </div>
-                  <p className="text-xs font-medium leading-relaxed">{alert.message}</p>
+                )}
+              </div>
+
+              {/* Só diversificação e risco: consistência e volatilidade não
+                  têm cálculo determinístico e foram removidas em vez de
+                  exibirem número inventado pelo LLM (TRA-5). */}
+              {scoreSignals.map((sig) => (
+                <div
+                  key={sig.label}
+                  style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: 'var(--color-neutral-400)',
+                      width: 120,
+                      flexShrink: 0,
+                    }}>
+                    {sig.label}
+                  </span>
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 6,
+                      borderRadius: 3,
+                      background: 'var(--sunk)',
+                      overflow: 'hidden',
+                    }}>
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${Math.min((sig.value / sig.max) * 100, 100)}%`,
+                        background: 'var(--ac)',
+                        borderRadius: 3,
+                      }}
+                    />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontVariantNumeric: 'tabular-nums',
+                      width: 36,
+                      textAlign: 'right',
+                    }}>
+                    {sig.value}
+                  </span>
+                </div>
+              ))}
+              <button
+                type="button"
+                style={{
+                  marginTop: 4,
+                  width: '100%',
+                  height: 32,
+                  borderRadius: 6,
+                  border: '1px solid var(--hair)',
+                  background: 'transparent',
+                  fontSize: 12,
+                  color: 'var(--color-neutral-400)',
+                  cursor: 'pointer',
+                }}>
+                Assumir controle manual
+              </button>
+            </div>
+          </div>
+
+          {/* Ficha do modelo */}
+          <div
+            style={{
+              border: '1px solid var(--hair)',
+              borderRadius: 8,
+              background: 'var(--nk-card)',
+            }}>
+            <SectionHeader title="Ficha do modelo" />
+            <div
+              style={{
+                padding: '12px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}>
+              {[
+                {label: 'Modelo', value: 'Trackerr IA v2'},
+                {label: 'Atualizado', value: 'Tempo real'},
+                {label: 'Dados usados', value: 'Carteira, mercado, fundamentos'},
+                {
+                  label: 'Regulatório',
+                  value: 'Não constitui consultoria de investimento',
+                },
+              ].map((row) => (
+                <div
+                  key={row.label}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                    fontSize: 12,
+                  }}>
+                  <span style={{color: 'var(--color-neutral-600)'}}>{row.label}</span>
+                  <span
+                    style={{
+                      color: 'var(--color-neutral-300)',
+                      textAlign: 'right',
+                      maxWidth: 200,
+                    }}>
+                    {row.value}
+                  </span>
                 </div>
               ))}
             </div>
-          </section>
+          </div>
 
-          {/* Future Simulation UI */}
-          <Card className="rounded-2xl bg-card border-primary/5 overflow-hidden">
-            <CardHeader className="p-8 pb-0">
-              <CardTitle className="text-2xl font-black">
-                Simulador de Futuro
-              </CardTitle>
-              <CardDescription>
-                O que acontece se você investir regularmente?
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <div className="space-y-8">
-                  <div className="space-y-4">
-                    <div className="flex justify-between text-sm">
-                      <label className="font-bold">Aporte Mensal</label>
-                      <span className="font-bold font-mono text-primary">
-                        {formatCurrency(monthlyInvest)}
-                      </span>
+          {/* Opinião Trackerr */}
+          {aiData?.portfolio_assessment && (
+            <div
+              style={{
+                border: '1px solid var(--hair)',
+                borderRadius: 8,
+                background: 'var(--nk-card)',
+              }}>
+              <SectionHeader title="Opinião Trackerr" />
+              <div
+                style={{
+                  padding: '12px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}>
+                <p
+                  style={{
+                    fontSize: 12.5,
+                    color: 'var(--color-neutral-400)',
+                    lineHeight: 1.6,
+                    fontStyle: 'italic',
+                    margin: 0,
+                  }}>
+                  "{aiData.portfolio_assessment}"
+                </p>
+                <AiGeneratedNotice />
+              </div>
+            </div>
+          )}
+
+          {/* Proposta de Alocação */}
+          {(aiData?.rebalancing?.ideal_allocation ?? []).length > 0 && (
+            <div
+              style={{
+                border: '1px solid var(--hair)',
+                borderRadius: 8,
+                background: 'var(--nk-card)',
+              }}>
+              <SectionHeader title="Proposta de Alocação" />
+              <div
+                style={{
+                  padding: '12px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                }}>
+                {(aiData?.rebalancing?.ideal_allocation ?? []).map((item, i) => (
+                  <div
+                    key={i}
+                    style={{display: 'flex', flexDirection: 'column', gap: 6}}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                      }}>
+                      <span>{item.category}</span>
+                      <div style={{display: 'flex', gap: 8}}>
+                        <span
+                          style={{
+                            color: 'var(--color-neutral-600)',
+                            textDecoration: 'line-through',
+                          }}>
+                          {item.current.toFixed(1)}%
+                        </span>
+                        <span style={{color: 'var(--ac)'}}>
+                          {item.ideal.toFixed(1)}%
+                        </span>
+                      </div>
                     </div>
-                    <Slider
-                      value={[monthlyInvest]}
-                      onValueChange={(v) => {
-                        setMonthlyInvest(v[0]);
+                    <div
+                      style={{
+                        height: 6,
+                        width: '100%',
+                        background: 'var(--sunk)',
+                        borderRadius: 3,
+                        overflow: 'hidden',
+                        display: 'flex',
+                      }}>
+                      <div
+                        style={{
+                          width: `${item.current}%`,
+                          background: 'var(--color-neutral-600)',
+                          height: '100%',
+                        }}
+                      />
+                      <div
+                        style={{
+                          width: `${Math.max(0, item.ideal - item.current)}%`,
+                          background: 'var(--ac)',
+                          height: '100%',
+                          opacity: 0.5,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                <AiGeneratedNotice />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Simulador de Futuro */}
+      <div
+        style={{
+          border: '1px solid var(--hair)',
+          borderRadius: 8,
+          background: 'var(--nk-card)',
+          overflow: 'hidden',
+        }}>
+        <SectionHeader
+          title="Simulador de Futuro"
+          subtitle="O que acontece se você investir regularmente?"
+        />
+        <div style={{padding: '20px 16px'}}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 32,
+            }}>
+            {/* Controls */}
+            <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+              <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}>
+                  <span>Aporte Mensal</span>
+                  <span style={{color: 'var(--ac)', fontFamily: 'monospace'}}>
+                    {formatCurrency(monthlyInvest)}
+                  </span>
+                </div>
+                <Slider
+                  value={[monthlyInvest]}
+                  onValueChange={(v) => {
+                    setMonthlyInvest(v[0]);
+                    setSimulation(null);
+                    setCdiComparison(null);
+                  }}
+                  max={10000}
+                  step={100}
+                  className="py-4"
+                />
+              </div>
+              <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+                <span style={{fontSize: 13, fontWeight: 700}}>Horizonte</span>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: 8,
+                  }}>
+                  {HORIZON_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setHorizon(option.value);
                         setSimulation(null);
                         setCdiComparison(null);
                       }}
-                      max={10000}
-                      step={100}
-                      className="py-4"
-                    />
-                  </div>
-                  <div className="space-y-4">
-                    <label className="font-bold text-sm">Horizonte</label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {HORIZON_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => {
-                            setHorizon(option.value);
-                            setSimulation(null);
-                            setCdiComparison(null);
-                          }}
-                          className={cn(
-                            'rounded-xl py-2 text-xs font-bold border transition-colors',
-                            horizon === option.value
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'border-primary/10 text-muted-foreground hover:bg-primary/5',
-                          )}>
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full h-12 rounded-2xl font-bold text-lg"
-                    onClick={handleSimulate}
-                    disabled={simLoading}>
-                    {simLoading ? (
-                      <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                    ) : (
-                      'Calcular Projeção IA'
-                    )}
-                  </Button>
+                      style={{
+                        borderRadius: 8,
+                        padding: '6px 0',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        border:
+                          horizon === option.value
+                            ? '1px solid var(--ac)'
+                            : '1px solid var(--hair)',
+                        background:
+                          horizon === option.value ? 'var(--ac)' : 'transparent',
+                        color:
+                          horizon === option.value
+                            ? '#fff'
+                            : 'var(--color-neutral-400)',
+                      }}>
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
+              </div>
+              <Button
+                style={{
+                  width: '100%',
+                  height: 44,
+                  borderRadius: 8,
+                  fontWeight: 700,
+                }}
+                onClick={handleSimulate}
+                disabled={simLoading}>
+                {simLoading ? (
+                  <>
+                    <i
+                      className="ph-fill ph-spinner"
+                      style={{marginRight: 8, fontSize: 16}}
+                    />
+                    Calculando...
+                  </>
+                ) : (
+                  'Calcular Projeção IA'
+                )}
+              </Button>
+            </div>
 
+            {/* Result panel */}
+            <div
+              className={cn(
+                SCORE_TONE_CLASSES[simulationTone].bg,
+                SCORE_TONE_CLASSES[simulationTone].border,
+              )}
+              style={{
+                borderRadius: 16,
+                padding: 24,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                textAlign: 'center',
+                border: '1px solid var(--hair)',
+                position: 'relative',
+              }}>
+              {simulation ? (
                 <div
-                  className={cn(
-                    'rounded-[2rem] p-8 flex flex-col justify-center items-center text-center border relative',
-                    SCORE_TONE_CLASSES[simulationTone].bg,
-                    SCORE_TONE_CLASSES[simulationTone].border,
-                  )}>
-                  {simulation ? (
-                    <div className="animate-in fade-in zoom-in duration-500 space-y-6">
-                      <div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] mb-3">
-                          Patrimônio Esperado
-                        </p>
-                        <h2 className="text-5xl font-black text-primary tracking-tighter">
-                          {formatCurrency(simulation.scenarios.base.projectedValue)}
-                        </h2>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Faixa estimada: {formatCurrency(simulation.scenarios.base.range.lower)}
-                          {' – '}
-                          {formatCurrency(simulation.scenarios.base.range.upper)}
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-8 pt-6 border-t border-primary/10">
-                        <div>
-                          <span className="block text-[10px] text-muted-foreground uppercase font-bold mb-1">
-                            Pessimista
-                          </span>
-                          <span className="font-black text-rose-500 text-lg">
-                            {formatCurrency(
-                              simulation.scenarios.pessimistic.projectedValue,
-                            )}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="block text-[10px] text-muted-foreground uppercase font-bold mb-1">
-                            Otimista
-                          </span>
-                          <span className="font-black text-emerald-500 text-lg">
-                            {formatCurrency(
-                              simulation.scenarios.optimistic.projectedValue,
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                      {viewMode === 'advanced' && cdiComparison !== null && (
-                        <div className="pt-4 border-t border-border/60 w-full">
-                          <span className="block text-[10px] text-muted-foreground uppercase font-bold mb-1">
-                            CDI acumulado (últimos {simulation.months} meses)
-                          </span>
-                          <span className="font-black text-foreground text-lg">
-                            {formatCurrency(cdiComparison)}
-                          </span>
-                          <p className="text-[10px] text-muted-foreground/70 mt-1">
-                            Estimativa simplificada: aplica o CDI já realizado
-                            nos últimos {simulation.months} meses sobre o
-                            valor atual da carteira, sem simular os aportes
-                            mensais dentro do CDI. É uma referência do passado,
-                            não uma projeção da mesma janela futura dos
-                            cenários acima.
-                          </p>
-                        </div>
-                      )}
-                      {simulation.limitations.length > 0 && (
-                        <p className="text-[10px] text-muted-foreground/70 pt-2">
-                          Projeção com dados parciais da carteira.
-                        </p>
-                      )}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 20,
+                    width: '100%',
+                  }}>
+                  <div>
+                    <p
+                      style={{
+                        fontSize: 10,
+                        color: 'var(--color-neutral-600)',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.15em',
+                        margin: '0 0 8px',
+                      }}>
+                      Patrimônio Esperado
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 36,
+                        fontWeight: 900,
+                        color: 'var(--ac)',
+                        letterSpacing: '-0.02em',
+                        margin: '0 0 4px',
+                      }}>
+                      {formatCurrency(simulation.scenarios.base.projectedValue)}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--color-neutral-600)',
+                        margin: 0,
+                      }}>
+                      {formatCurrency(simulation.scenarios.base.range.lower)}
+                      {' – '}
+                      {formatCurrency(simulation.scenarios.base.range.upper)}
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 20,
+                      paddingTop: 16,
+                      borderTop: '1px solid var(--hair-soft)',
+                    }}>
+                    <div>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 10,
+                          color: 'var(--color-neutral-600)',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          marginBottom: 4,
+                        }}>
+                        Pessimista
+                      </span>
+                      <span
+                        style={{fontWeight: 900, color: 'var(--neg)', fontSize: 16}}>
+                        {formatCurrency(
+                          simulation.scenarios.pessimistic.projectedValue,
+                        )}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <PieChart className="h-12 w-12 text-primary/20 mx-auto" />
-                      <p className="text-sm text-muted-foreground max-w-[200px]">
-                        Ajuste os aportes e simule o poder dos juros compostos.
+                    <div>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 10,
+                          color: 'var(--color-neutral-600)',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          marginBottom: 4,
+                        }}>
+                        Otimista
+                      </span>
+                      <span
+                        style={{fontWeight: 900, color: 'var(--pos)', fontSize: 16}}>
+                        {formatCurrency(
+                          simulation.scenarios.optimistic.projectedValue,
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  {viewMode === 'advanced' && cdiComparison !== null && (
+                    <div
+                      style={{
+                        paddingTop: 12,
+                        borderTop: '1px solid var(--hair-soft)',
+                        width: '100%',
+                      }}>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 10,
+                          color: 'var(--color-neutral-600)',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          marginBottom: 4,
+                        }}>
+                        CDI acumulado (últimos {simulation.months} meses)
+                      </span>
+                      <span style={{fontWeight: 900, fontSize: 16}}>
+                        {formatCurrency(cdiComparison)}
+                      </span>
+                      <p
+                        style={{
+                          fontSize: 10,
+                          color: 'var(--color-neutral-600)',
+                          margin: '4px 0 0',
+                        }}>
+                        Estimativa simplificada: aplica o CDI já realizado nos
+                        últimos {simulation.months} meses sobre o valor atual da
+                        carteira, sem simular os aportes mensais dentro do CDI.
                       </p>
                     </div>
                   )}
+                  {simulation.limitations.length > 0 && (
+                    <p
+                      style={{
+                        fontSize: 10,
+                        color: 'var(--color-neutral-600)',
+                        paddingTop: 8,
+                        margin: 0,
+                      }}>
+                      Projeção com dados parciais da carteira.
+                    </p>
+                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Lado Direito (4 colunas) */}
-        <div className="xl:col-span-4 space-y-8">
-          {/* Radar de Oportunidades */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" /> Radar de Oportunidades
-            </h2>
-            <div className="space-y-3">
-              {(aiData?.opportunity_radar || []).map((opp, i) => (
+              ) : (
                 <div
-                  key={i}
-                  className="group p-5 rounded-2xl bg-card border border-primary/5 hover:border-primary/30 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-primary/5">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <span className="block font-black text-xl group-hover:text-primary transition-colors">
-                        {opp.symbol}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-                        {opp.type}
-                      </span>
-                    </div>
-                    <div className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-2 py-1 rounded-full flex items-center">
-                      <ArrowUp className="h-3 w-3 mr-1" />{' '}
-                      {opp.upside.toFixed(1)}% UPSIDE
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed italic line-clamp-2">
-                    "{opp.rationale}"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                    alignItems: 'center',
+                  }}>
+                  <i
+                    className="ph-fill ph-chart-pie"
+                    style={{fontSize: 48, color: 'var(--color-neutral-700)'}}
+                  />
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: 'var(--color-neutral-500)',
+                      maxWidth: 200,
+                      margin: 0,
+                    }}>
+                    Ajuste os aportes e simule o poder dos juros compostos.
                   </p>
-                  <div className="flex justify-between items-center mt-5 pt-4 border-t border-primary/5">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                      Alvo:{' '}
-                      <span className="text-foreground">
-                        {formatCurrency(opp.target_price)}
-                      </span>
-                    </span>
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">
-                      <ArrowRight className="h-4 w-4 text-primary group-hover:text-primary-foreground transition-colors" />
-                    </div>
-                  </div>
                 </div>
-              ))}
+              )}
             </div>
-            {(aiData?.opportunity_radar || []).length > 0 && (
-              <AiGeneratedNotice className="pt-2" />
-            )}
-          </section>
-
-          {!isPremium && <UpgradeBanner />}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const ScoreRow = ({
-  label,
-  val,
-  tone = 'neutral',
-}: {
-  label: string;
-  val: number | null;
-  tone?: ScoreTone;
-}) => (
-  <div className="space-y-2">
-    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-      <span>{label}</span>
-      {/* Em dash quando não há valor. `val || 0` mostraria 0% para dado
-          ausente, que é uma afirmação — e errada. */}
-      <span className={SCORE_TONE_CLASSES[tone].text}>
-        {val === null ? '—' : `${val}%`}
-      </span>
-    </div>
-    <Progress
-      value={val ?? 0}
-      className="h-1 bg-primary/5"
-      indicatorClassName={cn(
-        tone === 'warning' && 'bg-gradient-to-r from-warning/50 to-warning',
-        tone === 'neutral' && 'bg-gradient-to-r from-muted-foreground/50 to-muted-foreground',
-        tone === 'positive' && 'bg-gradient-to-r from-positive/50 to-positive',
-      )}
-    />
-  </div>
-);
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 const BadgePremium = () => (
-  <div className="bg-gradient-to-r from-amber-400 to-amber-600 text-[10px] font-black text-black px-3 py-1 rounded-full uppercase tracking-tighter flex items-center gap-1 shadow-lg shadow-amber-500/20 select-none cursor-default">
-    <Zap className="h-3 w-3 fill-black" /> Pro Account
+  <div
+    style={{
+      background: 'linear-gradient(90deg, #f59e0b, #d97706)',
+      fontSize: 10,
+      fontWeight: 900,
+      color: '#000',
+      padding: '3px 10px',
+      borderRadius: 999,
+      textTransform: 'uppercase',
+      letterSpacing: '-0.02em',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 4,
+      userSelect: 'none',
+      cursor: 'default',
+    }}>
+    <i className="ph-fill ph-lightning" style={{fontSize: 12}} /> Pro Account
   </div>
 );
 
 const UpgradeBanner = () => (
-  <Card className="rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white border-none relative overflow-hidden shadow-2xl shadow-indigo-500/20">
-    <CardContent className="p-8 space-y-6 relative z-10">
-      <div className="h-12 w-12 rounded-2xl bg-white/20 flex items-center justify-center">
-        <Zap className="h-6 w-6 fill-white" />
-      </div>
-      <div className="space-y-2">
-        <h3 className="text-xl font-bold">Libere o Trackerr Pro</h3>
-        <p className="text-sm text-indigo-100 leading-relaxed">
-          Tenha rebalanceamento automático real-time, acesso a robôs de
-          arbitragem e radar de oportunidades expandido.
-        </p>
-      </div>
-      <Button
-        variant="secondary"
-        className="w-full rounded-2xl font-bold shadow-xl">
-        Fazer Upgrade
-      </Button>
-    </CardContent>
-    <div className="absolute top-0 right-0 h-32 w-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 blur-3xl" />
-  </Card>
+  <div
+    style={{
+      borderRadius: 8,
+      background: 'rgba(111,94,217,0.24)',
+      border: '1px solid rgba(145,132,217,0.35)',
+      padding: '24px 20px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16,
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+    <div
+      style={{
+        height: 44,
+        width: 44,
+        borderRadius: 12,
+        background: 'rgba(145,132,217,0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      <i
+        className="ph-fill ph-lightning"
+        style={{fontSize: 22, color: 'var(--color-accent-300)'}}
+      />
+    </div>
+    <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
+      <h3
+        style={{
+          fontFamily: 'var(--font-heading)',
+          fontSize: 16,
+          fontWeight: 700,
+          margin: 0,
+        }}>
+        Libere o Trackerr Pro
+      </h3>
+      <p
+        style={{
+          fontSize: 12.5,
+          color: 'var(--color-neutral-400)',
+          lineHeight: 1.6,
+          margin: 0,
+        }}>
+        Tenha rebalanceamento automático real-time, acesso a robôs de arbitragem
+        e radar de oportunidades expandido.
+      </p>
+    </div>
+    <Button
+      variant="secondary"
+      style={{width: '100%', borderRadius: 8, fontWeight: 700}}>
+      Fazer Upgrade
+    </Button>
+  </div>
 );
 
 export default AIInsights;
