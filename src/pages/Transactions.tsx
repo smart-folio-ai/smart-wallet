@@ -165,12 +165,13 @@ export default function Transactions() {
           action={
             <div style={{display: 'flex', gap: 8.4, flexWrap: 'wrap', alignItems: 'center'}}>
               {TX_FILTERS.map((f) => (
-                <span key={f.value} onClick={() => setTxFilter(f.value)}
+                <button type="button" key={f.value} onClick={() => setTxFilter(f.value)}
+                  aria-pressed={txFilter === f.value}
                   style={txFilter === f.value
                     ? {padding: '3px 10px', borderRadius: 20, fontSize: 11.5, cursor: 'pointer', background: 'rgba(145,132,217,0.18)', color: 'var(--color-accent-100)', border: '1px solid rgba(145,132,217,0.45)'}
                     : {padding: '3px 10px', borderRadius: 20, fontSize: 11.5, cursor: 'pointer', background: 'transparent', color: 'var(--color-neutral-500)', border: '1px solid var(--hair)'}}>
                   {f.label}
-                </span>
+                </button>
               ))}
               <button type="button" onClick={openImportModal} style={{height: 30, padding: '0 11.2px', borderRadius: 8, border: '1px solid var(--color-accent-700)', background: 'transparent', color: 'var(--color-accent-200)', fontSize: 11.5, cursor: 'pointer', fontFamily: 'var(--font-body)'}}>
                 {uploadMutation.isPending ? 'Importando...' : 'Importar arquivo'}

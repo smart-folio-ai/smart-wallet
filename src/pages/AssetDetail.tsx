@@ -656,7 +656,7 @@ export default function AssetDetail() {
                   {['5d','1mo','3mo','6mo','1y','5y'].map((p) => (
                     <button key={p} type="button" onClick={() => setPeriod(p)}
                       style={period === p
-                        ? {height: 26, padding: '0 10px', fontSize: 11, border: 'none', borderRadius: 6, background: 'var(--nk-card)', color: 'var(--color-neutral-100)', boxShadow: '0 1px 3px rgba(0,0,0,0.18)', cursor: 'pointer', fontFamily: 'var(--font-body)', fontWeight: 600}
+                        ? {height: 26, padding: '0 10px', fontSize: 11, border: 'none', borderRadius: 6, background: 'var(--nk-card)', color: 'var(--color-neutral-100)', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)', fontWeight: 600}
                         : {height: 26, padding: '0 10px', fontSize: 11, border: 'none', borderRadius: 6, background: 'transparent', color: 'var(--color-neutral-500)', cursor: 'pointer', fontFamily: 'var(--font-body)'}}>
                       {p.toUpperCase()}
                     </button>
@@ -809,11 +809,11 @@ export default function AssetDetail() {
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                     <div>
                       <div style={{fontSize: 10, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4}}>Valor Intrínseco</div>
-                      <div style={{fontSize: 28, fontWeight: 700, fontFamily: 'var(--font-heading)', color: 'var(--color-accent-100)'}}>{formatCurrency(grahamValue)}</div>
+                      <div style={{fontSize: 28, fontWeight: 700, fontFamily: 'var(--font-heading)', color: 'var(--color-accent-100)', fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(grahamValue)}</div>
                     </div>
                     <div style={{textAlign: 'right'}}>
                       <div style={{fontSize: 10, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4}}>Preço Atual</div>
-                      <div style={{fontSize: 18, fontWeight: 600}}>{formatCurrency(asset.price)}</div>
+                      <div style={{fontSize: 18, fontWeight: 600, fontFamily: 'var(--font-heading)', fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(asset.price)}</div>
                     </div>
                   </div>
                   <GrahamGauge price={asset.price} fairValue={grahamValue} />
@@ -1120,7 +1120,7 @@ export default function AssetDetail() {
           {ASSET_TABS.map((t) => (
             <button key={t.id} type="button" onClick={() => setActiveTab(t.id)}
               style={activeTab === t.id
-                ? {height: 30, padding: '0 14px', fontSize: 12.5, border: 'none', borderRadius: 6, background: 'var(--nk-card)', color: 'var(--color-neutral-100)', boxShadow: '0 1px 3px rgba(0,0,0,0.18)', cursor: 'pointer', fontFamily: 'var(--font-body)'}
+                ? {height: 30, padding: '0 14px', fontSize: 12.5, border: 'none', borderRadius: 6, background: 'var(--nk-card)', color: 'var(--color-neutral-100)', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)'}
                 : {height: 30, padding: '0 14px', fontSize: 12.5, border: 'none', borderRadius: 6, background: 'transparent', color: 'var(--color-neutral-500)', cursor: 'pointer', fontFamily: 'var(--font-body)'}}>
               {t.label}
             </button>

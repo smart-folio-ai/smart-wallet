@@ -502,16 +502,18 @@ const Portfolio = () => {
       {/* 2. Filter pills */}
       <div style={{display: 'flex', gap: 5.6, flexWrap: 'wrap'}}>
         {filterPills.map((f) => (
-          <span
+          <button
+            type="button"
             key={f.label}
             onClick={() => setFilter(f.value)}
+            aria-pressed={activeFilter === f.value}
             style={
               activeFilter === f.value
                 ? {padding: '4px 11.2px', borderRadius: 20, fontSize: 12, cursor: 'pointer', background: 'rgba(145,132,217,0.18)', color: 'var(--color-accent-100)', border: '1px solid rgba(145,132,217,0.45)'}
                 : {padding: '4px 11.2px', borderRadius: 20, fontSize: 12, cursor: 'pointer', background: 'transparent', color: 'var(--color-neutral-500)', border: '1px solid var(--hair)'}
             }>
             {f.label}
-          </span>
+          </button>
         ))}
       </div>
 

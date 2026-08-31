@@ -120,6 +120,7 @@
     --hair-soft: rgba(var(--rgb-line),0.07);
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.18);
     --shadow-lg: 0 16px 48px rgba(0,0,0,0.15);
+    --aurora-glow: rgba(26,123,166,0.30);
     --color-bg: #f4f4f9;
     --color-text: #1a1b24;
     --color-neutral-100: #292b31;
@@ -247,6 +248,7 @@
     --hair-soft: rgba(var(--rgb-line),0.06);
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.18);
     --shadow-lg: 0 16px 48px rgba(0,0,0,0.38);
+    --aurora-glow: rgba(76,201,240,0.30);
     --color-bg: #161826;
     --color-text: #e8e9f2;
     --color-neutral-100: #e8e9f2;

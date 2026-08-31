@@ -80,7 +80,7 @@ const Dividends = () => {
     }
   }, [portfolios, searchParams, selectedPortfolioId]);
 
-  const {data: portfolioPayload} = useQuery({
+  const {data: portfolioPayload, isLoading} = useQuery({
     queryKey: ['dividends-portfolio', selectedPortfolioId],
     queryFn: async () => {
       if (!selectedPortfolioId || selectedPortfolioId === 'all') {
@@ -287,6 +287,10 @@ const Dividends = () => {
   const tableSubtitle = `${allDividendEvents.length} evento${allDividendEvents.length !== 1 ? 's' : ''} registrado${allDividendEvents.length !== 1 ? 's' : ''}`;
 
   // ── JSX ───────────────────────────────────────────────────────────────────
+
+  if (isLoading) {
+    return <div style={{padding: 24, color: 'var(--color-neutral-500)'}}>Carregando...</div>;
+  }
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>

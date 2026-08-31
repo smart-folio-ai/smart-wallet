@@ -1106,7 +1106,7 @@ const Dashboard = () => {
   const chartLegend = [
     {
       label: 'Carteira',
-      color: '#9184d9',
+      color: 'var(--ac)',
       value:
         portfolioPeriodPct !== null
           ? `${portfolioPeriodPct >= 0 ? '+' : ''}${portfolioPeriodPct.toFixed(1)}%`
@@ -1169,6 +1169,10 @@ const Dashboard = () => {
   }));
 
   // ── End Nocturne layout variables ─────────────────────────────────────────
+
+  if (loading || loadingSubscription || loadingOptimizer) {
+    return <div style={{padding: 24, color: 'var(--color-neutral-500)'}}>Carregando...</div>;
+  }
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
@@ -1417,10 +1421,10 @@ const Dashboard = () => {
                     type="monotone"
                     dataKey="portfolioPerformance"
                     name="Carteira"
-                    stroke="#9184d9"
+                    stroke="var(--ac)"
                     strokeWidth={2.5}
                     fillOpacity={0.12}
-                    fill="#9184d9"
+                    fill="var(--ac)"
                     connectNulls
                   />
                   <Line

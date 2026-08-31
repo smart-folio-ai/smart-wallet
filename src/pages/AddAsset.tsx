@@ -411,7 +411,7 @@ export default function AddAsset() {
             style={{display: 'none'}}
           />
           <div style={{padding: '28px 22.4px', textAlign: 'center'}}>
-            <div style={{width: 44, height: 44, margin: '0 auto', borderRadius: 8, background: 'var(--grad-aurora)', display: 'grid', placeItems: 'center', boxShadow: '0 0 28px rgba(76,201,240,0.30)'}}>
+            <div style={{width: 44, height: 44, margin: '0 auto', borderRadius: 8, background: 'var(--grad-aurora)', display: 'grid', placeItems: 'center', boxShadow: '0 0 28px var(--aurora-glow)'}}>
               <i className="ph-fill ph-upload-simple" style={{fontSize: 21, color: 'var(--sunk)'}} />
             </div>
             <div style={{fontFamily: 'var(--font-heading)', fontSize: 17, fontWeight: 600, marginTop: 14}}>Arraste seus arquivos aqui</div>
