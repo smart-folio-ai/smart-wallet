@@ -1,23 +1,7 @@
 import {useMemo, useState, useEffect} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {
-  FileSearch,
-  FileText,
-  Loader2,
-  RefreshCcw,
-  Search,
-  Sparkles,
-  XCircle,
-} from '@/components/ui/icons';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import {Badge} from '@/components/ui/badge';
 import {
   Select,
@@ -312,35 +296,66 @@ const RiInteligente = () => {
 
   return (
     <div className="container py-8 space-y-6">
-      <header className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-background to-background p-6">
+      <header
+        className="rounded-2xl p-6"
+        style={{
+          border: '1px solid var(--hair)',
+          background:
+            'linear-gradient(120deg, rgba(111,94,217,0.10) 0%, rgba(76,201,240,0.06) 100%)',
+        }}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
               RI Inteligente
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm" style={{color: 'var(--color-neutral-500)'}}>
               Busque releases recentes e relevantes com links validados antes da
               exibição.
             </p>
           </div>
-          <Badge variant="outline" className="border-primary/30 text-primary">
+          <Badge
+            variant="outline"
+            style={{border: '1px solid var(--hair)', color: 'var(--ac)'}}>
             Releases Recentes
           </Badge>
         </div>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSearch className="h-5 w-5 text-primary" />
+      <div
+        style={{
+          border: '1px solid var(--hair)',
+          borderRadius: 8,
+          background: 'var(--nk-card)',
+        }}>
+        <div
+          style={{
+            padding: '14px 16px',
+            borderBottom: '1px solid var(--hair-soft)',
+          }}>
+          <div
+            className="flex items-center gap-2"
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: 14,
+              fontWeight: 600,
+            }}>
+            <i
+              className="ph-fill ph-file-magnifying-glass"
+              style={{fontSize: 20, color: 'var(--ac)'}}
+            />
             Busca de RI
-          </CardTitle>
-          <CardDescription>
+          </div>
+          <p
+            style={{
+              fontSize: 14,
+              color: 'var(--color-neutral-500)',
+              marginTop: 4,
+            }}>
             Pesquise por ticker ou empresa com autocomplete e filtre por tipo de
             release.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </p>
+        </div>
+        <div className="space-y-4" style={{padding: '14px 16px'}}>
           <div className="grid gap-3 md:grid-cols-[1fr_260px_auto_auto]">
             <div className="space-y-2">
               <div className="flex gap-2">
@@ -362,7 +377,7 @@ const RiInteligente = () => {
                   onClick={() => applySearch()}
                   className="gap-2"
                   data-testid="ri-apply-search">
-                  <Search className="h-4 w-4" />
+                  <i className="ph-fill ph-magnifying-glass" style={{fontSize: 16}} />
                   Buscar
                 </Button>
               </div>
@@ -371,16 +386,20 @@ const RiInteligente = () => {
                 suggestions.length > 0 &&
                 normalizedDraft !== normalizedQuery && (
                   <div
-                    className="rounded-xl border border-border/80 bg-card p-2"
+                    className="rounded-xl p-2"
+                    style={{
+                      border: '1px solid var(--hair)',
+                      background: 'var(--nk-card)',
+                    }}
                     data-testid="ri-autocomplete-list">
                     {suggestions.slice(0, 6).map((item) => (
                       <button
                         key={`${item.ticker}-${item.company}`}
                         type="button"
-                        className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted/60"
+                        className="w-full rounded-lg px-3 py-2 text-left text-sm"
                         onClick={() => selectSuggestion(item)}>
                         <span className="font-semibold">{item.ticker}</span>
-                        <span className="text-muted-foreground">
+                        <span style={{color: 'var(--color-neutral-500)'}}>
                           {' '}
                           · {item.company}
                         </span>
@@ -411,7 +430,7 @@ const RiInteligente = () => {
               variant="outline"
               onClick={() => refetch()}
               className="gap-2">
-              <RefreshCcw className="h-4 w-4" />
+              <i className="ph-fill ph-arrows-clockwise" style={{fontSize: 16}} />
               Atualizar
             </Button>
 
@@ -420,14 +439,19 @@ const RiInteligente = () => {
               onClick={clearSearch}
               className="gap-2"
               data-testid="ri-clear-search">
-              <XCircle className="h-4 w-4" />
+              <i className="ph-fill ph-x-circle" style={{fontSize: 16}} />
               Limpar
             </Button>
           </div>
 
           {notice && (
             <div
-              className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200 space-y-2"
+              className="rounded-lg text-sm space-y-2 p-3"
+              style={{
+                border: '1px solid var(--warn)',
+                background: 'rgba(154,106,6,0.10)',
+                color: 'var(--warn)',
+              }}
               data-testid="ri-notice">
               <p className="font-semibold">{notice.title}</p>
               <p>{notice.description}</p>
@@ -443,7 +467,11 @@ const RiInteligente = () => {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="border-amber-400/30 bg-amber-400/10 text-amber-100 hover:bg-amber-400/20"
+                        style={{
+                          border: '1px solid var(--warn)',
+                          background: 'rgba(154,106,6,0.10)',
+                          color: 'var(--warn)',
+                        }}
                         onClick={() => setTypeFilter(filter)}
                         data-testid={`ri-fallback-filter-${filter}`}>
                         Ver {filterLabels[filter]}
@@ -455,22 +483,40 @@ const RiInteligente = () => {
           )}
 
           {!hasSearchQuery ? (
-            <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            <div
+              className="rounded-xl text-sm p-6"
+              style={{
+                border: '1px dashed var(--hair)',
+                color: 'var(--color-neutral-500)',
+              }}>
               Type a ticker (e.g. PETR4) and click search.
             </div>
           ) : isLoading ? (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" data-testid="ri-loading-spinner" />
+            <div
+              className="flex flex-col items-center gap-3 rounded-xl text-sm p-6"
+              style={{
+                border: '1px dashed var(--hair)',
+                color: 'var(--color-neutral-500)',
+              }}>
+              <i
+                className="ph-fill ph-spinner animate-spin"
+                style={{fontSize: 20}}
+                data-testid="ri-loading-spinner"
+              />
               <span>Carregando documentos...</span>
               {showSlowNotice && (
-                <span className="text-xs text-amber-300">
+                <span className="text-xs" style={{color: 'var(--warn)'}}>
                   Isso pode levar até um minuto — estamos consultando múltiplas fontes oficiais.
                 </span>
               )}
             </div>
           ) : documents.length === 0 ? (
             <div
-              className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground"
+              className="rounded-xl text-sm p-6"
+              style={{
+                border: '1px dashed var(--hair)',
+                color: 'var(--color-neutral-500)',
+              }}
               data-testid="ri-empty-state">
               {notice?.description ||
                 'Nenhum release recente válido encontrado com os filtros atuais.'}
@@ -480,16 +526,19 @@ const RiInteligente = () => {
               {documents.map((document) => (
                 <div
                   key={document.id}
-                  className="rounded-xl border border-border/80 p-4 hover:border-primary/40 transition-colors">
+                  className="rounded-xl p-4 transition-colors"
+                  style={{border: '1px solid var(--hair)'}}>
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div className="space-y-1">
                       <p className="text-sm font-semibold">
                         {document.ticker} · {document.company}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm" style={{color: 'var(--color-neutral-500)'}}>
                         {buildDocumentDisplayTitle(document)}
                       </p>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <div
+                        className="flex flex-wrap items-center gap-2 text-xs"
+                        style={{color: 'var(--color-neutral-500)'}}>
                         <Badge variant="secondary">
                           {typeLabels[document.documentType] || 'Outros'}
                         </Badge>
@@ -520,35 +569,59 @@ const RiInteligente = () => {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <PremiumBlur
         locked={!canUseAiSummary}
         title="Resumo e comparação de release"
         description="Disponível para planos Premium e Global Investor">
-        <Card data-testid="ri-summary-panel">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
+        <div
+          data-testid="ri-summary-panel"
+          style={{
+            border: '1px solid var(--hair)',
+            borderRadius: 8,
+            background: 'var(--nk-card)',
+          }}>
+          <div
+            style={{
+              padding: '14px 16px',
+              borderBottom: '1px solid var(--hair-soft)',
+            }}>
+            <div
+              className="flex items-center gap-2"
+              style={{
+                fontFamily: 'var(--font-heading)',
+                fontSize: 14,
+                fontWeight: 600,
+              }}>
+              <i
+                className="ph-fill ph-sparkle"
+                style={{fontSize: 20, color: 'var(--ac)'}}
+              />
               Resumo automático do release
-            </CardTitle>
-            <CardDescription>
+            </div>
+            <p
+              style={{
+                fontSize: 14,
+                color: 'var(--color-neutral-500)',
+                marginTop: 4,
+              }}>
               Gera highlights estruturados do documento selecionado com fallback
               seguro.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </p>
+          </div>
+          <div className="space-y-4" style={{padding: '14px 16px'}}>
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 onClick={handleGenerateSummary}
                 disabled={!selectedDocument || summaryLoading}
                 className="gap-2"
                 data-testid="ri-generate-summary">
-                <FileText className="h-4 w-4" />
+                <i className="ph-fill ph-file-text" style={{fontSize: 16}} />
                 {summaryLoading ? 'Gerando resumo...' : 'Gerar resumo IA'}
               </Button>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs" style={{color: 'var(--color-neutral-500)'}}>
                 {selectedDocument
                   ? `Documento selecionado: ${selectedDocument.ticker}`
                   : 'Selecione um documento para resumir'}
@@ -556,12 +629,18 @@ const RiInteligente = () => {
             </div>
 
             {!summary ? (
-              <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+              <div
+                className="rounded-lg text-sm p-4"
+                style={{
+                  border: '1px dashed var(--hair)',
+                  color: 'var(--color-neutral-500)',
+                }}>
                 Resumo ainda não gerado.
               </div>
             ) : (
               <div
-                className="rounded-lg border border-border/70 p-4 space-y-3"
+                className="rounded-lg p-4 space-y-3"
+                style={{border: '1px solid var(--hair)'}}
                 data-testid="ri-summary-result">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <Badge variant="outline">
@@ -583,19 +662,26 @@ const RiInteligente = () => {
                     {summary.summary.highlights.map((highlight, index) => (
                       <li
                         key={`${highlight}-${index}`}
-                        className="text-sm rounded-md bg-muted/40 px-3 py-2">
+                        className="text-sm rounded-md px-3 py-2"
+                        style={{background: 'var(--surf-3)'}}>
                         {highlight}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm" style={{color: 'var(--color-neutral-500)'}}>
                     Sem highlights disponíveis no momento.
                   </p>
                 )}
 
                 {summary.summary.limitations.length > 0 && (
-                  <div className="rounded-md border border-amber-400/40 bg-amber-50/40 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/20 dark:text-amber-300">
+                  <div
+                    className="rounded-md px-3 py-2 text-xs"
+                    style={{
+                      border: '1px solid var(--warn)',
+                      background: 'rgba(154,106,6,0.10)',
+                      color: 'var(--warn)',
+                    }}>
                     Limitações: {summary.summary.limitations.join(', ')}
                   </div>
                 )}
@@ -607,13 +693,17 @@ const RiInteligente = () => {
             )}
 
             <div
-              className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground"
+              className="rounded-lg text-xs p-4"
+              style={{
+                border: '1px dashed var(--hair)',
+                color: 'var(--color-neutral-500)',
+              }}
               data-testid="ri-release-comparison-placeholder">
               Comparação com release anterior será habilitada nesta área para
               planos Premium/Global.
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </PremiumBlur>
     </div>
   );
