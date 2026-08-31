@@ -68,7 +68,6 @@ export default function SubscriptionSuccess() {
 
   return (
     <div style={{minHeight:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'var(--surf-1)'}}>
-      <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
       <div style={{width:'100%', maxWidth:640}}>
         <div style={{border:'1px solid var(--hair)', borderRadius:16, background:'var(--nk-card)', overflow:'hidden', boxShadow:'var(--shadow-lg)'}}>
           {/* Header */}
@@ -102,7 +101,7 @@ export default function SubscriptionSuccess() {
                   {subscriptionDetails?.status === 'active' ? 'Ativo' : 'Pendente'}
                 </span>
               </div>
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, paddingTop:16, borderTop:'1px solid var(--hair-soft)'}}>
+              <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16, paddingTop:16, borderTop:'1px solid var(--hair-soft)'}}>
                 <div>
                   <p style={{fontSize:12.5, fontWeight:500, color:'var(--color-neutral-500)'}}>Próxima cobrança</p>
                   <p style={{fontSize:15, fontWeight:600, display:'flex', alignItems:'center', gap:4, marginTop:2}}>
