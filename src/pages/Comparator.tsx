@@ -504,7 +504,7 @@ export default function Comparator() {
               style={{
                 border: '1px solid rgba(145,132,217,0.35)',
                 borderRadius: 8,
-                background: 'linear-gradient(135deg, rgba(111,94,217,0.10) 0%, rgba(76,201,240,0.06) 100%)',
+                background: 'linear-gradient(135deg, rgba(111,94,217,0.24) 0%, rgba(76,201,240,0.10) 100%)',
                 padding: '16px',
               }}>
               <div style={{display: 'flex', gap: 8, alignItems: 'flex-start'}}>
