@@ -301,7 +301,7 @@ const RiInteligente = () => {
         style={{
           border: '1px solid var(--hair)',
           background:
-            'linear-gradient(120deg, rgba(111,94,217,0.10) 0%, rgba(76,201,240,0.06) 100%)',
+            'linear-gradient(120deg, rgba(111,94,217,0.24) 0%, rgba(76,201,240,0.10) 100%)',
         }}>
         <div className="flex items-start justify-between gap-4">
           <div>
