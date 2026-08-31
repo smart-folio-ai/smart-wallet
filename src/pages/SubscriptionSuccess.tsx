@@ -1,16 +1,5 @@
 import React from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {Check, Crown, ArrowRight, Download, Calendar} from '@/components/ui/icons';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {Button} from '@/components/ui/button';
-import {Badge} from '@/components/ui/badge';
-import {AppLogo} from '@/components/AppLogo';
 import {toast} from 'sonner';
 import {useQuery} from '@tanstack/react-query';
 import {CurrentSubscriptionResponse} from '@/interface/subscription';
@@ -70,174 +59,115 @@ export default function SubscriptionSuccess() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div style={{minHeight:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--surf-1)'}}>
+        <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
+        <div style={{width:40, height:40, borderRadius:'50%', border:'3px solid var(--surf-3)', borderTopColor:'var(--ac)', animation:'spin 0.8s linear infinite'}} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground font-sans flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
-      <div className="w-full max-w-2xl">
-        <div className="mb-8 flex justify-center">
-          <AppLogo size="lg" />
-        </div>
-
-        <Card className="rounded-2xl bg-card border border-border/60 shadow-2xl shadow-primary/5 overflow-hidden">
-          <CardHeader className="relative text-center pb-6 pt-8">
-            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Check className="h-8 w-8 text-emerald-500" />
+    <div style={{minHeight:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'var(--surf-1)'}}>
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
+      <div style={{width:'100%', maxWidth:640}}>
+        <div style={{border:'1px solid var(--hair)', borderRadius:16, background:'var(--nk-card)', overflow:'hidden', boxShadow:'var(--shadow-lg)'}}>
+          {/* Header */}
+          <div style={{textAlign:'center', padding:'32px 24px 24px', borderBottom:'1px solid var(--hair-soft)'}}>
+            <div style={{width:64, height:64, background:'rgba(47,214,163,0.20)', border:'1px solid rgba(47,214,163,0.20)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px'}}>
+              <i className="ph-fill ph-check" style={{fontSize:28, color:'var(--pos)'}} />
             </div>
-            <CardTitle className="text-3xl font-bold font-heading text-emerald-500 mb-2">
-              Assinatura Confirmada!
-            </CardTitle>
-            <CardDescription className="text-lg text-muted-foreground">
+            <h1 style={{fontSize:28, fontWeight:700, fontFamily:'var(--font-heading)', color:'var(--pos)', marginBottom:8}}>Assinatura Confirmada!</h1>
+            <p style={{fontSize:16, color:'var(--color-neutral-500)'}}>
               Bem-vindo ao{' '}
-              <span className="font-medium text-foreground">
-                {subscriptionDetails?.planName}
-              </span>
-            </CardDescription>
-          </CardHeader>
+              <span style={{fontWeight:500, color:'inherit'}}>{subscriptionDetails?.planName}</span>
+            </p>
+          </div>
 
-          <CardContent className="relative space-y-6">
-            {/* Detalhes da assinatura */}
-            <div className="bg-card/50 rounded-lg p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Crown className="h-6 w-6 text-primary" />
+          <div style={{padding:24, display:'flex', flexDirection:'column', gap:20}}>
+            {/* Plan details */}
+            <div style={{background:'var(--surf-3)', borderRadius:10, padding:24, display:'flex', flexDirection:'column', gap:16}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                <div style={{display:'flex', alignItems:'center', gap:12}}>
+                  <i className="ph-fill ph-crown" style={{fontSize:22, color:'var(--ac)'}} />
                   <div>
-                    <h3 className="text-xl font-heading font-semibold text-foreground">
-                      {subscriptionDetails?.planName}
-                    </h3>
-                    <p className="text-muted-foreground">
-                      {formatCurrency(subscriptionDetails?.amount || 0)}/
-                      {subscriptionDetails?.interval === 'month'
-                        ? 'mês'
-                        : 'ano'}
+                    <h3 style={{fontSize:18, fontFamily:'var(--font-heading)', fontWeight:600}}>{subscriptionDetails?.planName}</h3>
+                    <p style={{color:'var(--color-neutral-500)', fontSize:13}}>
+                      {formatCurrency(subscriptionDetails?.amount || 0)}/{subscriptionDetails?.interval === 'month' ? 'mês' : 'ano'}
                     </p>
                   </div>
                 </div>
-                <Badge
-                  variant="secondary"
-                  className="bg-emerald-500/15 text-emerald-600 font-medium border-0 hover:bg-emerald-500/20">
-                  {subscriptionDetails?.status === 'active'
-                    ? 'Ativo'
-                    : 'Pendente'}
-                </Badge>
+                <span style={{padding:'3px 10px', borderRadius:6, fontSize:11.5, fontWeight:600,
+                  background: subscriptionDetails?.status === 'active' ? 'var(--badge-pos-bg)' : 'var(--surf-3)',
+                  color: subscriptionDetails?.status === 'active' ? 'var(--pos)' : 'var(--color-neutral-400)'}}>
+                  {subscriptionDetails?.status === 'active' ? 'Ativo' : 'Pendente'}
+                </span>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, paddingTop:16, borderTop:'1px solid var(--hair-soft)'}}>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Próxima cobrança
-                  </p>
-                  <p className="text-lg font-semibold flex items-center">
-                    <Calendar className="h-4 w-4 mr-2" />
+                  <p style={{fontSize:12.5, fontWeight:500, color:'var(--color-neutral-500)'}}>Próxima cobrança</p>
+                  <p style={{fontSize:15, fontWeight:600, display:'flex', alignItems:'center', gap:4, marginTop:2}}>
+                    <i className="ph-fill ph-calendar" style={{fontSize:14, color:'var(--ac)'}} />
                     {formatDate(subscriptionDetails?.nextBilling || '')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    ID da Sessão
-                  </p>
-                  <p className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                  <p style={{fontSize:12.5, fontWeight:500, color:'var(--color-neutral-500)'}}>ID da Sessão</p>
+                  <p style={{fontSize:12, fontFamily:'monospace', background:'var(--surf-2)', padding:'2px 6px', borderRadius:4, marginTop:2, wordBreak:'break-all'}}>
                     {sessionId?.slice(0, 20)}...
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Recursos inclusos */}
-            <div className="bg-card/50 border border-border/50 rounded-xl p-6">
-              <h4 className="text-lg font-heading font-semibold mb-4 text-foreground">
-                Recursos inclusos na sua assinatura:
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {subscriptionDetails?.features.map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-5 h-5 bg-emerald-500/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Check className="h-3 w-3 text-emerald-500" />
+            {/* Features list */}
+            {subscriptionDetails?.features && subscriptionDetails.features.length > 0 && (
+              <div style={{border:'1px solid var(--hair)', borderRadius:12, padding:24}}>
+                <h4 style={{fontSize:15, fontFamily:'var(--font-heading)', fontWeight:600, marginBottom:16}}>Recursos inclusos na sua assinatura:</h4>
+                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:12}}>
+                  {subscriptionDetails.features.map((feature: string, index: number) => (
+                    <div key={index} style={{display:'flex', alignItems:'center', gap:8}}>
+                      <div style={{width:20, height:20, background:'rgba(47,214,163,0.20)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                        <i className="ph-fill ph-check" style={{fontSize:11, color:'var(--pos)'}} />
+                      </div>
+                      <span style={{fontSize:13, color:'var(--color-neutral-500)'}}>{feature}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {feature}
-                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Next steps */}
+            <div style={{background:'rgba(145,132,217,0.15)', borderRadius:10, padding:24}}>
+              <h4 style={{fontSize:15, fontWeight:600, marginBottom:12}}>Próximos passos:</h4>
+              <div style={{display:'flex', flexDirection:'column', gap:8}}>
+                {['Conecte suas contas de investimento','Configure suas preferências de análise','Explore os insights de IA personalizados'].map((step, i) => (
+                  <div key={i} style={{display:'flex', alignItems:'center', gap:12}}>
+                    <div style={{width:24, height:24, background:'var(--ac)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                      <span style={{fontSize:11, fontWeight:700, color:'#fff'}}>{i+1}</span>
+                    </div>
+                    <span style={{fontSize:13}}>{step}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Próximos passos */}
-            <div className="bg-primary/10 rounded-lg p-6">
-              <h4 className="text-lg font-semibold mb-3">Próximos passos:</h4>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-3">
-                  <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    1
-                  </div>
-                  <span className="text-sm">
-                    Conecte suas contas de investimento
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    2
-                  </div>
-                  <span className="text-sm">
-                    Configure suas preferências de análise
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    3
-                  </div>
-                  <span className="text-sm">
-                    Explore os insights de IA personalizados
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Ações */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button
-                onClick={() => navigate('/dashboard')}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground border-0 h-12"
-                size="lg">
-                <ArrowRight className="h-4 w-4 mr-2" />
-                Ir para Dashboard
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/sync-accounts')}
-                className="h-12"
-                size="lg">
+            {/* Action buttons */}
+            <div style={{display:'flex', flexWrap:'wrap', gap:10}}>
+              <button type="button" onClick={() => navigate('/dashboard')}
+                style={{flex:1, minWidth:160, height:48, borderRadius:9, border:'none', background:'var(--grad-violet)', color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6}}>
+                <i className="ph-fill ph-arrow-right" style={{fontSize:16}} />Ir para Dashboard
+              </button>
+              <button type="button" onClick={() => navigate('/sync-accounts')}
+                style={{height:48, padding:'0 20px', borderRadius:9, border:'1px solid var(--hair)', background:'transparent', fontSize:14, fontWeight:500, cursor:'pointer', color:'inherit'}}>
                 Conectar Contas
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => {
-                  // Simular download do recibo
-                  toast.success('Recibo enviado por email!');
-                }}>
-                <Download className="h-4 w-4 mr-2" />
-                Recibo
-              </Button>
+              </button>
+              <button type="button" onClick={() => toast.success('Recibo enviado por email!')}
+                style={{height:48, padding:'0 16px', borderRadius:9, border:'1px solid var(--hair)', background:'transparent', fontSize:14, cursor:'pointer', color:'inherit', display:'flex', alignItems:'center', gap:6}}>
+                <i className="ph-fill ph-download-simple" style={{fontSize:15}} />Recibo
+              </button>
             </div>
-
-            {/* Informações de contato */}
-            <div className="text-center pt-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                Precisa de ajuda? Entre em contato conosco em{' '}
-                <a
-                  href="mailto:suporte@trackerr.com"
-                  className="text-primary hover:underline">
-                  suporte@trackerr.com
-                </a>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
