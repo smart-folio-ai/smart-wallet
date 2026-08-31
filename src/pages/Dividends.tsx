@@ -8,6 +8,7 @@ import {
   SectionHeader,
   AiInsightBanner,
   DataTable,
+  TD_STYLE,
   TD_RIGHT,
 } from '@/components/shared';
 
@@ -141,21 +142,23 @@ const Dividends = () => {
   const currentMonthIdx = now.getMonth();
   const currentYear = now.getFullYear();
 
-  /** Last 12 calendar months (oldest → newest) */
+  /** 12 months: 9 past + current + 2 future (oldest → newest), projected = future */
   const monthlyData = useMemo(() => {
     const result: {label: string; value: number; projected: boolean}[] = [];
-    for (let i = 11; i >= 0; i--) {
+    for (let i = 9; i >= -2; i--) {
       const d = new Date(currentYear, currentMonthIdx - i, 1);
       const yr = d.getFullYear();
       const mo = d.getMonth();
       const label = MONTH_LABELS[mo];
       const isProjected = yr > currentYear || (yr === currentYear && mo > currentMonthIdx);
-      const value = allDividendEvents
-        .filter((ev) => {
-          const parsed = parseDate(ev.date);
-          return parsed && parsed.getFullYear() === yr && parsed.getMonth() === mo;
-        })
-        .reduce((sum, ev) => sum + ev.totalValue, 0);
+      const value = isProjected
+        ? 0
+        : allDividendEvents
+            .filter((ev) => {
+              const parsed = parseDate(ev.date);
+              return parsed && parsed.getFullYear() === yr && parsed.getMonth() === mo;
+            })
+            .reduce((sum, ev) => sum + ev.totalValue, 0);
       result.push({label, value, projected: isProjected});
     }
     return result;
@@ -403,7 +406,7 @@ const Dividends = () => {
           >
             {incomeByAsset.map((r) => (
               <tr key={r.symbol} style={{borderTop: '1px solid var(--hair-soft)'}} className="hover:bg-[rgba(145,132,217,0.06)]">
-                <td style={{padding: '9.8px 16.8px', fontWeight: 600}}>{r.symbol}</td>
+                <td style={{...TD_STYLE, fontWeight: 600}}>{r.symbol}</td>
                 <td style={TD_RIGHT}>{formatCurrency(r.total)}</td>
                 <td style={TD_RIGHT}>{r.dy}</td>
                 <td style={{...TD_RIGHT, fontWeight: 600, color: 'var(--pos)'}}>{r.yoc}</td>
