@@ -222,40 +222,40 @@ export default function Subscriptions() {
         </div>
         {/* Seção de informações adicionais */}
         <div className="mt-20 grid md:grid-cols-3 gap-8 pb-10 max-w-5xl mx-auto">
-          <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', padding:24, borderRadius:16, border:'1px solid var(--hair)', background:'var(--nk-card)'}}>
-            <div style={{width:56, height:56, borderRadius:'50%', background:'rgba(145,132,217,0.15)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:20}}>
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl shadow-sm transition-all hover:shadow-md" style={{background:'var(--nk-card)', border:'1px solid var(--hair)'}}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{background:'rgba(145,132,217,0.15)'}}>
               <i className="ph-fill ph-currency-circle-dollar" style={{fontSize:26, color:'var(--ac)'}} />
             </div>
-            <h3 style={{fontSize:16, fontFamily:'var(--font-heading)', fontWeight:600, marginBottom:8}}>
+            <h3 className="text-lg font-heading font-semibold mb-2">
               Cancelamento a qualquer momento
             </h3>
-            <p style={{fontSize:13, color:'var(--color-neutral-500)', lineHeight:1.6}}>
+            <p className="text-sm leading-relaxed" style={{color:'var(--color-neutral-500)'}}>
               Você pode cancelar sua assinatura quando quiser, de forma simples
               e sem custos adicionais.
             </p>
           </div>
 
-          <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', padding:24, borderRadius:16, border:'1px solid var(--hair)', background:'var(--nk-card)'}}>
-            <div style={{width:56, height:56, borderRadius:'50%', background:'rgba(145,132,217,0.15)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:20}}>
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl shadow-sm transition-all hover:shadow-md" style={{background:'var(--nk-card)', border:'1px solid var(--hair)'}}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{background:'rgba(145,132,217,0.15)'}}>
               <i className="ph-fill ph-star" style={{fontSize:26, color:'var(--ac)'}} />
             </div>
-            <h3 style={{fontSize:16, fontFamily:'var(--font-heading)', fontWeight:600, marginBottom:8}}>
+            <h3 className="text-lg font-heading font-semibold mb-2">
               Satisfação garantida
             </h3>
-            <p style={{fontSize:13, color:'var(--color-neutral-500)', lineHeight:1.6}}>
+            <p className="text-sm leading-relaxed" style={{color:'var(--color-neutral-500)'}}>
               Devolução do valor integral em até 7 dias da compra caso você não
               se adapte.
             </p>
           </div>
 
-          <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', padding:24, borderRadius:16, border:'1px solid var(--hair)', background:'var(--nk-card)'}}>
-            <div style={{width:56, height:56, borderRadius:'50%', background:'rgba(145,132,217,0.15)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:20}}>
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl shadow-sm transition-all hover:shadow-md" style={{background:'var(--nk-card)', border:'1px solid var(--hair)'}}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{background:'rgba(145,132,217,0.15)'}}>
               <i className="ph-fill ph-calendar" style={{fontSize:26, color:'var(--ac)'}} />
             </div>
-            <h3 style={{fontSize:16, fontFamily:'var(--font-heading)', fontWeight:600, marginBottom:8}}>
+            <h3 className="text-lg font-heading font-semibold mb-2">
               Suporte dedicado
             </h3>
-            <p style={{fontSize:13, color:'var(--color-neutral-500)', lineHeight:1.6}}>
+            <p className="text-sm leading-relaxed" style={{color:'var(--color-neutral-500)'}}>
               Nossa equipe técnica e de especialistas está sempre pronta para
               ajudar.
             </p>
