@@ -140,6 +140,10 @@
     --risk-low-bg: rgba(14,152,115,0.12);
     --risk-med-bg: rgba(154,106,6,0.10);
     --risk-high-bg: rgba(207,30,66,0.10);
+    --badge-pos-bg: rgba(14,152,115,0.15);
+    --badge-neg-bg: rgba(207,30,66,0.15);
+    --badge-warn-bg: rgba(154,106,6,0.15);
+    --badge-cy-bg: rgba(26,123,166,0.12);
   }
 
   .dark {
@@ -263,6 +267,10 @@
     --risk-low-bg: rgba(47,214,163,0.12);
     --risk-med-bg: rgba(240,179,46,0.10);
     --risk-high-bg: rgba(242,80,107,0.10);
+    --badge-pos-bg: rgba(47,214,163,0.15);
+    --badge-neg-bg: rgba(242,80,107,0.15);
+    --badge-warn-bg: rgba(240,179,46,0.15);
+    --badge-cy-bg: rgba(76,201,240,0.12);
   }
 }
 

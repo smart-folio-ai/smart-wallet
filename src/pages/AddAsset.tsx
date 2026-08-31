@@ -24,9 +24,9 @@ import {normalizeStockSymbol} from '@/components/stocks/stock-autocomplete.utils
 import {SectionHeader} from '@/components/shared';
 
 const IMPORT_STATUS_STYLE: Record<string, React.CSSProperties> = {
-  success: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'rgba(47,214,163,0.15)', color: 'var(--pos)'},
-  error: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'rgba(242,80,107,0.15)', color: 'var(--neg)'},
-  pending: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'rgba(240,179,46,0.15)', color: 'var(--warn)'},
+  success: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'var(--badge-pos-bg)', color: 'var(--pos)'},
+  error: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'var(--badge-neg-bg)', color: 'var(--neg)'},
+  pending: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'var(--badge-warn-bg)', color: 'var(--warn)'},
 };
 
 const INPUT_STYLE: React.CSSProperties = {
@@ -54,7 +54,6 @@ export default function AddAsset() {
   const [date, setDate] = useState<Date>();
   const [symbolSearch, setSymbolSearch] = useState('');
   const normalizedSymbolSearch = String(symbolSearch || '').trim().toUpperCase();
-  const [importGuideOpen, setImportGuideOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [formData, setFormData] = useState({
@@ -257,11 +256,8 @@ export default function AddAsset() {
   };
 
   const chooseFiles = () => fileInputRef.current?.click();
-  const openImportGuide = () => setImportGuideOpen(true);
 
   const recentImports: Array<{id: string; icon: string; color: string; label: string; meta: string; status: string; statusLabel: string}> = [];
-
-  void importGuideOpen; // used for UI state only
 
   return (
     <div style={{display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.15fr)', gap: 16.8, alignItems: 'start'}}>
@@ -426,7 +422,7 @@ export default function AddAsset() {
               <button type="button" onClick={chooseFiles} style={{height: 36, padding: '0 16.8px', borderRadius: 8, border: '1px solid var(--color-accent)', background: 'rgba(145,132,217,0.14)', color: 'var(--color-accent-100)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer'}}>
                 Escolher arquivos
               </button>
-              <button type="button" onClick={openImportGuide} style={{height: 36, padding: '0 16.8px', borderRadius: 8, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-200)', fontFamily: 'var(--font-body)', fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5.6}}>
+              <button type="button" onClick={() => {}} style={{height: 36, padding: '0 16.8px', borderRadius: 8, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-200)', fontFamily: 'var(--font-body)', fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5.6}}>
                 <i className="ph-fill ph-question" style={{fontSize: 14}} /> Qual arquivo eu preciso?
               </button>
             </div>

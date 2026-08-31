@@ -4,17 +4,18 @@ import {useToast} from '@/hooks/use-toast';
 import portfolioService from '@/services/portfolio';
 import {formatCurrency} from '@/utils/formatters';
 import {formatDate} from '@/utils';
-import {KpiCard, SectionHeader, DataTable, TD_RIGHT} from '@/components/shared';
+import {KpiCard, SectionHeader, DataTable, TD_STYLE, TD_RIGHT} from '@/components/shared';
 
 const TX_KIND_STYLE: Record<string, React.CSSProperties> = {
-  buy: {padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'rgba(47,214,163,0.15)', color: 'var(--pos)'},
-  sell: {padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'rgba(242,80,107,0.15)', color: 'var(--neg)'},
+  buy: {padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'var(--badge-pos-bg)', color: 'var(--pos)'},
+  sell: {padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'var(--badge-neg-bg)', color: 'var(--neg)'},
   dividend: {padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'rgba(145,132,217,0.15)', color: 'var(--color-accent-200)'},
+  bonus: {padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'rgba(145,132,217,0.15)', color: 'var(--color-accent-200)'},
 };
-const TX_KIND_LABEL: Record<string, string> = {buy: 'Compra', sell: 'Venda', dividend: 'Provento'};
+const TX_KIND_LABEL: Record<string, string> = {buy: 'Compra', sell: 'Venda', dividend: 'Provento', bonus: 'Bonificação'};
 const TX_ORIGIN_STYLE: Record<string, React.CSSProperties> = {
   manual: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'rgba(var(--rgb-line),0.08)', color: 'var(--color-neutral-400)'},
-  b3: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'rgba(76,201,240,0.12)', color: 'var(--cy)'},
+  b3: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'var(--badge-cy-bg)', color: 'var(--cy)'},
   import: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'rgba(145,132,217,0.12)', color: 'var(--color-accent-200)'},
 };
 const TX_FILTERS = [
@@ -200,12 +201,12 @@ export default function Transactions() {
           ) : (
             filteredTx.map((t) => (
               <tr key={t._id} style={{borderTop: '1px solid var(--hair-soft)'}} className="hover:bg-[rgba(145,132,217,0.06)]">
-                <td style={{padding: '9.8px 16.8px', color: 'var(--color-neutral-400)', fontVariantNumeric: 'tabular-nums'}}>{formatDate(t.date)}</td>
-                <td style={{padding: '9.8px 16.8px'}}>
+                <td style={{...TD_STYLE, color: 'var(--color-neutral-400)', fontVariantNumeric: 'tabular-nums'}}>{formatDate(t.date)}</td>
+                <td style={TD_STYLE}>
                   <span style={TX_KIND_STYLE[t.type] ?? TX_KIND_STYLE['buy']}>{TX_KIND_LABEL[t.type] ?? t.type}</span>
                 </td>
-                <td style={{padding: '9.8px 16.8px', fontWeight: 600}}>{t.symbol}</td>
-                <td style={{padding: '9.8px 16.8px', color: 'var(--color-neutral-500)', fontSize: 11.5}}>{t.account ?? '—'}</td>
+                <td style={{...TD_STYLE, fontWeight: 600}}>{t.symbol}</td>
+                <td style={{...TD_STYLE, color: 'var(--color-neutral-500)', fontSize: 11.5}}>{t.account ?? '—'}</td>
                 <td style={TD_RIGHT}>{t.quantity}</td>
                 <td style={TD_RIGHT}>{formatCurrency(t.price)}</td>
                 <td style={{...TD_RIGHT, fontWeight: 600, color: t.type === 'buy' ? 'var(--neg)' : 'var(--pos)'}}>{formatCurrency(t.total)}</td>
