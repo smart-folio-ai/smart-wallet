@@ -1,14 +1,9 @@
 import {useEffect, useMemo, useState} from 'react';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import {fiscalService, brokerSyncService} from '@/server/api/api';
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
-import {Input} from '@/components/ui/input';
-import {Button} from '@/components/ui/button';
-import {Label} from '@/components/ui/label';
-import {Badge} from '@/components/ui/badge';
-import {Skeleton} from '@/components/ui/skeleton';
 import {formatCurrency} from '@/utils/formatters';
 import useAppToast from '@/hooks/use-app-toast';
+import {KpiCard} from '@/components/shared';
 
 interface FiscalOptimizerResponse {
   accumulatedLosses?: {
@@ -179,103 +174,97 @@ export default function Fiscal() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold">Fiscal</h1>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="fiscal-year">Ano</Label>
-          <Input
+    <div style={{padding: 24, display: 'flex', flexDirection: 'column', gap: 24}}>
+      {/* Header */}
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap'}}>
+        <h1 style={{fontSize: 28, fontWeight: 700, fontFamily: 'var(--font-heading)', margin: 0}}>Fiscal</h1>
+        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+          <label htmlFor="fiscal-year" style={{fontSize: 13, color: 'var(--color-neutral-500)'}}>Ano</label>
+          <input
             id="fiscal-year"
-            className="w-24"
             type="number"
             value={year}
-            onChange={(e) =>
-              setYear(e.target.value ? Number(e.target.value) : '')
-            }
+            onChange={(e) => setYear(e.target.value ? Number(e.target.value) : '')}
+            style={{width: 80, height: 36, padding: '0 10px', border: '1px solid var(--hair)', borderRadius: 7, background: 'var(--surf-3)', fontSize: 13, color: 'inherit', outline: 'none'}}
           />
-          <Button variant="outline" onClick={() => refetch()}>
+          <button type="button" onClick={() => refetch()}
+            style={{height: 36, padding: '0 14px', borderRadius: 7, border: '1px solid var(--hair)', background: 'transparent', fontSize: 13, cursor: 'pointer', color: 'inherit'}}>
             Atualizar
-          </Button>
+          </button>
         </div>
       </div>
 
-      <Card className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-card to-card shadow-lg">
-        <CardContent className="p-6">
-          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+      {/* Hero card */}
+      <div style={{
+        border: '1px solid var(--badge-warn-bg)',
+        borderRadius: 12,
+        background: `linear-gradient(135deg, rgba(76,201,240,0.10) 0%, var(--nk-card) 60%)`,
+        padding: 24,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 24,
+      }}>
+        <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+          <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24}}>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              <p style={{fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--color-neutral-500)'}}>
                 Imposto Estimado
               </p>
               {loadingSummary ? (
-                <Skeleton className="h-12 w-56 mt-2" />
+                <div style={{height: 48, width: 220, borderRadius: 8, background: 'var(--surf-3)', marginTop: 8, animation: 'pulse 1.5s ease-in-out infinite'}} />
               ) : (
-                <p className="mt-2 text-4xl font-black text-emerald-500">
-                  {formatCurrency(taxDue)}
-                </p>
+                <p style={{marginTop: 8, fontSize: 36, fontWeight: 900, fontFamily: 'var(--font-heading)', color: 'var(--pos)'}}>{formatCurrency(taxDue)}</p>
               )}
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p style={{marginTop: 8, fontSize: 13, color: 'var(--color-neutral-500)'}}>
                 Valor calculado com base nas vendas com lucro tributável no ano.
               </p>
             </div>
-            <div className="w-full md:w-[420px] rounded-xl border border-primary/20 bg-background/70 p-4">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+
+            <div style={{width: '100%', maxWidth: 420, borderRadius: 10, border: '1px solid rgba(76,201,240,0.30)', background: 'rgba(76,201,240,0.10)', padding: 16}}>
+              <p style={{fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--color-neutral-500)'}}>
                 Por Que Você Vai Pagar Esse Valor
               </p>
               {loadingSummary ? (
-                <div className="space-y-2 mt-3">
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-2/3" />
+                <div style={{display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12}}>
+                  <div style={{height: 24, width: '100%', borderRadius: 6, background: 'var(--surf-3)'}} />
+                  <div style={{height: 24, width: '100%', borderRadius: 6, background: 'var(--surf-3)'}} />
+                  <div style={{height: 24, width: '66%', borderRadius: 6, background: 'var(--surf-3)'}} />
                 </div>
               ) : topTaxDrivers.length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">
+                <p style={{marginTop: 12, fontSize: 13, color: 'var(--color-neutral-500)'}}>
                   Não há vendas tributáveis registradas no período atual.
                 </p>
               ) : (
-                <div className="mt-3 space-y-2">
+                <div style={{marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8}}>
                   {topTaxContributor ? (
-                    <div className="mb-2">
-                      <Badge className="bg-amber-500/20 text-amber-700 border border-amber-400/40 dark:text-amber-300">
-                        Maior Contribuinte: {topTaxContributor.symbol} (
-                        {formatCurrency(topTaxContributor.estimatedTax)})
-                      </Badge>
+                    <div style={{marginBottom: 8}}>
+                      <span style={{display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 6, fontSize: 11.5, fontWeight: 600, background: 'var(--badge-warn-bg)', color: 'var(--warn)', border: '1px solid var(--warn)', gap: 4}}>
+                        Maior Contribuinte: {topTaxContributor.symbol} ({formatCurrency(topTaxContributor.estimatedTax)})
+                      </span>
                     </div>
                   ) : null}
                   {topTaxDrivers.map((driver) => (
                     <div
                       key={driver.symbol}
-                      className="rounded-lg border border-border/70 bg-card/80 px-3 py-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold">
+                      style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', padding: '8px 12px'}}>
+                      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8}}>
+                        <p style={{fontSize: 13, fontWeight: 600}}>
                           {driver.symbol} · {categoryLabel(driver.category)}
                         </p>
-                        <p className="text-sm font-bold text-amber-500">
+                        <p style={{fontSize: 13, fontWeight: 700, color: 'var(--warn)'}}>
                           {formatCurrency(driver.estimatedTax)}
                         </p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p style={{fontSize: 11.5, color: 'var(--color-neutral-500)'}}>
                         Lucro apurado: {formatCurrency(driver.realizedProfit)} ·
                         vendas: {formatCurrency(driver.grossSales)} · operações:{' '}
                         {driver.operations}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p style={{fontSize: 11.5, color: 'var(--color-neutral-500)', marginTop: 4}}>
                         Motivo: {driver.reason}
                       </p>
-                      <div className="mt-2 h-2 w-full rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-amber-500"
-                          style={{
-                            width: `${Math.max(
-                              8,
-                              Math.min(
-                                100,
-                                taxDue > 0
-                                  ? (driver.estimatedTax / taxDue) * 100
-                                  : 0,
-                              ),
-                            )}%`,
-                          }}
-                        />
+                      <div style={{marginTop: 8, height: 6, width: '100%', borderRadius: 3, background: 'var(--surf-3)', overflow: 'hidden'}}>
+                        <div style={{height: '100%', borderRadius: 3, background: 'var(--warn)', width: `${Math.max(8, Math.min(100, taxDue > 0 ? (driver.estimatedTax / taxDue) * 100 : 0))}%`}} />
                       </div>
                     </div>
                   ))}
@@ -283,312 +272,252 @@ export default function Fiscal() {
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Lucro/Prejuízo Ações</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">
-            {loadingSummary ? (
-              <Skeleton className="h-8 w-28" />
-            ) : (
-              formatCurrency(summary?.totals?.stockProfit || 0)
-            )}
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Lucro/Prejuízo FIIs</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">
-            {loadingSummary ? (
-              <Skeleton className="h-8 w-28" />
-            ) : (
-              formatCurrency(summary?.totals?.fiiProfit || 0)
-            )}
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Lucro/Prejuízo Cripto</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">
-            {loadingSummary ? (
-              <Skeleton className="h-8 w-28" />
-            ) : (
-              formatCurrency(summary?.totals?.cryptoProfit || 0)
-            )}
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl bg-card/40 border-primary/5 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Imposto Estimado</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold text-emerald-500">
-            {loadingSummary ? (
-              <Skeleton className="h-8 w-28" />
-            ) : (
-              formatCurrency(taxDue)
-            )}
-          </CardContent>
-        </Card>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Simular Venda</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label>Ativo</Label>
-                <Input
-                  value={symbol}
-                  onChange={(e) => setSymbol(e.target.value)}
-                  placeholder="PETR4"
-                />
-              </div>
-              <div>
-                <Label>Quantidade</Label>
-                <Input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value || 0))}
-                />
-              </div>
-              <div>
-                <Label>Preço de venda</Label>
-                <Input
-                  type="number"
-                  value={sellPrice}
-                  onChange={(e) => setSellPrice(Number(e.target.value || 0))}
-                />
-              </div>
+      {/* 4-col KPI grid */}
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12}}>
+        <KpiCard label="Lucro/Prejuízo Ações" value={loadingSummary ? '…' : formatCurrency(summary?.totals?.stockProfit || 0)} />
+        <KpiCard label="Lucro/Prejuízo FIIs" value={loadingSummary ? '…' : formatCurrency(summary?.totals?.fiiProfit || 0)} />
+        <KpiCard label="Lucro/Prejuízo Cripto" value={loadingSummary ? '…' : formatCurrency(summary?.totals?.cryptoProfit || 0)} />
+        <KpiCard label="Imposto Estimado" value={loadingSummary ? '…' : formatCurrency(taxDue)} />
+      </div>
+
+      {/* Two-col grid: Simular Venda + Status Importações */}
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24}}>
+        {/* Simular Venda */}
+        <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24, display: 'flex', flexDirection: 'column', gap: 16}}>
+          <span style={{fontFamily: 'var(--font-heading)', fontSize: 15, fontWeight: 600}}>Simular Venda</span>
+
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12}}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
+              <label style={{fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-neutral-500)'}}>Ativo</label>
+              <input
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value)}
+                placeholder="PETR4"
+                style={{height: 38, padding: '0 10px', border: '1px solid var(--hair)', borderRadius: 7, background: 'var(--surf-3)', fontSize: 13, color: 'inherit', outline: 'none'}}
+              />
             </div>
-            <Button onClick={() => previewMutation.mutate()}>
-              Calcular imposto
-            </Button>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
+              <label style={{fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-neutral-500)'}}>Quantidade</label>
+              <input
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value || 0))}
+                style={{height: 38, padding: '0 10px', border: '1px solid var(--hair)', borderRadius: 7, background: 'var(--surf-3)', fontSize: 13, color: 'inherit', outline: 'none'}}
+              />
+            </div>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
+              <label style={{fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-neutral-500)'}}>Preço de venda</label>
+              <input
+                type="number"
+                value={sellPrice}
+                onChange={(e) => setSellPrice(Number(e.target.value || 0))}
+                style={{height: 38, padding: '0 10px', border: '1px solid var(--hair)', borderRadius: 7, background: 'var(--surf-3)', fontSize: 13, color: 'inherit', outline: 'none'}}
+              />
+            </div>
+          </div>
 
-            {previewMutation.data && (
-              <div className="rounded-lg border p-4 bg-muted/40 text-sm space-y-2">
-                <p className="font-semibold text-base">
-                  Se vender {previewMutation.data.symbol} hoje:
+          <button type="button" onClick={() => previewMutation.mutate()}
+            style={{height: 40, padding: '0 20px', borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', alignSelf: 'flex-start'}}>
+            Calcular imposto
+          </button>
+
+          {previewMutation.data && (
+            <div style={{borderRadius: 8, border: '1px solid var(--hair)', padding: 16, background: 'var(--surf-2)', fontSize: 13, display: 'flex', flexDirection: 'column', gap: 8}}>
+              <p style={{fontWeight: 600, fontSize: 14}}>
+                Se vender {previewMutation.data.symbol} hoje:
+              </p>
+              <p style={{fontSize: 14}}>
+                Lucro:{' '}
+                <strong style={{color: 'var(--pos)'}}>
+                  {formatCurrency(previewMutation.data.profit || 0)}
+                </strong>
+              </p>
+              <p style={{fontSize: 14}}>
+                Imposto:{' '}
+                <strong style={{color: 'var(--warn)'}}>
+                  {formatCurrency(previewMutation.data.estimatedTax || 0)}
+                </strong>
+              </p>
+              {zeroTaxReason ? (
+                <p style={{fontSize: 13, color: 'var(--pos)', fontWeight: 500}}>
+                  {zeroTaxReason}
                 </p>
-                <p className="text-lg">
-                  Lucro:{' '}
-                  <strong className="text-emerald-500">
-                    {formatCurrency(previewMutation.data.profit || 0)}
-                  </strong>
-                </p>
-                <p className="text-lg">
-                  Imposto:{' '}
-                  <strong className="text-amber-500">
-                    {formatCurrency(previewMutation.data.estimatedTax || 0)}
-                  </strong>
-                </p>
-                {zeroTaxReason ? (
-                  <p className="text-sm text-emerald-600 font-medium">
-                    {zeroTaxReason}
-                  </p>
-                ) : null}
-                <p className="text-lg">
-                  Impacto na carteira:{' '}
-                  <strong className="text-primary">
-                    {(previewMutation.data.portfolioImpactPercent || 0).toFixed(
-                      2,
-                    )}
-                    %
+              ) : null}
+              <p style={{fontSize: 14}}>
+                Impacto na carteira:{' '}
+                <strong style={{color: 'var(--ac)'}}>
+                  {(previewMutation.data.portfolioImpactPercent || 0).toFixed(2)}%
+                </strong>{' '}
+                {previewMutation.data.sector
+                  ? `• setor ${previewMutation.data.sector}`
+                  : ''}
+              </p>
+              {previewMutation.data.category === 'stock' && (
+                <p style={{color: 'var(--color-neutral-500)'}}>
+                  Vendas no mês (ações):{' '}
+                  <strong>
+                    {formatCurrency(previewMutation.data.stockSalesMonth || 0)}
                   </strong>{' '}
-                  {previewMutation.data.sector
-                    ? `• setor ${previewMutation.data.sector}`
-                    : ''}
+                  / limite de isenção{' '}
+                  <strong>
+                    {formatCurrency(previewMutation.data.stockExemptionLimit || 20000)}
+                  </strong>
                 </p>
-                {previewMutation.data.category === 'stock' && (
-                  <p className="text-muted-foreground">
-                    Vendas no mês (ações):{' '}
-                    <strong>
-                      {formatCurrency(
-                        previewMutation.data.stockSalesMonth || 0,
-                      )}
-                    </strong>{' '}
-                    / limite de isenção{' '}
-                    <strong>
-                      {formatCurrency(
-                        previewMutation.data.stockExemptionLimit || 20000,
-                      )}
-                    </strong>
+              )}
+              {previewMutation.data.message ? (
+                <p style={{color: 'var(--color-neutral-500)'}}>
+                  {previewMutation.data.message}
+                </p>
+              ) : null}
+              <div style={{marginTop: 4, borderRadius: 6, border: '1px solid var(--hair)', background: 'var(--surf-1)', padding: 12, display: 'flex', flexDirection: 'column', gap: 4}}>
+                {loadingOptimizer ? (
+                  <div style={{height: 20, width: 288, borderRadius: 5, background: 'var(--surf-3)'}} />
+                ) : (
+                  <p>
+                    Você possui{' '}
+                    <strong>{formatCurrency(accumulatedLossTotal)}</strong> de
+                    prejuízo acumulado.
                   </p>
                 )}
-                {previewMutation.data.message ? (
-                  <p className="mt-2 text-muted-foreground">
-                    {previewMutation.data.message}
+                {canHighlightZeroTaxByLossOffset ? (
+                  <p>
+                    Se vender <strong>{previewData.symbol}</strong> agora, o
+                    imposto da operação será <strong>zero</strong>.
                   </p>
                 ) : null}
-                <div className="mt-3 rounded-md border bg-background p-3 space-y-1">
-                  {loadingOptimizer ? (
-                    <Skeleton className="h-5 w-72" />
-                  ) : (
-                    <p>
-                      Você possui{' '}
-                      <strong>{formatCurrency(accumulatedLossTotal)}</strong> de
-                      prejuízo acumulado.
+              </div>
+              {firstOpportunity ? (
+                <div style={{marginTop: 4, borderRadius: 6, border: '1px solid var(--hair)', background: 'var(--surf-1)', padding: 12, display: 'flex', flexDirection: 'column', gap: 4}}>
+                  <p style={{fontWeight: 500}}>
+                    O sistema analisa a carteira e sugere:
+                  </p>
+                  <p style={{fontSize: 12.5}}>
+                    <strong>Otimização fiscal possível:</strong>
+                  </p>
+                  <p style={{fontSize: 12.5}}>
+                    Vender ativo <strong>{firstOpportunity.symbol}</strong>.
+                  </p>
+                  {typeof firstOpportunity.potentialGain === 'number' &&
+                  firstOpportunity.potentialGain > 0 ? (
+                    <p style={{fontSize: 12.5}}>
+                      Realizar prejuízo de{' '}
+                      <strong>
+                        {formatCurrency(firstOpportunity.potentialGain)}
+                      </strong>
+                      .
                     </p>
-                  )}
-                  {canHighlightZeroTaxByLossOffset ? (
-                    <p>
-                      Se vender <strong>{previewData.symbol}</strong> agora, o
-                      imposto da operação será <strong>zero</strong>.
+                  ) : null}
+                  <p style={{fontSize: 12.5, color: 'var(--color-neutral-500)'}}>
+                    Isso reduzirá o imposto futuro sobre operações com lucro.
+                  </p>
+                  <p style={{fontSize: 11.5, color: 'var(--color-neutral-500)'}}>
+                    Imposto sem compensação:{' '}
+                    {formatCurrency(firstOpportunity.estimatedTaxWithoutOffset || 0)}{' '}
+                    | com compensação:{' '}
+                    {formatCurrency(firstOpportunity.estimatedTaxWithOffset || 0)}{' '}
+                    | economia:{' '}
+                    {formatCurrency(firstOpportunity.taxSaved || 0)}
+                  </p>
+                  {firstOpportunity.headline ? (
+                    <p style={{fontSize: 11.5, color: 'var(--color-neutral-500)'}}>
+                      {firstOpportunity.headline}
                     </p>
                   ) : null}
                 </div>
-                {firstOpportunity ? (
-                  <div className="mt-3 rounded-md border bg-background p-3 space-y-1">
-                    <p className="font-medium">
-                      O sistema analisa a carteira e sugere:
+              ) : null}
+              {topTaxDrivers.length > 0 && (
+                <div style={{marginTop: 4, borderRadius: 6, border: '1px solid var(--hair)', background: 'var(--surf-1)', padding: 12, display: 'flex', flexDirection: 'column', gap: 8}}>
+                  <p style={{fontSize: 13, fontWeight: 500}}>
+                    Ativos que mais pesam no imposto estimado:
+                  </p>
+                  {topTaxDrivers.slice(0, 3).map((driver) => (
+                    <p
+                      key={`sim-${driver.symbol}`}
+                      style={{fontSize: 11.5, color: 'var(--color-neutral-500)'}}>
+                      {driver.symbol}: imposto estimado de{' '}
+                      <strong>{formatCurrency(driver.estimatedTax)}</strong> (
+                      {driver.reason})
                     </p>
-                    <p className="text-sm">
-                      <strong>Otimização fiscal possível:</strong>
-                    </p>
-                    <p className="text-sm">
-                      Vender ativo <strong>{firstOpportunity.symbol}</strong>.
-                    </p>
-                    {typeof firstOpportunity.potentialGain === 'number' &&
-                    firstOpportunity.potentialGain > 0 ? (
-                      <p className="text-sm">
-                        Realizar prejuízo de{' '}
-                        <strong>
-                          {formatCurrency(firstOpportunity.potentialGain)}
-                        </strong>
-                        .
-                      </p>
-                    ) : null}
-                    <p className="text-sm text-muted-foreground">
-                      Isso reduzirá o imposto futuro sobre operações com lucro.
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Imposto sem compensação:{' '}
-                      {formatCurrency(
-                        firstOpportunity.estimatedTaxWithoutOffset || 0,
-                      )}{' '}
-                      | com compensação:{' '}
-                      {formatCurrency(
-                        firstOpportunity.estimatedTaxWithOffset || 0,
-                      )}{' '}
-                      | economia:{' '}
-                      {formatCurrency(firstOpportunity.taxSaved || 0)}
-                    </p>
-                    {firstOpportunity.headline ? (
-                      <p className="text-xs text-muted-foreground">
-                        {firstOpportunity.headline}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                {topTaxDrivers.length > 0 && (
-                  <div className="mt-3 rounded-md border bg-background p-3 space-y-2">
-                    <p className="text-sm font-medium">
-                      Ativos que mais pesam no imposto estimado:
-                    </p>
-                    {topTaxDrivers.slice(0, 3).map((driver) => (
-                      <p
-                        key={`sim-${driver.symbol}`}
-                        className="text-xs text-muted-foreground">
-                        {driver.symbol}: imposto estimado de{' '}
-                        <strong>{formatCurrency(driver.estimatedTax)}</strong> (
-                        {driver.reason})
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Status de Importações</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {loadingUploads && <Skeleton className="h-12 w-full" />}
-            {!loadingUploads && latestUploads.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Nenhum upload recente.
-              </p>
-            )}
-            {!loadingSummary && (summary?.monthly || []).length === 0 && (
-              <p className="text-xs text-muted-foreground">
-                Sem vendas apuradas para o ano selecionado. Se você importou
-                apenas posição consolidada da B3, o resumo fiscal pode ficar
-                zerado.
-              </p>
-            )}
-            {latestUploads.map((u: any) => (
-              <div
-                key={u._id}
-                className="flex items-center justify-between rounded border p-2 text-sm">
-                <div>
-                  <p className="font-medium">{u.originalName}</p>
-                  <p className="text-muted-foreground">{u.provider}</p>
-                  {u.errorMessage ? (
-                    <p className="text-xs text-destructive">{u.errorMessage}</p>
-                  ) : null}
-                </div>
-                <Badge
-                  variant={
-                    u.status === 'processed'
-                      ? 'default'
-                      : u.status === 'failed'
-                        ? 'destructive'
-                        : 'secondary'
-                  }>
-                  {u.status}
-                </Badge>
+        {/* Status de Importações */}
+        <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24, display: 'flex', flexDirection: 'column', gap: 12}}>
+          <span style={{fontFamily: 'var(--font-heading)', fontSize: 15, fontWeight: 600}}>Status de Importações</span>
+
+          {loadingUploads && (
+            <div style={{height: 48, width: '100%', borderRadius: 8, background: 'var(--surf-3)'}} />
+          )}
+          {!loadingUploads && latestUploads.length === 0 && (
+            <p style={{fontSize: 13, color: 'var(--color-neutral-500)'}}>
+              Nenhum upload recente.
+            </p>
+          )}
+          {!loadingSummary && (summary?.monthly || []).length === 0 && (
+            <p style={{fontSize: 11.5, color: 'var(--color-neutral-500)'}}>
+              Sem vendas apuradas para o ano selecionado. Se você importou
+              apenas posição consolidada da B3, o resumo fiscal pode ficar
+              zerado.
+            </p>
+          )}
+          {latestUploads.map((u: any) => (
+            <div
+              key={u._id}
+              style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 7, border: '1px solid var(--hair)', padding: 8, fontSize: 13}}>
+              <div>
+                <p style={{fontWeight: 500}}>{u.originalName}</p>
+                <p style={{color: 'var(--color-neutral-500)', fontSize: 12}}>{u.provider}</p>
+                {u.errorMessage ? (
+                  <p style={{fontSize: 11.5, color: 'var(--neg)'}}>{u.errorMessage}</p>
+                ) : null}
               </div>
-            ))}
-          </CardContent>
-        </Card>
+              <span style={{
+                padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 600,
+                background: u.status === 'processed' ? 'var(--badge-pos-bg)' : u.status === 'failed' ? 'var(--badge-neg-bg)' : 'var(--surf-3)',
+                color: u.status === 'processed' ? 'var(--pos)' : u.status === 'failed' ? 'var(--neg)' : 'var(--color-neutral-400)',
+              }}>
+                {u.status}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-        <CardHeader>
-          <CardTitle>Guia Mastigado IR</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
+      {/* Guia Mastigado IR */}
+      <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24}}>
+        <span style={{fontFamily: 'var(--font-heading)', fontSize: 15, fontWeight: 600, display: 'block', marginBottom: 12}}>Guia Mastigado IR</span>
+        <div style={{display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13}}>
           {(summary?.guide || []).map((line: string, idx: number) => (
             <p key={`${line}-${idx}`}>{line}</p>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 border-primary/5 shadow-2xl shadow-primary/5 overflow-hidden">
-        <CardHeader>
-          <CardTitle>Relatórios em PDF</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={() => downloadReport('fiscal', 'Relatório Fiscal')}>
+      {/* Relatórios PDF */}
+      <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24}}>
+        <span style={{fontFamily: 'var(--font-heading)', fontSize: 15, fontWeight: 600, display: 'block', marginBottom: 12}}>Relatórios em PDF</span>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
+          <button type="button" onClick={() => downloadReport('fiscal', 'Relatório Fiscal')}
+            style={{height: 36, padding: '0 14px', borderRadius: 7, border: '1px solid var(--hair)', background: 'transparent', fontSize: 13, cursor: 'pointer', color: 'inherit'}}>
             Baixar Fiscal (PDF)
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() =>
-              downloadReport('transactions', 'Relatório de Transações')
-            }>
+          </button>
+          <button type="button" onClick={() => downloadReport('transactions', 'Relatório de Transações')}
+            style={{height: 36, padding: '0 14px', borderRadius: 7, border: '1px solid var(--hair)', background: 'transparent', fontSize: 13, cursor: 'pointer', color: 'inherit'}}>
             Baixar Transações (PDF)
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => downloadReport('assets', 'Relatório de Ativos')}>
+          </button>
+          <button type="button" onClick={() => downloadReport('assets', 'Relatório de Ativos')}
+            style={{height: 36, padding: '0 14px', borderRadius: 7, border: '1px solid var(--hair)', background: 'transparent', fontSize: 13, cursor: 'pointer', color: 'inherit'}}>
             Baixar Ativos (PDF)
-          </Button>
-        </CardContent>
-      </Card>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

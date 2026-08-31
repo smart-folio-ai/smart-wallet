@@ -1,37 +1,9 @@
 import {useMemo, useState} from 'react';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useQuery} from '@tanstack/react-query';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import {Badge} from '@/components/ui/badge';
-import {Button} from '@/components/ui/button';
-import {Skeleton} from '@/components/ui/skeleton';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import portfolioService from '@/services/portfolio';
 import {formatCurrency} from '@/utils';
-import {ArrowLeft, Building2} from '@/components/ui/icons';
+import {DataTable, TD_STYLE, TD_RIGHT} from '@/components/shared';
 
 type DividendEventType = 'JCP' | 'Dividendo';
 
@@ -205,215 +177,152 @@ const DividendDetail = () => {
   }, [events, groupBy]);
 
   return (
-    <div className="container py-8 animate-fade-in">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-2"
-          onClick={() => navigate(`/dividends?portfolioId=${portfolioId}`)}>
-          <ArrowLeft className="h-4 w-4" />
+    <div style={{maxWidth: 1100, margin: '0 auto', padding: '32px 16px'}}>
+      {/* Back button */}
+      <div style={{marginBottom: 24, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12}}>
+        <button
+          type="button"
+          onClick={() => navigate(`/dividends?portfolioId=${portfolioId}`)}
+          style={{display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, color: 'var(--color-neutral-400)'}}>
+          <i className="ph-fill ph-arrow-left" style={{fontSize: 15}} />
           Voltar para dividendos
-        </Button>
+        </button>
       </div>
 
-      <Card className="mb-6 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-slate-100 via-white to-slate-100 dark:border-primary/15 dark:from-slate-950 dark:via-blue-950/30 dark:to-slate-950">
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <CardDescription>Detalhes de proventos</CardDescription>
-              <CardTitle className="mt-1 flex items-center gap-2 text-2xl">
-                <Building2 className="h-5 w-5 text-primary" />
-                {normalizedSymbol}
-              </CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">{headlineName}</p>
+      {/* Hero card */}
+      <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24, marginBottom: 24, overflow: 'hidden'}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20}}>
+          <div>
+            <p style={{fontSize: 11, color: 'var(--color-neutral-500)', marginBottom: 4}}>Detalhes de proventos</p>
+            <div style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: 22, fontFamily: 'var(--font-heading)', fontWeight: 700}}>
+              <i className="ph-fill ph-buildings" style={{fontSize: 18, color: 'var(--ac)'}} />
+              {normalizedSymbol}
             </div>
-            <Badge variant="outline" className="text-sm">
-              {events.length} evento(s)
-            </Badge>
+            <p style={{fontSize: 12.5, color: 'var(--color-neutral-500)', marginTop: 2}}>{headlineName}</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-violet-300/40 bg-violet-50 p-4 dark:border-violet-400/25 dark:bg-violet-950/25">
-              <p className="text-xs uppercase tracking-wider text-violet-700 dark:text-violet-300">Total Recebido</p>
-              <p className="mt-2 text-2xl font-bold text-violet-800 dark:text-violet-200">
-                {formatCurrency(totalReceived)}
-              </p>
-            </div>
-            <div className="rounded-xl border border-sky-300/40 bg-sky-50 p-4 dark:border-sky-400/25 dark:bg-sky-950/25">
-              <p className="text-xs uppercase tracking-wider text-sky-700 dark:text-sky-300">Total JCP</p>
-              <p className="mt-2 text-2xl font-bold text-sky-800 dark:text-sky-200">{formatCurrency(totalJcp)}</p>
-            </div>
-            <div className="rounded-xl border border-emerald-300/40 bg-emerald-50 p-4 dark:border-emerald-400/25 dark:bg-emerald-950/25">
-              <p className="text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Total Dividendos</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-800 dark:text-emerald-200">
-                {formatCurrency(totalDividend)}
-              </p>
-            </div>
+          <span style={{padding: '3px 10px', borderRadius: 6, fontSize: 11.5, fontWeight: 500, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-400)'}}>
+            {events.length} evento(s)
+          </span>
+        </div>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12}}>
+          <div style={{borderRadius: 10, border: '1px solid rgba(145,132,217,0.35)', background: 'rgba(145,132,217,0.15)', padding: 16}}>
+            <p style={{fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ac)'}}>Total Recebido</p>
+            <p style={{marginTop: 8, fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-heading)'}}>{formatCurrency(totalReceived)}</p>
           </div>
-        </CardContent>
-      </Card>
+          <div style={{borderRadius: 10, border: '1px solid rgba(76,201,240,0.30)', background: 'rgba(76,201,240,0.10)', padding: 16}}>
+            <p style={{fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cy)'}}>Total JCP</p>
+            <p style={{marginTop: 8, fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-heading)'}}>{formatCurrency(totalJcp)}</p>
+          </div>
+          <div style={{borderRadius: 10, border: '1px solid rgba(47,214,163,0.20)', background: 'rgba(47,214,163,0.20)', padding: 16}}>
+            <p style={{fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--pos)'}}>Total Dividendos</p>
+            <p style={{marginTop: 8, fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-heading)'}}>{formatCurrency(totalDividend)}</p>
+          </div>
+        </div>
+      </div>
 
-      <Card className="mb-6 overflow-hidden rounded-2xl border border-primary/10 bg-card/70">
-        <CardHeader className="pb-2">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <CardTitle>Recebimentos por período</CardTitle>
-              <CardDescription>
-                Visual mensal/anual de dividendos e JCP recebidos.
-              </CardDescription>
-            </div>
-            <div className="rounded-lg bg-muted p-1">
-              <Button
-                size="sm"
-                variant={groupBy === 'month' ? 'default' : 'ghost'}
-                className="h-8 px-3"
-                onClick={() => setGroupBy('month')}>
-                Mensal
-              </Button>
-              <Button
-                size="sm"
-                variant={groupBy === 'year' ? 'default' : 'ghost'}
-                className="h-8 px-3"
-                onClick={() => setGroupBy('year')}>
-                Anual
-              </Button>
-            </div>
+      {/* Bar chart — CSS-grid implementation */}
+      <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24, marginBottom: 24}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16}}>
+          <div>
+            <span style={{fontFamily: 'var(--font-heading)', fontSize: 15, fontWeight: 600}}>Recebimentos por período</span>
+            <p style={{fontSize: 11.5, color: 'var(--color-neutral-500)', marginTop: 2}}>Visual mensal/anual de dividendos e JCP recebidos.</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <Skeleton className="h-72 w-full" />
-          ) : payoutChartData.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border/70 p-6 text-sm text-muted-foreground">
-              Sem dados suficientes para montar o gráfico.
+          <div style={{display: 'flex', gap: 4, background: 'var(--surf-3)', borderRadius: 8, padding: 3}}>
+            {(['month', 'year'] as const).map((g) => (
+              <button key={g} type="button" onClick={() => setGroupBy(g)}
+                style={{padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500,
+                  background: groupBy === g ? 'var(--ac)' : 'transparent',
+                  color: groupBy === g ? '#fff' : 'var(--color-neutral-400)'}}>
+                {g === 'month' ? 'Mensal' : 'Anual'}
+              </button>
+            ))}
+          </div>
+        </div>
+        {isLoading ? (
+          <div style={{height: 200, borderRadius: 8, background: 'var(--surf-3)'}} />
+        ) : payoutChartData.length === 0 ? (
+          <div style={{border: '1px dashed var(--hair)', borderRadius: 8, padding: 24, fontSize: 13, color: 'var(--color-neutral-500)'}}>
+            Sem dados suficientes para montar o gráfico.
+          </div>
+        ) : (() => {
+          const maxTotal = Math.max(...payoutChartData.map(d => d.total), 1);
+          return (
+            <div style={{display: 'flex', alignItems: 'flex-end', gap: 6, height: 160, overflowX: 'auto', paddingBottom: 4}}>
+              {payoutChartData.map((d) => (
+                <div key={d.label} style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: '0 0 auto', minWidth: 36}}>
+                  <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 1, height: 120, width: 24}}>
+                    <div style={{borderRadius: '3px 3px 0 0', width: '100%', background: 'var(--pos)', height: `${(d.dividend / maxTotal) * 100}%`}} />
+                    <div style={{borderRadius: '3px 3px 0 0', width: '100%', background: 'var(--cy)', height: `${(d.jcp / maxTotal) * 100}%`}} />
+                  </div>
+                  <span style={{fontSize: 9.5, color: 'var(--color-neutral-500)', whiteSpace: 'nowrap'}}>{d.label}</span>
+                </div>
+              ))}
             </div>
-          ) : (
-            <div className="h-72 w-full rounded-xl border border-white/10 bg-gradient-to-b from-card/60 to-card/20 p-3">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={payoutChartData}
-                  margin={{top: 8, right: 12, left: 8, bottom: 8}}
-                  barGap={8}
-                  barCategoryGap="25%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground)/0.18)" />
-                  <XAxis dataKey="label" tick={{fontSize: 12}} tickLine={false} axisLine={false} />
-                  <YAxis
-                    tickFormatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR')}`}
-                    tick={{fontSize: 11}}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <Tooltip
-                    cursor={{fill: 'hsl(var(--muted)/0.2)'}}
-                    content={({active, payload, label}) => {
-                      if (!active || !payload?.length) return null;
-                      const dividend = Number(payload.find((p) => p.dataKey === 'dividend')?.value || 0);
-                      const jcp = Number(payload.find((p) => p.dataKey === 'jcp')?.value || 0);
-                      const total = dividend + jcp;
-                      return (
-                        <div className="rounded-xl border border-border/70 bg-background/95 p-3 shadow-xl">
-                          <p className="mb-1 text-sm font-semibold">{label}</p>
-                          <p className="text-xs text-emerald-600 dark:text-emerald-300">
-                            Dividendos: {formatCurrency(dividend)}
-                          </p>
-                          <p className="text-xs text-sky-600 dark:text-sky-300">
-                            JCP: {formatCurrency(jcp)}
-                          </p>
-                          <p className="mt-1 text-xs font-semibold text-foreground">
-                            Total: {formatCurrency(total)}
-                          </p>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Bar
-                    dataKey="dividend"
-                    name="Dividendos"
-                    radius={[6, 6, 0, 0]}
-                    barSize={26}
-                    fill="#22c55e"
-                  />
-                  <Bar
-                    dataKey="jcp"
-                    name="JCP"
-                    radius={[6, 6, 0, 0]}
-                    barSize={26}
-                    fill="#0ea5e9"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          );
+        })()}
+        {/* Legend */}
+        {payoutChartData.length > 0 && (
+          <div style={{display: 'flex', gap: 16, marginTop: 10, fontSize: 11}}>
+            <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 10, height: 10, borderRadius: 2, background: 'var(--pos)'}} />Dividendos</span>
+            <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 10, height: 10, borderRadius: 2, background: 'var(--cy)'}} />JCP</span>
+          </div>
+        )}
+      </div>
 
-      <Card className="overflow-hidden rounded-2xl border border-primary/10 bg-card/70">
-        <CardHeader>
-          <CardTitle>Historico completo de JCP e Dividendos</CardTitle>
-          <CardDescription>
-            Informacoes detalhadas por evento: data, quantidade, valor por unidade e total.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(value as 'all' | 'dividend' | 'jcp')}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">Todos</TabsTrigger>
-              <TabsTrigger value="dividend">Dividendos</TabsTrigger>
-              <TabsTrigger value="jcp">JCP</TabsTrigger>
-            </TabsList>
-            <TabsContent value={activeTab}>
-              {isLoading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : filteredEvents.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border/70 p-6 text-sm text-muted-foreground">
-                  Nenhum evento encontrado para este filtro.
-                </div>
-              ) : (
-                <div className="overflow-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead className="text-right">Quantidade</TableHead>
-                        <TableHead className="text-right">Valor por unidade</TableHead>
-                        <TableHead className="text-right">Total recebido</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredEvents.map((event, index) => (
-                        <TableRow key={`${event.symbol}-${event.date}-${event.eventType}-${index}`}>
-                          <TableCell>
-                            {parseDate(event.date)?.toLocaleDateString('pt-BR') || '-'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{event.eventType}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">{event.quantity}</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(event.valuePerUnit)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(event.totalValue)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+      {/* History table */}
+      <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24}}>
+        <div style={{marginBottom: 16}}>
+          <span style={{fontFamily: 'var(--font-heading)', fontSize: 15, fontWeight: 600}}>Historico completo de JCP e Dividendos</span>
+          <p style={{fontSize: 11.5, color: 'var(--color-neutral-500)', marginTop: 4}}>Informacoes detalhadas por evento: data, quantidade, valor por unidade e total.</p>
+        </div>
+
+        {/* Filter tabs */}
+        <div style={{display: 'flex', gap: 4, background: 'var(--surf-3)', borderRadius: 8, padding: 3, width: 'fit-content', marginBottom: 16}}>
+          {(['all', 'dividend', 'jcp'] as const).map((t) => (
+            <button key={t} type="button" onClick={() => setActiveTab(t)}
+              style={{padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500,
+                background: activeTab === t ? 'var(--ac)' : 'transparent',
+                color: activeTab === t ? '#fff' : 'var(--color-neutral-400)'}}>
+              {t === 'all' ? 'Todos' : t === 'dividend' ? 'Dividendos' : 'JCP'}
+            </button>
+          ))}
+        </div>
+
+        {isLoading ? (
+          <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} style={{height: 48, width: '100%', borderRadius: 8, background: 'var(--surf-3)'}} />
+            ))}
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <div style={{border: '1px dashed var(--hair)', borderRadius: 8, padding: 24, fontSize: 13, color: 'var(--color-neutral-500)'}}>
+            Nenhum evento encontrado para este filtro.
+          </div>
+        ) : (
+          <DataTable
+            columns={[
+              {label: 'Data'},
+              {label: 'Tipo'},
+              {label: 'Quantidade', align: 'right'},
+              {label: 'Valor por unidade', align: 'right'},
+              {label: 'Total recebido', align: 'right'},
+            ]}>
+            {filteredEvents.map((event, index) => (
+              <tr key={`${event.symbol}-${event.date}-${event.eventType}-${index}`} style={{borderTop: '1px solid var(--hair-soft)'}}>
+                <td style={TD_STYLE}>{parseDate(event.date)?.toLocaleDateString('pt-BR') || '-'}</td>
+                <td style={TD_STYLE}>
+                  <span style={{padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 500, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-400)'}}>
+                    {event.eventType}
+                  </span>
+                </td>
+                <td style={TD_RIGHT}>{event.quantity}</td>
+                <td style={TD_RIGHT}>{formatCurrency(event.valuePerUnit)}</td>
+                <td style={{...TD_RIGHT, fontWeight: 600}}>{formatCurrency(event.totalValue)}</td>
+              </tr>
+            ))}
+          </DataTable>
+        )}
+      </div>
     </div>
   );
 };
