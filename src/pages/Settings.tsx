@@ -94,7 +94,6 @@ function NkSwitch({
           background: '#fff',
           transform: checked ? 'translateX(20px)' : 'translateX(0)',
           transition: 'transform 0.2s',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
         }}
       />
     </button>
