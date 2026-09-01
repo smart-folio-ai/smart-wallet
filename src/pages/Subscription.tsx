@@ -9,7 +9,6 @@ import {
   CurrentSubscriptionResponse,
   ISubscription,
 } from '@/interface/subscription';
-import {Calendar, CircleDollarSign, Star} from '@/components/ui/icons';
 import {configUrlStripePaymentSuccessOrCancel, styleToast} from '@/utils';
 import {SeletorPrice} from '@/components/plans/SeletorPrice';
 import {cancelUrl, successUrl} from '@/utils/env';
@@ -184,10 +183,10 @@ export default function Subscriptions() {
     <>
       <div className="container py-12 font-sans selection:bg-primary/20">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <h1 className="text-4xl md:text-5xl font-heading font-bold tracking-tight text-foreground">
+          <h1 className="text-4xl md:text-5xl font-heading font-bold tracking-tight">
             Invista melhor com o Trackerr
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground pb-4 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl pb-4 max-w-2xl mx-auto leading-relaxed" style={{color:'var(--color-neutral-500)'}}>
             Escolha o plano ideal para suas necessidades de investimento e
             destrave o poder da Inteligência Artificial.
           </p>
@@ -223,40 +222,40 @@ export default function Subscriptions() {
         </div>
         {/* Seção de informações adicionais */}
         <div className="mt-20 grid md:grid-cols-3 gap-8 pb-10 max-w-5xl mx-auto">
-          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-card border border-border/50 shadow-sm transition-all hover:shadow-md">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
-              <CircleDollarSign className="h-7 w-7 text-primary" />
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl shadow-sm transition-all hover:shadow-md" style={{background:'var(--nk-card)', border:'1px solid var(--hair)'}}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{background:'rgba(145,132,217,0.15)'}}>
+              <i className="ph-fill ph-currency-circle-dollar" style={{fontSize:26, color:'var(--ac)'}} />
             </div>
-            <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
+            <h3 className="text-lg font-heading font-semibold mb-2">
               Cancelamento a qualquer momento
             </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm leading-relaxed" style={{color:'var(--color-neutral-500)'}}>
               Você pode cancelar sua assinatura quando quiser, de forma simples
               e sem custos adicionais.
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-card border border-border/50 shadow-sm transition-all hover:shadow-md">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
-              <Star className="h-7 w-7 text-primary" />
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl shadow-sm transition-all hover:shadow-md" style={{background:'var(--nk-card)', border:'1px solid var(--hair)'}}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{background:'rgba(145,132,217,0.15)'}}>
+              <i className="ph-fill ph-star" style={{fontSize:26, color:'var(--ac)'}} />
             </div>
-            <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
+            <h3 className="text-lg font-heading font-semibold mb-2">
               Satisfação garantida
             </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm leading-relaxed" style={{color:'var(--color-neutral-500)'}}>
               Devolução do valor integral em até 7 dias da compra caso você não
               se adapte.
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-card border border-border/50 shadow-sm transition-all hover:shadow-md">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
-              <Calendar className="h-7 w-7 text-primary" />
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl shadow-sm transition-all hover:shadow-md" style={{background:'var(--nk-card)', border:'1px solid var(--hair)'}}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{background:'rgba(145,132,217,0.15)'}}>
+              <i className="ph-fill ph-calendar" style={{fontSize:26, color:'var(--ac)'}} />
             </div>
-            <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
+            <h3 className="text-lg font-heading font-semibold mb-2">
               Suporte dedicado
             </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm leading-relaxed" style={{color:'var(--color-neutral-500)'}}>
               Nossa equipe técnica e de especialistas está sempre pronta para
               ajudar.
             </p>

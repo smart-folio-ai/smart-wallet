@@ -1,17 +1,5 @@
 import React, {useState, useRef} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {Loader2, ShieldCheck, ArrowLeft} from '@/components/ui/icons';
 import {api} from '@/server/api/api';
 import useAppToast from '@/hooks/use-app-toast';
 
@@ -67,32 +55,28 @@ export default function TwoFactorVerify() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-6 animate-in fade-in slide-in-from-bottom-4">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <ShieldCheck className="h-8 w-8 text-primary" />
-            </div>
+    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--surf-1)', padding:'0 16px'}}>
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
+      <div style={{width:'100%', maxWidth:420, display:'flex', flexDirection:'column', gap:24}}>
+        {/* Icon + heading */}
+        <div style={{textAlign:'center', display:'flex', flexDirection:'column', gap:8, alignItems:'center'}}>
+          <div style={{width:64, height:64, borderRadius:16, background:'rgba(145,132,217,0.15)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+            <i className="ph-fill ph-shield-check" style={{fontSize:32, color:'var(--ac)'}} />
           </div>
-          <h1 className="text-2xl font-bold">Verificação em Dois Fatores</h1>
-          <p className="text-muted-foreground text-sm">
-            Abra seu aplicativo autenticador e insira o código de 6 dígitos
-          </p>
+          <h1 style={{fontSize:22, fontWeight:700, fontFamily:'var(--font-heading)'}}>Verificação em Dois Fatores</h1>
+          <p style={{fontSize:13, color:'var(--color-neutral-500)'}}>Abra seu aplicativo autenticador e insira o código de 6 dígitos</p>
         </div>
 
-        <Card className="rounded-2xl bg-gradient-to-br from-card to-card/50 shadow-2xl shadow-primary/5 border-primary/20 overflow-hidden">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-base">Código de verificação</CardTitle>
-            <CardDescription>
-              Google Authenticator, Authy ou similar
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">Código de 6 dígitos</Label>
-              <Input
+        {/* Card */}
+        <div style={{border:'1px solid var(--hair)', borderRadius:14, background:'var(--nk-card)', overflow:'hidden', boxShadow:'var(--shadow-sm)'}}>
+          <div style={{padding:'20px 24px 12px', textAlign:'center', borderBottom:'1px solid var(--hair-soft)'}}>
+            <p style={{fontWeight:600, fontSize:14}}>Código de verificação</p>
+            <p style={{fontSize:12, color:'var(--color-neutral-500)', marginTop:4}}>Google Authenticator, Authy ou similar</p>
+          </div>
+          <div style={{padding:'16px 24px', display:'flex', flexDirection:'column', gap:12}}>
+            <div style={{display:'flex', flexDirection:'column', gap:6}}>
+              <label htmlFor="code" style={{fontSize:12, fontWeight:500, color:'var(--color-neutral-500)'}}>Código de 6 dígitos</label>
+              <input
                 ref={inputRef}
                 id="code"
                 type="text"
@@ -101,48 +85,38 @@ export default function TwoFactorVerify() {
                 maxLength={6}
                 placeholder="000000"
                 value={code}
-                onChange={(e) =>
-                  setCode(e.target.value.replace(/\D/g, '').slice(0, 6))
-                }
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 onKeyDown={handleKeyDown}
-                className="text-center text-2xl tracking-widest font-mono h-14"
                 autoFocus
                 autoComplete="one-time-code"
+                style={{width:'100%', height:54, textAlign:'center', fontSize:24, letterSpacing:'0.3em', fontFamily:'monospace', border:'1px solid var(--hair)', borderRadius:8, background:'var(--surf-3)', color:'inherit', outline:'none', boxSizing:'border-box' as const}}
               />
             </div>
-          </CardContent>
-          <CardFooter className="flex-col gap-3">
-            <Button
+          </div>
+          <div style={{padding:'0 24px 20px', display:'flex', flexDirection:'column', gap:8}}>
+            <button
+              type="button"
               onClick={handleVerify}
               disabled={loading || code.length !== 6}
-              className="w-full">
+              style={{width:'100%', height:44, borderRadius:8, border:'none', background: (loading || code.length !== 6) ? 'var(--surf-3)' : 'var(--grad-violet)', color: (loading || code.length !== 6) ? 'var(--color-neutral-500)' : '#fff', fontSize:14, fontWeight:600, cursor: (loading || code.length !== 6) ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6}}
+            >
               {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Verificando...
-                </>
-              ) : (
-                'Verificar Código'
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
+                <><i className="ph-fill ph-spinner" style={{fontSize:15, animation:'spin 0.8s linear infinite'}} />Verificando...</>
+              ) : 'Verificar Código'}
+            </button>
+            <button
+              type="button"
               onClick={() => navigate('/login')}
-              className="text-muted-foreground">
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Voltar para o login
-            </Button>
-          </CardFooter>
-        </Card>
+              style={{background:'none', border:'none', cursor:'pointer', fontSize:13, color:'var(--color-neutral-500)', display:'flex', alignItems:'center', justifyContent:'center', gap:4, padding:'4px 0'}}
+            >
+              <i className="ph-fill ph-arrow-left" style={{fontSize:14}} />Voltar para o login
+            </button>
+          </div>
+        </div>
 
-        <p className="text-center text-xs text-muted-foreground">
+        <p style={{textAlign:'center', fontSize:11.5, color:'var(--color-neutral-500)'}}>
           Não tem acesso ao seu aplicativo?{' '}
-          <a
-            href="mailto:suporte@trackerr.com.br"
-            className="text-primary hover:underline">
-            Contate o suporte
-          </a>
+          <a href="mailto:suporte@trackerr.com.br" style={{color:'var(--ac)'}}>Contate o suporte</a>
         </p>
       </div>
     </div>

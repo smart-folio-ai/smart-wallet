@@ -1,20 +1,5 @@
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
-import {
-  X,
-  ArrowLeft,
-  MessageCircle,
-  CreditCard,
-  HelpCircle,
-} from '@/components/ui/icons';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {Button} from '@/components/ui/button';
 import {AppLogo} from '@/components/AppLogo';
 
 export default function SubscriptionCancelled() {
@@ -22,19 +7,19 @@ export default function SubscriptionCancelled() {
 
   const reasons = [
     {
-      icon: <CreditCard className="h-5 w-5" />,
+      icon: <i className="ph-fill ph-credit-card" style={{fontSize:20, color:'var(--ac)'}} />,
       title: 'Problema com pagamento',
       description: 'Verifique se seus dados de pagamento estão corretos',
       action: () => navigate('/subscription'),
     },
     {
-      icon: <HelpCircle className="h-5 w-5" />,
+      icon: <i className="ph-fill ph-question" style={{fontSize:20, color:'var(--ac)'}} />,
       title: 'Precisa de mais informações',
       description: 'Conheça melhor nossos recursos e benefícios',
       action: () => navigate('/ai-insights'),
     },
     {
-      icon: <MessageCircle className="h-5 w-5" />,
+      icon: <i className="ph-fill ph-chat-circle" style={{fontSize:20, color:'var(--ac)'}} />,
       title: 'Falar com suporte',
       description: 'Nossa equipe pode esclarecer suas dúvidas',
       action: () => window.open('mailto:suporte@trackerr.com'),
@@ -42,144 +27,94 @@ export default function SubscriptionCancelled() {
   ];
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground font-sans flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
-      <div className="w-full max-w-2xl">
-        <div className="mb-8 flex justify-center">
+    <div style={{minHeight:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'var(--surf-1)'}}>
+      <div style={{width:'100%', maxWidth:672}}>
+        <div style={{marginBottom:32, display:'flex', justifyContent:'center'}}>
           <AppLogo size="lg" />
         </div>
-
-        <Card className="rounded-2xl bg-card border border-border/60 shadow-2xl shadow-primary/5 overflow-hidden">
-          <CardHeader className="relative text-center pb-6 pt-8">
-            <div className="w-16 h-16 bg-muted/50 border border-border/50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <X className="h-8 w-8 text-muted-foreground" />
+        <div style={{border:'1px solid var(--hair)', borderRadius:16, background:'var(--nk-card)', overflow:'hidden', boxShadow:'var(--shadow-lg)'}}>
+          {/* Header */}
+          <div style={{textAlign:'center', padding:'32px 24px 24px', borderBottom:'1px solid var(--hair-soft)'}}>
+            <div style={{width:64, height:64, background:'var(--surf-3)', border:'1px solid var(--hair)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px'}}>
+              <i className="ph-fill ph-x" style={{fontSize:28, color:'var(--color-neutral-500)'}} />
             </div>
-            <CardTitle className="text-3xl font-bold font-heading text-foreground mb-2">
-              Assinatura Cancelada
-            </CardTitle>
-            <CardDescription className="text-lg text-muted-foreground">
-              Não se preocupe, você ainda pode assinar quando quiser
-            </CardDescription>
-          </CardHeader>
+            <h1 style={{fontSize:28, fontWeight:700, fontFamily:'var(--font-heading)', marginBottom:8}}>Assinatura Cancelada</h1>
+            <p style={{fontSize:16, color:'var(--color-neutral-500)'}}>Não se preocupe, você ainda pode assinar quando quiser</p>
+          </div>
 
-          <CardContent className="relative space-y-6">
+          {/* Content */}
+          <div style={{padding:24, display:'flex', flexDirection:'column', gap:24}}>
             {/* Mensagem principal */}
-            <div className="text-center bg-muted/30 border border-border/40 rounded-xl p-6">
-              <h3 className="text-xl font-heading font-semibold text-foreground mb-3">
-                O que aconteceu?
-              </h3>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                Sua assinatura foi cancelada e nenhuma cobrança foi realizada.
-                Você pode tentar novamente a qualquer momento.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Seus dados estão seguros e você continua com acesso ao plano
-                gratuito.
-              </p>
+            <div style={{textAlign:'center', background:'var(--surf-3)', border:'1px solid var(--hair)', borderRadius:12, padding:24}}>
+              <h3 style={{fontSize:18, fontFamily:'var(--font-heading)', fontWeight:600, marginBottom:12}}>O que aconteceu?</h3>
+              <p style={{color:'var(--color-neutral-500)', lineHeight:1.6, marginBottom:16}}>Sua assinatura foi cancelada e nenhuma cobrança foi realizada. Você pode tentar novamente a qualquer momento.</p>
+              <p style={{fontSize:13, color:'var(--color-neutral-500)'}}>Seus dados estão seguros e você continua com acesso ao plano gratuito.</p>
             </div>
 
-            {/* Possíveis razões e soluções */}
-            <div className="space-y-4">
-              <h4 className="text-lg font-heading font-semibold text-center text-foreground">
-                Como podemos ajudar?
-              </h4>
-              <div className="grid gap-4">
+            {/* Possíveis razões */}
+            <div>
+              <h4 style={{fontSize:16, fontFamily:'var(--font-heading)', fontWeight:600, textAlign:'center', marginBottom:16}}>Como podemos ajudar?</h4>
+              <div style={{display:'flex', flexDirection:'column', gap:12}}>
                 {reasons.map((reason, index) => (
-                  <Card
-                    key={index}
-                    className="bg-card border border-border/50 hover:border-primary/50 cursor-pointer transition-all hover:shadow-md"
-                    onClick={reason.action}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-                          {reason.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h5 className="font-heading font-medium text-foreground">
-                            {reason.title}
-                          </h5>
-                          <p className="text-sm text-muted-foreground">
-                            {reason.description}
-                          </p>
-                        </div>
-                        <ArrowLeft className="h-5 w-5 text-muted-foreground/50 rotate-180" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <button key={index} type="button" onClick={reason.action}
+                    style={{display:'flex', alignItems:'center', gap:16, padding:16, border:'1px solid var(--hair)', borderRadius:10, background:'var(--nk-card)', cursor:'pointer', textAlign:'left', width:'100%', color:'inherit'}}>
+                    <div style={{width:40, height:40, background:'rgba(145,132,217,0.15)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                      {reason.icon}
+                    </div>
+                    <div style={{flex:1}}>
+                      <p style={{fontWeight:500, fontSize:14}}>{reason.title}</p>
+                      <p style={{fontSize:12.5, color:'var(--color-neutral-500)', marginTop:2}}>{reason.description}</p>
+                    </div>
+                    <i className="ph-fill ph-arrow-right" style={{fontSize:16, color:'var(--color-neutral-400)'}} />
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Benefícios que está perdendo */}
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-6">
-              <h4 className="text-lg font-heading font-semibold mb-4 text-center text-yellow-600 dark:text-yellow-500">
-                Recursos que você teria com o plano Premium:
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  'Sincronização automática com B3',
-                  'Insights de IA personalizados',
-                  'Recomendações de compra/venda',
-                  'Análise de preço justo',
-                  'Alertas de oportunidades',
-                  'Suporte prioritário',
-                ].map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full flex-shrink-0"></div>
-                    <span className="text-sm text-foreground/80">
-                      {feature}
-                    </span>
+            {/* Recursos perdidos — warn box */}
+            <div style={{background:'var(--badge-warn-bg)', border:'1px solid var(--warn)', borderRadius:12, padding:24}}>
+              <h4 style={{fontSize:16, fontFamily:'var(--font-heading)', fontWeight:600, textAlign:'center', marginBottom:16, color:'var(--warn)'}}>Recursos que você teria com o plano Premium:</h4>
+              <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:10}}>
+                {['Sincronização automática com B3','Insights de IA personalizados','Recomendações de compra/venda','Análise de preço justo','Alertas de oportunidades','Suporte prioritário'].map((feature, index) => (
+                  <div key={index} style={{display:'flex', alignItems:'center', gap:8}}>
+                    <div style={{width:8, height:8, borderRadius:'50%', background:'var(--warn)', flexShrink:0}} />
+                    <span style={{fontSize:13}}>{feature}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Ações */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button
-                onClick={() => navigate('/subscription')}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground border-0 h-12"
-                size="lg">
+            <div style={{display:'flex', flexDirection:'column', gap:10}}>
+              <button type="button" onClick={() => navigate('/subscription')}
+                style={{width:'100%', height:48, borderRadius:9, border:'none', background:'var(--grad-violet)', color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer'}}>
                 Tentar Novamente
-              </Button>
-              <Button
-                variant="outline"
-                className="h-12"
-                onClick={() => navigate('/dashboard')}
-                size="lg">
+              </button>
+              <button type="button" onClick={() => navigate('/dashboard')}
+                style={{width:'100%', height:48, borderRadius:9, border:'1px solid var(--hair)', background:'transparent', fontSize:14, fontWeight:500, cursor:'pointer', color:'inherit'}}>
                 Continuar Gratuito
-              </Button>
+              </button>
             </div>
 
             {/* Oferta especial */}
-            <div className="bg-primary/5 border border-primary/10 rounded-xl p-6 text-center">
-              <h4 className="text-lg font-heading font-semibold text-primary mb-2">
-                Oferta Especial
-              </h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                Que tal experimentar nosso plano gratuito por mais tempo? Você
-                pode sempre fazer upgrade quando se sentir pronto.
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/ai-insights')}
-                className="bg-background/80 hover:bg-primary hover:text-primary-foreground border-primary/20 transition-all font-medium">
+            <div style={{background:'rgba(145,132,217,0.15)', border:'1px solid rgba(145,132,217,0.35)', borderRadius:12, padding:24, textAlign:'center'}}>
+              <h4 style={{fontSize:16, fontFamily:'var(--font-heading)', fontWeight:600, color:'var(--ac)', marginBottom:8}}>Oferta Especial</h4>
+              <p style={{fontSize:13, color:'var(--color-neutral-500)', marginBottom:16}}>Que tal experimentar nosso plano gratuito por mais tempo? Você pode sempre fazer upgrade quando se sentir pronto.</p>
+              <button type="button" onClick={() => navigate('/ai-insights')}
+                style={{padding:'8px 20px', borderRadius:8, border:'1px solid rgba(145,132,217,0.35)', background:'transparent', fontSize:13, fontWeight:500, cursor:'pointer', color:'var(--ac)'}}>
                 Explorar Recursos Gratuitos
-              </Button>
+              </button>
             </div>
 
-            {/* Informações de contato */}
-            <div className="text-center pt-4 border-t">
-              <p className="text-sm text-muted-foreground">
+            {/* Contato */}
+            <div style={{textAlign:'center', paddingTop:16, borderTop:'1px solid var(--hair-soft)'}}>
+              <p style={{fontSize:13, color:'var(--color-neutral-500)'}}>
                 Ainda tem dúvidas? Fale conosco em{' '}
-                <a
-                  href="mailto:suporte@trackerr.com"
-                  className="text-primary hover:underline">
-                  suporte@trackerr.com
-                </a>
+                <a href="mailto:suporte@trackerr.com" style={{color:'var(--ac)'}}>suporte@trackerr.com</a>
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
