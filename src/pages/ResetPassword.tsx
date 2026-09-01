@@ -9,11 +9,6 @@ import {
   Eye,
   EyeOff,
   ArrowLeft,
-  ShieldCheck,
-  Loader2,
-  KeyRound,
-  CheckCircle2,
-  AlertCircle,
 } from '@/components/ui/icons';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
@@ -51,25 +46,25 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>;
 
-// ─── Estado: Validando token ────────────────────────────────────────────────
-
 function LoadingState() {
   return (
     <div
       id="reset-password-loading"
       data-testid="reset-password-loading"
-      className="dark min-h-screen flex items-center justify-center bg-surface">
+      className="min-h-screen flex items-center justify-center"
+      style={{background: 'var(--surf-1)'}}>
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="w-10 h-10 animate-spin text-brand" />
-        <p className="text-sm text-on-surface-muted/60">
+        <i
+          className="ph-fill ph-spinner"
+          style={{fontSize: 40, color: 'var(--ac)', animation: 'spin 0.8s linear infinite'}}
+        />
+        <p className="text-sm" style={{color: 'var(--color-neutral-500)'}}>
           Validando link de recuperação...
         </p>
       </div>
     </div>
   );
 }
-
-// ─── Estado: Token inválido ──────────────────────────────────────────────────
 
 function InvalidTokenState({
   onRetry,
@@ -84,13 +79,16 @@ function InvalidTokenState({
     <div
       id="reset-password-invalid"
       data-testid="reset-password-invalid"
-      className="dark min-h-screen flex items-center justify-center p-8 bg-surface">
+      className="min-h-screen flex items-center justify-center p-8"
+      style={{background: 'var(--surf-1)'}}>
       <div className="w-full max-w-md text-center">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 bg-negative/[0.12]">
-          <AlertCircle className="w-8 h-8" style={{color: '#ffb59a'}} />
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+          style={{background: 'var(--badge-neg-bg)'}}>
+          <i className="ph-fill ph-x-circle" style={{fontSize: 32, color: 'var(--neg)'}} />
         </div>
         <h2
-          className="font-bold mb-3 text-on-surface"
+          className="font-bold mb-3"
           style={{
             fontSize: '1.75rem',
             fontFamily: 'var(--font-heading)',
@@ -99,25 +97,21 @@ function InvalidTokenState({
           {title}
         </h2>
         <p
-          className="mb-8 leading-relaxed text-on-surface-muted/60"
-          style={{fontSize: '0.9rem'}}>
+          className="mb-8 leading-relaxed"
+          style={{fontSize: '0.9rem', color: 'var(--color-neutral-500)'}}>
           {description}
         </p>
         <Button
           id="reset-password-request-new"
           onClick={onRetry}
-          className="w-full h-12 font-semibold text-sm bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))]"
-          style={{
-            color: '#f9f7ff',
-          }}>
+          className="w-full h-12 font-semibold text-sm"
+          style={{background: 'var(--grad-violet)', color: '#fff'}}>
           Solicitar novo link
         </Button>
       </div>
     </div>
   );
 }
-
-// ─── Componente principal ────────────────────────────────────────────────────
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -231,418 +225,394 @@ export default function ResetPassword() {
   }
 
   return (
-    <div
-      id="reset-password-page"
-      className="dark min-h-screen flex bg-surface"
-      style={{
-        fontFamily: 'var(--font-body)',
-      }}>
-      {/* Painel esquerdo */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14 bg-surface-panel">
+    <>
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
+      <div
+        id="reset-password-page"
+        className="min-h-screen flex"
+        style={{fontFamily: 'var(--font-body)'}}>
+        {/* Painel esquerdo */}
         <div
-          className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
-          style={{
-            background:
-              'radial-gradient(circle, hsl(var(--brand) / 0.08) 0%, transparent 70%)',
-          }}
-        />
-
-        {/* Logo */}
-        <div className="relative z-10">
-          <AppLogo size="lg" />
-        </div>
-
-        {/* Conteúdo central */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center">
-          <div className="mb-6 inline-flex">
-            <span
-              className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full text-on-surface-accent bg-brand/[0.12]"
-              style={{
-                fontFamily: 'var(--font-body)',
-                letterSpacing: '0.12em',
-              }}>
-              Redefinição de Senha
-            </span>
-          </div>
-          <h1
-            className="font-bold leading-tight mb-5 text-on-surface"
+          className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
+          style={{background: 'var(--surf-2)'}}>
+          <div
+            className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
             style={{
-              fontSize: '2.75rem',
-              fontFamily: 'var(--font-heading)',
-              letterSpacing: '-0.02em',
-            }}>
-            Quase lá. Crie uma nova senha segura.
-          </h1>
-          <p
-            className="leading-relaxed text-on-surface-muted/75"
-            style={{
-              fontSize: '1rem',
-              lineHeight: '1.7',
-            }}>
-            Escolha uma senha forte e exclusiva para proteger o acesso ao seu
-            terminal financeiro.
-          </p>
+              background:
+                'radial-gradient(circle, rgba(111,94,217,0.08) 0%, transparent 70%)',
+            }}
+          />
 
-          {/* Dicas de segurança */}
-          <div className="mt-10 space-y-3">
-            {[
-              'Mínimo de 8 caracteres',
-              'Use letras maiúsculas, minúsculas e números',
-              'Evite senhas reutilizadas de outros serviços',
-            ].map((tip) => (
-              <div
-                key={tip}
-                className="flex items-center gap-3 rounded-xl p-4 bg-surface-raised">
-                <ShieldCheck className="w-4 h-4 flex-shrink-0 text-brand" />
-                <span className="text-sm text-on-surface-muted/70">
-                  {tip}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <p className="text-xs relative z-10 text-on-surface-muted/40">
-          © 2025 Trackerr. Plataforma de análise de investimentos.
-        </p>
-      </div>
-
-      {/* Painel direito */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-surface">
-        <div className="w-full max-w-md">
-          {/* Logo mobile */}
-          <div className="mb-8 flex justify-center lg:hidden">
+          {/* Logo */}
+          <div className="relative z-10">
             <AppLogo size="lg" />
           </div>
 
-          {/* Botão voltar */}
-          <button
-            id="reset-password-back"
-            onClick={() => navigate('/signin')}
-            className="flex items-center gap-2 mb-8 text-sm transition-colors"
-            style={{color: 'hsl(var(--on-surface-muted) / 0.6)'}}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = 'hsl(var(--on-surface-accent))')
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = 'hsl(var(--on-surface-muted) / 0.6)')
-            }>
-            <ArrowLeft className="h-4 w-4" />
-            Voltar para o login
-          </button>
-
-          {isSuccess ? (
-            /* ── Estado de sucesso ── */
-            <div
-              id="reset-password-success"
-              data-testid="reset-password-success">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-brand/[0.12]">
-                <CheckCircle2 className="h-6 w-6 text-on-surface-accent" />
-              </div>
-              <h2
-                className="font-bold mb-2 text-on-surface"
+          {/* Conteúdo central */}
+          <div className="relative z-10 flex-1 flex flex-col justify-center">
+            <div className="mb-6 inline-flex">
+              <span
+                className="text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full"
                 style={{
-                  fontSize: '1.875rem',
-                  fontFamily: 'var(--font-heading)',
-                  letterSpacing: '-0.02em',
+                  fontFamily: 'var(--font-body)',
+                  letterSpacing: '0.12em',
+                  color: 'var(--ac)',
+                  background: 'rgba(145,132,217,0.15)',
                 }}>
-                Senha redefinida!
-              </h2>
-              <p
-                className="mb-8 text-on-surface-muted/60"
-                style={{
-                  fontSize: '0.9rem',
-                  lineHeight: '1.6',
-                }}>
-                Sua senha foi alterada com sucesso. Você já pode acessar o
-                terminal com suas novas credenciais.
-              </p>
-              <Button
-                id="reset-password-goto-login"
-                onClick={() => navigate('/')}
-                className="w-full h-12 font-semibold text-sm bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))]"
-                style={{
-                  color: '#f9f7ff',
-                }}>
-                Ir para o Login
-              </Button>
+                Redefinição de Senha
+              </span>
             </div>
-          ) : (
-            /* ── Formulário ── */
-            <>
-              <div className="mb-8">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-brand/[0.12]">
-                  <KeyRound className="h-6 w-6 text-brand" />
+            <h1
+              className="font-bold leading-tight mb-5"
+              style={{
+                fontSize: '2.75rem',
+                fontFamily: 'var(--font-heading)',
+                letterSpacing: '-0.02em',
+              }}>
+              Quase lá. Crie uma nova senha segura.
+            </h1>
+            <p
+              className="leading-relaxed"
+              style={{
+                fontSize: '1rem',
+                lineHeight: '1.7',
+                color: 'var(--color-neutral-500)',
+              }}>
+              Escolha uma senha forte e exclusiva para proteger o acesso ao seu
+              terminal financeiro.
+            </p>
+
+            {/* Dicas de segurança */}
+            <div className="mt-10 space-y-3">
+              {[
+                'Mínimo de 8 caracteres',
+                'Use letras maiúsculas, minúsculas e números',
+                'Evite senhas reutilizadas de outros serviços',
+              ].map((tip) => (
+                <div
+                  key={tip}
+                  className="flex items-center gap-3 rounded-xl p-4"
+                  style={{background: 'var(--surf-3)'}}>
+                  <i
+                    className="ph-fill ph-shield-check"
+                    style={{fontSize: 16, color: 'var(--ac)', flexShrink: 0}}
+                  />
+                  <span
+                    className="text-sm"
+                    style={{color: 'var(--color-neutral-500)'}}>
+                    {tip}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p
+            className="text-xs relative z-10"
+            style={{color: 'var(--color-neutral-500)', opacity: 0.4}}>
+            © 2025 Trackerr. Plataforma de análise de investimentos.
+          </p>
+        </div>
+
+        {/* Painel direito */}
+        <div
+          className="flex-1 flex items-center justify-center p-8"
+          style={{background: 'var(--surf-1)'}}>
+          <div className="w-full max-w-md">
+            {/* Logo mobile */}
+            <div className="mb-8 flex justify-center lg:hidden">
+              <AppLogo size="lg" />
+            </div>
+
+            {/* Botão voltar */}
+            <button
+              id="reset-password-back"
+              onClick={() => navigate('/signin')}
+              className="flex items-center gap-2 mb-8 text-sm transition-colors"
+              style={{color: 'var(--color-neutral-500)'}}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ac)')}
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = 'var(--color-neutral-500)')
+              }>
+              <ArrowLeft className="h-4 w-4" />
+              Voltar para o login
+            </button>
+
+            {isSuccess ? (
+              /* ── Estado de sucesso ── */
+              <div
+                id="reset-password-success"
+                data-testid="reset-password-success">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                  style={{background: 'rgba(145,132,217,0.15)'}}>
+                  <i className="ph-fill ph-check-circle" style={{fontSize: 24, color: 'var(--ac)'}} />
                 </div>
                 <h2
-                  className="font-bold mb-2 text-on-surface"
+                  className="font-bold mb-2"
                   style={{
                     fontSize: '1.875rem',
                     fontFamily: 'var(--font-heading)',
                     letterSpacing: '-0.02em',
                   }}>
-                  Nova senha
+                  Senha redefinida!
                 </h2>
                 <p
-                  className="text-on-surface-muted/60"
-                  style={{fontSize: '0.9rem'}}>
-                  Digite sua nova senha abaixo.
-                  {requiresMfa &&
-                    ' Você também precisará informar seu código de Autenticação em Duas Etapas (2FA).'}
+                  className="mb-8"
+                  style={{
+                    fontSize: '0.9rem',
+                    lineHeight: '1.6',
+                    color: 'var(--color-neutral-500)',
+                  }}>
+                  Sua senha foi alterada com sucesso. Você já pode acessar o
+                  terminal com suas novas credenciais.
                 </p>
+                <Button
+                  id="reset-password-goto-login"
+                  onClick={() => navigate('/')}
+                  className="w-full h-12 font-semibold text-sm"
+                  style={{background: 'var(--grad-violet)', color: '#fff'}}>
+                  Ir para o Login
+                </Button>
               </div>
+            ) : (
+              /* ── Formulário ── */
+              <>
+                <div className="mb-8">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                    style={{background: 'rgba(145,132,217,0.15)'}}>
+                    <i className="ph-fill ph-key" style={{fontSize: 24, color: 'var(--ac)'}} />
+                  </div>
+                  <h2
+                    className="font-bold mb-2"
+                    style={{
+                      fontSize: '1.875rem',
+                      fontFamily: 'var(--font-heading)',
+                      letterSpacing: '-0.02em',
+                    }}>
+                    Nova senha
+                  </h2>
+                  <p style={{fontSize: '0.9rem', color: 'var(--color-neutral-500)'}}>
+                    Digite sua nova senha abaixo.
+                    {requiresMfa &&
+                      ' Você também precisará informar seu código de Autenticação em Duas Etapas (2FA).'}
+                  </p>
+                </div>
 
-              <Form {...form}>
-                <form
-                  id="reset-password-form"
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-5">
-                  {/* Campo 2FA (condicional) */}
-                  {requiresMfa && (
+                <Form {...form}>
+                  <form
+                    id="reset-password-form"
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-5">
+                    {/* Campo 2FA (condicional) */}
+                    {requiresMfa && (
+                      <FormField
+                        control={form.control}
+                        name="code"
+                        render={({field}) => (
+                          <FormItem>
+                            <FormLabel
+                              className="uppercase tracking-widest text-xs"
+                              style={{
+                                letterSpacing: '0.1em',
+                                color: 'var(--color-neutral-500)',
+                              }}>
+                              Código de Autenticação (2FA)
+                            </FormLabel>
+                            <FormControl>
+                              <InputOTP maxLength={6} {...field}>
+                                <InputOTPGroup className="gap-2">
+                                  {[...Array(6)].map((_, index) => (
+                                    <InputOTPSlot
+                                      key={index}
+                                      index={index}
+                                      className="w-11 h-13 text-base border rounded-lg"
+                                    />
+                                  ))}
+                                </InputOTPGroup>
+                              </InputOTP>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    {/* Nova senha */}
                     <FormField
                       control={form.control}
-                      name="code"
+                      name="password"
                       render={({field}) => (
                         <FormItem>
                           <FormLabel
-                            className="uppercase tracking-widest text-xs text-on-surface-muted/70"
+                            className="uppercase tracking-widest text-xs"
                             style={{
                               letterSpacing: '0.1em',
+                              color: 'var(--color-neutral-500)',
                             }}>
-                            Código de Autenticação (2FA)
+                            Nova Senha
                           </FormLabel>
-                          <FormControl>
-                            <InputOTP maxLength={6} {...field}>
-                              <InputOTPGroup className="gap-2">
-                                {[...Array(6)].map((_, index) => (
-                                  <InputOTPSlot
-                                    key={index}
-                                    index={index}
-                                    className="w-11 h-13 text-base border-0 rounded-lg focus-visible:ring-1 focus-visible:ring-brand bg-surface-input text-on-surface"
-                                  />
-                                ))}
-                              </InputOTPGroup>
-                            </InputOTP>
-                          </FormControl>
+                          <div className="relative">
+                            <FormControl>
+                              <Input
+                                id="reset-password-new"
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder="••••••••"
+                                {...field}
+                                className="h-12 pr-12 text-sm"
+                              />
+                            </FormControl>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
+                              style={{color: 'var(--color-neutral-500)'}}
+                              onClick={() => setShowPassword(!showPassword)}>
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                              <span className="sr-only">
+                                {showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                              </span>
+                            </Button>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  )}
 
-                  {/* Nova senha */}
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({field}) => (
-                      <FormItem>
-                        <FormLabel
-                          className="uppercase tracking-widest text-xs text-on-surface-muted/70"
-                          style={{
-                            letterSpacing: '0.1em',
-                          }}>
-                          Nova Senha
-                        </FormLabel>
-                        <div className="relative">
-                          <FormControl>
-                            <Input
-                              id="reset-password-new"
-                              type={showPassword ? 'text' : 'password'}
-                              placeholder="••••••••"
-                              {...field}
-                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-surface-input text-on-surface"
-                            />
-                          </FormControl>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent text-on-surface-muted/60"
-                            onClick={() => setShowPassword(!showPassword)}>
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                            <span className="sr-only">
-                              {showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                            </span>
-                          </Button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    {/* Confirmar senha */}
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({field}) => (
+                        <FormItem>
+                          <FormLabel
+                            className="uppercase tracking-widest text-xs"
+                            style={{
+                              letterSpacing: '0.1em',
+                              color: 'var(--color-neutral-500)',
+                            }}>
+                            Confirmar Nova Senha
+                          </FormLabel>
+                          <div className="relative">
+                            <FormControl>
+                              <Input
+                                id="reset-password-confirm"
+                                type={showConfirmPassword ? 'text' : 'password'}
+                                placeholder="••••••••"
+                                {...field}
+                                className="h-12 pr-12 text-sm"
+                              />
+                            </FormControl>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent"
+                              style={{color: 'var(--color-neutral-500)'}}
+                              onClick={() =>
+                                setShowConfirmPassword(!showConfirmPassword)
+                              }>
+                              {showConfirmPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                              <span className="sr-only">
+                                {showConfirmPassword
+                                  ? 'Ocultar senha'
+                                  : 'Mostrar senha'}
+                              </span>
+                            </Button>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Confirmar senha */}
-                  <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({field}) => (
-                      <FormItem>
-                        <FormLabel
-                          className="uppercase tracking-widest text-xs text-on-surface-muted/70"
-                          style={{
-                            letterSpacing: '0.1em',
-                          }}>
-                          Confirmar Nova Senha
-                        </FormLabel>
-                        <div className="relative">
-                          <FormControl>
-                            <Input
-                              id="reset-password-confirm"
-                              type={showConfirmPassword ? 'text' : 'password'}
-                              placeholder="••••••••"
-                              {...field}
-                              className="h-12 border-0 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand bg-surface-input text-on-surface"
-                            />
-                          </FormControl>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-1 top-1 h-10 w-10 hover:bg-transparent text-on-surface-muted/60"
-                            onClick={() =>
-                              setShowConfirmPassword(!showConfirmPassword)
-                            }>
-                            {showConfirmPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                            <span className="sr-only">
-                              {showConfirmPassword
-                                ? 'Ocultar senha'
-                                : 'Mostrar senha'}
-                            </span>
-                          </Button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="rounded-xl border p-3 text-xs bg-surface-raised border-brand/[0.12] text-on-surface-muted/60">
-                    <p className="mb-2 font-semibold text-on-surface-muted/70">
-                      Regras para criar a senha
-                    </p>
-                    <div className="space-y-1.5">
-                      <p
-                        className="flex items-center gap-2"
-                        style={{
-                          color: hasMinLength
-                            ? '#34d399'
-                            : 'hsl(var(--on-surface-muted) / 0.6)',
-                        }}>
-                        {hasMinLength ? (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        ) : (
-                          <AlertCircle className="h-3.5 w-3.5" />
-                        )}
-                        Mínimo de 8 caracteres
+                    <div
+                      className="rounded-xl border p-3 text-xs"
+                      style={{
+                        background: 'var(--surf-3)',
+                        borderColor: 'var(--hair)',
+                        color: 'var(--color-neutral-500)',
+                      }}>
+                      <p className="mb-2 font-semibold" style={{color: 'inherit'}}>
+                        Regras para criar a senha
                       </p>
-                      <p
-                        className="flex items-center gap-2"
-                        style={{
-                          color: hasUppercase
-                            ? '#34d399'
-                            : 'hsl(var(--on-surface-muted) / 0.6)',
-                        }}>
-                        {hasUppercase ? (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        ) : (
-                          <AlertCircle className="h-3.5 w-3.5" />
-                        )}
-                        Pelo menos 1 letra maiúscula
-                      </p>
-                      <p
-                        className="flex items-center gap-2"
-                        style={{
-                          color: hasLowercase
-                            ? '#34d399'
-                            : 'hsl(var(--on-surface-muted) / 0.6)',
-                        }}>
-                        {hasLowercase ? (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        ) : (
-                          <AlertCircle className="h-3.5 w-3.5" />
-                        )}
-                        Pelo menos 1 letra minúscula
-                      </p>
-                      <p
-                        className="flex items-center gap-2"
-                        style={{
-                          color: hasNumber
-                            ? '#34d399'
-                            : 'hsl(var(--on-surface-muted) / 0.6)',
-                        }}>
-                        {hasNumber ? (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        ) : (
-                          <AlertCircle className="h-3.5 w-3.5" />
-                        )}
-                        Pelo menos 1 número
-                      </p>
-                      <p
-                        className="flex items-center gap-2"
-                        style={{
-                          color: hasSpecial
-                            ? '#34d399'
-                            : 'hsl(var(--on-surface-muted) / 0.6)',
-                        }}>
-                        {hasSpecial ? (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        ) : (
-                          <AlertCircle className="h-3.5 w-3.5" />
-                        )}
-                        Pelo menos 1 caractere especial
-                      </p>
-                      <p
-                        className="flex items-center gap-2"
-                        style={{
-                          color: passwordsMatch
-                            ? '#34d399'
-                            : 'hsl(var(--on-surface-muted) / 0.6)',
-                        }}>
-                        {passwordsMatch ? (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        ) : (
-                          <AlertCircle className="h-3.5 w-3.5" />
-                        )}
-                        A confirmação deve ser igual à nova senha
-                      </p>
+                      <div className="space-y-1.5">
+                        <p
+                          className="flex items-center gap-2"
+                          style={{color: hasMinLength ? 'var(--pos)' : 'var(--color-neutral-500)'}}>
+                          <i className={`ph-fill ${hasMinLength ? 'ph-check-circle' : 'ph-warning-circle'}`} style={{fontSize: 14}} />
+                          Mínimo de 8 caracteres
+                        </p>
+                        <p
+                          className="flex items-center gap-2"
+                          style={{color: hasUppercase ? 'var(--pos)' : 'var(--color-neutral-500)'}}>
+                          <i className={`ph-fill ${hasUppercase ? 'ph-check-circle' : 'ph-warning-circle'}`} style={{fontSize: 14}} />
+                          Pelo menos 1 letra maiúscula
+                        </p>
+                        <p
+                          className="flex items-center gap-2"
+                          style={{color: hasLowercase ? 'var(--pos)' : 'var(--color-neutral-500)'}}>
+                          <i className={`ph-fill ${hasLowercase ? 'ph-check-circle' : 'ph-warning-circle'}`} style={{fontSize: 14}} />
+                          Pelo menos 1 letra minúscula
+                        </p>
+                        <p
+                          className="flex items-center gap-2"
+                          style={{color: hasNumber ? 'var(--pos)' : 'var(--color-neutral-500)'}}>
+                          <i className={`ph-fill ${hasNumber ? 'ph-check-circle' : 'ph-warning-circle'}`} style={{fontSize: 14}} />
+                          Pelo menos 1 número
+                        </p>
+                        <p
+                          className="flex items-center gap-2"
+                          style={{color: hasSpecial ? 'var(--pos)' : 'var(--color-neutral-500)'}}>
+                          <i className={`ph-fill ${hasSpecial ? 'ph-check-circle' : 'ph-warning-circle'}`} style={{fontSize: 14}} />
+                          Pelo menos 1 caractere especial
+                        </p>
+                        <p
+                          className="flex items-center gap-2"
+                          style={{color: passwordsMatch ? 'var(--pos)' : 'var(--color-neutral-500)'}}>
+                          <i className={`ph-fill ${passwordsMatch ? 'ph-check-circle' : 'ph-warning-circle'}`} style={{fontSize: 14}} />
+                          A confirmação deve ser igual à nova senha
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <Button
-                    id="reset-password-submit"
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))]"
-                    style={{
-                      color: '#f9f7ff',
-                    }}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      'Salvar Nova Senha'
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </>
-          )}
+                    <Button
+                      id="reset-password-submit"
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full h-12 font-semibold text-sm gap-2 transition-all duration-200"
+                      style={{background: 'var(--grad-violet)', color: '#fff'}}>
+                      {isSubmitting ? (
+                        <>
+                          <i className="ph-fill ph-spinner" style={{fontSize: 16, animation: 'spin 0.8s linear infinite'}} />
+                          Salvando...
+                        </>
+                      ) : (
+                        'Salvar Nova Senha'
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              </>
+            )}
 
-          <p
-            className="text-xs text-center mt-8"
-            style={{color: 'rgba(195,197,216,0.3)'}}>
-            Copyright © 2025 Trackerr. Todos os direitos reservados.
-          </p>
+            <p
+              className="text-xs text-center mt-8"
+              style={{color: 'rgba(195,197,216,0.3)'}}>
+              Copyright © 2025 Trackerr. Todos os direitos reservados.
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
