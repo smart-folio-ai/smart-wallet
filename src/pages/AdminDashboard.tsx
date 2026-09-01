@@ -1,24 +1,21 @@
 import {useQuery} from '@tanstack/react-query';
-import {BarChart3, BadgeCheck, Crown, Sparkles, Users} from '@/components/ui/icons';
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import AdminService from '@/services/admin';
 
 const metricCards = [
   {
     key: 'totalActiveSubscriptions',
     label: 'Assinaturas Ativas',
-    icon: BadgeCheck,
+    icon: 'ph-seal-check',
   },
   {
     key: 'totalTrialSubscriptions',
     label: 'Trials Ativos',
-    icon: Sparkles,
+    icon: 'ph-sparkle',
   },
   {
     key: 'totalManualGrants',
     label: 'Concessões Manuais',
-    icon: Users,
+    icon: 'ph-users',
   },
 ] as const;
 
@@ -31,69 +28,102 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {metricCards.map(({key, label, icon: Icon}) => (
-          <Card key={key}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{label}</CardTitle>
-              <Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold tracking-tight">
-                {isLoading ? '...' : data?.[key] ?? 0}
-              </div>
-            </CardContent>
-          </Card>
+        {metricCards.map(({key, label, icon}) => (
+          <div
+            key={key}
+            style={{
+              background: 'var(--nk-card)',
+              border: '1px solid var(--hair)',
+              borderRadius: 12,
+              boxShadow: 'var(--shadow-sm)',
+              padding: '16px 20px',
+            }}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
+              <span style={{fontSize:13, fontWeight:600, color:'var(--color-neutral-400)'}}>
+                {label}
+              </span>
+              <i className={`ph-fill ${icon}`} style={{fontSize:16, color:'var(--color-neutral-400)'}} />
+            </div>
+            <div style={{fontSize:28, fontWeight:600, letterSpacing:'-0.5px'}}>
+              {isLoading ? '...' : data?.[key] ?? 0}
+            </div>
+          </div>
         ))}
 
-        <Card className="border-primary/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Plano Mais Usado</CardTitle>
-            <Crown className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold">
-              {isLoading ? 'Carregando...' : data?.mostUsedPlan?.planName ?? 'Sem dados'}
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {data?.mostUsedPlan ? `${data.mostUsedPlan.count} usuários ativos` : 'Nenhuma assinatura ativa'}
-            </p>
-          </CardContent>
-        </Card>
+        <div
+          style={{
+            background: 'var(--nk-card)',
+            border: '1px solid rgba(145,132,217,0.15)',
+            borderRadius: 12,
+            boxShadow: 'var(--shadow-sm)',
+            padding: '16px 20px',
+          }}>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
+            <span style={{fontSize:13, fontWeight:600, color:'var(--color-neutral-400)'}}>
+              Plano Mais Usado
+            </span>
+            <i className="ph-fill ph-crown" style={{fontSize:16, color:'var(--ac)'}} />
+          </div>
+          <div style={{fontSize:16, fontWeight:600}}>
+            {isLoading ? 'Carregando...' : data?.mostUsedPlan?.planName ?? 'Sem dados'}
+          </div>
+          <p style={{fontSize:13, color:'var(--color-neutral-500)', margin:'4px 0 0'}}>
+            {data?.mostUsedPlan ? `${data.mostUsedPlan.count} usuários ativos` : 'Nenhuma assinatura ativa'}
+          </p>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <BarChart3 className="h-4 w-4" />
+      <div
+        style={{
+          background: 'var(--nk-card)',
+          border: '1px solid var(--hair)',
+          borderRadius: 12,
+          boxShadow: 'var(--shadow-sm)',
+        }}>
+        <div style={{padding:'16px 20px 0'}}>
+          <h3 style={{display:'flex', alignItems:'center', gap:8, fontSize:14, fontWeight:600, margin:0}}>
+            <i className="ph-fill ph-chart-bar" style={{fontSize:16}} />
             Usuários por plano
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Plano</TableHead>
-                <TableHead className="text-right">Usuários</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(data?.usersByPlan || []).map((item) => (
-                <TableRow key={item.planId}>
-                  <TableCell className="font-medium">{item.planName}</TableCell>
-                  <TableCell className="text-right">{item.count}</TableCell>
-                </TableRow>
-              ))}
-              {!isLoading && !data?.usersByPlan?.length ? (
-                <TableRow>
-                  <TableCell colSpan={2} className="text-center text-muted-foreground">
-                    Nenhum dado de assinatura disponível.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          </h3>
+        </div>
+        <div style={{padding:'12px 20px 20px'}}>
+          <div style={{overflowX:'auto'}}>
+            <table style={{width:'100%', borderCollapse:'collapse'}}>
+              <thead>
+                <tr style={{borderBottom:'1px solid var(--hair)'}}>
+                  <th style={{padding:'8px 12px', textAlign:'left', fontSize:12, fontWeight:600, color:'var(--color-neutral-500)'}}>
+                    Plano
+                  </th>
+                  <th style={{padding:'8px 12px', textAlign:'right', fontSize:12, fontWeight:600, color:'var(--color-neutral-500)'}}>
+                    Usuários
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data?.usersByPlan || []).map((item) => (
+                  <tr key={item.planId} style={{borderBottom:'1px solid var(--hair-soft)'}}>
+                    <td style={{padding:'10px 12px', fontSize:14, fontWeight:500}}>
+                      {item.planName}
+                    </td>
+                    <td style={{padding:'10px 12px', fontSize:14, textAlign:'right'}}>
+                      {item.count}
+                    </td>
+                  </tr>
+                ))}
+                {!isLoading && !data?.usersByPlan?.length ? (
+                  <tr>
+                    <td
+                      colSpan={2}
+                      style={{padding:'20px 12px', textAlign:'center', fontSize:14, color:'var(--color-neutral-500)'}}>
+                      Nenhum dado de assinatura disponível.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
