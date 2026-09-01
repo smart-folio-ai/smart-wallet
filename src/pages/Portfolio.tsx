@@ -30,18 +30,85 @@ import {
 // Nocturne shared components
 import {SectionHeader, DataTable, TD_STYLE, TD_RIGHT} from '@/components/shared';
 
+// ── Exposure + Risk helpers ────────────────────────────────────────────────
+const DEFAULT_TARGETS: Record<string, number> = {
+  stock: 40, fii: 20, fund: 25, etf: 10, crypto: 5,
+};
+const TYPE_LABEL: Record<string, string> = {
+  stock: 'Ações', fii: 'FIIs', fund: 'Renda Fixa', etf: 'ETFs', crypto: 'Cripto', other: 'Outros',
+};
+
+function computeExposure(assets: Asset[], totalValue: number) {
+  const byType: Record<string, number> = {};
+  for (const a of assets) {
+    byType[a.type] = (byType[a.type] || 0) + a.value;
+  }
+  return Object.entries(byType)
+    .map(([type, value]) => {
+      const pct = totalValue > 0 ? (value / totalValue) * 100 : 0;
+      const target = DEFAULT_TARGETS[type] ?? 0;
+      return {label: TYPE_LABEL[type] || type, value, pct, dev: pct - target, target};
+    })
+    .sort((a, b) => b.value - a.value);
+}
+
+const RISK_MUL: Record<string, number> = {
+  stock: 1.5, crypto: 2.5, fii: 1.0, fund: 0.5, etf: 0.8, other: 0.3,
+};
+
+function computeRiskContribution(assets: Asset[]) {
+  const weighted = assets.map((a) => ({
+    symbol: a.symbol,
+    rw: (a.allocation / 100) * (RISK_MUL[a.type] ?? 1),
+    alloc: a.allocation,
+  }));
+  const totalRisk = weighted.reduce((s, a) => s + a.rw, 0) || 1;
+  return weighted
+    .map(({symbol, rw, alloc}) => ({symbol, share: (rw / totalRisk) * 100, weight: alloc}))
+    .sort((a, b) => b.share - a.share)
+    .slice(0, 8);
+}
+
+const SIGNAL_STYLE: Record<string, {bg: string; color: string}> = {
+  COMPRA: {bg: 'var(--badge-pos-bg)', color: 'var(--pos)'},
+  NEUTRO: {bg: 'var(--badge-warn-bg)', color: 'var(--warn)'},
+  VENDA: {bg: 'var(--badge-neg-bg)', color: 'var(--neg)'},
+};
+
+function SignalBadge({signal}: {signal?: string}) {
+  if (!signal) return <span style={{color: 'var(--color-neutral-500)'}}>—</span>;
+  const s = SIGNAL_STYLE[signal] ?? {bg: 'var(--surf-3)', color: 'var(--color-neutral-400)'};
+  return (
+    <span style={{
+      display: 'inline-block',
+      padding: '2px 7px',
+      borderRadius: 10,
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: '0.04em',
+      background: s.bg,
+      color: s.color,
+    }}>
+      {signal}
+    </span>
+  );
+}
+
 // ── ColumnConfigurator ─────────────────────────────────────────────────────
 function ColumnConfigurator({visibleCols, onToggle}: {visibleCols: Record<string, boolean>; onToggle: (col: string) => void}) {
   const [open, setOpen] = useState(false);
-  const cols = ['class', 'qty', 'avgPrice', 'price', 'pnl', 'dy', 'weight'];
+  const cols = ['class', 'account', 'qty', 'avgPrice', 'price', 'pnl', 'dy', 'weight', 'beta', 'signal'];
   const labels: Record<string, string> = {
     class: 'Classe',
+    account: 'Conta',
     qty: 'Qtd',
     avgPrice: 'Preço Médio',
     price: 'Cotação',
     pnl: 'P&L R$',
     dy: 'DY',
     weight: 'Peso',
+    beta: 'Beta',
+    signal: 'Sinal',
   };
   return (
     <div style={{position: 'relative'}}>
@@ -136,12 +203,15 @@ const Portfolio = () => {
   const [activeFilter, setFilter] = useState('all');
   const [visibleCols, setVisibleCols] = useState<Record<string, boolean>>({
     class: true,
+    account: true,
     qty: true,
     avgPrice: true,
     price: true,
     pnl: true,
     dy: true,
     weight: true,
+    beta: false,
+    signal: true,
   });
   const toggleCol = (col: string) =>
     setVisibleCols((prev) => ({...prev, [col]: !(prev[col] ?? true)}));
@@ -218,6 +288,18 @@ const Portfolio = () => {
     dividendYield: a.indicators?.dividendYield ?? 0,
     lastDividend: 0,
     dividendHistory: a.dividendHistory ?? undefined,
+    beta: a.indicators?.beta ?? undefined,
+    signal: (() => {
+      const pnlPct =
+        (a.avgPrice ?? a.price) > 0
+          ? (((a.currentPrice ?? a.price) - (a.avgPrice ?? a.price)) / (a.avgPrice ?? a.price)) * 100
+          : 0;
+      const dy = a.indicators?.dividendYield ?? 0;
+      if (pnlPct > 5 || dy > 5) return 'COMPRA';
+      if (pnlPct < -5) return 'VENDA';
+      return 'NEUTRO';
+    })(),
+    account: a.portfolio?.name ?? undefined,
   }));
 
   const availableSectors = useMemo(
@@ -388,16 +470,22 @@ const Portfolio = () => {
     ];
   }, [assets]);
 
+  const exposureRows = useMemo(() => computeExposure(assets, totalValue), [assets, totalValue]);
+  const riskRows = useMemo(() => computeRiskContribution(assets), [assets]);
+
   // Active columns for DataTable header
   const allColDefs = [
     {key: 'symbol', label: 'Ativo', always: true},
     {key: 'class', label: 'Classe'},
+    {key: 'account', label: 'Conta'},
     {key: 'qty', label: 'Qtd', align: 'right' as const},
     {key: 'avgPrice', label: 'Preço Médio', align: 'right' as const},
     {key: 'price', label: 'Cotação', align: 'right' as const},
     {key: 'pnl', label: 'P&L R$', align: 'right' as const},
     {key: 'dy', label: 'DY', align: 'right' as const},
     {key: 'weight', label: 'Peso', align: 'right' as const},
+    {key: 'beta', label: 'Beta', align: 'right' as const},
+    {key: 'signal', label: 'Sinal', align: 'right' as const},
   ];
   const activeColumns = allColDefs
     .filter((c) => c.always || (visibleCols[c.key] ?? true))
@@ -531,6 +619,108 @@ const Portfolio = () => {
         </div>
       </div>
 
+      {/* Exposição por classe */}
+      {exposureRows.length > 0 && (
+        <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+          <SectionHeader
+            title="Exposição por classe"
+            subtitle="Real vs política de investimento"
+          />
+          <div style={{padding: '0 0 16px'}}>
+            <div style={{overflowX: 'auto'}}>
+              <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                <thead>
+                  <tr style={{borderBottom: '1px solid var(--hair)'}}>
+                    <th style={{padding: '8px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Classe</th>
+                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Valor</th>
+                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>%</th>
+                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>vs alvo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exposureRows.map((row) => (
+                    <tr key={row.label} style={{borderBottom: '1px solid var(--hair-soft)'}}>
+                      <td style={{padding: '10px 20px', fontSize: 13, fontWeight: 500}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                          {row.label}
+                          {row.target > 0 && (
+                            <span style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>alvo {row.target}%</span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(row.value)}</td>
+                      <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{row.pct.toFixed(1)}%</td>
+                      <td style={{
+                        padding: '10px 12px',
+                        textAlign: 'right',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        fontVariantNumeric: 'tabular-nums',
+                        color: row.dev > 5 ? 'var(--warn)' : row.dev < -5 ? 'var(--neg)' : 'var(--pos)',
+                      }}>
+                        {row.dev > 0 ? '+' : ''}{row.dev.toFixed(1)} p.p.
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Contribuição de risco por posição */}
+      {riskRows.length > 0 && (
+        <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+          <SectionHeader
+            title="Contribuição de risco"
+            subtitle="Participação estimada no risco total da carteira"
+          />
+          <div style={{padding: '0 0 16px'}}>
+            <div style={{overflowX: 'auto'}}>
+              <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                <thead>
+                  <tr style={{borderBottom: '1px solid var(--hair)'}}>
+                    <th style={{padding: '8px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Ativo</th>
+                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Risco %</th>
+                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Peso %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {riskRows.map((row) => (
+                    <tr key={row.symbol} style={{borderBottom: '1px solid var(--hair-soft)'}}>
+                      <td style={{padding: '10px 20px', fontSize: 13, fontWeight: 600}}>{row.symbol}</td>
+                      <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, fontVariantNumeric: 'tabular-nums'}}>
+                        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8}}>
+                          <div style={{width: 60, height: 5, borderRadius: 3, background: 'var(--surf-3)', overflow: 'hidden'}}>
+                            <div style={{
+                              width: `${Math.min(row.share, 100)}%`,
+                              height: '100%',
+                              background: row.share > 20 ? 'var(--neg)' : row.share > 10 ? 'var(--warn)' : 'var(--pos)',
+                              borderRadius: 3,
+                            }} />
+                          </div>
+                          <span style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: row.share > 20 ? 'var(--neg)' : row.share > 10 ? 'var(--warn)' : 'var(--color-neutral-400)',
+                            minWidth: 40,
+                            textAlign: 'right',
+                          }}>
+                            {row.share.toFixed(1)}%
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, color: 'var(--color-neutral-500)', fontVariantNumeric: 'tabular-nums'}}>{row.weight.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 4. Table */}
       <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
         <SectionHeader
@@ -581,6 +771,19 @@ const Portfolio = () => {
                 )}
                 {(visibleCols['weight'] ?? true) && (
                   <td style={{...TD_RIGHT, color: 'var(--color-neutral-400)', fontVariantNumeric: 'tabular-nums'}}>{asset.allocation?.toFixed(1)}%</td>
+                )}
+                {(visibleCols['account'] ?? true) && (
+                  <td style={{...TD_STYLE, color: 'var(--color-neutral-500)', fontSize: 11.5}}>{asset.account ?? '—'}</td>
+                )}
+                {(visibleCols['beta'] ?? false) && (
+                  <td style={{...TD_RIGHT, fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-400)'}}>
+                    {asset.beta != null ? asset.beta.toFixed(2) : '—'}
+                  </td>
+                )}
+                {(visibleCols['signal'] ?? true) && (
+                  <td style={{...TD_RIGHT}}>
+                    <SignalBadge signal={asset.signal} />
+                  </td>
                 )}
               </tr>
             ))
