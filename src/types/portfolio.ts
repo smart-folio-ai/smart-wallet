@@ -19,6 +19,9 @@ export interface Asset {
   profitLossPercentage?: number;
   aiRecommendation?: 'buy' | 'hold' | 'sell';
   aiConfidence?: number;
+  beta?: number;
+  signal?: string;
+  account?: string;
   history?: {
     date: string;
     price: number;
