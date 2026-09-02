@@ -5,7 +5,6 @@ import {useForm} from 'react-hook-form';
 import * as z from 'zod';
 import {
   ArrowRight,
-  Buildings,
   Eye,
   EyeOff,
   LockSimple,
@@ -72,14 +71,6 @@ const trustStats = [
   {value: 'LGPD', label: 'conformidade'},
 ];
 
-// Gradiente do painel esquerdo — traduzido dos valores RGB literais do
-// handoff (fixos, só tema escuro) para tokens, pra funcionar nos dois temas.
-const panelGradient = {
-  backgroundImage:
-    'linear-gradient(140deg, hsl(var(--brand) / 0.42) 0%, hsl(var(--benchmark) / 0.16) 46%, hsl(var(--background) / 0.9) 100%)',
-  backgroundColor: 'hsl(var(--surface-input))',
-};
-
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -138,135 +129,182 @@ export default function SignIn() {
       />
       <div
         id="signin-page"
-        className="relative min-h-screen flex"
-        style={{fontFamily: 'var(--font-body)'}}>
-        <div className="fixed right-4 top-4 z-50">
+        style={{
+          minHeight: '100vh',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0,1.05fr) minmax(0,1fr)',
+          fontFamily: 'var(--font-body)',
+        }}>
+        {/* Theme toggle */}
+        <div style={{position: 'fixed', top: 17, right: 17, zIndex: 40}}>
           <ThemeToggle />
         </div>
 
-        {/* Painel esquerdo - editorial */}
-        <div
-          className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-          style={panelGradient}>
-          {/* Glow ambiental */}
+        {/* Painel esquerdo */}
+        <aside
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRight: '1px solid var(--hair)',
+            background:
+              'linear-gradient(140deg, rgba(111,94,217,0.42) 0%, rgba(76,201,240,0.16) 46%, transparent 100%), var(--sunk)',
+          }}>
+          {/* Glows */}
           <div
             aria-hidden
-            className="pointer-events-none absolute"
             style={{
-              left: '14%',
-              top: '8%',
-              width: 720,
-              height: 380,
-              transform: 'translate(-50%, -50%)',
+              position: 'absolute',
+              inset: 0,
               background:
-                'radial-gradient(circle, hsl(var(--brand) / 0.34) 0%, transparent 66%)',
-            }}
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute"
-            style={{
-              left: '88%',
-              top: '96%',
-              width: 620,
-              height: 340,
-              transform: 'translate(-50%, -50%)',
-              background:
-                'radial-gradient(circle, hsl(var(--accent-positive) / 0.20) 0%, transparent 66%)',
+                'radial-gradient(720px 380px at 14% 8%, rgba(145,132,217,0.34), rgba(145,132,217,0) 66%), radial-gradient(620px 340px at 88% 96%, rgba(47,214,163,0.20), rgba(47,214,163,0) 66%)',
+              pointerEvents: 'none',
             }}
           />
 
-          {/* Logo */}
-          <div className="relative z-10 ml-2 flex items-center gap-2.5">
-            <AppLogo variant="icon" size="md" />
-            <div className="flex flex-col">
-              <span className="font-heading text-lg font-semibold tracking-tight text-on-surface">
-                Trackerr
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-muted/70">
-                Enterprise Wealth Intelligence
-              </span>
+          <div
+            style={{
+              position: 'relative',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              padding: '44px 48px',
+            }}>
+            {/* Logo */}
+            <div style={{display: 'flex', alignItems: 'center', gap: 11}}>
+              <AppLogo variant="icon" size="md" />
+              <div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: 17,
+                    fontWeight: 600,
+                    letterSpacing: '-0.015em',
+                  }}>
+                  Trackerr
+                </div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'var(--color-neutral-500)',
+                  }}>
+                  Enterprise Wealth Intelligence
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Conteúdo central */}
-          <div className="relative z-10 flex-1 flex flex-col justify-center">
-            <h1
-              className="font-bold leading-tight mb-5 text-on-surface"
-              style={{
-                fontSize: '2.75rem',
-                fontFamily: 'var(--font-heading)',
-                letterSpacing: '-0.02em',
-              }}>
-              A carteira inteira,
-              <br />
-              <span
+            {/* Conteúdo central */}
+            <div>
+              <h1
                 style={{
-                  background:
-                    'linear-gradient(120deg, hsl(var(--brand)) 0%, hsl(var(--benchmark)) 58%, hsl(var(--accent-positive)) 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  color: 'transparent',
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: 38,
+                  lineHeight: 1.08,
+                  fontWeight: 600,
+                  letterSpacing: '-0.03em',
+                  margin: 0,
+                  maxWidth: 460,
                 }}>
-                lida por uma IA que explica.
-              </span>
-            </h1>
-            <p
-              className="leading-relaxed text-on-surface-muted/75"
-              style={{
-                fontSize: '1rem',
-                lineHeight: '1.7',
-              }}>
-              Consolidação multi-corretora, risco quantitativo e apuração
-              fiscal em uma leitura só — na profundidade certa para o seu
-              nível de investidor.
-            </p>
+                A carteira inteira,
+                <br />
+                <span
+                  style={{
+                    background: 'var(--grad-aurora)',
+                    WebkitBackgroundClip: 'text',
+                    backgroundClip: 'text',
+                    color: 'transparent',
+                  }}>
+                  lida por uma IA que explica.
+                </span>
+              </h1>
+              <p
+                style={{
+                  fontSize: 14.5,
+                  lineHeight: 1.65,
+                  color: 'var(--color-neutral-400)',
+                  maxWidth: 440,
+                  margin: '17px 0 0',
+                }}>
+                Consolidação multi-corretora, risco quantitativo e apuração
+                fiscal em uma leitura só — na profundidade certa para o seu
+                nível de investidor.
+              </p>
 
-            {/* Prova social */}
-            <div className="mt-8 flex flex-col gap-4">
-              {proofPoints.map((item) => (
-                <div key={item.title} className="flex items-start gap-3">
-                  <span
-                    aria-hidden
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                    <item.icon className="h-4 w-4" weight="fill" />
-                  </span>
-                  <div>
-                    <div className="text-sm font-semibold text-on-surface">
-                      {item.title}
+              {/* Prova social */}
+              <div style={{display: 'flex', flexDirection: 'column', gap: 11, marginTop: 28}}>
+                {proofPoints.map((item) => (
+                  <div key={item.title} style={{display: 'flex', alignItems: 'flex-start', gap: 11}}>
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 22,
+                        height: 22,
+                        flexShrink: 0,
+                        borderRadius: 6,
+                        background: 'var(--hair-soft)',
+                        border: '1px solid var(--hair)',
+                        display: 'grid',
+                        placeItems: 'center',
+                      }}>
+                      <item.icon className="h-3 w-3" weight="fill" style={{color: 'var(--ac)'} as React.CSSProperties} />
+                    </span>
+                    <div>
+                      <div style={{fontSize: 12.5, fontWeight: 600, color: 'var(--color-neutral-100)'}}>
+                        {item.title}
+                      </div>
+                      <div style={{fontSize: 11.5, color: 'var(--color-neutral-400)', marginTop: 2, lineHeight: 1.45}}>
+                        {item.body}
+                      </div>
                     </div>
-                    <div className="mt-0.5 text-xs leading-relaxed text-on-surface-muted/60">
-                      {item.body}
-                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Rodapé de confiança */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 22,
+                flexWrap: 'wrap',
+                paddingTop: 22,
+                borderTop: '1px solid var(--hair)',
+              }}>
+              {trustStats.map((stat) => (
+                <div key={stat.label}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: 'var(--color-neutral-100)',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
+                    {stat.value}
+                  </div>
+                  <div style={{fontSize: 10.5, color: 'var(--color-neutral-500)', marginTop: 2}}>
+                    {stat.label}
                   </div>
                 </div>
               ))}
             </div>
           </div>
+        </aside>
 
-          {/* Rodapé de confiança */}
-          <div className="relative z-10 flex flex-wrap items-center gap-6 border-t border-on-surface/10 pt-5">
-            {trustStats.map((stat) => (
-              <div key={stat.label}>
-                <div
-                  className="font-semibold text-sm text-on-surface"
-                  style={{
-                    fontFamily: 'var(--font-heading)',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}>
-                  {stat.value}
-                </div>
-                <div className="mt-0.5 text-[10.5px] text-on-surface-muted/60">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Painel direito - formulário */}
-        <div className="relative flex-1 flex items-center justify-center bg-background p-8">
-          <div className="w-full max-w-md">
+        {/* Painel direito */}
+        <main
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '44px 32px',
+            background:
+              'radial-gradient(680px 420px at 78% -10%, rgba(111,94,217,0.24) 0%, transparent 60%), var(--surf-1)',
+          }}>
+          <div style={{width: '100%', maxWidth: 404}}>
             {/* Logo mobile */}
             <div className="mb-8 flex justify-center lg:hidden">
               <AppLogo size="lg" />
@@ -275,45 +313,60 @@ export default function SignIn() {
             <AuthTabs active="login" />
 
             {/* Cabeçalho do form */}
-            <div className="mb-6 mt-6">
+            <div style={{marginTop: 28}}>
               <h2
-                className="font-bold mb-2 text-foreground"
                 style={{
-                  fontSize: '1.5rem',
                   fontFamily: 'var(--font-heading)',
-                  letterSpacing: '-0.02em',
+                  fontSize: 24,
+                  fontWeight: 600,
+                  letterSpacing: '-0.025em',
+                  margin: 0,
                 }}>
                 Bem-vindo de volta
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: '8px 0 0', lineHeight: 1.55}}>
                 Acesse sua carteira consolidada e os insights gerados desde o
                 seu último acesso.
               </p>
             </div>
 
             {/* SSO */}
-            <div className="flex flex-col gap-3">
+            <div style={{display: 'flex', flexDirection: 'column', gap: 11, marginTop: 22}}>
               <GoogleLoginButton keepConnected={form.getValues('keepConnect')} />
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                className="w-full justify-center gap-2 text-muted-foreground"
+                style={{
+                  height: 40,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  border: '1px solid var(--hair)',
+                  borderRadius: 8,
+                  background: 'transparent',
+                  color: 'var(--color-neutral-400)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
                 onClick={() =>
                   toast.info(
                     'SSO corporativo (SAML) em breve. Fale com o time comercial para o piloto Enterprise.',
                   )
                 }>
-                <Buildings className="h-4 w-4" />
+                <i className="ph ph-buildings" style={{fontSize: 15}} />
                 Entrar com SSO corporativo
-              </Button>
+              </button>
             </div>
 
-            <div className="my-6 flex items-center gap-3">
-              <span className="h-px flex-1 bg-border" />
-              <span className="text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground">
-                Ou com e-mail
+            {/* Divisor */}
+            <div style={{display: 'flex', alignItems: 'center', gap: 11, margin: '22px 0'}}>
+              <span style={{flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, var(--hair), transparent)'}} />
+              <span style={{fontSize: 10.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-neutral-600)'}}>
+                ou com e-mail
               </span>
-              <span className="h-px flex-1 bg-border" />
+              <span style={{flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, var(--hair), transparent)'}} />
             </div>
 
             {/* Formulário */}
@@ -321,7 +374,7 @@ export default function SignIn() {
               <form
                 id="signin-form"
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-5">
+                style={{display: 'flex', flexDirection: 'column', gap: 14}}>
                 <FormField
                   control={form.control}
                   name="email"
@@ -329,13 +382,14 @@ export default function SignIn() {
                     <FormItem>
                       <FormLabel
                         htmlFor="signin-email"
-                        className="text-xs font-medium text-muted-foreground">
+                        style={{fontSize: 11.5, color: 'var(--color-neutral-400)'}}>
                         E-mail
                       </FormLabel>
-                      <div className="relative">
+                      <div style={{position: 'relative'}}>
                         <MailSimple
                           aria-hidden
-                          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+                          style={{color: 'var(--color-neutral-500)'} as React.CSSProperties}
                         />
                         <FormControl>
                           <Input
@@ -343,7 +397,7 @@ export default function SignIn() {
                             placeholder="voce@empresa.com"
                             maxLength={254}
                             {...field}
-                            className="h-11 pl-10 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                            className="h-11 pl-10 text-sm"
                           />
                         </FormControl>
                       </div>
@@ -357,22 +411,23 @@ export default function SignIn() {
                   name="password"
                   render={({field}) => (
                     <FormItem>
-                      <div className="flex items-center justify-between">
+                      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                         <FormLabel
                           htmlFor="signin-password"
-                          className="text-xs font-medium text-muted-foreground">
+                          style={{fontSize: 11.5, color: 'var(--color-neutral-400)'}}>
                           Senha
                         </FormLabel>
                         <a
                           href="/forgot-password"
-                          className="text-xs font-medium transition-colors hover:text-primary text-brand">
+                          style={{fontSize: 12, color: 'var(--ac)'}}>
                           Esqueceu a senha?
                         </a>
                       </div>
-                      <div className="relative">
+                      <div style={{position: 'relative'}}>
                         <LockSimple
                           aria-hidden
-                          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+                          style={{color: 'var(--color-neutral-500)'} as React.CSSProperties}
                         />
                         <FormControl>
                           <Input
@@ -381,14 +436,15 @@ export default function SignIn() {
                             placeholder="••••••••••"
                             maxLength={128}
                             {...field}
-                            className="h-11 pl-10 pr-12 text-sm focus-visible:ring-1 focus-visible:ring-brand"
+                            className="h-11 pl-10 pr-12 text-sm"
                           />
                         </FormControl>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:bg-transparent"
+                          className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 hover:bg-transparent"
+                          style={{color: 'var(--color-neutral-500)'}}
                           onClick={() => setShowPassword(!showPassword)}>
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />
@@ -415,23 +471,39 @@ export default function SignIn() {
                           id="signin-keep-connected"
                           checked={field.value}
                           onCheckedChange={field.onChange}
-                          className="data-[state=checked]:bg-brand data-[state=checked]:border-brand"
+                          className="data-[state=checked]:bg-[var(--ac)] data-[state=checked]:border-[var(--ac)]"
                         />
                       </FormControl>
                       <FormLabel
                         htmlFor="signin-keep-connected"
-                        className="font-medium text-sm cursor-pointer text-muted-foreground">
+                        style={{fontSize: 12, color: 'var(--color-neutral-400)', cursor: 'pointer', fontWeight: 400}}>
                         Manter conectado
                       </FormLabel>
                     </FormItem>
                   )}
                 />
 
-                <Button
+                <button
                   id="signin-submit"
                   type="submit"
-                  className="w-full h-11 font-semibold text-sm gap-2 transition-all duration-200 shadow-lg shadow-brand/20 bg-[linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-strong)))] text-brand-foreground"
-                  disabled={authenticating || isSyncing}>
+                  disabled={authenticating || isSyncing}
+                  style={{
+                    height: 44,
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'var(--grad-violet)',
+                    color: '#fff',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    cursor: authenticating || isSyncing ? 'not-allowed' : 'pointer',
+                    opacity: authenticating || isSyncing ? 0.7 : 1,
+                    boxShadow: '0 8px 28px rgba(145,132,217,0.26)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}>
                   {authenticating ? (
                     'Verificando...'
                   ) : (
@@ -440,32 +512,43 @@ export default function SignIn() {
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
-                </Button>
+                </button>
+
+                <div style={{fontSize: 11.5, color: 'var(--color-neutral-500)', textAlign: 'center', lineHeight: 1.5}}>
+                  Não tem uma conta?{' '}
+                  <button
+                    id="signin-goto-register"
+                    type="button"
+                    onClick={() => navigate('/register')}
+                    style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ac)', fontWeight: 600, fontSize: 11.5}}>
+                    Criar conta agora
+                  </button>
+                </div>
               </form>
             </Form>
 
-            <p className="mt-6 text-center text-xs text-muted-foreground">
-              Não tem uma conta?{' '}
-              <button
-                id="signin-goto-register"
-                onClick={() => navigate('/register')}
-                className="font-semibold transition-colors decoration-primary/30 underline-offset-4 hover:underline text-brand">
-                Criar conta agora
-              </button>
-            </p>
-
-            <p className="mt-2 text-center text-xs text-muted-foreground/70">
-              Acesso corporativo com SSO/SAML disponível nos planos
-              Enterprise.
+            <p style={{fontSize: 11.5, color: 'var(--color-neutral-500)', textAlign: 'center', marginTop: 6, lineHeight: 1.5, opacity: 0.7}}>
+              Acesso corporativo com SSO/SAML disponível nos planos Enterprise.
             </p>
 
             {/* Rodapé de confiança */}
-            <div className="mt-8 flex items-center justify-center gap-2 border-t border-border/50 pt-6 text-[11px] text-muted-foreground">
-              <LockSimple aria-hidden className="h-3.5 w-3.5 text-positive" />
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                marginTop: 28,
+                paddingTop: 22,
+                borderTop: '1px solid var(--hair-soft)',
+                fontSize: 11,
+                color: 'var(--color-neutral-600)',
+              }}>
+              <LockSimple aria-hidden className="h-3.5 w-3.5" style={{color: 'var(--pos)'} as React.CSSProperties} />
               <span>Conexão cifrada · 2FA disponível · SOC 2 Type II · LGPD</span>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </>
   );
