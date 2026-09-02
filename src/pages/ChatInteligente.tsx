@@ -460,7 +460,7 @@ export default function ChatInteligente() {
         text: entry.text,
         status: entry.status,
         retryQuestion: entry.retryQuestion,
-        payload: entry.payload as StructuredChatResponse | undefined,
+        payload: entry.payload as unknown as StructuredChatResponse | undefined,
         aiGenerated: entry.aiGenerated,
       })),
     );
@@ -537,7 +537,7 @@ export default function ChatInteligente() {
         role: 'assistant',
         text: assistantMessage.text,
         status: 'ok',
-        payload: assistantMessage.payload as Record<string, unknown>,
+        payload: assistantMessage.payload as unknown as Record<string, unknown>,
         aiGenerated: assistantMessage.aiGenerated,
       });
     } catch {
