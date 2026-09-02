@@ -2,7 +2,11 @@ import {
   aiAnalysisService,
   AiChatResponse,
   AiIntelligentChatResponse,
+  AppendChatHistoryMessagePayload,
+  ChatHistoryMessage,
 } from '@/services/ai';
+
+export type {AppendChatHistoryMessagePayload, ChatHistoryMessage};
 
 export type ChatRouteType = 'deterministic_no_llm' | 'synthesis_required';
 
@@ -111,6 +115,16 @@ export async function askStructuredChat(
     typeof payload === 'string' ? {question: payload} : payload;
   const response = await aiAnalysisService.intelligentChat(normalizedPayload);
   return normalizeChatResponse(response);
+}
+
+export async function fetchChatHistory(): Promise<ChatHistoryMessage[]> {
+  return aiAnalysisService.getChatHistory();
+}
+
+export async function appendChatHistoryMessage(
+  payload: AppendChatHistoryMessagePayload,
+): Promise<ChatHistoryMessage> {
+  return aiAnalysisService.appendChatHistoryMessage(payload);
 }
 
 export async function askStructuredCopilotChat(input: {

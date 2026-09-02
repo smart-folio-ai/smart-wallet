@@ -8,6 +8,8 @@ import {AI_GENERATED_NOTICE_TEXT} from '@/components/ui/ai-generated-notice';
 
 const askStructuredChatMock = vi.fn();
 const askStructuredCopilotChatMock = vi.fn();
+const fetchChatHistoryMock = vi.fn();
+const appendChatHistoryMessageMock = vi.fn();
 
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => ({
@@ -21,6 +23,9 @@ vi.mock('@/services/chat', () => ({
   askStructuredChat: (...args: unknown[]) => askStructuredChatMock(...args),
   askStructuredCopilotChat: (...args: unknown[]) =>
     askStructuredCopilotChatMock(...args),
+  fetchChatHistory: (...args: unknown[]) => fetchChatHistoryMock(...args),
+  appendChatHistoryMessage: (...args: unknown[]) =>
+    appendChatHistoryMessageMock(...args),
 }));
 
 const renderPage = () => {
@@ -42,6 +47,8 @@ const renderPage = () => {
 describe('ChatInteligente', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    fetchChatHistoryMock.mockResolvedValue([]);
+    appendChatHistoryMessageMock.mockResolvedValue({});
   });
 
   it('renders empty state and quick prompt chips', () => {
@@ -413,5 +420,68 @@ describe('ChatInteligente', () => {
       ).toBeInTheDocument();
     });
     expect(screen.queryByText(AI_GENERATED_NOTICE_TEXT)).not.toBeInTheDocument();
+  });
+
+  it('hydrates messages from the persisted chat history on mount', async () => {
+    fetchChatHistoryMock.mockResolvedValue([
+      {
+        clientId: 'u-1',
+        role: 'user',
+        text: 'Minha carteira está concentrada?',
+        status: 'ok',
+      },
+      {
+        clientId: 'a-1',
+        role: 'assistant',
+        text: 'Sua carteira está bem distribuída.',
+        status: 'ok',
+        aiGenerated: true,
+      },
+    ]);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('chat-empty-state')).toBeNull();
+      expect(
+        screen.getAllByText('Minha carteira está concentrada?').length,
+      ).toBeGreaterThan(0);
+      expect(
+        screen.getByText('Sua carteira está bem distribuída.'),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('persists user and assistant messages when a question is sent', async () => {
+    askStructuredChatMock.mockResolvedValueOnce({
+      intent: 'portfolio_summary',
+      deterministic: true,
+      message: 'Resumo pronto.',
+      data: {portfolioSummary: {totalValue: 1000}},
+      warnings: [],
+      unavailable: [],
+      assumptions: [],
+    });
+
+    renderPage();
+    await userEvent.type(screen.getByLabelText('Pergunta do chat'), 'Resumo');
+    await userEvent.click(screen.getByRole('button', {name: /Enviar/i}));
+
+    await waitFor(() => {
+      expect(appendChatHistoryMessageMock).toHaveBeenCalledTimes(2);
+    });
+    const persistedPayloads = appendChatHistoryMessageMock.mock.calls.map(
+      (call) => call[0],
+    );
+    expect(persistedPayloads).toContainEqual(
+      expect.objectContaining({role: 'user', text: 'Resumo', status: 'ok'}),
+    );
+    expect(persistedPayloads).toContainEqual(
+      expect.objectContaining({
+        role: 'assistant',
+        text: 'Resumo pronto.',
+        status: 'ok',
+      }),
+    );
   });
 });

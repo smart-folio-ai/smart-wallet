@@ -63,6 +63,9 @@ export const aiService = {
     sophistication?: 'beginner' | 'intermediate' | 'experienced' | null;
     riskTolerance?: 'conservative' | 'moderate' | 'aggressive' | null;
   }) => apiClient.put('/ai/investor-profile', payload),
+  getChatHistory: () => apiClient.get('/ai/chat/history'),
+  appendChatHistoryMessage: (payload: any) =>
+    apiClient.post('/ai/chat/history', payload),
 };
 
 export const stockServices = {
