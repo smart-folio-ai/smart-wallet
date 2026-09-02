@@ -396,9 +396,8 @@ const AIInsights: React.FC = () => {
   const oppInsights: InsightCard[] = (aiData?.opportunity_radar ?? []).map((o) => ({
     priority: 'Média' as const,
     category: 'Oportunidade',
-    title: `${o.symbol} — ${o.upside.toFixed(1)}% upside`,
+    title: o.symbol,
     body: o.rationale,
-    when: `Alvo: ${formatCurrency(o.target_price)}`,
   }));
 
   const stratInsights: InsightCard[] = (aiData?.rebalancing?.top_moves ?? []).map(

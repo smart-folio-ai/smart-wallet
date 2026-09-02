@@ -504,7 +504,7 @@ describe('AIInsights — transparencia de conteudo gerado por IA', () => {
     getOrCreateAiAnalysisMock.mockResolvedValue({
       ai_analysis: {
         opportunity_radar: [
-          {symbol: 'BBAS3', type: 'attractive_range', price: 20, target_price: 25, upside: 25, rationale: 'P/L baixo'},
+          {symbol: 'BBAS3', type: 'attractive_range', price: 20, rationale: 'P/L baixo'},
         ],
       },
     });

@@ -167,8 +167,6 @@ export interface OpportunityRadarItem {
   symbol: string;
   type: string;
   price: number;
-  target_price: number;
-  upside: number;
   rationale: string;
 }
 
