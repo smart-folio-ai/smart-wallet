@@ -46,4 +46,21 @@ export async function mockAuthenticatedSession(
       body: JSON.stringify(payload),
     });
   });
+
+  await page.route('**/ai/chat/history', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({}),
+    });
+  });
 }
