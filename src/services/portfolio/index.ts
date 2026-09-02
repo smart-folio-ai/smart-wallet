@@ -123,6 +123,20 @@ class PortfolioService {
     );
     return response.data;
   }
+
+  async getTargetAllocation(): Promise<Partial<
+    Record<'stocks' | 'crypto' | 'fiis' | 'other', number>
+  > | null> {
+    const response = await apiClient.get('/portfolio/target-allocation');
+    return response.data;
+  }
+
+  async updateTargetAllocation(
+    data: Partial<Record<'stocks' | 'crypto' | 'fiis' | 'other', number>>,
+  ) {
+    const response = await apiClient.put('/portfolio/target-allocation', data);
+    return response.data;
+  }
 }
 
 export default new PortfolioService();
