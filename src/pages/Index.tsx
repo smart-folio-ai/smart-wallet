@@ -610,19 +610,15 @@ const Dashboard = () => {
     return top || null;
   }, [distributionData]);
 
-  const targetAllocation = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('portfolio_target_allocation');
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== 'object') return null;
-      return parsed as Partial<
-        Record<'stocks' | 'crypto' | 'fiis' | 'other', number>
-      >;
-    } catch {
-      return null;
-    }
-  }, []);
+  // Meta de alocação-alvo (TRA-68): antes lida direto do localStorage
+  // (`portfolio_target_allocation`), que nunca era escrito por nenhuma
+  // tela e por isso não sobrevivia à troca de dispositivo/navegador.
+  const {data: targetAllocation = null} = useQuery({
+    queryKey: ['portfolio-target-allocation'],
+    queryFn: async () => {
+      return await portfolioService.getTargetAllocation();
+    },
+  });
 
   const allocationContext = useMemo(() => {
     const rows = [
