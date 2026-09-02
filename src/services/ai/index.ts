@@ -263,6 +263,22 @@ export interface AiIntelligentChatResponse {
   unavailable?: string[];
 }
 
+/** Espelha AppendChatMessageRequestDto do backend (src/ai/chat-history). */
+export interface AppendChatHistoryMessagePayload {
+  clientId: string;
+  role: 'user' | 'assistant';
+  text: string;
+  status?: 'ok' | 'error';
+  retryQuestion?: string;
+  payload?: Record<string, unknown>;
+  aiGenerated?: boolean;
+}
+
+export interface ChatHistoryMessage extends AppendChatHistoryMessagePayload {
+  userId?: string;
+  createdAt?: string;
+}
+
 export interface TrackerrScoreResponse {
   symbol: string;
   status: 'ok' | 'degraded';
@@ -338,6 +354,18 @@ class AiAnalysisService {
     monthlyContribution?: number;
   }): Promise<FutureSimulatorResponse> {
     const response = await aiService.futureSimulator(payload);
+    return response.data;
+  }
+
+  async getChatHistory(): Promise<ChatHistoryMessage[]> {
+    const response = await aiService.getChatHistory();
+    return response.data;
+  }
+
+  async appendChatHistoryMessage(
+    payload: AppendChatHistoryMessagePayload,
+  ): Promise<ChatHistoryMessage> {
+    const response = await aiService.appendChatHistoryMessage(payload);
     return response.data;
   }
 }

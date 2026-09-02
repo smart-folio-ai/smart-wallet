@@ -1,11 +1,18 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
+import {useMutation, useQuery} from '@tanstack/react-query';
 import {Badge} from '@/components/ui/badge';
 import {ChatMentionInput} from '@/components/chat/ChatMentionInput';
 import {useSubscription} from '@/hooks/useSubscription';
 import {PremiumBlur} from '@/components/ui/premium-blur';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {isProOrHigherPlan} from '@/services/ai/trakkerAi';
-import {askStructuredCopilotChat, askStructuredChat, StructuredChatResponse} from '@/services/chat';
+import {
+  askStructuredCopilotChat,
+  askStructuredChat,
+  appendChatHistoryMessage,
+  fetchChatHistory,
+  StructuredChatResponse,
+} from '@/services/chat';
 import {SectionHeader} from '@/components/shared';
 
 type ChatMessage = {
@@ -420,8 +427,44 @@ export default function ChatInteligente() {
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const historyHydratedRef = useRef(false);
 
   const canSend = question.trim().length > 0 && !sending && hasProOrHigher;
+
+  // Histórico persistido (TRA-66). Só busca quando o usuário de fato tem
+  // acesso ao recurso — evita uma chamada inútil para quem está atrás do
+  // PremiumBlur, e mantém o mesmo gate visto no restante da página.
+  const chatHistoryQuery = useQuery({
+    queryKey: ['chat-intelligent-history'],
+    queryFn: fetchChatHistory,
+    enabled: hasProOrHigher,
+    staleTime: 60_000,
+  });
+
+  // Persistência fire-and-forget: uma falha ao salvar não deve travar a
+  // conversa em andamento, então os erros são apenas engolidos aqui — a
+  // mensagem já está visível localmente independente do resultado.
+  const persistMessageMutation = useMutation({
+    mutationFn: appendChatHistoryMessage,
+    onError: () => {},
+  });
+
+  useEffect(() => {
+    if (historyHydratedRef.current) return;
+    if (!chatHistoryQuery.data) return;
+    historyHydratedRef.current = true;
+    setMessages(
+      chatHistoryQuery.data.map((entry) => ({
+        id: entry.clientId,
+        role: entry.role,
+        text: entry.text,
+        status: entry.status,
+        retryQuestion: entry.retryQuestion,
+        payload: entry.payload as unknown as StructuredChatResponse | undefined,
+        aiGenerated: entry.aiGenerated,
+      })),
+    );
+  }, [chatHistoryQuery.data]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -453,6 +496,12 @@ export default function ChatInteligente() {
       status: 'ok',
     };
     setMessages((prev) => [...prev, userMessage]);
+    persistMessageMutation.mutate({
+      clientId: userMessage.id,
+      role: 'user',
+      text: userMessage.text,
+      status: 'ok',
+    });
     setQuestion('');
     setSending(true);
 
@@ -474,28 +523,39 @@ export default function ChatInteligente() {
         Boolean(modelText) &&
         !response.deterministic &&
         response.route?.type !== 'deterministic_no_llm';
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `a-${Date.now()}`,
-          role: 'assistant',
-          text: assistantText,
-          status: 'ok',
-          payload: response,
-          aiGenerated,
-        },
-      ]);
+      const assistantMessage: ChatMessage = {
+        id: `a-${Date.now()}`,
+        role: 'assistant',
+        text: assistantText,
+        status: 'ok',
+        payload: response,
+        aiGenerated,
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+      persistMessageMutation.mutate({
+        clientId: assistantMessage.id,
+        role: 'assistant',
+        text: assistantMessage.text,
+        status: 'ok',
+        payload: assistantMessage.payload as unknown as Record<string, unknown>,
+        aiGenerated: assistantMessage.aiGenerated,
+      });
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `e-${Date.now()}`,
-          role: 'assistant',
-          text: 'Não consegui responder agora. Você pode tentar novamente.',
-          status: 'error',
-          retryQuestion: trimmed,
-        },
-      ]);
+      const errorMessage: ChatMessage = {
+        id: `e-${Date.now()}`,
+        role: 'assistant',
+        text: 'Não consegui responder agora. Você pode tentar novamente.',
+        status: 'error',
+        retryQuestion: trimmed,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      persistMessageMutation.mutate({
+        clientId: errorMessage.id,
+        role: 'assistant',
+        text: errorMessage.text,
+        status: 'error',
+        retryQuestion: errorMessage.retryQuestion,
+      });
     } finally {
       setSending(false);
     }
