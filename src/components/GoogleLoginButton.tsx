@@ -86,10 +86,9 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
       window.google.accounts.id.renderButton(
         document.getElementById('google-signin-button'),
         {
-          theme: 'outline',
+          theme: 'filled_blue',
           size: 'large',
-          width: '100%',
-          text: 'continue_with',
+          text: 'signin_with',
           locale: 'pt_BR',
         }
       );
