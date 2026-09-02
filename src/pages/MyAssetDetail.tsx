@@ -617,9 +617,16 @@ const MyAssetDetail = () => {
               <div style={{textAlign:'center', padding:'32px 0', color:'var(--color-neutral-500)'}}>
                 <i className="ph-fill ph-receipt" style={{fontSize:32, opacity:0.3, display:'block', marginBottom:12}} />
                 <p style={{margin:'0 0 4px'}}>Nenhuma movimentação registrada</p>
-                <p style={{fontSize:11, margin:0}}>
+                <p style={{fontSize:11, margin:'0 0 16px'}}>
                   As transações aparecerão aqui conforme forem adicionadas
                 </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/add-asset')}
+                  style={{display:'inline-flex', alignItems:'center', gap:6, padding:'6px 14px', borderRadius:8, border:'1px solid var(--hair)', background:'transparent', cursor:'pointer', fontSize:13, color:'var(--ac)'}}>
+                  <i className="ph-fill ph-plus" style={{fontSize:14}} />
+                  Adicionar transação
+                </button>
               </div>
             ) : (
               <DataTable columns={[{label:'Data'},{label:'Tipo'},{label:'Qtd',align:'right'},{label:'Preço',align:'right'},{label:'Total',align:'right'}]}>
