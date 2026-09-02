@@ -1,7 +1,6 @@
 import {useState, useEffect, useCallback} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Loader2} from '@/components/ui/icons';
-import {Button} from '@/components/ui/button';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
 import AuthenticationService from '@/services/authentication';
 import {useAppToast} from '@/hooks/use-app-toast';
@@ -18,8 +17,6 @@ declare global {
 
 export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProps) => {
   const navigate = useNavigate();
-  // useAppToast expõe {success, error, warning, info} — renomeado aqui porque
-  // o catch abaixo já usa `error` para a exceção.
   const {error: showError} = useAppToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
@@ -58,12 +55,6 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
           return;
         }
 
-        // AuthenticationService.authenticateWithGoogle already persisted
-        // access_token/refresh_token/keepConnected to localStorage and
-        // dispatched 'auth:login' internally on success (see
-        // src/services/authentication/index.ts). Writing them again here
-        // (previously with undefined values) clobbered the real tokens —
-        // do not duplicate that write.
         navigate('/dashboard');
       } catch (error: any) {
         showError(
@@ -82,31 +73,75 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
         callback: handleGoogleLogin,
       });
-
-      window.google.accounts.id.renderButton(
-        document.getElementById('google-signin-button'),
-        {
-          theme: 'filled_blue',
-          size: 'large',
-          text: 'signin_with',
-          locale: 'pt_BR',
-        }
-      );
     }
   }, [isGoogleLoaded, handleGoogleLogin]);
+
+  const handleClick = () => {
+    if (window.google) {
+      window.google.accounts.id.signIn();
+    }
+  };
 
   return (
     <>
       <WalletLoadingScreen isLoading={isLoading} loadingText="Conectando com Google..." />
-      <div className="relative w-full">
-        <div id="google-signin-button" className="w-full" />
-        {!isGoogleLoaded && (
-          <Button variant="outline" className="w-full" disabled>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Carregando Google...
-          </Button>
-        )}
-      </div>
+      {!isGoogleLoaded ? (
+        <button
+          disabled
+          style={{
+            height: 40,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            border: '1px solid var(--hair)',
+            borderRadius: 8,
+            background: 'transparent',
+            color: 'var(--color-neutral-400)',
+            fontFamily: 'var(--font-body)',
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: 'not-allowed',
+            opacity: 0.5,
+          }}>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Carregando Google...
+        </button>
+      ) : (
+        <button
+          onClick={handleClick}
+          disabled={isLoading}
+          style={{
+            height: 40,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            border: '1px solid var(--hair)',
+            borderRadius: 8,
+            background: 'transparent',
+            color: 'var(--color-neutral-400)',
+            fontFamily: 'var(--font-body)',
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            opacity: isLoading ? 0.7 : 1,
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (!isLoading) {
+              e.currentTarget.style.background = 'rgba(145,132,217,0.08)';
+              e.currentTarget.style.borderColor = 'var(--ac)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = 'var(--hair)';
+          }}>
+          <i className="ph ph-google-logo" style={{fontSize: 15}} />
+          Entrar com Google
+        </button>
+      )}
     </>
   );
 };
