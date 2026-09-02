@@ -420,7 +420,7 @@ export default function SignIn() {
                         <a
                           href="/forgot-password"
                           style={{fontSize: 12, color: 'var(--ac)'}}>
-                          Esqueci a senha
+                          Esqueceu a senha?
                         </a>
                       </div>
                       <div style={{position: 'relative'}}>
