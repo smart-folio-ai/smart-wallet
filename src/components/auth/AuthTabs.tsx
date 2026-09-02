@@ -1,5 +1,4 @@
 import {Link} from 'react-router-dom';
-import {cn} from '@/lib/utils';
 
 interface AuthTabsProps {
   active: 'login' | 'register';
@@ -12,7 +11,16 @@ const tabs = [
 
 export function AuthTabs({active}: AuthTabsProps) {
   return (
-    <div className="inline-flex w-full gap-1 rounded-lg bg-muted p-1 text-muted-foreground">
+    <div
+      style={{
+        display: 'flex',
+        padding: '3px',
+        gap: '3px',
+        border: '1px solid var(--hair)',
+        borderRadius: '8px',
+        background: 'transparent',
+        width: '100%',
+      }}>
       {tabs.map((tab) => {
         const isActive = tab.id === active;
         return (
@@ -20,12 +28,29 @@ export function AuthTabs({active}: AuthTabsProps) {
             key={tab.id}
             to={tab.to}
             aria-current={isActive ? 'page' : undefined}
-            className={cn(
-              'flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition-all',
-              isActive
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}>
+            style={{
+              flex: 1,
+              height: '32px',
+              borderRadius: '6px',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12.5px',
+              fontWeight: 500,
+              textDecoration: 'none',
+              transition: 'all .15s ease',
+              ...(isActive
+                ? {
+                    background: 'rgba(145,132,217,0.20)',
+                    color: 'var(--ac)',
+                    boxShadow: 'inset 0 0 0 1px rgba(145,132,217,0.45)',
+                  }
+                : {
+                    background: 'transparent',
+                    color: 'var(--color-neutral-500)',
+                  }),
+            }}>
             {tab.label}
           </Link>
         );

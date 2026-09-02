@@ -64,7 +64,10 @@ export default function ForgotPassword() {
       {/* Painel esquerdo - editorial */}
       <div
         className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14"
-        style={{background: 'var(--surf-2)'}}>
+        style={{
+          borderRight: '1px solid var(--hair)',
+          background: 'linear-gradient(140deg, rgba(111,94,217,0.42) 0%, rgba(76,201,240,0.16) 46%, transparent 100%), var(--sunk)',
+        }}>
         {/* Glow ambiental */}
         <div
           className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none"
@@ -173,7 +176,7 @@ export default function ForgotPassword() {
       {/* Painel direito - formulário */}
       <div
         className="flex-1 flex items-center justify-center p-8"
-        style={{background: 'var(--surf-1)'}}>
+        style={{background: 'radial-gradient(680px 420px at 78% -10%, rgba(111,94,217,0.24) 0%, transparent 60%), var(--surf-1)'}}>
         <div className="w-full max-w-md">
           {/* Logo mobile */}
           <div className="mb-8 flex justify-center lg:hidden">

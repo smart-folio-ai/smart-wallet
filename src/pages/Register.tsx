@@ -91,9 +91,9 @@ const trustStats = [
 ];
 
 const panelGradient = {
-  backgroundImage:
-    'linear-gradient(140deg, rgba(111,94,217,0.42) 0%, rgba(76,201,240,0.16) 46%, transparent 100%)',
-  backgroundColor: 'var(--surf-2)',
+  borderRight: '1px solid var(--hair)',
+  background:
+    'linear-gradient(140deg, rgba(111,94,217,0.42) 0%, rgba(76,201,240,0.16) 46%, transparent 100%), var(--sunk)',
 };
 
 export default function Register() {
@@ -224,8 +224,7 @@ export default function Register() {
             <br />
             <span
               style={{
-                background:
-                  'linear-gradient(120deg, var(--ac) 0%, var(--cy) 58%, var(--pos) 100%)',
+                background: 'var(--grad-aurora)',
                 WebkitBackgroundClip: 'text',
                 backgroundClip: 'text',
                 color: 'transparent',
@@ -251,12 +250,17 @@ export default function Register() {
               <div key={item.title} className="flex items-start gap-3">
                 <span
                   aria-hidden
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                   style={{
-                    background: 'rgba(145,132,217,0.15)',
-                    color: 'var(--ac)',
+                    width: 22,
+                    height: 22,
+                    flexShrink: 0,
+                    borderRadius: 6,
+                    background: 'var(--hair-soft)',
+                    border: '1px solid var(--hair)',
+                    display: 'grid',
+                    placeItems: 'center',
                   }}>
-                  <item.icon className="h-4 w-4" weight="fill" />
+                  <item.icon className="h-3 w-3" weight="fill" style={{color: 'var(--ac)'} as React.CSSProperties} />
                 </span>
                 <div>
                   <div className="text-sm font-semibold">{item.title}</div>
@@ -296,7 +300,9 @@ export default function Register() {
       </div>
 
       {/* Painel direito - formulário */}
-      <div className="relative flex-1 flex items-center justify-center overflow-y-auto p-8">
+      <div
+        className="relative flex-1 flex items-center justify-center overflow-y-auto p-8"
+        style={{background: 'radial-gradient(680px 420px at 78% -10%, rgba(111,94,217,0.24) 0%, transparent 60%), var(--surf-1)'}}>
         <div className="w-full max-w-md my-8">
           {/* Logo mobile */}
           <div className="mb-8 flex justify-center lg:hidden">
@@ -341,13 +347,13 @@ export default function Register() {
           </div>
 
           <div className="my-6 flex items-center gap-3">
-            <span className="h-px flex-1" style={{background: 'var(--hair)'}} />
+            <span className="h-px flex-1" style={{background: 'linear-gradient(90deg, transparent, var(--hair), transparent)'}} />
             <span
               className="text-[10.5px] uppercase tracking-[0.1em]"
-              style={{color: 'var(--color-neutral-500)'}}>
+              style={{color: 'var(--color-neutral-600)'}}>
               Ou com e-mail
             </span>
-            <span className="h-px flex-1" style={{background: 'var(--hair)'}} />
+            <span className="h-px flex-1" style={{background: 'linear-gradient(90deg, transparent, var(--hair), transparent)'}} />
           </div>
 
           {/* Formulário */}
