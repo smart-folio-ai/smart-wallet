@@ -47,6 +47,8 @@ describe('AdminPlans — plan presentation flags', () => {
     });
     (AdminService.getPlans as any).mockResolvedValue([]);
     (AdminService.createPlan as any).mockResolvedValue({});
+    (AdminService.getWebhookStatus as any).mockResolvedValue({configured: true});
+    (AdminService.getWebhookEvents as any).mockResolvedValue([]);
   });
 
   it('sends isFeatured and isComingSoon when the checkboxes are checked', async () => {
