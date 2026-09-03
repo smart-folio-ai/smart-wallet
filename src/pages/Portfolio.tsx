@@ -1,4 +1,4 @@
-import {useMemo, useState} from 'react';
+import {Fragment, useMemo, useState} from 'react';
 import * as XLSX from 'xlsx';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useToast} from '@/hooks/use-toast';
@@ -682,28 +682,52 @@ const Portfolio = () => {
                 </thead>
                 <tbody>
                   {exposureRows.map((row) => (
-                    <tr key={row.label} style={{borderBottom: '1px solid var(--hair-soft)'}}>
-                      <td style={{padding: '10px 20px', fontSize: 13, fontWeight: 500}}>
-                        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                          {row.label}
-                          {row.target > 0 && (
-                            <span style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>alvo {row.target}%</span>
-                          )}
-                        </div>
-                      </td>
-                      <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(row.value)}</td>
-                      <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{row.pct.toFixed(1)}%</td>
-                      <td style={{
-                        padding: '10px 12px',
-                        textAlign: 'right',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        fontVariantNumeric: 'tabular-nums',
-                        color: row.dev > 5 ? 'var(--warn)' : row.dev < -5 ? 'var(--neg)' : 'var(--pos)',
-                      }}>
-                        {row.dev > 0 ? '+' : ''}{row.dev.toFixed(1)} p.p.
-                      </td>
-                    </tr>
+                    <Fragment key={row.label}>
+                      <tr>
+                        <td style={{padding: '10px 20px 4px', fontSize: 13, fontWeight: 500}}>
+                          <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                            {row.label}
+                            {row.target > 0 && (
+                              <span style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>alvo {row.target}%</span>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{padding: '10px 12px 4px', textAlign: 'right', fontSize: 13, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(row.value)}</td>
+                        <td style={{padding: '10px 12px 4px', textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{row.pct.toFixed(1)}%</td>
+                        <td style={{
+                          padding: '10px 12px 4px',
+                          textAlign: 'right',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          fontVariantNumeric: 'tabular-nums',
+                          color: row.dev > 5 ? 'var(--warn)' : row.dev < -5 ? 'var(--neg)' : 'var(--pos)',
+                        }}>
+                          {row.dev > 0 ? '+' : ''}{row.dev.toFixed(1)} p.p.
+                        </td>
+                      </tr>
+                      <tr style={{borderBottom: '1px solid var(--hair-soft)'}}>
+                        <td colSpan={4} style={{padding: '0 20px 10px'}}>
+                          <div style={{position: 'relative', width: '100%', height: 6, borderRadius: 3, background: 'var(--surf-3)', overflow: 'hidden'}}>
+                            <div style={{
+                              width: `${Math.min(row.pct, 100)}%`,
+                              height: '100%',
+                              background: row.dev > 5 ? 'var(--warn)' : row.dev < -5 ? 'var(--neg)' : 'var(--pos)',
+                              borderRadius: 3,
+                            }} />
+                            {row.target > 0 && (
+                              <div style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: `${Math.min(row.target, 100)}%`,
+                                width: 2,
+                                height: '100%',
+                                background: 'var(--color-neutral-400)',
+                              }} />
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
