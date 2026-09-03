@@ -44,19 +44,14 @@ export const sections: NavSection[] = [
       {to: '/chat-inteligente', label: 'Chat Inteligente', icon: MessageSquare},
       {to: '/asset-search', label: 'Buscar Ativos', icon: Search},
       {to: '/ri-inteligente', label: 'RI Inteligente', icon: FileText},
+      {to: '/comparator', label: 'Comparador', icon: GitCompare},
     ],
   },
   {
     label: 'Planejamento',
     items: [
       {to: '/planning', label: 'Planejamento', icon: Calculator},
-      {to: '/comparator', label: 'Comparador', icon: GitCompare},
       {to: '/fiscal', label: 'Fiscal', icon: FileSpreadsheet},
-      {
-        to: '/sync-accounts',
-        label: 'Contas Conectadas',
-        icon: CircleDollarSign,
-      },
     ],
   },
   {
@@ -64,6 +59,11 @@ export const sections: NavSection[] = [
     items: [
       {to: '/settings', label: 'Configurações', icon: Settings},
       {to: '/subscription', label: 'Assinatura', icon: CircleDollarSign},
+      {
+        to: '/sync-accounts',
+        label: 'Contas Conectadas',
+        icon: CircleDollarSign,
+      },
     ],
   },
 ];
