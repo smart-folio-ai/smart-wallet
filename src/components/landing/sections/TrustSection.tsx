@@ -3,7 +3,7 @@ import {trustStats} from '../landing-data';
 
 export function TrustSection() {
   return (
-    <Section className="py-16 sm:py-20">
+    <Section id="seguranca" className="py-16 sm:py-20">
       <div
         data-reveal
         className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-surface-hairline/[0.07] bg-surface-hairline/[0.07] lg:grid-cols-4">

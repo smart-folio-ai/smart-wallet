@@ -6,6 +6,7 @@ import {AppLogo} from '@/components/AppLogo';
 const navLinks = [
   {label: 'Produto', id: 'produto'},
   {label: 'Como funciona', id: 'como-funciona'},
+  {label: 'Segurança', id: 'seguranca'},
   {label: 'Planos', id: 'planos'},
   {label: 'Dúvidas', id: 'faq'},
 ];
