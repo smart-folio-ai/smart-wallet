@@ -42,8 +42,24 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function CreatePortfolioDialog() {
-  const [open, setOpen] = useState(false);
+interface CreatePortfolioDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+}
+
+export function CreatePortfolioDialog({
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger,
+}: CreatePortfolioDialogProps = {}) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const {toast} = useToast();
   const queryClient = useQueryClient();
 
@@ -89,12 +105,14 @@ export function CreatePortfolioDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Carteira
-        </Button>
-      </DialogTrigger>
+      {hideTrigger ? null : (
+        <DialogTrigger asChild>
+          <Button size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Carteira
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Criar Nova Carteira</DialogTitle>

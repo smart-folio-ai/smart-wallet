@@ -1,8 +1,24 @@
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Bell, Search, Settings, Sparkles } from '@/components/ui/icons';
+import {useMemo, useState} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {useQuery} from '@tanstack/react-query';
+import {SidebarTrigger} from '@/components/ui/sidebar';
+import {Button} from '@/components/ui/button';
+import {Separator} from '@/components/ui/separator';
+import {Skeleton} from '@/components/ui/skeleton';
+import {
+  Bell,
+  ChevronDown,
+  Download,
+  LogOut,
+  Moon,
+  Plus,
+  Search,
+  Settings,
+  Sparkles,
+  Sun,
+  User,
+  Wallet,
+} from '@/components/ui/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,198 +26,185 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User } from '@/components/ui/icons';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { useAdaptiveLevel, type AdaptiveLevel } from '@/contexts/AdaptiveLevelContext';
-import { cn } from '@/lib/utils';
-import { useCommandPalette } from '@/hooks/useCommandPalette';
-import { CommandPalette } from './CommandPalette';
-import { CommandShortcut } from '@/components/ui/command';
+import {CommandShortcut} from '@/components/ui/command';
+import {cn} from '@/lib/utils';
+import {useSubscription} from '@/hooks/useSubscription';
+import {useCurrentUserProfile} from '@/hooks/useCurrentUserProfile';
+import {useAdaptiveLevel, type AdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
+import {useCommandPalette} from '@/hooks/useCommandPalette';
+import {useThemeToggle} from '@/components/ThemeToggle';
+import {CommandPalette} from './CommandPalette';
+import {sections} from './nav-data';
+import portfolioService from '@/services/portfolio';
+import {CreatePortfolioDialog} from '@/components/portfolio/CreatePortfolioDialog';
 
-const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
-  '/dashboard': {
-    title: 'Dashboard',
-    subtitle: 'Visão consolidada da sua carteira e sinais do mercado.',
-  },
-  '/portfolio': {
-    title: 'Portfólio',
-    subtitle: 'Posições, alocação e desempenho dos seus ativos.',
-  },
-  '/asset-search': {
-    title: 'Busca de Ativos',
-    subtitle: 'Encontre ativos e compare fundamentos em segundos.',
-  },
-  '/planning': {
-    title: 'Planejamento',
-    subtitle: 'Simule cenários e alinhe metas financeiras.',
-  },
-  '/transactions': {
-    title: 'Transações',
-    subtitle: 'Acompanhe entradas, saídas e histórico operacional.',
-  },
-  '/fiscal': {
-    title: 'Fiscal',
-    subtitle: 'Organize dados para IR e obrigações tributárias.',
-  },
-  '/settings': {
-    title: 'Configurações',
-    subtitle: 'Preferências da conta e parâmetros da plataforma.',
-  },
-  '/dividends': {
-    title: 'Dividendos',
-    subtitle: 'Acompanhe eventos e históricos de proventos.',
-  },
-  '/admin': {
-    title: 'Admin Dashboard',
-    subtitle: 'Métricas essenciais da operação administrativa.',
-  },
-  '/admin/plans': {
-    title: 'Admin Planos',
-    subtitle: 'Cadastre, edite e desative planos com sincronização Stripe.',
-  },
-  '/admin/grants': {
-    title: 'Admin Concessões',
-    subtitle: 'Conceda planos manualmente e distribua permissões internas.',
-  },
+type PageMeta = {crumb: string; title: string};
+
+const OVERRIDES: Record<string, PageMeta> = {
+  '/subscription': {crumb: 'Conta', title: 'Assinatura'},
+  '/admin': {crumb: 'Administração', title: 'Admin Dashboard'},
+  '/admin/plans': {crumb: 'Administração', title: 'Planos'},
+  '/admin/grants': {crumb: 'Administração', title: 'Concessões'},
 };
 
-const LEVEL_OPTIONS: { id: AdaptiveLevel; label: string }[] = [
-  { id: 'iniciante', label: 'Iniciante' },
-  { id: 'intermediario', label: 'Intermediário' },
-  { id: 'avancado', label: 'Avançado' },
+const LEVEL_OPTIONS: {id: AdaptiveLevel; label: string}[] = [
+  {id: 'iniciante', label: 'Iniciante'},
+  {id: 'intermediario', label: 'Intermediário'},
+  {id: 'avancado', label: 'Avançado'},
 ];
 
 const isMac =
   typeof navigator !== 'undefined' &&
   /Mac|iPhone|iPad/.test(navigator.platform ?? navigator.userAgent);
 
-function getPageMeta(pathname: string) {
-  if (pathname.startsWith('/portfolio/asset')) {
-    return {
-      title: 'Detalhe do Ativo',
-      subtitle: 'Análise aprofundada com indicadores e fluxo de caixa.',
-    };
+function findMetaFromNav(pathname: string): PageMeta | null {
+  for (const section of sections) {
+    const hit = section.items.find(
+      (i) => i.to === pathname || pathname.startsWith(i.to + '/'),
+    );
+    if (hit) return {crumb: section.label, title: hit.label};
   }
-
-  if (pathname.startsWith('/asset/')) {
-    return {
-      title: 'Detalhe do Ativo',
-      subtitle: 'Fundamentos, histórico e contexto do ativo selecionado.',
-    };
-  }
-
-  if (pathname.startsWith('/dividends/')) {
-    return {
-      title: 'Detalhe de Dividendos',
-      subtitle: 'Visão completa de JCP e dividendos por ativo.',
-    };
-  }
-
-  return (
-    PAGE_TITLES[pathname] ?? {
-      title: 'Trackerr',
-      subtitle: 'Plataforma moderna para gestão e inteligência financeira.',
-    }
-  );
+  return null;
 }
 
+function getPageMeta(pathname: string): PageMeta {
+  if (OVERRIDES[pathname]) return OVERRIDES[pathname];
+  if (pathname.startsWith('/portfolio/asset') || pathname.startsWith('/asset/')) {
+    return {crumb: 'Carteira', title: 'Detalhe do Ativo'};
+  }
+  if (pathname.startsWith('/dividends/')) {
+    return {crumb: 'Carteira', title: 'Detalhe de Dividendos'};
+  }
+  return findMetaFromNav(pathname) ?? {crumb: 'Trackerr', title: 'Trackerr'};
+}
+
+const EXPORT_ROUTES = new Set([
+  '/dashboard',
+  '/portfolio',
+  '/dividends',
+  '/transactions',
+  '/fiscal',
+]);
+
 export function AppTopbar() {
-  const { pathname } = useLocation();
+  const {pathname} = useLocation();
   const navigate = useNavigate();
   const meta = getPageMeta(pathname);
-  const { displayPlanName, isSubscribed, isLoading } = useSubscription();
-  const { data: profile } = useCurrentUserProfile();
-  const { level, setLevel } = useAdaptiveLevel();
-  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
+  const {displayPlanName, isSubscribed, isLoading} = useSubscription();
+  const {data: profile} = useCurrentUserProfile();
+  const {level, setLevel} = useAdaptiveLevel();
+  const {open: paletteOpen, setOpen: setPaletteOpen} = useCommandPalette();
+  const {theme, toggleTheme} = useThemeToggle();
+  const [walletOpen, setWalletOpen] = useState(false);
+
+  const {data: portfolios} = useQuery({
+    queryKey: ['portfolios'],
+    queryFn: () => portfolioService.getPortfolios(),
+    staleTime: 60_000,
+  });
+
+  const portfolioCount = Array.isArray(portfolios) ? portfolios.length : 0;
   const initials = profile
     ? `${profile.firstName?.[0] ?? ''}${profile.lastName?.[0] ?? ''}`.toUpperCase()
     : '';
+  const fullName = profile
+    ? `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim()
+    : '';
+  const planLabel = isSubscribed
+    ? `Plano ${displayPlanName ?? ''}`.trim()
+    : 'Plano Free';
+  const showExport = EXPORT_ROUTES.has(pathname);
+  const themeLabel = theme === 'dark' ? 'Alternar para claro' : 'Alternar para escuro';
+
+  const walletLabel = useMemo(() => {
+    if (!portfolioCount) return 'Nenhuma carteira';
+    return `${portfolioCount === 1 ? '1 conta' : `${portfolioCount} contas`}`;
+  }, [portfolioCount]);
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/95 backdrop-blur-xl">
-      <div className="flex h-14 items-center justify-between px-4 md:px-6">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="flex items-center gap-4 px-4 py-2.5 md:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <SidebarTrigger className="md:hidden" />
           <Separator orientation="vertical" className="h-6 md:hidden" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold tracking-tight text-foreground">{meta.title}</p>
-            <p className="hidden truncate text-xs text-muted-foreground md:block">{meta.subtitle}</p>
+            <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+              <span>{meta.crumb}</span>
+              <ChevronDown className="h-3 w-3 -rotate-90" />
+              <span className="text-muted-foreground/70">{meta.title}</span>
+            </div>
+            <p className="mt-0.5 truncate text-[18px] font-semibold tracking-tight text-foreground">
+              {meta.title}
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="hidden border-border/70 bg-transparent text-muted-foreground hover:text-foreground lg:flex"
-            onClick={() => setPaletteOpen(true)}
-          >
-            <Search className="mr-2 h-3.5 w-3.5" />
-            Buscar
-            <CommandShortcut className="ml-2">{isMac ? '⌘K' : 'Ctrl+K'}</CommandShortcut>
-          </Button>
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          className="hidden h-8 min-w-[280px] items-center gap-2 rounded-lg border border-border/70 bg-muted/40 px-3 text-xs text-muted-foreground transition-colors hover:border-brand/60 hover:text-foreground md:flex">
+          <Search className="h-3.5 w-3.5" />
+          <span className="flex-1 text-left">Buscar ativo, relatório, ação…</span>
+          <CommandShortcut>{isMac ? '⌘K' : 'Ctrl+K'}</CommandShortcut>
+        </button>
 
+        <div className="flex items-center gap-2">
           {isLoading ? (
-            <Skeleton className="h-8 w-20 rounded-full" />
-          ) : isSubscribed ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="hidden sm:flex"
-              onClick={() => navigate('/subscription')}
-            >
-              {displayPlanName || 'Assinatura'}
-            </Button>
-          ) : (
+            <Skeleton className="h-8 w-20 rounded-md" />
+          ) : !isSubscribed ? (
             <Button
               type="button"
               size="sm"
-              className="bg-primary text-primary-foreground shadow-sm hover:brightness-110"
-              onClick={() => navigate('/subscription')}
-            >
+              className="hidden bg-primary text-primary-foreground shadow-sm hover:brightness-110 sm:flex"
+              onClick={() => navigate('/subscription')}>
               <Sparkles className="mr-2 h-3.5 w-3.5" />
               Upgrade
             </Button>
-          )}
-
-          <Separator orientation="vertical" className="hidden h-6 sm:block" />
+          ) : null}
 
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="h-11 w-11 text-muted-foreground hover:text-foreground"
-            onClick={() => navigate('/settings')}
-          >
-            <Settings className="h-4 w-4" />
-            <span className="sr-only">Configurações</span>
+            className="h-8 w-8 border-border/70 text-muted-foreground hover:text-foreground"
+            onClick={toggleTheme}
+            aria-label={themeLabel}
+            title={themeLabel}>
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 
-          <Button type="button" variant="ghost" size="icon" className="h-11 w-11 text-muted-foreground hover:text-foreground">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="relative h-8 w-8 border-border/70 text-muted-foreground hover:text-foreground"
+            aria-label="Notificações">
             <Bell className="h-4 w-4" />
-            <span className="sr-only">Notificações</span>
+            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-brand" />
           </Button>
 
           <Separator orientation="vertical" className="hidden h-6 sm:block" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                className="flex h-11 items-center gap-2 px-2 text-muted-foreground hover:text-foreground">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand/15 text-xs font-semibold text-brand">
+                className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-muted/60">
+                <span
+                  className="grid h-7 w-7 place-items-center rounded-lg text-[11px] font-semibold text-white"
+                  style={{
+                    background:
+                      'linear-gradient(140deg, hsl(var(--brand)) 0%, hsl(var(--brand) / 0.65) 100%)',
+                  }}>
                   {initials || <User className="h-3.5 w-3.5" />}
                 </span>
-                <span className="hidden text-sm font-medium text-foreground md:inline">
-                  {profile?.firstName ?? ''}
+                <span className="hidden leading-tight md:block">
+                  <span className="block text-xs font-medium text-foreground">
+                    {fullName || 'Usuário'}
+                  </span>
+                  <span className="block text-[10px] text-muted-foreground">{planLabel}</span>
                 </span>
-                <span className="sr-only">Menu do usuário</span>
-              </Button>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => navigate('/settings')}>
@@ -217,33 +220,67 @@ export function AppTopbar() {
           </DropdownMenu>
         </div>
       </div>
-      <div className="flex items-center gap-3 border-t border-border/50 px-4 py-1.5 md:px-6">
-        <div
-          role="radiogroup"
-          aria-label="Nível de detalhe"
-          className="inline-flex gap-1 rounded-md bg-muted p-0.5">
-          {LEVEL_OPTIONS.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              role="radio"
-              aria-checked={opt.id === level}
-              onClick={() => setLevel(opt.id)}
-              className={cn(
-                'rounded px-2.5 py-1 text-[11px] font-medium transition-all',
-                opt.id === level
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}>
-              {opt.label}
-            </button>
-          ))}
+
+      <div className="flex flex-wrap items-center gap-3 border-t border-border/50 px-4 py-2 md:px-6">
+        <div className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-muted/40 px-2.5 h-[30px] text-xs">
+          <Wallet className="h-3.5 w-3.5 text-brand" />
+          <span className="text-foreground">Carteira consolidada</span>
+          <span className="text-muted-foreground">· {walletLabel}</span>
+          <ChevronDown className="ml-0.5 h-3 w-3 text-muted-foreground" />
         </div>
-        <span className="text-[10.5px] text-muted-foreground/70">
-          Preferência salva
-        </span>
+
+        <button
+          type="button"
+          onClick={() => setWalletOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-brand/45 bg-transparent px-2.5 h-[30px] text-xs text-brand transition-colors hover:border-solid hover:bg-brand/10">
+          <Plus className="h-3.5 w-3.5" />
+          <span>Nova carteira</span>
+        </button>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="hidden items-center gap-1.5 text-[11px] text-muted-foreground md:flex">
+            <Sparkles className="h-3.5 w-3.5 text-brand" />
+            <span>Profundidade definida pela IA</span>
+          </div>
+          <div
+            role="radiogroup"
+            aria-label="Nível de detalhe"
+            className="inline-flex gap-0.5 rounded-lg border border-border/70 bg-background/80 p-0.5">
+            {LEVEL_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                role="radio"
+                aria-checked={opt.id === level}
+                onClick={() => setLevel(opt.id)}
+                className={cn(
+                  'rounded px-2.5 py-1 text-[11px] font-medium transition-all',
+                  opt.id === level
+                    ? 'bg-muted text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {showExport ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-[30px] gap-1.5 border-brand/60 text-brand hover:bg-brand/10 hover:text-brand"
+              onClick={() =>
+                window.dispatchEvent(new CustomEvent('trackerr:export', {detail: {pathname}}))
+              }>
+              <Download className="h-3.5 w-3.5" />
+              Exportar
+            </Button>
+          ) : null}
+        </div>
       </div>
+
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <CreatePortfolioDialog open={walletOpen} onOpenChange={setWalletOpen} hideTrigger />
     </header>
   );
 }
