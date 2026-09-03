@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useEffect, useCallback, useRef} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Loader2} from '@/components/ui/icons';
 import WalletLoadingScreen from '@/components/WalletLoadingScreen';
@@ -20,6 +20,7 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
   const {error: showError} = useAppToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  const hiddenButtonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -68,23 +69,50 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
   );
 
   useEffect(() => {
-    if (isGoogleLoaded && window.google) {
+    if (isGoogleLoaded && window.google && hiddenButtonRef.current) {
       window.google.accounts.id.initialize({
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
         callback: handleGoogleLogin,
+      });
+
+      // O Google Identity Services não expõe um "signIn()" programático real
+      // (accounts.id.signIn não existe na API; accounts.id.prompt() é o One
+      // Tap automático, não confiável quando disparado por clique). A forma
+      // suportada de abrir o fluxo a partir de um clique é o botão que o
+      // próprio SDK renderiza — por isso ele é renderizado aqui, escondido, e
+      // o botão visível (estilizado Nocturne) só encaminha o clique pra ele.
+      window.google.accounts.id.renderButton(hiddenButtonRef.current, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
       });
     }
   }, [isGoogleLoaded, handleGoogleLogin]);
 
   const handleClick = () => {
-    if (window.google) {
-      window.google.accounts.id.signIn();
+    const realButton = hiddenButtonRef.current?.querySelector<HTMLElement>(
+      'div[role="button"]'
+    );
+    if (realButton) {
+      realButton.click();
+      return;
     }
+    showError(
+      'Erro ao entrar com Google',
+      'Não foi possível iniciar o login com Google. Recarregue a página e tente novamente.'
+    );
   };
 
   return (
     <>
       <WalletLoadingScreen isLoading={isLoading} loadingText="Conectando com Google..." />
+      {/* Botão real do Google, fora da vista mas clicável — é o único
+          disparador confiável do fluxo OAuth (ver comentário acima). */}
+      <div
+        ref={hiddenButtonRef}
+        aria-hidden="true"
+        style={{position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none'}}
+      />
       {!isGoogleLoaded ? (
         <button
           disabled
