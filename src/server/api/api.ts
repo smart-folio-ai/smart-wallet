@@ -200,6 +200,14 @@ export const brokerSyncService = {
   getUploads: () => apiClient.get('/broker-sync/uploads'),
   getUploadStatus: (uploadId: string) =>
     apiClient.get(`/broker-sync/upload-note/${uploadId}/status`),
+  uploadNote: (provider: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('provider', provider);
+    return apiClient.post('/broker-sync/upload-note', formData, {
+      headers: {'Content-Type': 'multipart/form-data'},
+    });
+  },
 };
 
 export const fiscalService = {

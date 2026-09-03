@@ -1,4 +1,4 @@
-import React, {useMemo, useRef, useState} from 'react';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
 import {
   Select,
   SelectContent,
@@ -14,6 +14,7 @@ import {format} from 'date-fns';
 import {ptBR} from 'date-fns/locale';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import PortfolioService from '@/services/portfolio';
+import {brokerSyncService} from '@/server/api/api';
 import Stock from '@/services/stocks';
 import {StockAllNacionalResponse} from '@/types/stock';
 import {
@@ -257,7 +258,149 @@ export default function AddAsset() {
 
   const chooseFiles = () => fileInputRef.current?.click();
 
-  const recentImports: Array<{id: string; icon: string; color: string; label: string; meta: string; status: string; statusLabel: string}> = [];
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Nota de corretagem enviada por aqui não tem seletor de corretora explícito
+  // (diferente de SyncAccounts). Usamos 'b3' como provider padrão: o backend
+  // reconhece automaticamente nota de corretagem, extrato de movimentação e
+  // relatório consolidado da B3 a partir do conteúdo do arquivo.
+  const DEFAULT_UPLOAD_PROVIDER = 'b3';
+
+  const {data: uploads = []} = useQuery<any[]>({
+    queryKey: ['broker-uploads'],
+    queryFn: async () => {
+      try {
+        const res = await brokerSyncService.getUploads();
+        return res.data || [];
+      } catch {
+        return [];
+      }
+    },
+    refetchInterval: 5000,
+  });
+
+  const recentImports = useMemo(
+    () =>
+      uploads.slice(0, 8).map((u: any) => {
+        const status =
+          u.status === 'processed'
+            ? 'success'
+            : u.status === 'failed'
+            ? 'error'
+            : 'pending';
+        const statusLabel =
+          u.status === 'processed'
+            ? 'Concluído'
+            : u.status === 'failed'
+            ? 'Falhou'
+            : u.status === 'processing'
+            ? 'Processando'
+            : u.status === 'queued'
+            ? 'Na fila'
+            : 'Recebido';
+        return {
+          id: String(u._id || u.id || `${u.originalName}-${u.createdAt}`),
+          icon:
+            status === 'success'
+              ? 'ph-fill ph-check-circle'
+              : status === 'error'
+              ? 'ph-fill ph-x-circle'
+              : 'ph-fill ph-spinner-gap',
+          color:
+            status === 'success'
+              ? 'var(--pos)'
+              : status === 'error'
+              ? 'var(--neg)'
+              : 'var(--warn)',
+          label: u.originalName || 'Arquivo enviado',
+          meta: [u.provider, u.kind || 'brokerage_note'].filter(Boolean).join(' • '),
+          status,
+          statusLabel,
+        };
+      }),
+    [uploads],
+  );
+
+  // Faz polling do status de processamento de um upload até virar
+  // `processed` ou `failed` (ou até estourar o timeout), igual ao fluxo
+  // já usado em SyncAccounts.tsx.
+  const pollUploadStatus = useCallback(
+    async (uploadId: string) => {
+      const POLL_INTERVAL_MS = 2500;
+      const TIMEOUT_MS = 60000;
+      const startedAt = Date.now();
+
+      while (Date.now() - startedAt < TIMEOUT_MS) {
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+
+        try {
+          const res = await brokerSyncService.getUploadStatus(uploadId);
+          const status = res.data?.status;
+
+          if (status === 'processed') {
+            queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+            queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
+            queryClient.invalidateQueries({queryKey: ['dashboardAssets']});
+            queryClient.invalidateQueries({queryKey: ['portfolios']});
+            const stats = res.data?.stats || {};
+            toast({
+              title: 'Nota processada!',
+              description: `${stats.tradesImported ?? 0} operação(ões) importada(s) e ${stats.assetsUpdated ?? 0} ativo(s) atualizado(s).`,
+            });
+            return;
+          }
+
+          if (status === 'failed') {
+            queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+            toast({
+              title: 'Falha ao processar nota',
+              description: res.data?.errorMessage || 'Não foi possível processar o arquivo enviado.',
+              variant: 'destructive',
+            });
+            return;
+          }
+          // received | queued | processing: continua o polling
+        } catch {
+          // falha pontual de rede ao consultar status: tenta de novo até o timeout
+        }
+      }
+
+      queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+      toast({
+        title: 'Processamento demorado',
+        description: 'O processamento do arquivo está demorando mais que o esperado. Acompanhe o status na lista de importações.',
+      });
+    },
+    [queryClient, toast],
+  );
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const res = await brokerSyncService.uploadNote(DEFAULT_UPLOAD_PROVIDER, file);
+      toast({
+        title: 'Arquivo enviado!',
+        description: `${file.name} recebido e em processamento.`,
+      });
+      queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+
+      const uploadId = res.data?.uploadId;
+      if (uploadId) {
+        void pollUploadStatus(String(uploadId));
+      }
+    } catch {
+      toast({
+        title: 'Falha no envio',
+        description: 'Não foi possível enviar o arquivo. Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
 
   return (
     <div style={{display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.15fr)', gap: 16.8, alignItems: 'start'}}>
@@ -407,8 +550,9 @@ export default function AddAsset() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.csv,.xlsx"
+            accept=".pdf,.csv,.xlsx,.xls"
             style={{display: 'none'}}
+            onChange={handleFileChange}
           />
           <div style={{padding: '28px 22.4px', textAlign: 'center'}}>
             <div style={{width: 44, height: 44, margin: '0 auto', borderRadius: 8, background: 'var(--grad-aurora)', display: 'grid', placeItems: 'center', boxShadow: '0 0 28px var(--aurora-glow)'}}>
@@ -419,8 +563,12 @@ export default function AddAsset() {
               PDF, CSV ou XLSX. Reconhecemos nota de corretagem, extrato de movimentação e relatório consolidado da B3 automaticamente.
             </div>
             <div style={{display: 'flex', gap: 8.4, justifyContent: 'center', marginTop: 16.8}}>
-              <button type="button" onClick={chooseFiles} style={{height: 36, padding: '0 16.8px', borderRadius: 8, border: '1px solid var(--color-accent)', background: 'rgba(145,132,217,0.14)', color: 'var(--color-accent-100)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer'}}>
-                Escolher arquivos
+              <button
+                type="button"
+                onClick={chooseFiles}
+                disabled={isUploading}
+                style={{height: 36, padding: '0 16.8px', borderRadius: 8, border: '1px solid var(--color-accent)', background: 'rgba(145,132,217,0.14)', color: 'var(--color-accent-100)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 500, cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.7 : 1}}>
+                {isUploading ? 'Enviando...' : 'Escolher arquivos'}
               </button>
               <button type="button" onClick={() => {}} style={{height: 36, padding: '0 16.8px', borderRadius: 8, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-200)', fontFamily: 'var(--font-body)', fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5.6}}>
                 <i className="ph-fill ph-question" style={{fontSize: 14}} /> Qual arquivo eu preciso?
