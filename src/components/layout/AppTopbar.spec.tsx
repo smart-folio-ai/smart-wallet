@@ -2,6 +2,7 @@ import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {SidebarProvider} from '@/components/ui/sidebar';
 import {AppTopbar} from './AppTopbar';
 
@@ -22,7 +23,11 @@ vi.mock('@/contexts/AdaptiveLevelContext', () => ({
 }));
 
 vi.mock('@/components/ThemeToggle', () => ({
-  useThemeToggle: () => ({toggleTheme: vi.fn()}),
+  useThemeToggle: () => ({theme: 'light', toggleTheme: vi.fn()}),
+}));
+
+vi.mock('@/services/portfolio', () => ({
+  default: {getPortfolios: vi.fn().mockResolvedValue([])},
 }));
 
 beforeAll(() => {
@@ -42,15 +47,18 @@ beforeAll(() => {
 });
 
 function renderTopbar() {
+  const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
   return render(
-    <MemoryRouter initialEntries={['/']}>
-      <SidebarProvider>
-        <Routes>
-          <Route path="/" element={<AppTopbar />} />
-          <Route path="/signout" element={<div>signout-page</div>} />
-        </Routes>
-      </SidebarProvider>
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={['/']}>
+        <SidebarProvider>
+          <Routes>
+            <Route path="/" element={<AppTopbar />} />
+            <Route path="/signout" element={<div>signout-page</div>} />
+          </Routes>
+        </SidebarProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -67,13 +75,13 @@ describe('AppTopbar', () => {
     });
   });
 
-  it('renders a Configurações icon button next to Notificações', () => {
+  it('renders Notificações and Nova carteira controls', () => {
     renderTopbar();
     expect(
-      screen.getByRole('button', {name: /configurações/i}),
+      screen.getByRole('button', {name: /notificações/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /notificações/i}),
+      screen.getByRole('button', {name: /nova carteira/i}),
     ).toBeInTheDocument();
   });
 
@@ -84,7 +92,7 @@ describe('AppTopbar', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows the current plan name for a subscribed user instead of Upgrade', () => {
+  it('shows the current plan name in the avatar block for a subscribed user', () => {
     mockUseSubscription.mockReturnValue({
       planName: 'investidor pro',
       displayPlanName: 'Investidor Pro',
@@ -92,7 +100,7 @@ describe('AppTopbar', () => {
       isLoading: false,
     });
     renderTopbar();
-    expect(screen.getByText('Investidor Pro')).toBeInTheDocument();
+    expect(screen.getByText(/Plano Investidor Pro/i)).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /^upgrade$/i}),
     ).not.toBeInTheDocument();
@@ -134,10 +142,10 @@ describe('AppTopbar', () => {
     expect(mockSetLevel).toHaveBeenCalledWith('avancado');
   });
 
-  it('opens the command palette when the search button is clicked', async () => {
+  it('opens the command palette when the search field is clicked', async () => {
     const user = userEvent.setup();
     renderTopbar();
-    await user.click(screen.getByRole('button', {name: /buscar/i}));
+    await user.click(screen.getByText(/buscar ativo, relatório/i));
     expect(screen.getByPlaceholderText(/buscar uma tela/i)).toBeInTheDocument();
   });
 });
