@@ -3,7 +3,7 @@ import {useMutation, useQuery} from '@tanstack/react-query';
 import {fiscalService, brokerSyncService} from '@/server/api/api';
 import {formatCurrency} from '@/utils/formatters';
 import useAppToast from '@/hooks/use-app-toast';
-import {KpiCard} from '@/components/shared';
+import {KpiCard, SectionHeader} from '@/components/shared';
 
 interface FiscalOptimizerResponse {
   accumulatedLosses?: {
@@ -44,7 +44,15 @@ interface FiscalSummaryResponse {
   monthly?: Array<{
     year: number;
     month: number;
+    stockSales: number;
+    stockProfit: number;
+    fiiProfit: number;
+    cryptoProfit: number;
+    stockTax: number;
+    fiiTax: number;
+    cryptoTax: number;
     totalTax: number;
+    stockExempt: boolean;
   }>;
   taxDrivers?: FiscalTaxDriver[];
   guide?: string[];
@@ -141,6 +149,10 @@ export default function Fiscal() {
   );
   const taxDue = summary?.totals?.taxDue || 0;
   const topTaxContributor = topTaxDrivers[0] || null;
+  const monthlyHistory = useMemo(
+    () => (Array.isArray(summary?.monthly) ? [...summary.monthly].reverse() : []),
+    [summary?.monthly],
+  );
 
   const downloadReport = async (
     type: 'fiscal' | 'transactions' | 'assets',
@@ -171,6 +183,14 @@ export default function Fiscal() {
     if (category === 'fii') return 'FII';
     if (category === 'crypto') return 'Cripto';
     return 'Ação';
+  };
+
+  const monthLabel = (month: number, yearValue: number) => {
+    const names = [
+      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
+    ];
+    return `${names[month - 1] || month}/${yearValue}`;
   };
 
   return (
@@ -489,6 +509,66 @@ export default function Fiscal() {
           ))}
         </div>
       </div>
+
+      {/* Histórico de DARFs e prejuízo acumulado */}
+      <section style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)'}}>
+        <SectionHeader
+          title="Histórico de DARFs e prejuízo acumulado"
+          subtitle="Apuração mês a mês do ano selecionado"
+        />
+        <div style={{padding: '0 0 16px'}}>
+          {loadingSummary ? (
+            <div style={{padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 8}}>
+              <div style={{height: 24, width: '100%', borderRadius: 6, background: 'var(--surf-3)'}} />
+              <div style={{height: 24, width: '100%', borderRadius: 6, background: 'var(--surf-3)'}} />
+              <div style={{height: 24, width: '66%', borderRadius: 6, background: 'var(--surf-3)'}} />
+            </div>
+          ) : monthlyHistory.length === 0 ? (
+            <p style={{padding: '0 24px', fontSize: 13, color: 'var(--color-neutral-500)'}}>
+              Sem vendas apuradas para o ano selecionado.
+            </p>
+          ) : (
+            <div style={{overflowX: 'auto'}}>
+              <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                <thead>
+                  <tr style={{borderBottom: '1px solid var(--hair)'}}>
+                    <th style={{padding: '8px 24px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Mês</th>
+                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Vendas de Ações</th>
+                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Resultado do Mês</th>
+                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>DARF</th>
+                    <th style={{padding: '8px 24px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyHistory.map((m) => {
+                    const monthResult = m.stockProfit + m.fiiProfit + m.cryptoProfit;
+                    const status = m.totalTax > 0
+                      ? {label: 'Pendente', bg: 'var(--badge-warn-bg)', color: 'var(--warn)'}
+                      : m.stockExempt
+                        ? {label: 'Isento', bg: 'var(--badge-pos-bg)', color: 'var(--pos)'}
+                        : {label: 'Sem imposto devido', bg: 'var(--surf-3)', color: 'var(--color-neutral-400)'};
+                    return (
+                      <tr key={`${m.year}-${m.month}`} style={{borderBottom: '1px solid var(--hair-soft)'}}>
+                        <td style={{padding: '10px 24px', fontSize: 13, fontWeight: 500}}>{monthLabel(m.month, m.year)}</td>
+                        <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(m.stockSales)}</td>
+                        <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: monthResult >= 0 ? 'var(--pos)' : 'var(--neg)'}}>
+                          {formatCurrency(monthResult)}
+                        </td>
+                        <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(m.totalTax)}</td>
+                        <td style={{padding: '10px 24px', textAlign: 'right'}}>
+                          <span style={{display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 600, background: status.bg, color: status.color}}>
+                            {status.label}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Guia Mastigado IR */}
       <div style={{border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--nk-card)', padding: 24}}>
