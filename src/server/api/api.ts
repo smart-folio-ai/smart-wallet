@@ -6,6 +6,7 @@ import {
 import {
   AdminPlanPayload,
   AdminPlanUpdatePayload,
+  ListManualGrantsQuery,
   ManualGrantPayload,
   UpdateUserRolePayload,
 } from '@/interface/admin';
@@ -173,6 +174,8 @@ export const adminService = {
   deactivatePlan: (planId: string) => apiClient.delete(`/admin/plans/${planId}`),
   grantSubscription: (data: ManualGrantPayload) =>
     apiClient.post('/admin/grants', data),
+  listGrants: (params?: ListManualGrantsQuery) =>
+    apiClient.get('/admin/grants', {params}),
   updateUserRoleByEmail: (data: UpdateUserRolePayload) =>
     apiClient.post('/admin/users/role', data),
 };

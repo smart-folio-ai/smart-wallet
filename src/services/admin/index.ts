@@ -3,6 +3,8 @@ import {
   AdminPlan,
   AdminPlanPayload,
   AdminPlanUpdatePayload,
+  ListManualGrantsQuery,
+  ListManualGrantsResponse,
   ManualGrantPayload,
   UpdateUserRolePayload,
 } from '@/interface/admin';
@@ -36,6 +38,11 @@ class AdminApiService {
 
   async grantSubscription(payload: ManualGrantPayload): Promise<{message: string}> {
     const response = await adminService.grantSubscription(payload);
+    return response.data;
+  }
+
+  async listGrants(query?: ListManualGrantsQuery): Promise<ListManualGrantsResponse> {
+    const response = await adminService.listGrants(query);
     return response.data;
   }
 
