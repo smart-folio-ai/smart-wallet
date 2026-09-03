@@ -987,6 +987,62 @@ const SyncAccounts = () => {
           </div>
         )}
 
+        {connections.length > 0 && (
+          <div style={{border: '1px solid var(--hair)', borderRadius: 16, background: 'var(--nk-card)', overflow: 'hidden', marginBottom: 32}}>
+            <div style={{padding: '16px 20px', borderBottom: '1px solid var(--hair-soft)'}}>
+              <h2 style={{fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700, margin: '0 0 4px 0'}}>
+                Status de sincronização por conexão
+              </h2>
+              <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
+                Última sincronização e status atual de cada conta conectada.
+              </p>
+            </div>
+            <div style={{padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8}}>
+              {connections.map((c) => {
+                const isError = c.status === 'error';
+                return (
+                  <div
+                    key={c.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      borderRadius: 10,
+                      border: `1px solid ${isError ? 'var(--neg)' : 'var(--hair)'}`,
+                      padding: 12,
+                    }}>
+                    <div style={{minWidth: 0}}>
+                      <p style={{fontSize: 13, fontWeight: 500, margin: 0}}>
+                        {providerNameById(c.provider)}
+                      </p>
+                      <p style={{fontSize: 12, color: 'var(--color-neutral-500)', margin: '2px 0 0 0'}}>
+                        Última sync: {formatLastSync(c.lastSync)}
+                      </p>
+                      {isError && c.lastError && (
+                        <p style={{fontSize: 12, color: 'var(--neg)', margin: '4px 0 0 0'}}>
+                          {c.lastError}
+                        </p>
+                      )}
+                    </div>
+                    <span style={{
+                      flexShrink: 0,
+                      padding: '2px 8px',
+                      borderRadius: 5,
+                      fontSize: 11,
+                      fontWeight: 500,
+                      background: isError ? 'var(--badge-neg-bg)' : 'var(--badge-pos-bg)',
+                      color: isError ? 'var(--neg)' : 'var(--pos)',
+                    }}>
+                      {isError ? 'Erro de sync' : c.status === 'connected' ? 'Conectado' : c.status}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {uploads.length > 0 && (
           <div style={{border: '1px solid var(--hair)', borderRadius: 16, background: 'var(--nk-card)', overflow: 'hidden', marginBottom: 32}}>
             <div style={{padding: '16px 20px', borderBottom: '1px solid var(--hair-soft)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12}}>
