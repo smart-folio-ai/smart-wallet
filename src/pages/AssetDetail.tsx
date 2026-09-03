@@ -12,12 +12,11 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  Clock,
   ExternalLink,
   Zap,
   Landmark,
 } from '@/components/ui/icons';
-import {SectionHeader, DataTable, TD_STYLE, TD_RIGHT} from '@/components/shared';
+import {SectionHeader} from '@/components/shared';
 import {
   Card,
   CardContent,
@@ -37,9 +36,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  Legend,
 } from 'recharts';
 import {formatCurrency, formatPercentage} from '@/utils/formatters';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
@@ -49,45 +45,17 @@ import Stock from '@/services/stocks';
 import {useSubscription} from '@/hooks/useSubscription';
 import {getAssetOpinion} from '@/services/ai/assetOpinion';
 import {RagAskPanel} from '@/components/ai/RagAskPanel';
-import {IndicatorItem as FundamentalIndicatorItem} from '@/components/asset/indicator-item';
-import {readIndicator} from '@/pages/asset-fundamentals.utils';
-import type {FundamentalKey} from '@/pages/asset-fundamentals.utils';
+import {buildFinancialHistoryData, buildCashflowSection} from '@/pages/asset-fundamentals.utils';
 import {CapitalRatioGauge} from '@/components/asset/capital-ratio-gauge';
 import {buildBankCapitalSummary, formatBankCapitalPeriod} from './bank-capital-summary';
-
-/**
- * Le a cascata UMA vez por linha e distribui status/value/source do mesmo
- * resultado. Nao existe um segundo literal de chave capaz de divergir do
- * primeiro, entao a linha nunca mostra o numero de um indicador sob o
- * rotulo/status de outro.
- *
- * Tambem nao aceita `isRestricted`: o gate de restricao do brapi nao governa
- * estes valores, que vem da cascata do server. A honestidade da linha vem dos
- * proprios estados `unavailable`/`not_applicable`.
- */
-function FundamentalRow({
-  label,
-  fundamentals,
-  indicatorKey,
-  formatter,
-}: {
-  label: string;
-  fundamentals: unknown;
-  indicatorKey: FundamentalKey;
-  formatter?: (value: number) => string;
-}) {
-  const {status, value, source} = readIndicator(fundamentals, indicatorKey);
-
-  return (
-    <FundamentalIndicatorItem
-      label={label}
-      status={status}
-      value={value}
-      source={source}
-      formatter={formatter}
-    />
-  );
-}
+import {
+  FundamentalRow,
+  FundamentalsTabContent,
+  BalanceTabContent,
+  ResultsTabContent,
+  DividendsTabContent,
+  AboutTabContent,
+} from '@/components/asset/market-detail-tabs';
 
 export default function AssetDetail() {
   const {symbol} = useParams<{symbol: string}>();
@@ -260,180 +228,11 @@ export default function AssetDetail() {
     };
   };
 
-  const currentYear = new Date().getFullYear();
-  const cashflowYears = [currentYear, currentYear - 1, currentYear - 2];
-  const financialHistoryData = Array.isArray(s?.financialHistory)
-    ? [...s.financialHistory]
-        .filter((row: any) => typeof row?.year === 'number')
-        .sort((a: any, b: any) => a.year - b.year)
-        .map((row: any) => ({
-          year: row.year,
-          revenue: Number(row.revenue || 0),
-          profit: Number(row.netIncome || 0),
-          totalAssets: Number(row.totalAssets || 0),
-          shareholdersEquity: Number(row.shareholdersEquity || 0),
-        }))
-    : [];
-  const cashflowHistoryByYear = new Map<number, any>(
-    (Array.isArray(s?.cashflowHistory) ? s.cashflowHistory : []).map(
-      (row: any) => [Number(row?.year), row],
-    ),
-  );
-
-  const getNumericValue = (source: any, keys: string[]): number | null => {
-    for (const key of keys) {
-      const value = key
-        .split('.')
-        .reduce<any>((acc, part) => (acc ? acc[part] : undefined), source);
-      if (typeof value === 'number' && Number.isFinite(value)) return value;
-    }
-    return null;
-  };
-
-  const cashflowRows = [
-    {
-      label: 'CAIXA LÍQUIDO ATIVIDADES OPERACIONAIS',
-      values: {
-        [currentYear]:
-          getNumericValue(cashflowHistoryByYear.get(currentYear), [
-            'operatingCashflow',
-          ]) ??
-          getNumericValue(s, [
-            'operatingCashflow',
-            'financialData.operatingCashflow',
-          ]),
-        [currentYear - 1]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 1),
-          ['operatingCashflow'],
-        ),
-        [currentYear - 2]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 2),
-          ['operatingCashflow'],
-        ),
-      },
-    },
-    {
-      label: 'CAIXA GERADO NAS OPERAÇÕES',
-      values: {
-        [currentYear]:
-          getNumericValue(cashflowHistoryByYear.get(currentYear), [
-            'operatingCashflow',
-          ]) ??
-          getNumericValue(s, [
-            'operatingCashflow',
-            'financialData.operatingCashflow',
-          ]),
-        [currentYear - 1]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 1),
-          ['operatingCashflow'],
-        ),
-        [currentYear - 2]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 2),
-          ['operatingCashflow'],
-        ),
-      },
-    },
-    {
-      label: 'LUCRO LÍQUIDO',
-      values: {
-        [currentYear]:
-          getNumericValue(cashflowHistoryByYear.get(currentYear), [
-            'netIncome',
-          ]) ??
-          getNumericValue(s, ['netIncomeToCommon', 'financialData.netIncome']),
-        [currentYear - 1]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 1),
-          ['netIncome'],
-        ),
-        [currentYear - 2]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 2),
-          ['netIncome'],
-        ),
-      },
-    },
-    {
-      label: 'DEPRECIAÇÃO/AMORTIZAÇÃO',
-      values: {
-        [currentYear]:
-          getNumericValue(cashflowHistoryByYear.get(currentYear), [
-            'depreciation',
-          ]) ??
-          getNumericValue(s, ['depreciation', 'depreciationAndAmortization']),
-        [currentYear - 1]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 1),
-          ['depreciation'],
-        ),
-        [currentYear - 2]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 2),
-          ['depreciation'],
-        ),
-      },
-    },
-    {
-      label: 'CAIXA LÍQUIDO ATIVIDADES INVESTIMENTO',
-      values: {
-        [currentYear]:
-          getNumericValue(cashflowHistoryByYear.get(currentYear), [
-            'investingCashflow',
-          ]) ??
-          getNumericValue(s, [
-            'investingCashflow',
-            'cashflowFromInvestment',
-            'capitalExpenditures',
-          ]),
-        [currentYear - 1]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 1),
-          ['investingCashflow'],
-        ),
-        [currentYear - 2]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 2),
-          ['investingCashflow'],
-        ),
-      },
-    },
-    {
-      label: 'CAIXA LÍQUIDO ATIVIDADES FINANCIAMENTO',
-      values: {
-        [currentYear]:
-          getNumericValue(cashflowHistoryByYear.get(currentYear), [
-            'financingCashflow',
-          ]) ??
-          getNumericValue(s, ['financingCashflow', 'cashflowFromFinancing']),
-        [currentYear - 1]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 1),
-          ['financingCashflow'],
-        ),
-        [currentYear - 2]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 2),
-          ['financingCashflow'],
-        ),
-      },
-    },
-    {
-      label: 'FLUXO DE CAIXA LIVRE',
-      values: {
-        [currentYear]:
-          getNumericValue(cashflowHistoryByYear.get(currentYear), [
-            'freeCashflow',
-          ]) ??
-          getNumericValue(s, ['freeCashflow', 'financialData.freeCashflow']),
-        [currentYear - 1]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 1),
-          ['freeCashflow'],
-        ),
-        [currentYear - 2]: getNumericValue(
-          cashflowHistoryByYear.get(currentYear - 2),
-          ['freeCashflow'],
-        ),
-      },
-    },
-  ];
-
-  const hasAnyCashflowData = cashflowRows.some((row) =>
-    cashflowYears.some(
-      (year) => row.values[year as keyof typeof row.values] !== null,
-    ),
-  );
+  // Historico anual (DRE) e fluxo de caixa: mesma leitura usada por
+  // `MyAssetDetail` para o ativo da carteira, extraida para
+  // `asset-fundamentals.utils` (TRA-118).
+  const financialHistoryData = buildFinancialHistoryData(s);
+  const cashflowSection = buildCashflowSection(s);
 
   const GrahamGauge = ({
     price,
@@ -854,200 +653,6 @@ export default function AssetDetail() {
     );
   }
 
-  function AssetFundamentalsTab() {
-    return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
-        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
-          <SectionHeader title="Valuation" />
-          <div style={{padding: '8px 16.8px 14px'}}>
-            <FundamentalRow label="P/L (PREÇO/LUCRO)" fundamentals={fundamentals} indicatorKey="priceEarnings" formatter={(v: number) => v.toFixed(2)} />
-            <FundamentalRow label="P/VP" fundamentals={fundamentals} indicatorKey="priceToBook" formatter={(v: number) => v.toFixed(2)} />
-            <FundamentalRow label="EV/EBITDA" fundamentals={fundamentals} indicatorKey="evEbitda" formatter={(v: number) => v.toFixed(2)} />
-            <IndicatorItem label="DIVIDEND YIELD" value={asset.dividendYield} isRestricted={isDividendsRestricted} formatter={formatPercentage} />
-          </div>
-        </div>
-        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
-          <SectionHeader title="Eficiência &amp; Rentabilidade" />
-          <div style={{padding: '8px 16.8px 14px'}}>
-            <FundamentalRow label="ROE" fundamentals={fundamentals} indicatorKey="returnOnEquity" formatter={formatPercentage} />
-            <FundamentalRow label="ROIC" fundamentals={fundamentals} indicatorKey="roic" formatter={formatPercentage} />
-            <FundamentalRow label="MARGEM LÍQUIDA" fundamentals={fundamentals} indicatorKey="netMargin" formatter={formatPercentage} />
-            <FundamentalRow label="DÍVIDA LÍQUIDA" fundamentals={fundamentals} indicatorKey="netDebt" formatter={formatCurrency} />
-            <IndicatorItem label="ÚLTIMO DIVIDENDO" value={asset.lastDividend} isRestricted={isDividendsRestricted} formatter={formatCurrency} />
-            <FundamentalRow label="PAYOUT" fundamentals={fundamentals} indicatorKey="payout" formatter={formatPercentage} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function AssetBalanceTab() {
-    return (
-      <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
-        <SectionHeader title="Balanço Patrimonial" subtitle="Resultados anuais" />
-        {isFundamentalRestricted ? (
-          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '44px 0', gap: 8, opacity: 0.5}}>
-            <Clock className="h-10 w-10" style={{color: 'var(--color-neutral-500)'}} />
-            <p style={{fontWeight: 600, fontSize: 13}}>Dados financeiros detalhados em breve</p>
-            <p style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>Requer upgrade no plano da API Brapi</p>
-          </div>
-        ) : (
-          <DataTable columns={[{label: 'Item'}, {label: 'Valor', align: 'right'}]}>
-            <tr><td style={TD_STYLE}>Receita Líquida</td><td style={TD_RIGHT}>{formatCurrency(asset.financial.revenue)}</td></tr>
-            <tr><td style={TD_STYLE}>Lucro Líquido</td><td style={TD_RIGHT}>{formatCurrency(asset.financial.net_income)}</td></tr>
-            <tr><td style={TD_STYLE}>Patrimônio Líquido</td><td style={TD_RIGHT}>{formatCurrency(asset.financial.shareholders_equity)}</td></tr>
-            <tr><td style={TD_STYLE}>Ativo Total</td><td style={TD_RIGHT}>{formatCurrency(asset.financial.total_assets)}</td></tr>
-            <tr><td style={TD_STYLE}>Dívida Total</td><td style={TD_RIGHT}>{formatCurrency(asset.financial.total_debt)}</td></tr>
-          </DataTable>
-        )}
-      </div>
-    );
-  }
-
-  function AssetResultsTab() {
-    return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
-        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
-          <SectionHeader title="Histórico de Lucro e Receita" action={<Badge variant="outline">5 anos</Badge>} />
-          <div style={{padding: 16.8, height: 360}}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={financialHistoryData} margin={{top: 20, right: 30, left: 20, bottom: 5}}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                <XAxis dataKey="year" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => formatCurrency(Number(v))} />
-                <Tooltip cursor={{fill: 'transparent'}} content={({active, payload, label}) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div style={{background: 'var(--nk-card)', border: '1px solid var(--hair)', borderRadius: 8, padding: 14}}>
-                        <p style={{fontWeight: 700, marginBottom: 8}}>{label}</p>
-                        {payload.map((p: any, i: number) => (
-                          <div key={i} style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600}}>
-                            <div style={{width: 8, height: 8, borderRadius: '50%', background: p.color}} />
-                            <span style={{color: 'var(--color-neutral-500)'}}>{p.name}:</span>
-                            <span>{formatCurrency(Number(p.value || 0))}</span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }
-                  return null;
-                }} />
-                <Legend iconType="circle" />
-                <Bar dataKey="revenue" name="Receita Líquida" fill="#3b82f6" radius={[4,4,0,0]} barSize={40} />
-                <Bar dataKey="profit" name="Lucro Líquido" fill="#10b981" radius={[4,4,0,0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
-          <SectionHeader title="Balanço — Comparativo" />
-          <DataTable columns={[
-            {label: 'Ano'},
-            {label: 'P/L', align: 'right'},
-            {label: 'P/VP', align: 'right'},
-            {label: 'VPA', align: 'right'},
-            {label: 'Margem Líq.', align: 'right'},
-            {label: 'ROE', align: 'right'},
-            {label: 'Div. Yield', align: 'right'},
-          ]} minWidth={640}>
-            {financialHistoryData.slice().reverse().map((row: any) => {
-              const rowYear = Number(row.year || 0);
-              const rowRevenue = Number(row.revenue || 0);
-              const rowProfit = Number(row.profit || 0);
-              const rowEquity = Number(row.shareholdersEquity || 0);
-              const rowRoe = rowEquity > 0 ? (rowProfit / rowEquity) * 100 : 0;
-              const rowNetMargin = rowRevenue > 0 ? (rowProfit / rowRevenue) * 100 : 0;
-              return (
-                <tr key={rowYear}>
-                  <td style={TD_STYLE}><strong>{rowYear || '-'}</strong></td>
-                  <td style={TD_RIGHT}>{asset.price > 0 && rowProfit > 0 ? ((asset.price * (Number(s?.sharesOutstanding || 0) || 1)) / rowProfit).toFixed(2) : '—'}</td>
-                  <td style={TD_RIGHT}>{rowEquity > 0 && asset.price > 0 ? (asset.price / (rowEquity / (Number(s?.sharesOutstanding || 0) || 1))).toFixed(2) : '—'}</td>
-                  <td style={TD_RIGHT}>{rowEquity > 0 && Number(s?.sharesOutstanding || 0) > 0 ? formatCurrency(rowEquity / Number(s?.sharesOutstanding || 1)) : '—'}</td>
-                  <td style={{...TD_RIGHT, color: 'var(--pos)'}}>{Number.isFinite(rowNetMargin) ? `${rowNetMargin.toFixed(2)}%` : '—'}</td>
-                  <td style={{...TD_RIGHT, color: 'var(--pos)'}}>{Number.isFinite(rowRoe) ? `${rowRoe.toFixed(2)}%` : '—'}</td>
-                  <td style={{...TD_RIGHT, color: 'var(--cy)'}}>{asset.dividendYield ? `${asset.dividendYield.toFixed(2)}%` : '—'}</td>
-                </tr>
-              );
-            })}
-          </DataTable>
-          {financialHistoryData.length === 0 && (
-            <p style={{padding: 16.8, fontSize: 11, color: 'var(--color-neutral-500)'}}>Ainda não recebemos histórico financeiro para este ativo nas fontes atuais.</p>
-          )}
-        </div>
-        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
-          <SectionHeader title="Demonstrativo de Fluxo de Caixa" subtitle="Dados reais do ano mais recente. '—' indica ausência de dados." />
-          <DataTable columns={[
-            {label: 'Categoria'},
-            ...cashflowYears.map((y) => ({label: `Valor ${y}`, align: 'right' as const})),
-          ]} minWidth={560}>
-            {cashflowRows.map((row) => (
-              <tr key={row.label}>
-                <td style={TD_STYLE}>{row.label}</td>
-                {cashflowYears.map((year) => {
-                  const val = row.values[year as keyof typeof row.values];
-                  return <td key={year} style={TD_RIGHT}>{typeof val === 'number' ? formatCurrency(val) : '—'}</td>;
-                })}
-              </tr>
-            ))}
-          </DataTable>
-          {!hasAnyCashflowData && (
-            <p style={{padding: 16.8, fontSize: 11, color: 'var(--color-neutral-500)'}}>Ainda não recebemos dados de fluxo de caixa para este ativo nas fontes atuais.</p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  function AssetDividendsTab() {
-    return (
-      <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
-        <SectionHeader title="Histórico de Dividendos" />
-        {isDividendsRestricted ? (
-          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '44px 0', gap: 8, opacity: 0.5}}>
-            <p style={{fontWeight: 600, fontSize: 13}}>Dados de dividendos em breve</p>
-          </div>
-        ) : asset.dividendHistory.length === 0 ? (
-          <p style={{padding: 16.8, fontSize: 12, color: 'var(--color-neutral-500)'}}>Sem histórico de dividendos disponível.</p>
-        ) : (
-          <DataTable columns={[{label: 'Data'}, {label: 'Valor por ação', align: 'right'}]}>
-            {asset.dividendHistory.map((d: any, i: number) => (
-              <tr key={i}>
-                <td style={TD_STYLE}>{d.date}</td>
-                <td style={TD_RIGHT}>{formatCurrency(d.value)}</td>
-              </tr>
-            ))}
-          </DataTable>
-        )}
-      </div>
-    );
-  }
-
-  function AssetAboutTab() {
-    return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
-        <div style={{borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--nk-card)', overflow: 'hidden'}}>
-          <SectionHeader title="Descrição do Negócio" />
-          <div style={{padding: 16.8}}>
-            <p style={{fontSize: 14, lineHeight: 1.65, color: 'var(--color-neutral-400)', maxWidth: '72ch'}}>
-              {asset.company.description || 'Descrição indisponível no momento.'}
-            </p>
-            <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22.4, marginTop: 28, paddingTop: 22.4, borderTop: '1px solid var(--hair-soft)'}}>
-              {[
-                {label: 'Setor / Indústria', value: `${asset.company.sector} / ${asset.company.industry}`},
-                {label: 'Sede', value: asset.company.headquarters || 'Não informado'},
-                {label: 'Funcionários', value: asset.company.employees > 0 ? asset.company.employees.toLocaleString() : '—'},
-              ].map((item) => (
-                <div key={item.label}>
-                  <div style={{fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-neutral-500)', marginBottom: 6}}>{item.label}</div>
-                  <div style={{fontWeight: 600, fontSize: 13}}>{item.value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
@@ -1130,11 +735,30 @@ export default function AssetDetail() {
 
       {/* Tab content */}
       {activeTab === 'overview' && <AssetOverviewTab />}
-      {activeTab === 'fundamentals' && <AssetFundamentalsTab />}
-      {activeTab === 'balance' && <AssetBalanceTab />}
-      {activeTab === 'results' && <AssetResultsTab />}
-      {activeTab === 'dividends' && <AssetDividendsTab />}
-      {activeTab === 'about' && <AssetAboutTab />}
+      {activeTab === 'fundamentals' && (
+        <FundamentalsTabContent
+          fundamentals={fundamentals}
+          dividendYield={asset.dividendYield}
+          lastDividend={asset.lastDividend}
+          isDividendsRestricted={isDividendsRestricted}
+        />
+      )}
+      {activeTab === 'balance' && (
+        <BalanceTabContent financial={asset.financial} isFundamentalRestricted={isFundamentalRestricted} />
+      )}
+      {activeTab === 'results' && (
+        <ResultsTabContent
+          financialHistoryData={financialHistoryData}
+          cashflowSection={cashflowSection}
+          price={asset.price}
+          sharesOutstanding={Number(s?.sharesOutstanding || 0)}
+          dividendYield={asset.dividendYield}
+        />
+      )}
+      {activeTab === 'dividends' && (
+        <DividendsTabContent dividendHistory={asset.dividendHistory} isDividendsRestricted={isDividendsRestricted} />
+      )}
+      {activeTab === 'about' && <AboutTabContent company={asset.company} />}
     </div>
   );
 }
