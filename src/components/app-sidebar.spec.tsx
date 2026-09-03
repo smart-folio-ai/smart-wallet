@@ -75,7 +75,7 @@ describe('AppSidebar', () => {
       'Transações',
       'Adicionar Ativo',
       'IA Insights',
-      'Chat Inteligente',
+      'Copiloto',
       'Buscar Ativos',
       'RI Inteligente',
       'Planejamento',

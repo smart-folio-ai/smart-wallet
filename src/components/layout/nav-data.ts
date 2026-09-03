@@ -1,17 +1,19 @@
 import {
+  ArrowUpDown,
   BarChart3,
   Calculator,
-  CircleDollarSign,
+  Coins,
+  Crown,
   FileSpreadsheet,
   FileText,
   GitCompare,
+  Landmark,
   Layers,
   MessageSquare,
   Plus,
   Search,
   Settings,
-  Star,
-  Wallet,
+  Sparkles,
   type LucideIcon,
 } from '@/components/ui/icons';
 
@@ -32,16 +34,16 @@ export const sections: NavSection[] = [
     items: [
       {to: '/dashboard', label: 'Dashboard', icon: BarChart3},
       {to: '/portfolio', label: 'Portfólio', icon: Layers},
-      {to: '/dividends', label: 'Dividendos', icon: Wallet},
-      {to: '/transactions', label: 'Transações', icon: Wallet},
+      {to: '/dividends', label: 'Dividendos', icon: Coins},
+      {to: '/transactions', label: 'Transações', icon: ArrowUpDown},
       {to: '/add-asset', label: 'Adicionar Ativo', icon: Plus},
     ],
   },
   {
     label: 'Inteligência',
     items: [
-      {to: '/ai-insights', label: 'IA Insights', icon: Star},
-      {to: '/chat-inteligente', label: 'Chat Inteligente', icon: MessageSquare},
+      {to: '/ai-insights', label: 'IA Insights', icon: Sparkles},
+      {to: '/chat-inteligente', label: 'Copiloto', icon: MessageSquare},
       {to: '/asset-search', label: 'Buscar Ativos', icon: Search},
       {to: '/ri-inteligente', label: 'RI Inteligente', icon: FileText},
       {to: '/comparator', label: 'Comparador', icon: GitCompare},
@@ -58,11 +60,11 @@ export const sections: NavSection[] = [
     label: 'Conta',
     items: [
       {to: '/settings', label: 'Configurações', icon: Settings},
-      {to: '/subscription', label: 'Assinatura', icon: CircleDollarSign},
+      {to: '/subscription', label: 'Assinatura', icon: Crown},
       {
         to: '/sync-accounts',
         label: 'Contas Conectadas',
-        icon: CircleDollarSign,
+        icon: Landmark,
       },
     ],
   },

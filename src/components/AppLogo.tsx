@@ -4,6 +4,7 @@ interface AppLogoProps {
   size?: 'sm' | 'md' | 'lg';
   variant?: 'full' | 'icon';
   className?: string;
+  tagline?: string;
 }
 
 const ICON_PX = {sm: 24, md: 28, lg: 34};
@@ -26,6 +27,7 @@ export function AppLogo({
   size = 'md',
   variant = 'full',
   className,
+  tagline,
 }: AppLogoProps) {
   const px = ICON_PX[size];
 
@@ -65,12 +67,19 @@ export function AppLogo({
   return (
     <span className={cn('inline-flex items-center gap-2', className)}>
       {icone}
-      <span
-        className={cn(
-          'font-heading font-semibold tracking-tight',
-          TEXT_CLASS[size],
-        )}>
-        Trackerr
+      <span className="flex flex-col leading-none">
+        <span
+          className={cn(
+            'font-heading font-semibold tracking-tight',
+            TEXT_CLASS[size],
+          )}>
+          Trackerr
+        </span>
+        {tagline ? (
+          <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+            {tagline}
+          </span>
+        ) : null}
       </span>
     </span>
   );

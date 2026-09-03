@@ -11,7 +11,6 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import {AppLogo} from '@/components/AppLogo';
-import {ThemeToggle} from '@/components/ThemeToggle';
 import {
   CircleDollarSign,
   ShieldCheck,
@@ -60,9 +59,8 @@ export function AppSidebar() {
   return (
     <Sidebar variant="inset" collapsible="icon" className="z-40">
       <SidebarHeader className="border-b border-sidebar-border/60 py-4">
-        <div className="flex items-center justify-between px-4">
-          <AppLogo size="md" />
-          <ThemeToggle />
+        <div className="px-4">
+          <AppLogo size="md" tagline="Enterprise" />
         </div>
       </SidebarHeader>
 
@@ -98,11 +96,16 @@ export function AppSidebar() {
         ) : null}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border/60 px-4 py-3">
-        <p className="flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-[0.1em] text-sidebar-foreground/45">
-          <ShieldCheck className="h-3 w-3" />
-          SOC 2 · LGPD
-        </p>
+      <SidebarFooter className="border-t border-sidebar-border/60 px-3 py-3">
+        <div className="rounded-lg border border-sidebar-border/60 bg-gradient-to-b from-brand/20 to-sidebar-accent/40 px-3 py-2.5">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold text-brand">
+            <ShieldCheck className="h-3.5 w-3.5" weight="fill" />
+            SOC 2 · LGPD
+          </p>
+          <p className="mt-1 text-[11px] leading-snug text-sidebar-foreground/60">
+            Uptime 99,98% · dados cifrados AES-256
+          </p>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
