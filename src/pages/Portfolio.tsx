@@ -1,4 +1,5 @@
 import {useMemo, useState} from 'react';
+import * as XLSX from 'xlsx';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useToast} from '@/hooks/use-toast';
 import {useQueryClient, useMutation} from '@tanstack/react-query';
@@ -97,13 +98,14 @@ function SignalBadge({signal}: {signal?: string}) {
 // ── ColumnConfigurator ─────────────────────────────────────────────────────
 function ColumnConfigurator({visibleCols, onToggle}: {visibleCols: Record<string, boolean>; onToggle: (col: string) => void}) {
   const [open, setOpen] = useState(false);
-  const cols = ['class', 'account', 'qty', 'avgPrice', 'price', 'pnl', 'dy', 'weight', 'beta', 'signal'];
+  const cols = ['class', 'account', 'qty', 'avgPrice', 'price', 'value', 'pnl', 'dy', 'weight', 'beta', 'signal'];
   const labels: Record<string, string> = {
     class: 'Classe',
     account: 'Conta',
     qty: 'Qtd',
     avgPrice: 'Preço Médio',
     price: 'Cotação',
+    value: 'Valor',
     pnl: 'P&L R$',
     dy: 'DY',
     weight: 'Peso',
@@ -173,6 +175,22 @@ function ColumnConfigurator({visibleCols, onToggle}: {visibleCols: Record<string
 const formatCurrency = (v: number) =>
   v.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
 
+// Value getters for XLSX export — mirrors the columns rendered in the table body
+const COLUMN_VALUE_GETTERS: Record<string, (asset: Asset) => string | number> = {
+  symbol: (a) => a.symbol,
+  class: (a) => a.type,
+  account: (a) => a.account ?? '—',
+  qty: (a) => a.amount,
+  avgPrice: (a) => a.avgPrice ?? a.price,
+  price: (a) => a.currentPrice ?? a.price,
+  value: (a) => a.value,
+  pnl: (a) => a.profitLoss ?? 0,
+  dy: (a) => a.dividendYield ?? 0,
+  weight: (a) => a.allocation ?? 0,
+  beta: (a) => a.beta ?? 0,
+  signal: (a) => a.signal ?? '—',
+};
+
 // ── Portfolio Page ─────────────────────────────────────────────────────────
 const Portfolio = () => {
   const {toast} = useToast();
@@ -207,6 +225,7 @@ const Portfolio = () => {
     qty: true,
     avgPrice: true,
     price: true,
+    value: true,
     pnl: true,
     dy: true,
     weight: true,
@@ -481,6 +500,7 @@ const Portfolio = () => {
     {key: 'qty', label: 'Qtd', align: 'right' as const},
     {key: 'avgPrice', label: 'Preço Médio', align: 'right' as const},
     {key: 'price', label: 'Cotação', align: 'right' as const},
+    {key: 'value', label: 'Valor', align: 'right' as const},
     {key: 'pnl', label: 'P&L R$', align: 'right' as const},
     {key: 'dy', label: 'DY', align: 'right' as const},
     {key: 'weight', label: 'Peso', align: 'right' as const},
@@ -490,6 +510,23 @@ const Portfolio = () => {
   const activeColumns = allColDefs
     .filter((c) => c.always || (visibleCols[c.key] ?? true))
     .map(({label, align}) => ({label, align}));
+
+  const handleExportXlsx = () => {
+    const exportColumns = allColDefs.filter((c) => c.always || (visibleCols[c.key] ?? true));
+    const rows = filteredAssets.map((asset) => {
+      const row: Record<string, string | number> = {};
+      exportColumns.forEach((c) => {
+        const getValue = COLUMN_VALUE_GETTERS[c.key];
+        row[c.label] = getValue ? getValue(asset) : '';
+      });
+      return row;
+    });
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Posições');
+    const today = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(workbook, `posicoes-trackerr-${today}.xlsx`);
+  };
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
@@ -726,7 +763,28 @@ const Portfolio = () => {
         <SectionHeader
           title="Carteira"
           subtitle={`${filteredAssets.length} ativos`}
-          action={<ColumnConfigurator visibleCols={visibleCols} onToggle={toggleCol} />}
+          action={
+            <div style={{display: 'flex', gap: 8}}>
+              <button
+                type="button"
+                onClick={handleExportXlsx}
+                style={{
+                  height: 30,
+                  padding: '0 11.2px',
+                  border: '1px solid var(--hair)',
+                  borderRadius: 8,
+                  background: 'transparent',
+                  color: 'var(--color-neutral-400)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5.6,
+                }}>
+                <i className="ph ph-file-xls" style={{fontSize: 14}} /> Exportar
+              </button>
+              <ColumnConfigurator visibleCols={visibleCols} onToggle={toggleCol} />
+            </div>
+          }
         />
         <DataTable minWidth={900} columns={activeColumns}>
           {loading ? (
@@ -760,6 +818,9 @@ const Portfolio = () => {
                 )}
                 {(visibleCols['price'] ?? true) && (
                   <td style={{...TD_RIGHT, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(asset.currentPrice ?? asset.price)}</td>
+                )}
+                {(visibleCols['value'] ?? true) && (
+                  <td style={{...TD_RIGHT, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(asset.value)}</td>
                 )}
                 {(visibleCols['pnl'] ?? true) && (
                   <td style={{...TD_RIGHT, color: (asset.profitLoss ?? 0) >= 0 ? 'var(--pos)' : 'var(--neg)', fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>
