@@ -58,6 +58,11 @@ const parseDate = (dateValue: unknown): Date | null => {
 
 const MONTH_LABELS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
+const formatPercent = (value: number | null | undefined): string =>
+  value === null || value === undefined || !Number.isFinite(value)
+    ? '—'
+    : `${value.toFixed(2)}%`;
+
 const Dividends = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -193,6 +198,34 @@ const Dividends = () => {
       });
   }, [allDividendEvents, now]);
 
+  /** Per-symbol snapshot (current value, cost basis, backend-provided DY) used for DY/YoC math */
+  const assetInfoBySymbol = useMemo(() => {
+    const map = new Map<string, {value: number; costBasis: number; dividendYield?: number}>();
+    (apiAssets as any[]).forEach((asset: any) => {
+      const symbol = String(asset?.symbol || '').toUpperCase();
+      if (!symbol) return;
+      const quantity = Number(asset?.quantity || 0);
+      const avgPrice = Number(asset?.avgPrice ?? asset?.price ?? 0);
+      const value = Number(asset?.total ?? quantity * (asset?.currentPrice ?? asset?.price ?? 0));
+      const dividendYield =
+        typeof asset?.indicators?.dividendYield === 'number'
+          ? asset.indicators.dividendYield
+          : undefined;
+      map.set(symbol, {value, costBasis: quantity * avgPrice, dividendYield});
+    });
+    return map;
+  }, [apiAssets]);
+
+  const totalPortfolioValue = useMemo(
+    () => Array.from(assetInfoBySymbol.values()).reduce((sum, a) => sum + a.value, 0),
+    [assetInfoBySymbol],
+  );
+
+  const totalCostBasis = useMemo(
+    () => Array.from(assetInfoBySymbol.values()).reduce((sum, a) => sum + a.costBasis, 0),
+    [assetInfoBySymbol],
+  );
+
   /** Income grouped by asset symbol */
   const incomeByAsset = useMemo(() => {
     const map = new Map<string, {total: number; count: number}>();
@@ -201,15 +234,15 @@ const Dividends = () => {
       map.set(ev.symbol, {total: cur.total + ev.totalValue, count: cur.count + 1});
     });
     return Array.from(map.entries())
-      .map(([symbol, {total, count}]) => ({
-        symbol,
-        total,
-        dy: '—',
-        yoc: '—',
-        count,
-      }))
+      .map(([symbol, {total, count}]) => {
+        const info = assetInfoBySymbol.get(symbol);
+        const dy = formatPercent(info?.dividendYield);
+        const yoc =
+          info && info.costBasis > 0 ? formatPercent((total / info.costBasis) * 100) : '—';
+        return {symbol, total, dy, yoc, count};
+      })
       .sort((a, b) => b.total - a.total);
-  }, [allDividendEvents]);
+  }, [allDividendEvents, assetInfoBySymbol]);
 
   /** Last-12-months total and previous-year total for growth delta */
   const total12m = useMemo(() => {
@@ -240,8 +273,18 @@ const Dividends = () => {
 
   const growth = prev12m > 0 ? total12m - prev12m : 0;
 
-  const avgDY = '—';
-  const yoc = '—';
+  // DY médio da carteira: mesma definição usada em Portfolio.tsx (`dividendYield`) e
+  // Index.tsx (`estimatedDividendYieldPct`) — proventos recebidos no período / valor total da carteira.
+  const avgDY =
+    totalPortfolioValue > 0 ? formatPercent((total12m / totalPortfolioValue) * 100) : '—';
+
+  // Yield on Cost: proventos recebidos / custo de aquisição (preço médio pago), não sobre a cotação atual.
+  const yoc =
+    totalCostBasis > 0
+      ? formatPercent(
+          (allDividendEvents.reduce((sum, ev) => sum + ev.totalValue, 0) / totalCostBasis) * 100,
+        )
+      : '—';
 
   const nextDiv = useMemo(() => {
     const upcoming = allDividendEvents
