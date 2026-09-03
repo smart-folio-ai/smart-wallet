@@ -5,6 +5,8 @@ import {
   AdminPlanUpdatePayload,
   ManualGrantPayload,
   UpdateUserRolePayload,
+  WebhookEvent,
+  WebhookStatus,
 } from '@/interface/admin';
 import {adminService} from '@/server/api/api';
 
@@ -41,6 +43,16 @@ class AdminApiService {
 
   async updateUserRoleByEmail(payload: UpdateUserRolePayload): Promise<{message: string}> {
     const response = await adminService.updateUserRoleByEmail(payload);
+    return response.data;
+  }
+
+  async getWebhookStatus(): Promise<WebhookStatus> {
+    const response = await adminService.getWebhookStatus();
+    return response.data;
+  }
+
+  async getWebhookEvents(limit?: number): Promise<WebhookEvent[]> {
+    const response = await adminService.getWebhookEvents(limit);
     return response.data;
   }
 }

@@ -30,6 +30,7 @@ export interface ISubscription {
   isComingSoon?: boolean;
   isActive: boolean;
   features: string[];
+  activeSubscriberCount?: number;
   createdAt: string;
   updatedAt: string;
 }
