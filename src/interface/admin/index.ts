@@ -16,13 +16,40 @@ export type AdminOverviewResponse = {
   }>;
 };
 
-export type ManualGrantType = 'TRIAL_7_DAYS' | 'PERMANENT';
+export type ManualGrantType = 'TRIAL' | 'PERMANENT';
 
 export type ManualGrantPayload = {
   email: string;
   planId: string;
   grantType: ManualGrantType;
+  trialDurationDays?: number;
+  discountPercent?: number;
   notes?: string;
+};
+
+export type ManualGrantHistoryItem = {
+  id: string;
+  userEmail: string;
+  planId: string;
+  planName: string;
+  grantType: ManualGrantType | string;
+  trialDurationDays?: number;
+  discountPercent?: number;
+  notes?: string;
+  performedByEmail: string;
+  createdAt: string;
+};
+
+export type ListManualGrantsQuery = {
+  page?: number;
+  limit?: number;
+};
+
+export type ListManualGrantsResponse = {
+  items: ManualGrantHistoryItem[];
+  page: number;
+  limit: number;
+  total: number;
 };
 
 export type UpdateUserRolePayload = {
