@@ -6,12 +6,12 @@ import {fiscalService, stockServices} from '@/server/api/api';
 import {FeatureTourModal} from '@/components/ui/feature-tour-modal';
 import {
   Area,
-  Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   ComposedChart,
   Line,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -1587,31 +1587,13 @@ const Dashboard = () => {
               flexDirection: 'column',
               gap: 16.8,
             }}>
-            {/* Allocation bar chart */}
+            {/* Allocation donut chart */}
             <div
               role="img"
-              aria-label="Gráfico de alocação por classe de ativo">
+              aria-label="Gráfico de alocação por classe de ativo"
+              style={{display: 'flex', justifyContent: 'center'}}>
               <ResponsiveContainer width="100%" height={140}>
-                <BarChart
-                  data={allocationChartData}
-                  layout="vertical"
-                  margin={{top: 4, right: 8, left: 8, bottom: 4}}>
-                  <XAxis
-                    type="number"
-                    domain={[0, 100]}
-                    tickFormatter={(v) => `${v}%`}
-                    tick={{fontSize: 10, fill: 'var(--color-neutral-600)'}}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    width={56}
-                    tick={{fontSize: 11, fill: 'var(--color-neutral-400)'}}
-                    axisLine={false}
-                    tickLine={false}
-                  />
+                <PieChart margin={{top: 4, right: 8, left: 8, bottom: 4}}>
                   <Tooltip
                     content={
                       <CustomTooltip
@@ -1622,12 +1604,19 @@ const Dashboard = () => {
                       />
                     }
                   />
-                  <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={14}>
+                  <Pie
+                    data={allocationChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={40}
+                    outerRadius={64}
+                    paddingAngle={2}
+                    strokeWidth={0}>
                     {allocationChartData.map((entry, index) => (
                       <Cell key={`alloc-${index}`} fill={entry.color} />
                     ))}
-                  </Bar>
-                </BarChart>
+                  </Pie>
+                </PieChart>
               </ResponsiveContainer>
             </div>
             {/* Allocation list */}
