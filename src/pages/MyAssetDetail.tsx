@@ -26,6 +26,14 @@ import {
   getDefaultProjectionTaxRate,
 } from './asset-projection.utils';
 import {DataTable, TD_STYLE, TD_RIGHT} from '@/components/shared';
+import {buildFinancialHistoryData, buildCashflowSection} from './asset-fundamentals.utils';
+import {
+  FundamentalsTabContent,
+  BalanceTabContent,
+  ResultsTabContent,
+  DividendsTabContent,
+  AboutTabContent,
+} from '@/components/asset/market-detail-tabs';
 
 interface Transaction {
   _id: string;
@@ -41,6 +49,11 @@ const tabDefs = [
   {id: 'overview', label: 'Visão Geral'},
   {id: 'movements', label: 'Movimentações'},
   {id: 'charts', label: 'Gráficos'},
+  {id: 'fundamentals', label: 'Fundamentos'},
+  {id: 'balance', label: 'Balanço'},
+  {id: 'results', label: 'DRE'},
+  {id: 'dividends', label: 'Dividendos'},
+  {id: 'about', label: 'Sobre'},
 ];
 
 const MyAssetDetail = () => {
@@ -184,6 +197,46 @@ const MyAssetDetail = () => {
     });
   })();
 
+  // Dados de mercado (Fundamentos/Balanço/DRE/Dividendos/Sobre) — mesma
+  // leitura/normalizacao usada em `AssetDetail` para qualquer symbol,
+  // aplicada aqui ao symbol do ativo da carteira do usuario (TRA-118). O
+  // `marketSnapshot` acima ja e o mesmo payload de mercado consumido por
+  // `AssetDetail`; so falta ler as mesmas chaves.
+  const marketData = marketSnapshot as any;
+  const marketRestrictedData = marketData?.restrictedData || [];
+  const isDividendsRestricted = marketRestrictedData.includes('dividends');
+  const isFundamentalRestricted = marketRestrictedData.includes('fundamental');
+  const marketFundamentals = marketData?.fundamentals ?? null;
+  const marketDividendYield = marketData?.dividendYield ?? null;
+  const marketLastDividend = marketData?.lastDividendValue ?? 0;
+  const marketFinancial = {
+    revenue: marketData?.totalRevenue ?? 0,
+    net_income: marketData?.netIncomeToCommon ?? 0,
+    total_assets: marketData?.totalAssets ?? 0,
+    total_debt: marketData?.totalDebt ?? 0,
+    shareholders_equity: marketData?.totalStockholderEquity ?? 0,
+  };
+  const marketCompany = {
+    description: marketData?.longBusinessSummary ?? '',
+    sector: marketData?.sector ?? '',
+    industry: marketData?.industry ?? '',
+    employees: marketData?.fullTimeEmployees ?? 0,
+    headquarters: marketData?.city ? `${marketData.city}, ${marketData.state}` : '',
+  };
+  const marketDividendHistory = marketData?.dividendsData?.cashDividends
+    ? marketData.dividendsData.cashDividends.map((d: any) => ({
+        date: new Date(d.paymentDate).toLocaleDateString('pt-BR'),
+        value: d.rate,
+      }))
+    : [];
+  const marketCashflowSection = buildCashflowSection(marketData);
+  const marketSharesOutstanding = Number(marketData?.sharesOutstanding || 0);
+  const marketPrice = marketData?.regularMarketPrice ?? asset.price ?? 0;
+
+  const visibleTabDefs = shouldLoadMarketFinancials
+    ? tabDefs
+    : tabDefs.filter((t) => !['fundamentals', 'balance', 'results', 'dividends', 'about'].includes(t.id));
+
   const typeLabel =
     asset.type === 'stock'
       ? 'Ação'
@@ -218,16 +271,9 @@ const MyAssetDetail = () => {
     0,
     projectionResult.grossFinalValue - projectionResult.netFinalValue,
   );
-  const financialHistoryData = Array.isArray((marketSnapshot as any)?.financialHistory)
-    ? [...(marketSnapshot as any).financialHistory]
-        .filter((row: any) => typeof row?.year === 'number')
-        .sort((a: any, b: any) => a.year - b.year)
-        .map((row: any) => ({
-          year: row.year,
-          revenue: Number(row.revenue || 0),
-          profit: Number(row.netIncome || 0),
-        }))
-    : [];
+  // Mesmo parsing usado nas abas de mercado abaixo e em `AssetDetail` — sem
+  // duplicar a leitura de `financialHistory` (TRA-118).
+  const financialHistoryData = buildFinancialHistoryData(marketSnapshot);
 
   const displaySymbol = (() => {
     const rawName = String((asset as any).name || '').trim();
@@ -377,7 +423,7 @@ const MyAssetDetail = () => {
 
         {/* Pill Tabs */}
         <div style={{display:'flex', gap:4, background:'var(--surf-3)', borderRadius:10, padding:4, flexWrap:'wrap', marginBottom:16}}>
-          {tabDefs.map(({id, label}) => (
+          {visibleTabDefs.map(({id, label}) => (
             <button key={id} type="button" onClick={() => setActiveTab(id)}
               style={{padding:'7px 16px', borderRadius:7, border:'none', cursor:'pointer', fontSize:13, fontWeight:500,
                 background: activeTab === id ? 'var(--ac)' : 'transparent',
@@ -796,6 +842,38 @@ const MyAssetDetail = () => {
             </div>
           </div>
         )}
+
+        {/* Fundamentos / Balanço / DRE / Dividendos / Sobre — mesmos
+            componentes de aba de `AssetDetail`, aplicados ao symbol deste
+            ativo da carteira (TRA-118). */}
+        {activeTab === 'fundamentals' && (
+          <FundamentalsTabContent
+            fundamentals={marketFundamentals}
+            dividendYield={marketDividendYield}
+            lastDividend={marketLastDividend}
+            isDividendsRestricted={isDividendsRestricted}
+          />
+        )}
+
+        {activeTab === 'balance' && (
+          <BalanceTabContent financial={marketFinancial} isFundamentalRestricted={isFundamentalRestricted} />
+        )}
+
+        {activeTab === 'results' && (
+          <ResultsTabContent
+            financialHistoryData={financialHistoryData}
+            cashflowSection={marketCashflowSection}
+            price={marketPrice}
+            sharesOutstanding={marketSharesOutstanding}
+            dividendYield={marketDividendYield}
+          />
+        )}
+
+        {activeTab === 'dividends' && (
+          <DividendsTabContent dividendHistory={marketDividendHistory} isDividendsRestricted={isDividendsRestricted} />
+        )}
+
+        {activeTab === 'about' && <AboutTabContent company={marketCompany} />}
 
       </div>
     </div>
