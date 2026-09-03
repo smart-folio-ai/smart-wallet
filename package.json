@@ -86,7 +86,7 @@
     "tailwindcss-animate": "^1.0.7",
     "ts-jest": "^29.4.12",
     "vaul": "^0.9.9",
-    "vitest": "^4.1.0",
+    "vitest": "^3.2.7",
     "xlsx": "^0.18.5",
     "zod": "^3.25.76"
   },
