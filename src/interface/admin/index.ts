@@ -60,3 +60,14 @@ export type UpdateUserRolePayload = {
 export type AdminPlanPayload = ICreateSubscription;
 export type AdminPlanUpdatePayload = IUpdateSubscription;
 export type AdminPlan = ISubscription;
+
+export type WebhookStatus = {
+  configured: boolean;
+};
+
+export type WebhookEvent = {
+  id: string;
+  type: string;
+  created: string;
+  livemode: boolean;
+};

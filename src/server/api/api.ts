@@ -178,6 +178,9 @@ export const adminService = {
     apiClient.get('/admin/grants', {params}),
   updateUserRoleByEmail: (data: UpdateUserRolePayload) =>
     apiClient.post('/admin/users/role', data),
+  getWebhookStatus: () => apiClient.get('/admin/webhook/status'),
+  getWebhookEvents: (limit?: number) =>
+    apiClient.get('/admin/webhook/events', {params: limit ? {limit} : undefined}),
 };
 
 export const twoFactorService = {
