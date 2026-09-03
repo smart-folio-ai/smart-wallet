@@ -251,5 +251,12 @@ export const leadsService = {
     apiClient.post('/leads/purchase-intent', {email, planId, ...attribution}),
 };
 
+export const privacyService = {
+  // TRA-122 (LGPD): exporta os dados do próprio usuário autenticado.
+  exportMyData: () => apiClient.get('/privacy/export'),
+  // TRA-122 (LGPD): apaga a própria conta do usuário autenticado.
+  deleteMyAccount: () => apiClient.delete('/privacy/account'),
+};
+
 export {apiClient as api};
 export default apiClient;
