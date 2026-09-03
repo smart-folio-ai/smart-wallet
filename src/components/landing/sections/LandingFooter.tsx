@@ -54,6 +54,11 @@ export function LandingFooter() {
           exibidas têm caráter informativo e não constituem recomendação de
           investimento.
         </p>
+        <p className="mt-3 text-xs leading-relaxed text-on-surface-muted/35">
+          © 2026 Trackerr Tecnologia Ltda · CNPJ [CNPJ a confirmar]
+          <br />
+          SOC 2 Type II · LGPD · AES-256 · Uptime 99,98%
+        </p>
       </div>
     </footer>
   );
