@@ -150,11 +150,9 @@ const formatHistoryDate = (value: unknown): string => {
     : '-';
 };
 
-const computeDailyVolatility = (
+const computeDailyReturns = (
   history: {date: string; value: number}[],
-): number | null => {
-  if (history.length < 3) return null;
-
+): number[] => {
   const returns: number[] = [];
   for (let i = 1; i < history.length; i += 1) {
     const previous = Number(history[i - 1]?.value || 0);
@@ -162,7 +160,15 @@ const computeDailyVolatility = (
     if (previous <= 0 || current <= 0) continue;
     returns.push((current - previous) / previous);
   }
+  return returns;
+};
 
+const computeDailyVolatility = (
+  history: {date: string; value: number}[],
+): number | null => {
+  if (history.length < 3) return null;
+
+  const returns = computeDailyReturns(history);
   if (returns.length < 2) return null;
 
   const mean = returns.reduce((sum, value) => sum + value, 0) / returns.length;
@@ -170,6 +176,66 @@ const computeDailyVolatility = (
     returns.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
     (returns.length - 1);
   return Math.sqrt(variance) * 100;
+};
+
+// Sharpe reaproveita a mesma série de retornos diários usada pela
+// Volatilidade acima (histórico reconstruído das negociações, ver
+// `history-from-trades.ts` no server) e a taxa CDI diária oficial (BACEN
+// SGS 12) como proxy de taxa livre de risco. Mesmo guard de tamanho mínimo
+// da Volatilidade — não inventa Sharpe sobre 1-2 pontos.
+const computeSharpeRatio = (
+  history: {date: string; value: number}[],
+  cdiDailyPct: number | null,
+): number | null => {
+  if (history.length < 3) return null;
+  if (cdiDailyPct === null || !Number.isFinite(cdiDailyPct)) return null;
+
+  const returns = computeDailyReturns(history);
+  if (returns.length < 2) return null;
+
+  const mean = returns.reduce((sum, value) => sum + value, 0) / returns.length;
+  const variance =
+    returns.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
+    (returns.length - 1);
+  const stdDev = Math.sqrt(variance);
+  if (!Number.isFinite(stdDev) || stdDev === 0) return null;
+
+  const riskFreeDaily = cdiDailyPct / 100;
+  const excessDaily = mean - riskFreeDaily;
+  // Anualiza por 252 dias úteis (convenção padrão), assumindo retornos iid
+  // — mesma premissa simplificada já usada pela Volatilidade exibida.
+  const sharpe = (excessDaily / stdDev) * Math.sqrt(252);
+  return Number.isFinite(sharpe) ? sharpe : null;
+};
+
+// Máximo drawdown: maior queda percentual entre um pico e um vale
+// subsequente na série de valor da carteira. Ao contrário de Beta/Tracking
+// Error (que exigem retornos diários pareados dia-a-dia com o IBOV), o
+// drawdown só depende da ordem dos valores da própria carteira — os trechos
+// "achatados" entre negociações (ver `history-from-trades.ts`) no máximo
+// subestimam a queda real, nunca fabricam uma queda que não existiu.
+const computeMaxDrawdownPct = (
+  history: {date: string; value: number}[],
+): number | null => {
+  if (history.length < 3) return null;
+
+  let peak = -Infinity;
+  let maxDrawdown = 0;
+  let sawValidPoint = false;
+
+  for (const point of history) {
+    const value = Number(point?.value || 0);
+    if (value <= 0) continue;
+    sawValidPoint = true;
+    if (value > peak) peak = value;
+    if (peak > 0) {
+      const drawdown = (value - peak) / peak;
+      if (drawdown < maxDrawdown) maxDrawdown = drawdown;
+    }
+  }
+
+  if (!sawValidPoint) return null;
+  return maxDrawdown * 100;
 };
 
 const parseGlobalComparator = (
@@ -1003,6 +1069,17 @@ const Dashboard = () => {
     () => computeDailyVolatility(summary.history || []),
     [summary.history],
   );
+
+  const maxDrawdownPct = useMemo(
+    () => computeMaxDrawdownPct(summary.history || []),
+    [summary.history],
+  );
+
+  const sharpeRatio = useMemo(
+    () =>
+      computeSharpeRatio(summary.history || [], marketComparators?.cdi?.value ?? null),
+    [summary.history, marketComparators?.cdi?.value],
+  );
   const futureDividendEvents = useMemo(() => {
     const now = new Date();
     return (summary.dividendEntries || [])
@@ -1080,15 +1157,30 @@ const Dashboard = () => {
       : undefined;
 
   const quantMetrics = [
-    {label: 'Sharpe', value: '—', note: 'dados insuficientes'},
+    {
+      label: 'Sharpe',
+      value: sharpeRatio !== null ? sharpeRatio.toFixed(2) : '—',
+      note: sharpeRatio !== null ? 'anualizado' : 'dados insuficientes',
+    },
     {
       label: 'Volatilidade',
       value: volatilityPct !== null ? `${volatilityPct.toFixed(2)}%` : '—',
       note: 'diária',
     },
-    {label: 'Max DD', value: '—', note: 'máxima retração'},
-    {label: 'Alfa', value: '—', note: 'vs IBOV'},
-    {label: 'VaR 95%', value: '—', note: '1 dia'},
+    // Beta vs IBOV e Tracking error exigem retornos diários da carteira
+    // pareados dia-a-dia com o IBOV (marcação a mercado real). A série
+    // hoje disponível é reconstruída das negociações e fica "achatada"
+    // entre trades (ver `history-from-trades.ts` no server) — usá-la para
+    // covariância/correlação produziria um número confiante mas incorreto,
+    // o mesmo problema que motivou remover o preço-alvo fabricado (TRA-55).
+    // Mesmo bloqueio do card "Beta da carteira" já existente acima.
+    {label: 'Beta vs IBOV', value: '—', note: 'dados insuficientes'},
+    {
+      label: 'Máx. drawdown',
+      value: maxDrawdownPct !== null ? `${maxDrawdownPct.toFixed(2)}%` : '—',
+      note: 'pior retração',
+    },
+    {label: 'Tracking error', value: '—', note: 'dados insuficientes'},
   ];
 
   const portfolioPeriodPct =
