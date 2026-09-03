@@ -39,6 +39,17 @@ const TYPE_LABEL: Record<string, string> = {
   stock: 'Ações', fii: 'FIIs', fund: 'Renda Fixa', etf: 'ETFs', crypto: 'Cripto', other: 'Outros',
 };
 
+// Mesma paleta usada no donut/legenda de alocação do dashboard (ver ALLOCATION_COLORS em Index.tsx),
+// estendida para as classes adicionais exibidas aqui (fund/etf não existem como fatia própria lá).
+const CLASS_COLORS: Record<string, string> = {
+  stock: 'hsl(var(--chart-2))',
+  crypto: 'hsl(var(--chart-1))',
+  fii: 'hsl(var(--chart-4))',
+  fund: 'hsl(var(--chart-3))',
+  etf: 'hsl(var(--chart-5))',
+  other: 'hsl(var(--chart-3))',
+};
+
 function computeExposure(assets: Asset[], totalValue: number) {
   const byType: Record<string, number> = {};
   for (const a of assets) {
@@ -48,7 +59,15 @@ function computeExposure(assets: Asset[], totalValue: number) {
     .map(([type, value]) => {
       const pct = totalValue > 0 ? (value / totalValue) * 100 : 0;
       const target = DEFAULT_TARGETS[type] ?? 0;
-      return {label: TYPE_LABEL[type] || type, value, pct, dev: pct - target, target};
+      return {
+        type,
+        label: TYPE_LABEL[type] || type,
+        value,
+        pct,
+        dev: pct - target,
+        target,
+        color: CLASS_COLORS[type] || 'var(--color-neutral-400)',
+      };
     })
     .sort((a, b) => b.value - a.value);
 }
@@ -668,6 +687,9 @@ const Portfolio = () => {
           <SectionHeader
             title="Exposição por classe"
             subtitle="Real vs política de investimento"
+            action={
+              <span style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>peso · desvio</span>
+            }
           />
           <div style={{padding: '0 0 16px'}}>
             <div style={{overflowX: 'auto'}}>
@@ -711,7 +733,7 @@ const Portfolio = () => {
                             <div style={{
                               width: `${Math.min(row.pct, 100)}%`,
                               height: '100%',
-                              background: row.dev > 5 ? 'var(--warn)' : row.dev < -5 ? 'var(--neg)' : 'var(--pos)',
+                              background: row.color,
                               borderRadius: 3,
                             }} />
                             {row.target > 0 && (
