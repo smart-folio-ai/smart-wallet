@@ -1,11 +1,10 @@
-import {Fragment, useMemo, useState} from 'react';
+import {useMemo, useState} from 'react';
 import * as XLSX from 'xlsx';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useToast} from '@/hooks/use-toast';
 import {useQueryClient, useMutation} from '@tanstack/react-query';
 import {Loader2, Trash2} from '@/components/ui/icons';
 import {Button} from '@/components/ui/button';
-import {CreatePortfolioDialog} from '@/components/portfolio/CreatePortfolioDialog';
 import {B3ImportGuideModal} from '@/components/portfolio/B3ImportGuideModal';
 import {AssetDetailModal} from '@/components/portfolio/AssetDetailModal';
 import {ConfirmDialog} from '@/components/ConfirmDialog';
@@ -51,23 +50,36 @@ const CLASS_COLORS: Record<string, string> = {
   other: 'hsl(var(--chart-3))',
 };
 
-function computeExposure(assets: Asset[], totalValue: number) {
-  const byType: Record<string, number> = {};
+export type ExposureGroupBy = 'class' | 'sector' | 'account';
+
+function pickGroupKey(a: Asset, groupBy: ExposureGroupBy): string {
+  if (groupBy === 'sector') return String(a.sector || '').trim() || 'Sem setor';
+  if (groupBy === 'account') return a.account ?? 'Sem conta';
+  return a.type;
+}
+
+function computeExposure(
+  assets: Asset[],
+  totalValue: number,
+  groupBy: ExposureGroupBy = 'class',
+) {
+  const acc: Record<string, number> = {};
   for (const a of assets) {
-    byType[a.type] = (byType[a.type] || 0) + a.value;
+    const k = pickGroupKey(a, groupBy);
+    acc[k] = (acc[k] || 0) + a.value;
   }
-  return Object.entries(byType)
-    .map(([type, value]) => {
+  return Object.entries(acc)
+    .map(([key, value]) => {
       const pct = totalValue > 0 ? (value / totalValue) * 100 : 0;
-      const target = DEFAULT_TARGETS[type] ?? 0;
+      const target = groupBy === 'class' ? (DEFAULT_TARGETS[key] ?? 0) : 0;
       return {
-        type,
-        label: TYPE_LABEL[type] || type,
+        type: key,
+        label: groupBy === 'class' ? (TYPE_LABEL[key] || key) : key,
         value,
         pct,
         dev: pct - target,
         target,
-        color: CLASS_COLORS[type] || 'var(--color-neutral-400)',
+        color: CLASS_COLORS[key] || 'var(--color-neutral-400)',
       };
     })
     .sort((a, b) => b.value - a.value);
@@ -233,13 +245,8 @@ const Portfolio = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // ── New Nocturne UI state ─────────────────────────────────────────────
-  const [groupTab, setGroupTab] = useState('Todos');
-  const filterPills = [
-    {label: 'Todos', value: 'all'},
-    {label: 'Sobrealocados', value: 'overallocated'},
-    {label: 'Alta oscilação', value: 'high-risk'},
-  ];
-  const [activeFilter, setFilter] = useState('all');
+  const [exposureGroupBy, setExposureGroupBy] = useState<ExposureGroupBy>('class');
+  const [includeFixedIncome, setIncludeFixedIncome] = useState(true);
   const [visibleCols, setVisibleCols] = useState<Record<string, boolean>>({
     class: true,
     account: true,
@@ -360,24 +367,11 @@ const Portfolio = () => {
     [assets],
   );
 
-  // group-tab → asset type mapping
-  const groupTabTypeMap: Record<string, string> = {
-    'Renda Variável': 'stock',
-    'Renda Fixa': 'fund',
-    FIIs: 'fii',
-  };
+  const FIXED_INCOME_TYPES = new Set(['fund', 'other']);
 
   const filteredAssets = assets
     .filter((asset) => {
-      // group tab filter
-      if (groupTab !== 'Todos') {
-        const mappedType = groupTabTypeMap[groupTab];
-        if (mappedType && asset.type !== mappedType) return false;
-      }
-      // pill filter
-      if (activeFilter === 'overallocated' && asset.allocation <= 20) return false;
-      if (activeFilter === 'high-risk' && Math.abs(asset.change24h || 0) <= 5) return false;
-      // search
+      if (!includeFixedIncome && FIXED_INCOME_TYPES.has(asset.type)) return false;
       if (
         searchQuery &&
         !asset.symbol.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -491,32 +485,12 @@ const Portfolio = () => {
     portfolios.find((p: any) => (p.id || p._id) === selectedPortfolioId)?.name ?? 'esta carteira';
 
   // ── Nocturne derived values ───────────────────────────────────────────
-  // Risk buckets — derived from asset type distribution
-  const riskBuckets = useMemo(() => {
-    if (assets.length === 0) {
-      return [
-        {label: 'Baixo', pct: 40, bg: 'var(--risk-low-bg)', textColor: 'var(--pos)'},
-        {label: 'Médio', pct: 35, bg: 'var(--risk-med-bg)', textColor: 'var(--warn)'},
-        {label: 'Alto', pct: 25, bg: 'var(--risk-high-bg)', textColor: 'var(--neg)'},
-      ];
-    }
-    const lowTypes = new Set(['fund', 'etf', 'other']);
-    const medTypes = new Set(['fii']);
-    let lowVal = 0, medVal = 0, highVal = 0;
-    assets.forEach((a) => {
-      if (lowTypes.has(a.type)) lowVal += a.value;
-      else if (medTypes.has(a.type)) medVal += a.value;
-      else highVal += a.value; // stock, crypto
-    });
-    const total = lowVal + medVal + highVal || 1;
-    return [
-      {label: 'Baixo', pct: Math.round((lowVal / total) * 100), bg: 'var(--risk-low-bg)', textColor: 'var(--pos)'},
-      {label: 'Médio', pct: Math.round((medVal / total) * 100), bg: 'var(--risk-med-bg)', textColor: 'var(--warn)'},
-      {label: 'Alto', pct: Math.round((highVal / total) * 100), bg: 'var(--risk-high-bg)', textColor: 'var(--neg)'},
-    ];
-  }, [assets]);
-
-  const exposureRows = useMemo(() => computeExposure(assets, totalValue), [assets, totalValue]);
+  const exposureRows = useMemo(
+    () => computeExposure(filteredAssets, totalValue, exposureGroupBy),
+    [filteredAssets, totalValue, exposureGroupBy],
+  );
+  const groupLabel =
+    exposureGroupBy === 'sector' ? 'setor' : exposureGroupBy === 'account' ? 'conta' : 'classe';
   const riskRows = useMemo(() => computeRiskContribution(assets), [assets]);
 
   const isAdvanced = level === 'avancado';
@@ -575,21 +549,83 @@ const Portfolio = () => {
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
 
-      {/* Portfolio selector row */}
-      <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between'}}>
-        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+      {/* Toolbar: agregação + filtros + meta line + ações da carteira */}
+      <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 11.2}}>
+        <div style={{display: 'flex', padding: 2.8, gap: 2.8, border: '1px solid var(--hair)', borderRadius: 8}}>
+          {(
+            [
+              {id: 'class', label: 'Classe'},
+              {id: 'sector', label: 'Setor'},
+              {id: 'account', label: 'Conta'},
+            ] as {id: ExposureGroupBy; label: string}[]
+          ).map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => setExposureGroupBy(g.id)}
+              aria-pressed={exposureGroupBy === g.id}
+              style={
+                exposureGroupBy === g.id
+                  ? {height: 26, padding: '0 12px', fontSize: 12, border: 'none', borderRadius: 6, background: 'var(--nk-card)', color: 'var(--color-neutral-100)', boxShadow: 'var(--shadow-sm)', cursor: 'pointer'}
+                  : {height: 26, padding: '0 12px', fontSize: 12, border: 'none', borderRadius: 6, background: 'transparent', color: 'var(--color-neutral-500)', cursor: 'pointer'}
+              }>
+              {g.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{display: 'flex', gap: 5.6, flexWrap: 'wrap'}}>
           <Select value={selectedPortfolioId} onValueChange={setSelectedPortfolioId}>
-            <SelectTrigger style={{width: 200}}>
-              <SelectValue placeholder="Selecione a Carteira" />
+            <SelectTrigger
+              style={{
+                height: 26,
+                padding: '0 8.4px',
+                borderRadius: 6,
+                border: '1px solid var(--hair)',
+                background: 'transparent',
+                fontSize: 11.5,
+                color: 'var(--color-neutral-400)',
+              }}>
+              <i className="ph ph-buildings" style={{fontSize: 12, marginRight: 5}} />
+              <SelectValue placeholder="Todas as contas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas as Carteiras</SelectItem>
+              <SelectItem value="all">Todas as contas</SelectItem>
               {portfolios.map((p: any) => (
                 <SelectItem key={p.id || p._id} value={p.id || p._id}>{p.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+          <span style={{display: 'inline-flex', alignItems: 'center', gap: 5.6, height: 26, padding: '0 8.4px', border: '1px solid var(--hair)', borderRadius: 6, fontSize: 11.5, color: 'var(--color-neutral-400)'}}>
+            <i className="ph ph-currency-circle-dollar" style={{fontSize: 12}} />
+            Moeda: BRL
+          </span>
+          <button
+            type="button"
+            onClick={() => setIncludeFixedIncome((v) => !v)}
+            aria-pressed={includeFixedIncome}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5.6,
+              height: 26,
+              padding: '0 8.4px',
+              border: '1px solid var(--hair)',
+              borderRadius: 6,
+              fontSize: 11.5,
+              cursor: 'pointer',
+              background: includeFixedIncome ? 'rgba(145,132,217,0.12)' : 'transparent',
+              color: includeFixedIncome ? 'var(--color-accent-100)' : 'var(--color-neutral-400)',
+            }}>
+            <i className={`ph ph-${includeFixedIncome ? 'check-circle' : 'circle'}`} style={{fontSize: 12}} />
+            Inclui renda fixa
+          </button>
+        </div>
 
+        <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 11.2}}>
+          <span style={{fontSize: 11.5, color: 'var(--color-neutral-500)', fontVariantNumeric: 'tabular-nums'}}>
+            {filteredAssets.length} posições · {formatCurrency(totalValue)}
+          </span>
           <ConfirmDialog
             open={deleteDialogOpen}
             onOpenChange={setDeleteDialogOpen}
@@ -601,13 +637,14 @@ const Portfolio = () => {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={selectedPortfolioId === 'all' || deletePortfolioMutation.isPending}>
+                disabled={selectedPortfolioId === 'all' || deletePortfolioMutation.isPending}
+                style={{height: 26, padding: '0 10px', fontSize: 11.5}}>
                 {deletePortfolioMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
                 ) : (
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="h-3 w-3 mr-1.5" />
                 )}
-                Remover
+                Remover carteira
               </Button>
             }
             confirmLabel="Remover"
@@ -622,167 +659,92 @@ const Portfolio = () => {
             }}
           />
         </div>
+        <input
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          style={{display: 'none'}}
+          id="b3-upload"
+          onChange={handleB3Import}
+          disabled={isUploadingB3}
+        />
+      </div>
 
-        <div style={{display: 'flex', gap: 8}}>
-          <CreatePortfolioDialog />
-          <div style={{position: 'relative'}}>
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              style={{display: 'none'}}
-              id="b3-upload"
-              onChange={handleB3Import}
-              disabled={isUploadingB3}
+      {/* Grid Exposição + Risco */}
+      <div style={{display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16.8}}>
+        {exposureRows.length > 0 && (
+          <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+            <SectionHeader
+              title={`Exposição por ${groupLabel}`}
+              subtitle="Real vs alvo da política de investimento"
+              action={
+                <span style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>peso · desvio</span>
+              }
             />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setB3GuideOpen(true)}
-              disabled={isUploadingB3}>
-              {isUploadingB3 ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <i className="ph ph-upload" style={{fontSize: 14, marginRight: 6}} />
+            <div style={{padding: '14px 16.8px 16.8px', display: 'flex', flexDirection: 'column', gap: 14}}>
+              {exposureRows.map((row) => (
+                <div key={row.label}>
+                  <div style={{display: 'flex', alignItems: 'baseline', gap: 8.4, fontSize: 12.5}}>
+                    <span style={{flex: 1, color: 'var(--color-neutral-200)'}}>{row.label}</span>
+                    <span style={{color: 'var(--color-neutral-500)', fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(row.value)}</span>
+                    <span style={{width: 46, textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{row.pct.toFixed(1)}%</span>
+                    <span
+                      style={{
+                        width: 62,
+                        textAlign: 'right',
+                        fontVariantNumeric: 'tabular-nums',
+                        fontSize: 11.5,
+                        color: row.target === 0
+                          ? 'var(--color-neutral-500)'
+                          : row.dev > 5
+                            ? 'var(--warn)'
+                            : row.dev < -5
+                              ? 'var(--neg)'
+                              : 'var(--pos)',
+                      }}>
+                      {row.target === 0
+                        ? '—'
+                        : `${row.dev > 0 ? '+' : ''}${row.dev.toFixed(1)} p.p.`}
+                    </span>
+                  </div>
+                  <div style={{position: 'relative', height: 8, borderRadius: 2, background: 'rgba(var(--rgb-line),0.06)', marginTop: 5.6}}>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: `${Math.min(row.pct, 100)}%`,
+                        background: row.color,
+                        borderRadius: 2,
+                      }}
+                    />
+                    {row.target > 0 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: -2,
+                          bottom: -2,
+                          left: `${Math.min(row.target, 100)}%`,
+                          width: 2,
+                          background: 'var(--color-neutral-400)',
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+              {exposureGroupBy === 'class' && (
+                <div style={{display: 'flex', alignItems: 'center', gap: 8.4, fontSize: 11, color: 'var(--color-neutral-600)', paddingTop: 5.6, borderTop: '1px solid var(--hair-soft)'}}>
+                  <span style={{width: 2, height: 12, background: 'var(--color-neutral-400)'}} />
+                  <span>marca vertical = alvo definido na sua política</span>
+                </div>
               )}
-              Importar B3
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* 1. Group tabs */}
-      <div style={{display: 'flex', padding: 2.8, gap: 2.8, border: '1px solid var(--hair)', borderRadius: 8, alignSelf: 'flex-start'}}>
-        {['Todos', 'Renda Variável', 'Renda Fixa', 'FIIs'].map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setGroupTab(tab)}
-            style={
-              groupTab === tab
-                ? {height: 32, padding: '0 14px', fontSize: 12.5, border: 'none', borderRadius: 6, background: 'var(--nk-card)', color: 'var(--color-neutral-100)', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)'}
-                : {height: 32, padding: '0 14px', fontSize: 12.5, border: 'none', borderRadius: 6, background: 'transparent', color: 'var(--color-neutral-500)', cursor: 'pointer', fontFamily: 'var(--font-body)'}
-            }>
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* 2. Filter pills */}
-      <div style={{display: 'flex', gap: 5.6, flexWrap: 'wrap'}}>
-        {filterPills.map((f) => (
-          <button
-            type="button"
-            key={f.label}
-            onClick={() => setFilter(f.value)}
-            aria-pressed={activeFilter === f.value}
-            style={
-              activeFilter === f.value
-                ? {padding: '4px 11.2px', borderRadius: 20, fontSize: 12, cursor: 'pointer', background: 'rgba(145,132,217,0.18)', color: 'var(--color-accent-100)', border: '1px solid rgba(145,132,217,0.45)'}
-                : {padding: '4px 11.2px', borderRadius: 20, fontSize: 12, cursor: 'pointer', background: 'transparent', color: 'var(--color-neutral-500)', border: '1px solid var(--hair)'}
-            }>
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* 3. Risk bar */}
-      <div style={{border: '1px solid var(--hair)', borderRadius: 8, overflow: 'hidden'}}>
-        <div style={{display: 'flex'}}>
-          {riskBuckets.map((b) => (
-            <div
-              key={b.label}
-              style={{flex: b.pct || 1, padding: '9.8px 14px', background: b.bg, borderRight: '1px solid var(--hair)'}}>
-              <div style={{fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: b.textColor}}>{b.label}</div>
-              <div style={{fontSize: 14, fontWeight: 600, marginTop: 2, fontVariantNumeric: 'tabular-nums', color: b.textColor}}>{b.pct}%</div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Exposição por classe */}
-      {exposureRows.length > 0 && (
-        <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
-          <SectionHeader
-            title="Exposição por classe"
-            subtitle="Real vs política de investimento"
-            action={
-              <span style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>peso · desvio</span>
-            }
-          />
-          <div style={{padding: '0 0 16px'}}>
-            <div style={{overflowX: 'auto'}}>
-              <table style={{width: '100%', borderCollapse: 'collapse'}}>
-                <thead>
-                  <tr style={{borderBottom: '1px solid var(--hair)'}}>
-                    <th style={{padding: '8px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Classe</th>
-                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Valor</th>
-                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>%</th>
-                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>vs alvo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {exposureRows.map((row) => (
-                    <Fragment key={row.label}>
-                      <tr>
-                        <td style={{padding: '10px 20px 4px', fontSize: 13, fontWeight: 500}}>
-                          <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                            {row.label}
-                            {row.target > 0 && (
-                              <span style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>alvo {row.target}%</span>
-                            )}
-                          </div>
-                        </td>
-                        <td style={{padding: '10px 12px 4px', textAlign: 'right', fontSize: 13, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(row.value)}</td>
-                        <td style={{padding: '10px 12px 4px', textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{row.pct.toFixed(1)}%</td>
-                        <td style={{
-                          padding: '10px 12px 4px',
-                          textAlign: 'right',
-                          fontSize: 12,
-                          fontWeight: 600,
-                          fontVariantNumeric: 'tabular-nums',
-                          color: row.dev > 5 ? 'var(--warn)' : row.dev < -5 ? 'var(--neg)' : 'var(--pos)',
-                        }}>
-                          {row.dev > 0 ? '+' : ''}{row.dev.toFixed(1)} p.p.
-                        </td>
-                      </tr>
-                      <tr style={{borderBottom: '1px solid var(--hair-soft)'}}>
-                        <td colSpan={4} style={{padding: '0 20px 10px'}}>
-                          <div style={{position: 'relative', width: '100%', height: 6, borderRadius: 3, background: 'var(--surf-3)', overflow: 'hidden'}}>
-                            <div style={{
-                              width: `${Math.min(row.pct, 100)}%`,
-                              height: '100%',
-                              background: row.color,
-                              borderRadius: 3,
-                            }} />
-                            {row.target > 0 && (
-                              <div style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: `${Math.min(row.target, 100)}%`,
-                                width: 2,
-                                height: '100%',
-                                background: 'var(--color-neutral-400)',
-                              }} />
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
       {/* Contribuição de risco por posição */}
       {riskRows.length > 0 && (
         <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
-          <SectionHeader
-            title={riskSectionTitle}
-            subtitle={riskSectionSubtitle}
-          />
+          <SectionHeader title={riskSectionTitle} subtitle={riskSectionSubtitle} />
           <div style={{padding: '0 0 16px'}}>
             <div style={{overflowX: 'auto'}}>
               <table style={{width: '100%', borderCollapse: 'collapse'}}>
@@ -839,14 +801,38 @@ const Portfolio = () => {
           </div>
         </section>
       )}
+      </div>
 
       {/* 4. Table */}
       <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
         <SectionHeader
-          title="Carteira"
-          subtitle={`${filteredAssets.length} ativos`}
+          title="Todas as posições"
+          subtitle="Clique em uma linha para abrir a análise completa do ativo."
           action={
             <div style={{display: 'flex', gap: 8}}>
+              <button
+                type="button"
+                onClick={() => setB3GuideOpen(true)}
+                disabled={isUploadingB3}
+                style={{
+                  height: 30,
+                  padding: '0 11.2px',
+                  border: '1px solid var(--hair)',
+                  borderRadius: 8,
+                  background: 'transparent',
+                  color: 'var(--color-neutral-400)',
+                  cursor: isUploadingB3 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5.6,
+                }}>
+                {isUploadingB3 ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <i className="ph ph-upload" style={{fontSize: 14}} />
+                )}
+                Importar B3
+              </button>
               <button
                 type="button"
                 onClick={handleExportXlsx}
