@@ -62,6 +62,16 @@ export default function AdminPlans() {
     queryFn: () => AdminService.getPlans(),
   });
 
+  const {data: webhookStatus} = useQuery({
+    queryKey: ['admin-webhook-status'],
+    queryFn: () => AdminService.getWebhookStatus(),
+  });
+
+  const {data: webhookEvents, isLoading: isLoadingEvents} = useQuery({
+    queryKey: ['admin-webhook-events'],
+    queryFn: () => AdminService.getWebhookEvents(10),
+  });
+
   const resetForm = () => {
     setEditingPlan(null);
     setForm(initialForm);
@@ -158,7 +168,42 @@ export default function AdminPlans() {
   };
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+    <div className="space-y-6">
+      <div
+        style={{
+          ...cardStyle,
+          padding: '14px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          borderColor: webhookStatus?.configured
+            ? 'rgba(34,197,94,0.35)'
+            : 'rgba(239,68,68,0.35)',
+        }}>
+        <i
+          className={`ph-fill ${webhookStatus?.configured ? 'ph-check-circle' : 'ph-warning-circle'}`}
+          style={{
+            fontSize: 20,
+            color: webhookStatus?.configured ? 'var(--pos, #22c55e)' : 'var(--neg, #ef4444)',
+          }}
+        />
+        <div>
+          <div style={{fontSize: 14, fontWeight: 600}}>
+            {webhookStatus === undefined
+              ? 'Verificando status do webhook Stripe...'
+              : webhookStatus.configured
+                ? 'Webhook Stripe conectado'
+                : 'Webhook Stripe não configurado'}
+          </div>
+          <div style={{fontSize: 12, color: 'var(--color-neutral-500)'}}>
+            {webhookStatus?.configured
+              ? 'STRIPE_WEBHOOK_SECRET está definido no ambiente do servidor.'
+              : 'Defina STRIPE_WEBHOOK_SECRET no ambiente do servidor para ativar o processamento de eventos.'}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
       <div style={cardStyle}>
         <div style={{padding:'16px 20px 0'}}>
           <h3 style={{fontSize:15, fontWeight:700, margin:0}}>
@@ -417,6 +462,12 @@ export default function AdminPlans() {
                     Preço
                   </th>
                   <th style={{padding:'8px 12px', textAlign:'left', fontSize:12, fontWeight:600, color:'var(--color-neutral-500)'}}>
+                    Stripe Price ID
+                  </th>
+                  <th style={{padding:'8px 12px', textAlign:'right', fontSize:12, fontWeight:600, color:'var(--color-neutral-500)'}}>
+                    Assinantes
+                  </th>
+                  <th style={{padding:'8px 12px', textAlign:'left', fontSize:12, fontWeight:600, color:'var(--color-neutral-500)'}}>
                     Status
                   </th>
                   <th style={{padding:'8px 12px', textAlign:'right', fontSize:12, fontWeight:600, color:'var(--color-neutral-500)'}}>
@@ -436,6 +487,12 @@ export default function AdminPlans() {
                     <td style={{padding:'10px 12px', fontSize:14}}>{plan.tier || '—'}</td>
                     <td style={{padding:'10px 12px', fontSize:14}}>
                       {plan.currency?.toUpperCase()} {plan.price.toFixed(2)}
+                    </td>
+                    <td style={{padding:'10px 12px', fontSize:12, fontFamily:'monospace', color:'var(--color-neutral-500)'}}>
+                      {plan.stripePriceId || '—'}
+                    </td>
+                    <td style={{padding:'10px 12px', fontSize:14, textAlign:'right'}}>
+                      {plan.activeSubscriberCount ?? 0}
                     </td>
                     <td style={{padding:'10px 12px', fontSize:14}}>
                       {plan.isActive ? 'Ativo' : 'Inativo'}
@@ -484,9 +541,63 @@ export default function AdminPlans() {
                 {!isLoading && !plans?.length ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={7}
                       style={{padding:'20px 12px', textAlign:'center', fontSize:14, color:'var(--color-neutral-500)'}}>
                       Nenhum plano cadastrado.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <div style={cardStyle}>
+        <div style={{padding:'16px 20px 0'}}>
+          <h3 style={{fontSize:15, fontWeight:700, margin:0}}>Eventos recentes do webhook Stripe</h3>
+        </div>
+        <div style={{padding:'12px 20px 20px'}}>
+          <div style={{overflowX:'auto'}}>
+            <table style={{width:'100%', borderCollapse:'collapse'}}>
+              <thead>
+                <tr style={{borderBottom:'1px solid var(--hair)'}}>
+                  <th style={{padding:'8px 12px', textAlign:'left', fontSize:12, fontWeight:600, color:'var(--color-neutral-500)'}}>
+                    Evento
+                  </th>
+                  <th style={{padding:'8px 12px', textAlign:'left', fontSize:12, fontWeight:600, color:'var(--color-neutral-500)'}}>
+                    Tipo
+                  </th>
+                  <th style={{padding:'8px 12px', textAlign:'left', fontSize:12, fontWeight:600, color:'var(--color-neutral-500)'}}>
+                    Data
+                  </th>
+                  <th style={{padding:'8px 12px', textAlign:'left', fontSize:12, fontWeight:600, color:'var(--color-neutral-500)'}}>
+                    Ambiente
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {(webhookEvents || []).map((event) => (
+                  <tr key={event.id} style={{borderBottom:'1px solid var(--hair-soft)'}}>
+                    <td style={{padding:'10px 12px', fontSize:12, fontFamily:'monospace', color:'var(--color-neutral-500)'}}>
+                      {event.id}
+                    </td>
+                    <td style={{padding:'10px 12px', fontSize:14}}>{event.type}</td>
+                    <td style={{padding:'10px 12px', fontSize:14}}>
+                      {new Date(event.created).toLocaleString('pt-BR')}
+                    </td>
+                    <td style={{padding:'10px 12px', fontSize:14}}>
+                      {event.livemode ? 'Produção' : 'Teste'}
+                    </td>
+                  </tr>
+                ))}
+                {!isLoadingEvents && !webhookEvents?.length ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      style={{padding:'20px 12px', textAlign:'center', fontSize:14, color:'var(--color-neutral-500)'}}>
+                      Nenhum evento recente.
                     </td>
                   </tr>
                 ) : null}
