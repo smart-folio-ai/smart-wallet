@@ -103,6 +103,18 @@ type SyncSuccessState = {
   syncedAssets: number;
 };
 
+interface BrokerageUploadStats {
+  tradesImported?: number;
+  assetsUpdated?: number;
+  portfolioId?: string;
+}
+
+interface BrokerageUploadStatus {
+  status: 'received' | 'queued' | 'processing' | 'processed' | 'failed';
+  stats?: BrokerageUploadStats;
+  errorMessage?: string | null;
+}
+
 const brokerSyncApi = {
   getConnections: () => api.get<Connection[]>('/broker-sync/connections'),
   connect: (data: any) => api.post('/broker-sync/connect', data),
@@ -110,6 +122,10 @@ const brokerSyncApi = {
   disconnect: (provider: string) =>
     api.delete(`/broker-sync/disconnect/${provider}`),
   getUploads: () => api.get('/broker-sync/uploads'),
+  getUploadStatus: (uploadId: string) =>
+    api.get<BrokerageUploadStatus>(
+      `/broker-sync/upload-note/${uploadId}/status`,
+    ),
 };
 
 const SyncAccounts = () => {
@@ -350,6 +366,58 @@ const SyncAccounts = () => {
     });
   };
 
+  // Faz polling do status de processamento de um upload de nota de corretagem
+  // até ele virar `processed` ou `failed` (ou até estourar o timeout).
+  const pollUploadStatus = useCallback(
+    async (uploadId: string, provider: string) => {
+      const POLL_INTERVAL_MS = 2500;
+      const TIMEOUT_MS = 60000;
+      const startedAt = Date.now();
+
+      while (Date.now() - startedAt < TIMEOUT_MS) {
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+
+        try {
+          const res = await brokerSyncApi.getUploadStatus(uploadId);
+          const status = res.data?.status;
+
+          if (status === 'processed') {
+            queryClient.invalidateQueries({queryKey: ['broker-connections']});
+            queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+            queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
+            queryClient.invalidateQueries({queryKey: ['portfolios']});
+            const stats = res.data?.stats || {};
+            toast.success(
+              'Nota processada!',
+              `${stats.tradesImported ?? 0} operação(ões) importada(s) e ${stats.assetsUpdated ?? 0} ativo(s) atualizado(s) para ${provider.toUpperCase()}.`,
+            );
+            return;
+          }
+
+          if (status === 'failed') {
+            queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+            toast.error(
+              'Falha ao processar nota',
+              res.data?.errorMessage ||
+                `Não foi possível processar a nota de ${provider.toUpperCase()}.`,
+            );
+            return;
+          }
+          // received | queued | processing: continua o polling
+        } catch {
+          // falha pontual de rede ao consultar status: tenta de novo até o timeout
+        }
+      }
+
+      queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+      toast.info(
+        'Processamento demorado',
+        `O processamento da nota de ${provider.toUpperCase()} está demorando mais que o esperado. Acompanhe o status na lista de uploads.`,
+      );
+    },
+    [queryClient, toast],
+  );
+
   // Handle brokerage note upload
   const handleBrokerageUpload = async (
     provider: string,
@@ -362,8 +430,8 @@ const SyncAccounts = () => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('provider', provider);
-      // POST to broker-sync upload endpoint (mocked on backend)
-      await api.post('/broker-sync/upload-note', formData, {
+      // POST to broker-sync upload endpoint (processamento real, assíncrono)
+      const res = await api.post('/broker-sync/upload-note', formData, {
         headers: {'Content-Type': 'multipart/form-data'},
       });
       toast.success(
@@ -372,10 +440,17 @@ const SyncAccounts = () => {
       );
       queryClient.invalidateQueries({queryKey: ['broker-connections']});
       queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+
+      const uploadId = res.data?.uploadId;
+      if (uploadId) {
+        // Não aguarda: o polling roda em background e notifica via toast
+        // quando o processamento terminar (sucesso ou falha).
+        void pollUploadStatus(String(uploadId), provider);
+      }
     } catch {
-      toast.info(
-        'Recebido',
-        `Arquivo enviado. Processamento de nota de corretagem em desenvolvimento.`,
+      toast.error(
+        'Falha no envio',
+        'Não foi possível enviar o arquivo. Tente novamente.',
       );
     } finally {
       setUploadProgress((prev) => ({...prev, [provider]: false}));
