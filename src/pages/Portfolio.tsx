@@ -238,12 +238,18 @@ const Portfolio = () => {
   // ── Queries (untouched) ───────────────────────────────────────────────
   const {data: portfolios = []} = useQuery({
     queryKey: ['portfolios'],
-    queryFn: async () => portfolioService.getPortfolios(),
+    queryFn: async () => {
+      const data = await portfolioService.getPortfolios();
+      return Array.isArray(data) ? data : [];
+    },
   });
 
   const {data: apiAssets = [], isLoading: loading} = useQuery({
     queryKey: ['portfolioAssets'],
-    queryFn: async () => portfolioService.getAssets(),
+    queryFn: async () => {
+      const data = await portfolioService.getAssets();
+      return Array.isArray(data) ? data : [];
+    },
   });
 
   const {
