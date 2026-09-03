@@ -30,6 +30,7 @@ import {
 
 // Nocturne shared components
 import {SectionHeader, DataTable, TD_STYLE, TD_RIGHT} from '@/components/shared';
+import {useAdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
 
 // ── Exposure + Risk helpers ────────────────────────────────────────────────
 const DEFAULT_TARGETS: Record<string, number> = {
@@ -198,6 +199,7 @@ const Portfolio = () => {
   const location = useLocation();
   const queryClient = useQueryClient();
   const {planName} = useSubscription();
+  const {level} = useAdaptiveLevel();
 
   // ── Existing state (untouched) ────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('all');
@@ -498,6 +500,22 @@ const Portfolio = () => {
   const exposureRows = useMemo(() => computeExposure(assets, totalValue), [assets, totalValue]);
   const riskRows = useMemo(() => computeRiskContribution(assets), [assets]);
 
+  const isAdvanced = level === 'avancado';
+  const riskSectionTitle = isAdvanced ? 'Contribuição de risco por ativo' : 'Onde está concentrada a carteira';
+  const riskSectionSubtitle = isAdvanced
+    ? 'Fatia do VaR 95% · janela 252 dias'
+    : 'Quanto cada ativo pesa no sobe-e-desce da carteira';
+
+  const riskInsight = useMemo(() => {
+    if (riskRows.length < 2) return null;
+    const [first, second] = riskRows;
+    const shareSum = first.share + second.share;
+    const weightSum = first.weight + second.weight;
+    return isAdvanced
+      ? `Dois nomes (${first.symbol} e ${second.symbol}) respondem por ${shareSum.toFixed(1)}% do VaR com ${weightSum.toFixed(1)}% de peso. A concentração de risco é ${shareSum > weightSum ? 'maior que' : 'próxima de'} a concentração de valor.`
+      : `${first.symbol} e ${second.symbol} juntos movem ${shareSum.toFixed(0)}% do sobe-e-desce da sua carteira, mesmo somando só ${weightSum.toFixed(0)}% do valor investido.`;
+  }, [riskRows, isAdvanced]);
+
   // Active columns for DataTable header
   const allColDefs = [
     {key: 'symbol', label: 'Ativo', always: true},
@@ -740,8 +758,8 @@ const Portfolio = () => {
       {riskRows.length > 0 && (
         <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
           <SectionHeader
-            title="Contribuição de risco"
-            subtitle="Participação estimada no risco total da carteira"
+            title={riskSectionTitle}
+            subtitle={riskSectionSubtitle}
           />
           <div style={{padding: '0 0 16px'}}>
             <div style={{overflowX: 'auto'}}>
@@ -784,6 +802,18 @@ const Portfolio = () => {
                 </tbody>
               </table>
             </div>
+            {riskInsight && (
+              <p style={{
+                margin: '4px 20px 0',
+                paddingTop: 12,
+                borderTop: '1px solid var(--hair-soft)',
+                fontSize: 12,
+                lineHeight: 1.5,
+                color: 'var(--color-neutral-500)',
+              }}>
+                {riskInsight}
+              </p>
+            )}
           </div>
         </section>
       )}
