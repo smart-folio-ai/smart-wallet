@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
@@ -598,19 +598,23 @@ export default function Register() {
                       className="font-medium text-sm leading-snug cursor-pointer"
                       style={{color: 'var(--color-neutral-500)'}}>
                       Eu li e concordo com os{' '}
-                      <a
-                        href="#"
+                      <Link
+                        to="/termos"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="font-semibold underline-offset-4 hover:underline transition-colors"
                         style={{color: 'var(--ac)'}}>
                         Termos de Uso
-                      </a>{' '}
+                      </Link>{' '}
                       e{' '}
-                      <a
-                        href="#"
+                      <Link
+                        to="/privacidade"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="font-semibold underline-offset-4 hover:underline transition-colors"
                         style={{color: 'var(--ac)'}}>
                         Política de Privacidade
-                      </a>
+                      </Link>
                       . O Trackerr não é consultoria de investimento e não
                       recomenda ativos.
                     </FormLabel>

@@ -148,7 +148,7 @@ export const PrivacySettings = () => {
       )}
 
       <div className="flex items-center gap-4 text-sm">
-        <Link to="/privacy" className="flex items-center gap-1 text-primary hover:underline">
+        <Link to="/privacidade" className="flex items-center gap-1 text-primary hover:underline">
           <FileText className="h-4 w-4" />
           Política de Privacidade
         </Link>

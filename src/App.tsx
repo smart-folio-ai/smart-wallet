@@ -45,6 +45,9 @@ import RiInteligente from './pages/RiInteligente';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminPlans from './pages/AdminPlans';
 import AdminGrants from './pages/AdminGrants';
+import Termos from './pages/Termos';
+import Privacidade from './pages/Privacidade';
+import Cookies from './pages/Cookies';
 
 const ScrollToTopOnRouteChange = () => {
   const {pathname} = useLocation();
@@ -108,6 +111,9 @@ const App = () => (
             path="/subscription-cancelled"
             element={<SubscriptionCancelled />}
           />
+          <Route path="/termos" element={<Termos />} />
+          <Route path="/privacidade" element={<Privacidade />} />
+          <Route path="/cookies" element={<Cookies />} />
           <Route
             path="*"
             element={
