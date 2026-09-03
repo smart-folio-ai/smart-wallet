@@ -146,6 +146,8 @@ describe('AppTopbar', () => {
     const user = userEvent.setup();
     renderTopbar();
     await user.click(screen.getByText(/buscar ativo, relatório/i));
-    expect(screen.getByPlaceholderText(/buscar uma tela/i)).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/buscar tela, ativo ou ação/i),
+    ).toBeInTheDocument();
   });
 });
