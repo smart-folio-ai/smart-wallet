@@ -510,23 +510,121 @@ const Portfolio = () => {
   }, [riskRows, isAdvanced]);
 
   // Active columns for DataTable header
-  const allColDefs = [
+  const allColDefs: {
+    key: string;
+    label: string;
+    always?: boolean;
+    align?: 'left' | 'right' | 'center';
+    tooltip?: {title: string; body: string; formula?: string};
+  }[] = [
     {key: 'symbol', label: 'Ativo', always: true},
-    {key: 'class', label: 'Classe'},
-    {key: 'account', label: 'Conta'},
-    {key: 'qty', label: 'Qtd', align: 'right' as const},
-    {key: 'avgPrice', label: 'Preço Médio', align: 'right' as const},
-    {key: 'price', label: 'Cotação', align: 'right' as const},
-    {key: 'value', label: 'Valor', align: 'right' as const},
-    {key: 'pnl', label: 'P&L R$', align: 'right' as const},
-    {key: 'dy', label: 'DY', align: 'right' as const},
-    {key: 'weight', label: 'Peso', align: 'right' as const},
-    {key: 'beta', label: 'Beta', align: 'right' as const},
-    {key: 'signal', label: 'Sinal', align: 'right' as const},
+    {
+      key: 'class',
+      label: 'Classe',
+      tooltip: {
+        title: 'Classe do ativo',
+        body: 'Ações, FIIs, ETFs, renda fixa, cripto — usado para agrupar a exposição da carteira e comparar com a política.',
+      },
+    },
+    {
+      key: 'account',
+      label: 'Conta',
+      tooltip: {
+        title: 'Conta / corretora',
+        body: 'Corretora ou banco onde a posição está custodiada. Ajuda a identificar concentração em um único intermediário.',
+      },
+    },
+    {
+      key: 'qty',
+      label: 'Qtd',
+      align: 'right',
+      tooltip: {
+        title: 'Quantidade',
+        body: 'Total de unidades do ativo somando todas as suas contas.',
+      },
+    },
+    {
+      key: 'avgPrice',
+      label: 'Preço Médio',
+      align: 'right',
+      tooltip: {
+        title: 'Preço médio',
+        body: 'Custo médio das compras já ajustado por desdobramentos e proventos.',
+        formula: '∑ (preço · qtd) ÷ qtd total',
+      },
+    },
+    {
+      key: 'price',
+      label: 'Cotação',
+      align: 'right',
+      tooltip: {
+        title: 'Cotação',
+        body: 'Último preço fechado na fonte de mercado. Pode ter atraso de até 15 min conforme o ativo.',
+      },
+    },
+    {
+      key: 'value',
+      label: 'Valor',
+      align: 'right',
+      tooltip: {
+        title: 'Valor de mercado',
+        body: 'Posição marcada a mercado no preço atual, na moeda base da carteira.',
+        formula: 'qtd · cotação',
+      },
+    },
+    {
+      key: 'pnl',
+      label: 'P&L R$',
+      align: 'right',
+      tooltip: {
+        title: 'Lucro/prejuízo não realizado',
+        body: 'Ganho ou perda em relação ao preço médio, sem considerar imposto ou custos.',
+        formula: '(cotação − preço médio) · qtd',
+      },
+    },
+    {
+      key: 'dy',
+      label: 'DY',
+      align: 'right',
+      tooltip: {
+        title: 'Dividend Yield',
+        body: 'Proventos pagos nos últimos 12 meses divididos pelo preço médio da sua posição.',
+        formula: 'proventos 12m ÷ preço médio',
+      },
+    },
+    {
+      key: 'weight',
+      label: 'Peso',
+      align: 'right',
+      tooltip: {
+        title: 'Peso na carteira',
+        body: 'Percentual do valor total da carteira que esse ativo representa hoje.',
+        formula: 'valor do ativo ÷ valor total',
+      },
+    },
+    {
+      key: 'beta',
+      label: 'Beta',
+      align: 'right',
+      tooltip: {
+        title: 'Beta vs IBOV',
+        body: 'Sensibilidade do ativo ao índice de referência. Acima de 1 amplifica movimentos do índice; abaixo de 1 amortece.',
+        formula: 'cov(ativo, ibov) ÷ var(ibov)',
+      },
+    },
+    {
+      key: 'signal',
+      label: 'Sinal',
+      align: 'right',
+      tooltip: {
+        title: 'Sinal do Trackerr',
+        body: 'Leitura combinada de valuation, dividendos e desempenho. Não é recomendação — use como um dos insumos.',
+      },
+    },
   ];
   const activeColumns = allColDefs
     .filter((c) => c.always || (visibleCols[c.key] ?? true))
-    .map(({label, align}) => ({label, align}));
+    .map(({label, align, tooltip}) => ({label, align, tooltip}));
 
   const handleExportXlsx = () => {
     const exportColumns = allColDefs.filter((c) => c.always || (visibleCols[c.key] ?? true));
