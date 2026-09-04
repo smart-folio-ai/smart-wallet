@@ -32,6 +32,7 @@ import {
   isProOrHigherPlan,
 } from '@/services/ai/trakkerAi';
 import {SectionHeader} from '@/components/shared';
+import {InsightCard, InsightCardData} from '@/components/ai/InsightCard';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -55,20 +56,6 @@ const SEVERITY_ORDER: Record<'high' | 'medium' | 'low', number> = {
   low: 2,
 };
 
-/** Maps InsightCard.priority → CSS color token */
-const PRIORITY_COLOR: Record<string, string> = {
-  Alta: 'var(--neg)',
-  Média: 'var(--warn)',
-  Baixa: 'var(--pos)',
-};
-
-/** Maps InsightCard.priority → display chip label */
-const PRIORITY_DISPLAY: Record<string, string> = {
-  Alta: 'ALTO',
-  Média: 'MÉDIO',
-  Baixa: 'BAIXO',
-};
-
 /** Nocturne-token inline styles for the simulator result panel per ScoreTone */
 const SIM_TONE_STYLE: Record<ScoreTone, React.CSSProperties> = {
   warning: {background: 'var(--badge-warn-bg)', border: '1px solid var(--warn)'},
@@ -79,21 +66,6 @@ const SIM_TONE_STYLE: Record<ScoreTone, React.CSSProperties> = {
 
 const INSIGHT_TABS = ['Todos', 'Oportunidades', 'Alertas', 'Estratégias'] as const;
 type InsightTab = typeof INSIGHT_TABS[number];
-
-// ─── Local types ─────────────────────────────────────────────────────────────
-
-interface InsightCard {
-  priority: 'Alta' | 'Média' | 'Baixa';
-  category: string;
-  title: string;
-  body: string;
-  note?: string;
-  confidence?: number;
-  sources?: string;
-  when?: string;
-  /** Symbol badge (shown as its own element) */
-  symbol?: string;
-}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -383,7 +355,7 @@ const AIInsights: React.FC = () => {
   const highCount = sortedAlerts.filter((a) => a.severity === 'high').length;
   const mediumCount = sortedAlerts.filter((a) => a.severity === 'medium').length;
 
-  const alertInsights: InsightCard[] = sortedAlerts.map((a) => ({
+  const alertInsights: InsightCardData[] = sortedAlerts.map((a) => ({
     priority:
       a.severity === 'high' ? 'Alta' : a.severity === 'medium' ? 'Média' : 'Baixa',
     category: ERROR_RADAR_TYPE_LABEL[a.type],
@@ -393,14 +365,14 @@ const AIInsights: React.FC = () => {
     symbol: a.symbol,
   }));
 
-  const oppInsights: InsightCard[] = (aiData?.opportunity_radar ?? []).map((o) => ({
+  const oppInsights: InsightCardData[] = (aiData?.opportunity_radar ?? []).map((o) => ({
     priority: 'Média' as const,
     category: 'Oportunidade',
     title: o.symbol,
     body: o.rationale,
   }));
 
-  const stratInsights: InsightCard[] = (aiData?.rebalancing?.top_moves ?? []).map(
+  const stratInsights: InsightCardData[] = (aiData?.rebalancing?.top_moves ?? []).map(
     (m) => ({
       priority: 'Baixa' as const,
       category: 'Estratégia',
@@ -618,132 +590,7 @@ const AIInsights: React.FC = () => {
 
           {/* Insight cards */}
           {visibleInsights.map((insight, i) => (
-            <div
-              key={i}
-              style={{
-                border: '1px solid var(--hair)',
-                borderRadius: 8,
-                background: 'var(--nk-card)',
-                padding: '14px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}>
-              {/* Header row: priority badge + symbol + category */}
-              <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    padding: '2px 7px',
-                    borderRadius: 10,
-                    background: PRIORITY_COLOR[insight.priority] + '22',
-                    color: PRIORITY_COLOR[insight.priority],
-                  }}>
-                  {PRIORITY_DISPLAY[insight.priority]}
-                </span>
-                {insight.symbol && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                      background: 'var(--surf-3)',
-                      color: 'var(--color-neutral-400)',
-                    }}>
-                    {insight.symbol}
-                  </span>
-                )}
-                <span
-                  style={{
-                    fontSize: 10.5,
-                    color: 'var(--color-neutral-600)',
-                    marginLeft: 'auto',
-                  }}>
-                  {insight.category}
-                </span>
-              </div>
-              {/* Title */}
-              <div
-                style={{
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: 14.5,
-                  fontWeight: 600,
-                  lineHeight: 1.35,
-                }}>
-                {insight.title}
-              </div>
-              {/* Body */}
-              <div
-                style={{
-                  fontSize: 12.5,
-                  color: 'var(--color-neutral-400)',
-                  lineHeight: 1.6,
-                }}>
-                {insight.body}
-              </div>
-              {/* Depth note */}
-              {insight.note && (
-                <div
-                  style={{
-                    borderLeft: '2px solid var(--color-accent-700)',
-                    paddingLeft: 10,
-                    fontSize: 11.5,
-                    color: 'var(--color-neutral-500)',
-                    lineHeight: 1.5,
-                  }}>
-                  {insight.note}
-                </div>
-              )}
-              {/* Footer */}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 12,
-                  fontSize: 10.5,
-                  color: 'var(--color-neutral-600)',
-                  borderTop: '1px solid var(--hair-soft)',
-                  paddingTop: 8,
-                }}>
-                {insight.confidence !== undefined && (
-                  <span>Confiança: {insight.confidence}%</span>
-                )}
-                {insight.sources && <span>Fontes: {insight.sources}</span>}
-                {insight.when && <span>{insight.when}</span>}
-              </div>
-              {/* Action buttons */}
-              <div style={{display: 'flex', gap: 8}}>
-                <button
-                  type="button"
-                  style={{
-                    flex: 1,
-                    height: 32,
-                    borderRadius: 6,
-                    border: '1px solid var(--hair)',
-                    background: 'transparent',
-                    fontSize: 11.5,
-                    color: 'var(--color-neutral-400)',
-                    cursor: 'pointer',
-                  }}>
-                  Trilha de auditoria
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    flex: 1,
-                    height: 32,
-                    borderRadius: 6,
-                    border: '1px solid var(--color-accent-700)',
-                    background: 'transparent',
-                    fontSize: 11.5,
-                    color: 'var(--color-accent-300)',
-                    cursor: 'pointer',
-                  }}>
-                  Ver análise completa
-                </button>
-              </div>
-            </div>
+            <InsightCard key={i} insight={insight} />
           ))}
 
           {/* AiGeneratedNotice when opportunity insights are visible */}
