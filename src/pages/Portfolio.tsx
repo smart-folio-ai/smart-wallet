@@ -28,8 +28,18 @@ import {
 } from '@/services/ai/trakkerAi';
 
 // Nocturne shared components
-import {SectionHeader, DataTable, TD_STYLE, TD_RIGHT} from '@/components/shared';
+import {
+  SectionHeader,
+  DataTable,
+  TD_STYLE,
+  TD_RIGHT,
+  MarketDataStaleBanner,
+} from '@/components/shared';
 import {useAdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
+import {
+  deriveMarketDataStatus,
+  hasFreshQuote,
+} from '@/pages/dashboard-summary.utils';
 
 // ── Exposure + Risk helpers ────────────────────────────────────────────────
 const DEFAULT_TARGETS: Record<string, number> = {
@@ -214,10 +224,12 @@ const COLUMN_VALUE_GETTERS: Record<string, (asset: Asset) => string | number> = 
   account: (a) => a.account ?? '—',
   qty: (a) => a.amount,
   avgPrice: (a) => a.avgPrice ?? a.price,
-  price: (a) => a.currentPrice ?? a.price,
+  // Sem cotação viva do feed, exportar 0 ou o próprio avgPrice esconde o
+  // problema — melhor deixar em branco para o usuário perceber (TRA-92).
+  price: (a) => (hasFreshQuote(a) ? (a.currentPrice as number) : ''),
   value: (a) => a.value,
-  pnl: (a) => a.profitLoss ?? 0,
-  dy: (a) => a.dividendYield ?? 0,
+  pnl: (a) => (a.profitLoss == null ? '' : a.profitLoss),
+  dy: (a) => a.dividendYield ?? '',
   weight: (a) => a.allocation ?? 0,
   beta: (a) => a.beta ?? 0,
   signal: (a) => a.signal ?? '—',
@@ -272,7 +284,11 @@ const Portfolio = () => {
     },
   });
 
-  const {data: apiAssets = [], isLoading: loading} = useQuery({
+  const {
+    data: apiAssets = [],
+    isLoading: loading,
+    dataUpdatedAt: assetsUpdatedAt,
+  } = useQuery({
     queryKey: ['portfolioAssets'],
     queryFn: async () => {
       const data = await portfolioService.getAssets();
@@ -315,45 +331,54 @@ const Portfolio = () => {
     0,
   );
 
-  const assets: Asset[] = displayApiAssets.map((a: any) => ({
-    _id: a.id || a._id,
-    symbol: a.symbol,
-    name: a.name || a.symbol,
-    price: a.price,
-    currentPrice: a.currentPrice ?? undefined,
-    change24h: a.change24h ?? 0,
-    amount: a.quantity,
-    value: a.total,
-    allocation:
-      totalApiValue > 0 ? Number(((a.total / totalApiValue) * 100).toFixed(2)) : 0,
-    type: a.type,
-    sector: a.sector ?? undefined,
-    avgPrice: a.avgPrice ?? a.price,
-    purchasePrice: a.avgPrice ?? a.price,
-    profitLoss:
-      typeof (a.currentPrice ?? a.price) === 'number'
-        ? ((a.currentPrice ?? a.price) - (a.avgPrice ?? a.price)) * (a.quantity ?? 0)
-        : 0,
-    profitLossPercentage:
-      (a.avgPrice ?? a.price) > 0
-        ? (((a.currentPrice ?? a.price) - (a.avgPrice ?? a.price)) / (a.avgPrice ?? a.price)) * 100
-        : 0,
-    dividendYield: a.indicators?.dividendYield ?? 0,
-    lastDividend: 0,
-    dividendHistory: a.dividendHistory ?? undefined,
-    beta: a.indicators?.beta ?? undefined,
-    signal: (() => {
-      const pnlPct =
-        (a.avgPrice ?? a.price) > 0
-          ? (((a.currentPrice ?? a.price) - (a.avgPrice ?? a.price)) / (a.avgPrice ?? a.price)) * 100
-          : 0;
-      const dy = a.indicators?.dividendYield ?? 0;
-      if (pnlPct > 5 || dy > 5) return 'COMPRA';
-      if (pnlPct < -5) return 'VENDA';
-      return 'NEUTRO';
-    })(),
-    account: a.portfolio?.name ?? undefined,
-  }));
+  // Sem cotação viva, P&L e sinal viram chute (voltavam "R$ 0,00" ou "NEUTRO"
+  // como se fosse informação real — TRA-92). Preferimos deixar como
+  // desconhecido e sinalizar via banner.
+  const assets: Asset[] = displayApiAssets.map((a: any) => {
+    const fresh = hasFreshQuote(a);
+    const avg = a.avgPrice ?? a.price;
+    const pnlPct =
+      fresh && avg > 0
+        ? ((a.currentPrice - avg) / avg) * 100
+        : null;
+    const pnlValue =
+      fresh ? (a.currentPrice - avg) * (a.quantity ?? 0) : null;
+    const dy = a.indicators?.dividendYield ?? 0;
+
+    return {
+      _id: a.id || a._id,
+      symbol: a.symbol,
+      name: a.name || a.symbol,
+      price: a.price,
+      currentPrice: a.currentPrice ?? undefined,
+      change24h: a.change24h ?? 0,
+      amount: a.quantity,
+      value: a.total,
+      allocation:
+        totalApiValue > 0
+          ? Number(((a.total / totalApiValue) * 100).toFixed(2))
+          : 0,
+      type: a.type,
+      sector: a.sector ?? undefined,
+      avgPrice: avg,
+      purchasePrice: avg,
+      profitLoss: pnlValue as number | undefined,
+      profitLossPercentage: pnlPct as number | undefined,
+      dividendYield: fresh ? dy : undefined,
+      lastDividend: 0,
+      dividendHistory: a.dividendHistory ?? undefined,
+      beta: a.indicators?.beta ?? undefined,
+      // Sem cotação viva não dá para decidir COMPRA/VENDA — o "NEUTRO"
+      // padrão iludia o usuário.
+      signal: (() => {
+        if (pnlPct === null) return undefined;
+        if (pnlPct > 5 || dy > 5) return 'COMPRA';
+        if (pnlPct < -5) return 'VENDA';
+        return 'NEUTRO';
+      })(),
+      account: a.portfolio?.name ?? undefined,
+    };
+  });
 
   const availableSectors = useMemo(
     () =>
@@ -399,6 +424,11 @@ const Portfolio = () => {
     });
 
   const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+
+  const marketStatus = useMemo(
+    () => deriveMarketDataStatus(displayApiAssets),
+    [displayApiAssets],
+  );
 
   const requestSort = (key: keyof Asset) => {
     const direction =
@@ -646,6 +676,15 @@ const Portfolio = () => {
   // ── Render ────────────────────────────────────────────────────────────
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
+
+      {marketStatus.isStale && (
+        <MarketDataStaleBanner
+          updatedAt={assetsUpdatedAt || null}
+          staleCount={marketStatus.staleCount}
+          totalCount={marketStatus.totalCount}
+          staleSymbols={marketStatus.staleSymbols}
+        />
+      )}
 
       {/* Toolbar: agregação + filtros + meta line + ações da carteira */}
       <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 11.2}}>
@@ -983,14 +1022,16 @@ const Portfolio = () => {
                   <td style={{...TD_RIGHT, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(asset.avgPrice ?? asset.price)}</td>
                 )}
                 {(visibleCols['price'] ?? true) && (
-                  <td style={{...TD_RIGHT, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(asset.currentPrice ?? asset.price)}</td>
+                  <td style={{...TD_RIGHT, fontVariantNumeric: 'tabular-nums', color: asset.currentPrice == null ? 'var(--color-neutral-500)' : undefined}}>
+                    {asset.currentPrice != null ? formatCurrency(asset.currentPrice) : '—'}
+                  </td>
                 )}
                 {(visibleCols['value'] ?? true) && (
                   <td style={{...TD_RIGHT, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(asset.value)}</td>
                 )}
                 {(visibleCols['pnl'] ?? true) && (
-                  <td style={{...TD_RIGHT, color: (asset.profitLoss ?? 0) >= 0 ? 'var(--pos)' : 'var(--neg)', fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>
-                    {formatCurrency(asset.profitLoss ?? 0)}
+                  <td style={{...TD_RIGHT, color: asset.profitLoss == null ? 'var(--color-neutral-500)' : asset.profitLoss >= 0 ? 'var(--pos)' : 'var(--neg)', fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>
+                    {asset.profitLoss != null ? formatCurrency(asset.profitLoss) : '—'}
                   </td>
                 )}
                 {(visibleCols['dy'] ?? true) && (
