@@ -13,9 +13,7 @@ import {
   Search,
   Settings,
   Sun,
-  X,
 } from '@/components/ui/icons';
-import {Button} from '@/components/ui/button';
 import {useThemeToggle} from '@/components/ThemeToggle';
 import {sections} from './nav-data';
 
@@ -69,18 +67,9 @@ export function CommandPalette({open, onOpenChange}: CommandPaletteProps) {
               placeholder="Buscar tela, ativo ou ação…"
               className="h-8 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
             />
-            <span className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">
+            <span className="mr-8 rounded border border-border/60 px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">
               esc
             </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => onOpenChange(false)}
-              aria-label="Fechar busca"
-              className="h-7 w-7 border-border/60 text-muted-foreground hover:border-brand/60 hover:text-foreground">
-              <X className="h-3.5 w-3.5" />
-            </Button>
           </div>
 
           <CommandList className="max-h-[52vh] px-2 py-2">
