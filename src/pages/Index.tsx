@@ -33,6 +33,7 @@ import {
   getAveragePrice,
   computePnl,
   computeReturnSinceAvgPrice,
+  deriveMarketDataStatus,
 } from '@/pages/dashboard-summary.utils';
 import {accumulateCdi} from '@/pages/cdi-performance.utils';
 import {
@@ -48,6 +49,7 @@ import {
   AiInsightBanner,
   PeriodSelector,
   DataTable,
+  MarketDataStaleBanner,
 } from '@/components/shared';
 
 interface Asset {
@@ -304,7 +306,11 @@ const Dashboard = () => {
     }
   }, [portfolios, selectedPortfolioId]);
 
-  const {data: portfolioPayload, isLoading: loading} = useQuery({
+  const {
+    data: portfolioPayload,
+    isLoading: loading,
+    dataUpdatedAt: portfolioUpdatedAt,
+  } = useQuery({
     queryKey: ['dashboardPortfolio', selectedPortfolioId],
     enabled: Boolean(selectedPortfolioId),
     queryFn: async () => {
@@ -382,6 +388,11 @@ const Dashboard = () => {
     return portfolioPayload.assets ?? [];
   }, [portfolioPayload]);
 
+  const marketStatus = useMemo(
+    () => deriveMarketDataStatus(apiAssets),
+    [apiAssets],
+  );
+
   const summary = useMemo<PortfolioSummary>(() => {
     const totalValue = apiAssets.reduce(
       (sum: number, asset: any) => sum + (asset.total || 0),
@@ -394,10 +405,14 @@ const Dashboard = () => {
       0,
     );
 
-    const {pnl: profitLoss, pnlPercentage: profitLossPercentage} = computePnl(
-      totalValue,
-      totalCost,
-    );
+    // Se qualquer posição em carteira está sem cotação viva, agregamos P&L
+    // que mistura preço fresco com preço parado — o número parece real e não
+    // é. Retornar null aqui faz o KpiCard mostrar "—" (o banner do topo
+    // conta o porquê ao usuário). TRA-92.
+    const {pnl: profitLoss, pnlPercentage: profitLossPercentage} =
+      marketStatus.isStale
+        ? {pnl: null, pnlPercentage: null}
+        : computePnl(totalValue, totalCost);
 
     const calculateAllocation = (type: string) => {
       if (totalValue === 0) return 0;
@@ -462,7 +477,7 @@ const Dashboard = () => {
           new Date(a.date).getTime() - new Date(b.date).getTime(),
       ),
     };
-  }, [apiAssets, portfolioHistory, selectedPortfolioId]);
+  }, [apiAssets, portfolioHistory, selectedPortfolioId, marketStatus.isStale]);
 
   const assets = useMemo<Asset[]>(() => {
     const totalValue = summary.totalValue;
@@ -575,9 +590,14 @@ const Dashboard = () => {
   }, [summary.dividendEntries]);
 
   const estimatedDividendYieldPct =
-    summary.totalValue > 0
-      ? (totalDividendsYear / summary.totalValue) * 100
-      : null;
+    // Sem cotação viva o preço do ativo (e portanto o valor total da carteira)
+    // não é confiável — dividir o dividendo por um denominador parado dava
+    // um DY inflado ou zerado sem qualquer aviso (TRA-92).
+    marketStatus.isStale
+      ? null
+      : summary.totalValue > 0
+        ? (totalDividendsYear / summary.totalValue) * 100
+        : null;
 
   const topPositions = useMemo(
     () => [...assets].sort((a, b) => b.value - a.value).slice(0, 5),
@@ -1312,6 +1332,15 @@ const Dashboard = () => {
           navigate('/ai-insights');
         }}
       />
+
+      {marketStatus.isStale && (
+        <MarketDataStaleBanner
+          updatedAt={portfolioUpdatedAt || null}
+          staleCount={marketStatus.staleCount}
+          totalCount={marketStatus.totalCount}
+          staleSymbols={marketStatus.staleSymbols}
+        />
+      )}
 
       {/* 1. Adaptive level banner */}
       <AiInsightBanner

@@ -8,3 +8,5 @@ export {PeriodSelector} from './PeriodSelector';
 export type {PeriodSelectorProps, PeriodOption} from './PeriodSelector';
 export {DataTable, TD_STYLE, TD_RIGHT} from './DataTable';
 export type {DataTableProps, DataTableColumn} from './DataTable';
+export {MarketDataStaleBanner} from './MarketDataStaleBanner';
+export type {MarketDataStaleBannerProps} from './MarketDataStaleBanner';

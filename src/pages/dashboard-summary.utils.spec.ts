@@ -3,6 +3,8 @@ import {
   getAveragePrice,
   computePnl,
   computeReturnSinceAvgPrice,
+  hasFreshQuote,
+  deriveMarketDataStatus,
 } from './dashboard-summary.utils';
 
 describe('getAveragePrice', () => {
@@ -70,5 +72,68 @@ describe('computeReturnSinceAvgPrice', () => {
     );
     expect(computeReturnSinceAvgPrice(null, 100)).toBe(0);
     expect(computeReturnSinceAvgPrice(undefined, 100)).toBe(0);
+  });
+});
+
+describe('hasFreshQuote', () => {
+  it('accepts a positive live price', () => {
+    expect(hasFreshQuote({currentPrice: 12.5})).toBe(true);
+  });
+
+  it('rejects missing, zero or non-finite prices — those are stale feed signals, not real data', () => {
+    expect(hasFreshQuote({currentPrice: 0})).toBe(false);
+    expect(hasFreshQuote({currentPrice: null})).toBe(false);
+    expect(hasFreshQuote({currentPrice: undefined})).toBe(false);
+    expect(hasFreshQuote({currentPrice: Number.NaN})).toBe(false);
+    expect(hasFreshQuote({})).toBe(false);
+    expect(hasFreshQuote(null)).toBe(false);
+    expect(hasFreshQuote(undefined)).toBe(false);
+  });
+});
+
+describe('deriveMarketDataStatus', () => {
+  it('flags nothing when every held position has a fresh quote', () => {
+    expect(
+      deriveMarketDataStatus([
+        {symbol: 'PETR4', currentPrice: 38.2, quantity: 100},
+        {symbol: 'ITUB4', currentPrice: 28.5, quantity: 50},
+      ]),
+    ).toEqual({
+      isStale: false,
+      staleCount: 0,
+      totalCount: 2,
+      staleSymbols: [],
+    });
+  });
+
+  it('marks the feed stale as soon as one held position misses its quote', () => {
+    const status = deriveMarketDataStatus([
+      {symbol: 'PETR4', currentPrice: 38.2, quantity: 100},
+      {symbol: 'ITUB4', currentPrice: null, quantity: 50},
+    ]);
+    expect(status.isStale).toBe(true);
+    expect(status.staleSymbols).toEqual(['ITUB4']);
+    expect(status.staleCount).toBe(1);
+    expect(status.totalCount).toBe(2);
+  });
+
+  it('ignores zero-quantity positions so old exits never trip the banner', () => {
+    expect(
+      deriveMarketDataStatus([
+        {symbol: 'PETR4', currentPrice: 38.2, quantity: 100},
+        {symbol: 'MGLU3', currentPrice: null, quantity: 0},
+      ]).isStale,
+    ).toBe(false);
+  });
+
+  it('is safe on empty or missing input', () => {
+    expect(deriveMarketDataStatus([])).toEqual({
+      isStale: false,
+      staleCount: 0,
+      totalCount: 0,
+      staleSymbols: [],
+    });
+    expect(deriveMarketDataStatus(null).isStale).toBe(false);
+    expect(deriveMarketDataStatus(undefined).isStale).toBe(false);
   });
 });
