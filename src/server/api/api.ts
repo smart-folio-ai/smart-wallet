@@ -10,7 +10,10 @@ import {
   ManualGrantPayload,
   UpdateUserRolePayload,
 } from '@/interface/admin';
-import {ListNotificationsQuery} from '@/interface/notification';
+import {
+  IPushSubscriptionPayload,
+  ListNotificationsQuery,
+} from '@/interface/notification';
 
 import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
 import axios, {AxiosPromise} from 'axios';
@@ -191,6 +194,16 @@ export const notificationService = {
   getUnreadCount: () => apiClient.get('/notifications/unread-count'),
   markAsRead: (id: string) => apiClient.patch(`/notifications/${id}/read`),
   markAllAsRead: () => apiClient.patch('/notifications/read-all'),
+};
+
+// TRA-136 (fase 6) — Web Push.
+export const pushNotificationService = {
+  getVapidPublicKey: () =>
+    apiClient.get('/notifications/push/vapid-public-key'),
+  registerSubscription: (payload: IPushSubscriptionPayload) =>
+    apiClient.post('/notifications/push/subscriptions', payload),
+  removeSubscription: (endpoint: string) =>
+    apiClient.delete('/notifications/push/subscriptions', {data: {endpoint}}),
 };
 
 export const twoFactorService = {

@@ -46,3 +46,37 @@ export interface NotificationServiceInterface {
   markAsRead(id: string): Promise<INotification>;
   markAllAsRead(): Promise<IMarkAllReadResponse>;
 }
+
+// TRA-136 (fase 6): contrato de Web Push.
+// Espelha exatamente os endpoints /notifications/push/* do backend.
+
+export interface IVapidPublicKeyResponse {
+  /** Chave pública VAPID em base64url. */
+  publicKey: string;
+}
+
+/** Shape do `PushSubscription.toJSON()` do navegador — enviado como está. */
+export interface IPushSubscriptionPayload {
+  endpoint: string;
+  expirationTime: number | null;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
+
+export interface IRegisterPushSubscriptionResponse {
+  registered: boolean;
+}
+
+/** Estado local da assinatura, lido do navegador (não do backend). */
+export interface IPushSubscriptionState {
+  permission: NotificationPermission;
+  subscribed: boolean;
+}
+
+export interface PushNotificationServiceInterface {
+  getSubscriptionState(): Promise<IPushSubscriptionState>;
+  subscribe(): Promise<IPushSubscriptionState>;
+  unsubscribe(): Promise<IPushSubscriptionState>;
+}
