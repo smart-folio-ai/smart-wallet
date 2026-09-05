@@ -30,6 +30,16 @@ vi.mock('@/services/portfolio', () => ({
   default: {getPortfolios: vi.fn().mockResolvedValue([])},
 }));
 
+// TRA-136: o sino agora consulta a API; sem rede nos testes da topbar.
+vi.mock('@/services/notifications', () => ({
+  default: {
+    list: vi.fn().mockResolvedValue({items: [], nextCursor: null, unreadCount: 0}),
+    getUnreadCount: vi.fn().mockResolvedValue({unreadCount: 0}),
+    markAsRead: vi.fn(),
+    markAllAsRead: vi.fn(),
+  },
+}));
+
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
