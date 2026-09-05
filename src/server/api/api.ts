@@ -10,6 +10,7 @@ import {
   ManualGrantPayload,
   UpdateUserRolePayload,
 } from '@/interface/admin';
+import {ListNotificationsQuery} from '@/interface/notification';
 
 import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
 import axios, {AxiosPromise} from 'axios';
@@ -181,6 +182,15 @@ export const adminService = {
   getWebhookStatus: () => apiClient.get('/admin/webhook/status'),
   getWebhookEvents: (limit?: number) =>
     apiClient.get('/admin/webhook/events', {params: limit ? {limit} : undefined}),
+};
+
+// TRA-136: central de notificações in-app.
+export const notificationService = {
+  list: (params?: ListNotificationsQuery) =>
+    apiClient.get('/notifications', {params}),
+  getUnreadCount: () => apiClient.get('/notifications/unread-count'),
+  markAsRead: (id: string) => apiClient.patch(`/notifications/${id}/read`),
+  markAllAsRead: () => apiClient.patch('/notifications/read-all'),
 };
 
 export const twoFactorService = {

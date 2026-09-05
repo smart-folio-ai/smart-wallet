@@ -6,7 +6,6 @@ import {Button} from '@/components/ui/button';
 import {Separator} from '@/components/ui/separator';
 import {Skeleton} from '@/components/ui/skeleton';
 import {
-  Bell,
   ChevronDown,
   Download,
   LogOut,
@@ -34,6 +33,7 @@ import {useAdaptiveLevel, type AdaptiveLevel} from '@/contexts/AdaptiveLevelCont
 import {useCommandPalette} from '@/hooks/useCommandPalette';
 import {useThemeToggle} from '@/components/ThemeToggle';
 import {CommandPalette} from './CommandPalette';
+import {NotificationBell} from './NotificationBell';
 import {sections} from './nav-data';
 import portfolioService from '@/services/portfolio';
 import {CreatePortfolioDialog} from '@/components/portfolio/CreatePortfolioDialog';
@@ -173,15 +173,7 @@ export function AppTopbar() {
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="relative h-8 w-8 border-border/70 text-muted-foreground hover:text-foreground"
-            aria-label="Notificações">
-            <Bell className="h-4 w-4" />
-            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-brand" />
-          </Button>
+          <NotificationBell />
 
           <Separator orientation="vertical" className="hidden h-6 sm:block" />
 
