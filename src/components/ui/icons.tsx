@@ -107,6 +107,9 @@ export {
 // Additional aliases for missing icons
 export {Clock as CalendarClock, Question as HelpCircle} from '@phosphor-icons/react';
 
+// TRA-136 — estados "push bloqueado" e "instalar na tela de início".
+export {BellSlash as BellOff, DeviceMobile} from '@phosphor-icons/react';
+
 // Ícones próprios (não-alias) usados na fidelidade pixel-a-pixel do handoff
 // Auth — README pede ph-envelope-simple/ph-lock-simple/ph-buildings/ph-stack.
 export {
