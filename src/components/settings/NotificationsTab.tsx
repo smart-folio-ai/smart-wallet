@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Bell, Save } from '@/components/ui/icons';
 import { UserSettings } from '@/interface/users';
+import { PushNotificationToggle } from '@/components/settings/PushNotificationToggle';
 
 interface NotificationsTabProps {
   settings: UserSettings;
@@ -62,27 +63,9 @@ export function NotificationsTab({
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="push-notifications">Notificações Push</Label>
-              <p className="text-sm text-muted-foreground">
-                Receba notificações em tempo real no navegador
-              </p>
-            </div>
-            <Switch
-              id="push-notifications"
-              checked={settings.notifications.push}
-              onCheckedChange={(checked) =>
-                setSettings({
-                  ...settings,
-                  notifications: {
-                    ...settings.notifications,
-                    push: checked,
-                  },
-                })
-              }
-            />
-          </div>
+          {/* TRA-136: o push é assinatura real do navegador, aplicada na
+              hora — não entra no `settings` local nem espera "Salvar". */}
+          <PushNotificationToggle />
 
           <div className="flex items-center justify-between">
             <div>

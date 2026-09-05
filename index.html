@@ -7,6 +7,12 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- TRA-136: manifest exigido pela Web Push (no iOS, push só funciona com
+         o app adicionado à tela de início). Não é um PWA offline. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Trackerr" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trackerr | Carteira Inteligente com IA para Investimentos</title>
     <meta
