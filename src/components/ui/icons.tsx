@@ -37,6 +37,7 @@ export {
   Question as CircleHelp,
   Coins,
   Cookie,
+  Copy,
   CreditCard,
   Crown,
   Cpu,

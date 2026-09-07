@@ -1,6 +1,7 @@
 import React, {useRef, useState} from 'react';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {PrivacySettings} from '@/components/settings/PrivacySettings';
+import RecoveryCodesSection from '@/components/security/RecoveryCodesSection';
 import {z} from 'zod';
 import Profile from '@/services/profile';
 import Address from '@/services/address';
@@ -1726,6 +1727,10 @@ export default function Settings() {
                     </div>
                   </div>
                 )}
+
+                <RecoveryCodesSection
+                  twoFactorEnabled={settings.security.twoFactorEnabled}
+                />
 
                 {settings.security.twoFactorEnabled && (
                   <div
