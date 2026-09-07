@@ -100,10 +100,10 @@ export function AppSidebar() {
         <div className="rounded-lg border border-sidebar-border/60 bg-gradient-to-b from-brand/20 to-sidebar-accent/40 px-3 py-2.5">
           <p className="flex items-center gap-1.5 text-[11px] font-semibold text-brand">
             <ShieldCheck className="h-3.5 w-3.5" weight="fill" />
-            SOC 2 · LGPD
+            LGPD · 2FA
           </p>
           <p className="mt-1 text-[11px] leading-snug text-sidebar-foreground/60">
-            Uptime 99,98% · dados cifrados AES-256
+            Conexão via TLS · exporte ou apague seus dados quando quiser
           </p>
         </div>
       </SidebarFooter>

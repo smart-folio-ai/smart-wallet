@@ -61,9 +61,9 @@ describe('AppSidebar', () => {
     expect(screen.queryByText('Sair')).not.toBeInTheDocument();
   });
 
-  it('shows the SOC 2 · LGPD badge in the footer', () => {
+  it('shows the LGPD · 2FA badge in the footer', () => {
     renderSidebar();
-    expect(screen.getByText('SOC 2 · LGPD')).toBeInTheDocument();
+    expect(screen.getByText('LGPD · 2FA')).toBeInTheDocument();
   });
 
   it('keeps every previously available route reachable across the four sections', () => {

@@ -31,7 +31,7 @@ const sections: LegalSection[] = [
     id: 'seguranca',
     title: '4. Segurança',
     paragraphs: [
-      'Dados em repouso são cifrados com AES-256 e em trânsito com TLS. Buscamos manter certificação SOC 2 Type II, autenticação de dois fatores disponível para todas as contas e trilhas de auditoria para acesso a dados sensíveis.',
+      'O tráfego entre o seu navegador e os nossos servidores é cifrado com TLS. As senhas são armazenadas como hash Argon2id, nunca em texto puro, e a autenticação de dois fatores (TOTP) está disponível para todas as contas. As credenciais de acesso às corretoras são cifradas com AES-256 antes de serem persistidas. Ações administrativas sobre contas de usuários ficam registradas em trilha de auditoria.',
     ],
   },
   {

@@ -84,10 +84,10 @@ const proofPoints = [
 ];
 
 const trustStats = [
-  {value: '99,98%', label: 'uptime 12 meses'},
-  {value: 'AES-256', label: 'dados cifrados'},
-  {value: 'SOC 2', label: 'Type II'},
-  {value: 'LGPD', label: 'conformidade'},
+  {value: 'Argon2id', label: 'hash de senha'},
+  {value: '2FA', label: 'TOTP disponível'},
+  {value: 'TLS', label: 'tráfego cifrado'},
+  {value: 'LGPD', label: 'exporte ou apague'},
 ];
 
 const panelGradient = {
@@ -678,7 +678,7 @@ export default function Register() {
               className="h-3.5 w-3.5"
               style={{color: 'var(--pos)'}}
             />
-            <span>Conexão cifrada · 2FA disponível · SOC 2 Type II · LGPD</span>
+            <span>Conexão cifrada · 2FA disponível · Argon2id · LGPD</span>
           </div>
         </div>
       </div>
