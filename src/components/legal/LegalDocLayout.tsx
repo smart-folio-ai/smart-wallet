@@ -116,7 +116,7 @@ export function LegalDocLayout({
             © {new Date().getFullYear()} Trackerr Tecnologia Ltda · CNPJ [CNPJ
             a confirmar]
           </span>
-          <span>SOC 2 Type II · LGPD · AES-256</span>
+          <span>LGPD · Senhas com Argon2id · TLS em trânsito</span>
         </div>
       </footer>
     </div>

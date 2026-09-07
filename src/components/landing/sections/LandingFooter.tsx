@@ -57,7 +57,7 @@ export function LandingFooter() {
         <p className="mt-3 text-xs leading-relaxed text-on-surface-muted/35">
           © 2026 Trackerr Tecnologia Ltda · CNPJ [CNPJ a confirmar]
           <br />
-          SOC 2 Type II · LGPD · AES-256 · Uptime 99,98%
+          LGPD · Senhas com Argon2id · 2FA disponível · TLS em trânsito
         </p>
       </div>
     </footer>

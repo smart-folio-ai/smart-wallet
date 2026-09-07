@@ -114,14 +114,14 @@ export const trustStats = [
   {value: 'B3 + NYSE', label: 'Cobertura de mercado'},
   {value: 'Tempo real', label: 'Atualização de cotações'},
   {value: 'LGPD', label: 'Tratamento de dados'},
-  {value: 'AES-256', label: 'Criptografia em repouso'},
+  {value: 'Argon2id', label: 'Proteção de senha'},
 ];
 
 export const faqItems = [
   {
     question: 'Meus dados ficam seguros?',
     answer:
-      'Sim. Os dados são criptografados em repouso com AES-256 e trafegam sempre por conexão cifrada. O tratamento segue a LGPD, e você pode exportar ou apagar tudo quando quiser, direto nas configurações da conta.',
+      'Seus dados trafegam sempre por conexão cifrada (TLS), sua senha é guardada com Argon2id — nunca em texto puro — e a autenticação em duas etapas está disponível para qualquer conta. As credenciais que você usa para conectar corretoras são cifradas com AES-256 antes de irem para o banco. O tratamento segue a LGPD, e você pode exportar ou apagar tudo quando quiser, direto nas configurações da conta.',
   },
   {
     question: 'Funciona com a minha corretora?',

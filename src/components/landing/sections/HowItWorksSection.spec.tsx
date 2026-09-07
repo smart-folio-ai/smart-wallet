@@ -17,6 +17,6 @@ describe('TrustSection', () => {
   it('mostra os sinais de credibilidade', () => {
     render(<TrustSection />);
     expect(screen.getByText('B3 + NYSE')).toBeInTheDocument();
-    expect(screen.getByText('AES-256')).toBeInTheDocument();
+    expect(screen.getByText('Argon2id')).toBeInTheDocument();
   });
 });

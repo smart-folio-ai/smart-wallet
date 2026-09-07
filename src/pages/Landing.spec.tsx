@@ -86,7 +86,7 @@ describe('Landing', () => {
     expect(screen.getAllByText(/PETR4/i).length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/gráfico em alta/i)).toBeInTheDocument();
     expect(screen.getAllByText(/carteira consolidada/i).length).toBeGreaterThan(0);
-    expect(screen.getByText('AES-256')).toBeInTheDocument();
+    expect(screen.getByText('Argon2id')).toBeInTheDocument();
   });
 
   it('fecha com planos, dúvidas e o aviso de que não há recomendação', () => {

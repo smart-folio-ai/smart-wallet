@@ -1213,9 +1213,9 @@ const SyncAccounts = () => {
                 🔒 Segurança em primeiro lugar
               </h3>
               <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: 0}}>
-                Usamos apenas permissões de leitura. Suas credenciais são
-                criptografadas com AES-256 e nunca são compartilhadas com
-                terceiros.
+                Usamos apenas permissões de leitura. Suas credenciais de
+                corretora são cifradas com AES-256 antes de serem armazenadas e
+                nunca são compartilhadas com terceiros.
               </p>
             </div>
           </div>
