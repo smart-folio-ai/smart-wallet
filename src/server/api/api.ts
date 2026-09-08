@@ -213,6 +213,17 @@ export const twoFactorService = {
     apiClient.delete('/auth/2fa/disable', {data: {code}}),
   authenticate: (tempToken: string, code: string) =>
     apiClient.post('/auth/2fa/authenticate', {tempToken, code}),
+  // Códigos de recuperação (smart-app#149).
+  // generate é a ÚNICA rota que devolve os códigos em texto puro.
+  generateRecoveryCodes: (code: string) =>
+    apiClient.post('/auth/2fa/recovery-codes/generate', {code}),
+  recoveryCodesStatus: () => apiClient.get('/auth/2fa/recovery-codes/status'),
+  // Rota não autenticada: o usuário só tem o tempToken, como no passo TOTP.
+  consumeRecoveryCode: (tempToken: string, recoveryCode: string) =>
+    apiClient.post('/auth/2fa/recovery-codes/consume', {
+      tempToken,
+      recoveryCode,
+    }),
 };
 
 export const brokerSyncService = {
