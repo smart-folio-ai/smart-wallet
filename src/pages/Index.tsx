@@ -21,6 +21,7 @@ import {formatCurrency} from '@/utils';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
 import {useSubscription} from '@/hooks/useSubscription';
 import {useAdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
+import ReturnsPanel from '@/components/portfolio/ReturnsPanel';
 import {
   buildAiCacheSignature,
   deriveDashboardHighlights,
@@ -1406,6 +1407,15 @@ const Dashboard = () => {
           e voltar `gridTemplateColumns` desta grade para repeat(4, ...).
         */}
       </div>
+
+      {/*
+        Rentabilidade por nível (TRA-147). Vem logo abaixo dos KPIs porque
+        responde a pergunta que o P&L a custo médio deles não responde: fui
+        bem, ou só coloquei mais dinheiro? O painel adapta a apresentação ao
+        nível — o iniciante vê a decomposição em reais, o intermediário ganha
+        TWR, o avançado ganha IRR ao lado.
+      */}
+      <ReturnsPanel />
 
       {/* 3. Quant bar (intermediário/avançado only) */}
       {level !== 'iniciante' && (

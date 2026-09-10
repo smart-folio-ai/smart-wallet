@@ -107,6 +107,12 @@ export const portfolioService = {
     apiClient.get(`/portfolio/assets/${assetId}`),
   getTransactions: (params?: Record<string, unknown>) =>
     apiClient.get('/portfolio/transactions', {params}),
+  /**
+   * Retornos da carteira: decomposição aporte/rendimento, TWR e IRR (TRA-147).
+   * O servidor devolve `unavailable[]` nomeando o que não pôde ser calculado.
+   */
+  getReturns: (params?: {from?: string; to?: string}) =>
+    apiClient.get('/portfolio/returns', {params}),
 };
 
 // export const connectionsService = {
