@@ -1,4 +1,8 @@
-import {Sparkles} from 'lucide-react';
+// Ícone vem do barrel, não de `lucide-react`: o projeto migrou para
+// @phosphor-icons/react e `src/components/ui/icons.tsx` é a camada de
+// compatibilidade que preserva os nomes antigos. Importar o pacote direto
+// reintroduz uma dependência que foi removida de propósito.
+import {Sparkles} from '@/components/ui/icons';
 import useAppToast from '@/hooks/use-app-toast';
 
 /**
@@ -100,7 +104,7 @@ export default function DarfComingSoonCard({
               background: 'rgba(139,92,246,0.16)',
               border: '1px solid rgba(139,92,246,0.28)',
             }}>
-            <Sparkles size={19} strokeWidth={1.8} />
+            <Sparkles className="h-[19px] w-[19px]" />
           </div>
 
           <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
