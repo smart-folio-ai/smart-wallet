@@ -34,6 +34,12 @@ export const INVESTOR_PROFILE_QUERY_KEY = ['investor-profile'] as const;
 interface AdaptiveLevelContextValue {
   level: AdaptiveLevel;
   setLevel: (level: AdaptiveLevel) => void;
+  /**
+   * Limpa a escolha manual e devolve o nível ao valor inferido pelo servidor.
+   * Sem isso o override é uma porta de mão única: o usuário testa "avançado"
+   * uma vez e nunca mais volta a acompanhar a própria evolução.
+   */
+  clearOverride: () => void;
   /** Confiança da inferência (0.1 a 1). `null` enquanto o perfil não chegou. */
   confidence: number | null;
   /** `user_override` quando o usuário escolheu manualmente. */
@@ -78,9 +84,14 @@ export function AdaptiveLevelProvider({children}: {children: ReactNode}) {
     retry: false,
   });
 
+  // `null` explícito limpa o override no servidor e devolve o valor inferido;
+  // um nível grava a escolha manual. O contrato de PUT /ai/investor-profile já
+  // distingue os dois casos.
   const {mutate: persistLevel} = useMutation({
-    mutationFn: (level: AdaptiveLevel) =>
-      setInvestorProfileOverride({sophistication: toSophistication(level)}),
+    mutationFn: (level: AdaptiveLevel | null) =>
+      setInvestorProfileOverride({
+        sophistication: level === null ? null : toSophistication(level),
+      }),
     onSuccess: (updated) => {
       queryClient.setQueryData(INVESTOR_PROFILE_QUERY_KEY, updated);
       writeCachedLevel(toAdaptiveLevel(updated.sophistication));
@@ -112,6 +123,12 @@ export function AdaptiveLevelProvider({children}: {children: ReactNode}) {
         );
         writeCachedLevel(next);
         persistLevel(next);
+      },
+      clearOverride: () => {
+        // Sem otimismo aqui: o nível inferido só o servidor conhece, e chutar
+        // um valor faria a interface piscar em um nível que pode não ser o que
+        // volta. Melhor esperar a resposta.
+        persistLevel(null);
       },
       confidence: profile?.confidence ?? null,
       source: profile?.source ?? null,

@@ -43,13 +43,15 @@ function wrapper({children}: {children: ReactNode}) {
 }
 
 function TestConsumer() {
-  const {level, setLevel, confidence, source} = useAdaptiveLevel();
+  const {level, setLevel, clearOverride, confidence, source} =
+    useAdaptiveLevel();
   return (
     <div>
       <span>nível: {level}</span>
       <span>confiança: {confidence ?? 'nenhuma'}</span>
       <span>origem: {source ?? 'nenhuma'}</span>
       <button onClick={() => setLevel('iniciante')}>ir pra iniciante</button>
+      <button onClick={clearOverride}>voltar ao automático</button>
     </div>
   );
 }
@@ -115,6 +117,30 @@ describe('AdaptiveLevelContext', () => {
     render(<TestConsumer />, {wrapper});
     await waitFor(() => expect(getProfileMock).toHaveBeenCalled());
     expect(screen.getByText('nível: intermediario')).toBeInTheDocument();
+  });
+
+  // Sem isto o override é porta de mão única: quem testa "avançado" uma vez
+  // nunca mais volta a acompanhar a própria evolução.
+  it('volta ao nível inferido quando o override é limpo', async () => {
+    const user = userEvent.setup();
+    getProfileMock.mockResolvedValue(
+      profile({sophistication: 'beginner', source: 'user_override'}),
+    );
+    setOverrideMock.mockResolvedValue(
+      profile({sophistication: 'experienced', source: 'inferred'}),
+    );
+
+    render(<TestConsumer />, {wrapper});
+    expect(await screen.findByText('nível: iniciante')).toBeInTheDocument();
+
+    await user.click(screen.getByText('voltar ao automático'));
+
+    // `null` explícito é o que limpa o override no contrato do servidor.
+    await waitFor(() =>
+      expect(setOverrideMock).toHaveBeenCalledWith({sophistication: null}),
+    );
+    expect(await screen.findByText('nível: avancado')).toBeInTheDocument();
+    expect(screen.getByText('origem: inferred')).toBeInTheDocument();
   });
 
   it('lança erro quando usado fora do provider', () => {

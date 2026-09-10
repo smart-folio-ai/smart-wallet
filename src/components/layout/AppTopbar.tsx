@@ -92,7 +92,7 @@ export function AppTopbar() {
   const meta = getPageMeta(pathname);
   const {displayPlanName, isSubscribed, isLoading} = useSubscription();
   const {data: profile} = useCurrentUserProfile();
-  const {level, setLevel} = useAdaptiveLevel();
+  const {level, setLevel, clearOverride, source} = useAdaptiveLevel();
   const {open: paletteOpen, setOpen: setPaletteOpen} = useCommandPalette();
   const {theme, toggleTheme} = useThemeToggle();
   const [walletOpen, setWalletOpen] = useState(false);
@@ -115,6 +115,10 @@ export function AppTopbar() {
     : 'Plano Free';
   const showExport = EXPORT_ROUTES.has(pathname);
   const themeLabel = theme === 'dark' ? 'Alternar para claro' : 'Alternar para escuro';
+
+  // `inferred` = o servidor está decidindo o nível. Enquanto o perfil não
+  // chega, `source` é null e nada fica marcado como automático.
+  const isAutoLevel = source === 'inferred';
 
   const walletLabel = useMemo(() => {
     if (!portfolioCount) return 'Nenhuma carteira';
@@ -238,16 +242,40 @@ export function AppTopbar() {
             role="radiogroup"
             aria-label="Nível de detalhe"
             className="inline-flex gap-0.5 rounded-lg border border-border/70 bg-background/80 p-0.5">
+            {/*
+              "Auto" devolve o nível ao valor que o servidor infere do
+              comportamento da carteira (TRA-142). Sem esta opção o override é
+              porta de mão única: quem testa "Avançado" uma vez nunca mais volta
+              a acompanhar a própria evolução.
+            */}
+            <button
+              type="button"
+              role="radio"
+              aria-checked={isAutoLevel}
+              title={
+                isAutoLevel
+                  ? `Nível definido automaticamente pelo seu perfil (${level})`
+                  : 'Voltar ao nível definido automaticamente pelo seu perfil'
+              }
+              onClick={clearOverride}
+              className={cn(
+                'rounded px-2.5 py-1 text-[11px] font-medium transition-all',
+                isAutoLevel
+                  ? 'bg-muted text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}>
+              Auto
+            </button>
             {LEVEL_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
                 type="button"
                 role="radio"
-                aria-checked={opt.id === level}
+                aria-checked={!isAutoLevel && opt.id === level}
                 onClick={() => setLevel(opt.id)}
                 className={cn(
                   'rounded px-2.5 py-1 text-[11px] font-medium transition-all',
-                  opt.id === level
+                  !isAutoLevel && opt.id === level
                     ? 'bg-muted text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
                 )}>
