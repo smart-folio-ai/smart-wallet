@@ -72,15 +72,24 @@ describe('Dashboard KPI strip', () => {
     expect(screen.getByText('Dividendos recebidos')).toBeInTheDocument();
   });
 
-  // TRA-145: o card "Beta da carteira" exibia value="—" fixo, porque β exige
-  // marcação a mercado diária que ainda não existe (TRA-143). Um KPI de topo
-  // permanentemente vazio contamina a leitura dos vizinhos, então saiu da tela.
-  // Este teste falha se ele voltar antes da série diária estar disponível.
-  it('does not render metrics that are permanently unavailable', async () => {
+  // TRA-145 removeu o KPI de topo "Beta da carteira" e as duas entradas da
+  // barra quantitativa, todos com '—' fixo.
+  //
+  // TRA-141 trouxe beta e tracking error DE VOLTA — mas no ReturnsPanel, só
+  // no nível avançado e só quando há valor real. Este teste guarda a intenção
+  // original, que nunca foi "beta não pode existir": nenhuma métrica pode
+  // ocupar espaço permanentemente vazia, porque isso contamina a leitura das
+  // vizinhas.
+  //
+  // Por isso a asserção mudou de alvo: o KPI de topo e a barra quantitativa
+  // seguem sem essas métricas; quem as exibe agora é um componente que só
+  // renderiza com número calculado.
+  it('does not render permanently empty metrics in the KPI strip or quant bar', async () => {
     renderDashboard();
     await screen.findByText('Patrimônio total');
+    // O card de topo não voltou: β agora vive no painel de rentabilidade.
     expect(screen.queryByText('Beta da carteira')).not.toBeInTheDocument();
-    expect(screen.queryByText('Beta vs IBOV')).not.toBeInTheDocument();
+    // Nenhuma métrica exibida com traço mudo.
     expect(screen.queryByText('Tracking error')).not.toBeInTheDocument();
   });
 });
