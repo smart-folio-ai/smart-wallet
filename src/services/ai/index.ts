@@ -225,7 +225,10 @@ export interface AiAnalysisPayload {
     total_value: number;
     plan: string;
   };
-  risk_profile: 'conservative' | 'moderate' | 'aggressive';
+  // `risk_profile` e `sophistication` saíram daqui em TRA-142: o servidor os
+  // injeta a partir do perfil que ele mesmo calcula, e descarta o que o cliente
+  // mandar nesses campos. O front enviava `'moderate'` fixo, o que era
+  // indistinguível de um perfil real do lado do trakker-ia.
 }
 
 export interface AiChatRequest {
