@@ -112,9 +112,13 @@ export default function ReturnsPanel() {
   // Falha na rota não pode derrubar o dashboard: o painel some e o resto fica.
   if (isError || !data) return null;
 
-  const {contribution, twr, irr, unavailable, staleDays} = data;
+  const {contribution, twr, irr, benchmark, unavailable, staleDays} = data;
   const isBeginner = level === 'iniciante';
   const isAdvanced = level === 'avancado';
+  // Beta só entra com valor real. Voltou a ser calculável quando TRA-143
+  // corrigiu a série diária; antes disso era '—' fixo e saiu da tela em
+  // TRA-145 justamente por isso.
+  const showBenchmark = isAdvanced && benchmark?.beta !== null;
 
   return (
     <div style={card}>
@@ -215,6 +219,45 @@ export default function ReturnsPanel() {
               color={toneColor(irr)}
               note={`${twr.periods} pregões`}
               tooltip="Pondera pelo momento dos aportes. Acima do TWR significa que você aportou bem."
+            />
+          )}
+        </div>
+      )}
+
+      {/*
+        Beta e tracking error — só no avançado, e só com valor real. Nunca
+        renderiza traço: uma métrica permanentemente vazia contamina a leitura
+        das vizinhas, que foi o motivo de TRA-145 tirá-las da tela.
+      */}
+      {showBenchmark && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 32,
+            flexWrap: 'wrap',
+            paddingTop: 16,
+            borderTop: '1px solid var(--hair)',
+          }}>
+          <Figure
+            label="Beta vs IBOV"
+            value={(benchmark.beta as number).toFixed(2)}
+            note={`${benchmark.observations} pregões`}
+            tooltip="Quanto a carteira balança em relação ao índice. Acima de 1 amplifica; abaixo, amortece."
+          />
+          {benchmark.trackingError !== null && (
+            <Figure
+              label="Tracking error"
+              value={`${(benchmark.trackingError * 100).toFixed(2)}%`}
+              note="anualizado"
+              tooltip="Quanto o retorno da carteira se afasta do índice. Quanto menor, mais colada ao IBOV."
+            />
+          )}
+          {benchmark.correlation !== null && (
+            <Figure
+              label="Correlação"
+              value={benchmark.correlation.toFixed(2)}
+              note="com o IBOV"
+              tooltip="Confiabilidade do beta: correlação baixa significa que o beta explica pouco do movimento."
             />
           )}
         </div>

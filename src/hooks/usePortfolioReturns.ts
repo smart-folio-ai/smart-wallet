@@ -12,7 +12,9 @@ import {portfolioService} from '@/server/api/api';
 export type ReturnsUnavailableReason =
   | 'cash_flows_missing'
   | 'twr_insufficient_series'
-  | 'irr_not_solvable';
+  | 'irr_not_solvable'
+  | 'benchmark_insufficient_observations'
+  | 'benchmark_no_variance';
 
 export interface PortfolioReturns {
   from: string | null;
@@ -29,6 +31,17 @@ export interface PortfolioReturns {
     periods: number;
   };
   irr: number | null;
+  /**
+   * Sensibilidade e aderência ao IBOV (TRA-141). `beta` só vem preenchido com
+   * pelo menos 20 pregões pareados — abaixo disso o número é ruído.
+   */
+  benchmark: {
+    symbol: string;
+    beta: number | null;
+    trackingError: number | null;
+    correlation: number | null;
+    observations: number;
+  };
   unavailable: ReturnsUnavailableReason[];
   staleDays: number;
 }
@@ -41,6 +54,10 @@ export const UNAVAILABLE_LABEL: Record<ReturnsUnavailableReason, string> = {
     'Ainda não há dias suficientes de histórico para calcular a rentabilidade.',
   irr_not_solvable:
     'Não foi possível calcular o retorno do seu capital com os aportes registrados.',
+  benchmark_insufficient_observations:
+    'Beta e tracking error precisam de pelo menos 20 pregões de histórico.',
+  benchmark_no_variance:
+    'O IBOV não variou no período — não há como medir sensibilidade a ele.',
 };
 
 export const PORTFOLIO_RETURNS_QUERY_KEY = ['portfolio-returns'] as const;

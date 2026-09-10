@@ -34,6 +34,13 @@ const returns = (overrides: Record<string, unknown> = {}) => ({
     },
     twr: {value: 0.1234, annualized: 0.26, periods: 120},
     irr: 0.1501,
+    benchmark: {
+      symbol: '^BVSP',
+      beta: 1.23,
+      trackingError: 0.0456,
+      correlation: 0.87,
+      observations: 118,
+    },
     unavailable: [],
     staleDays: 0,
     ...overrides,
@@ -116,6 +123,55 @@ describe('ReturnsPanel', () => {
 
     expect(
       await screen.findByText(/aportes entraram em bons momentos/),
+    ).toBeInTheDocument();
+  });
+
+  // TRA-141: beta e tracking error voltaram, mas só no avançado e só com
+  // valor real — nunca como traço, que foi o motivo de TRA-145 tirá-los.
+  it('mostra beta, tracking error e correlação só no avançado', async () => {
+    withLevel('experienced');
+    render(<ReturnsPanel />, {wrapper});
+
+    expect(await screen.findByText('Beta vs IBOV')).toBeInTheDocument();
+    expect(screen.getByText('1.23')).toBeInTheDocument();
+    expect(screen.getByText('Tracking error')).toBeInTheDocument();
+    expect(screen.getByText('4.56%')).toBeInTheDocument();
+    // Correlação acompanha o beta porque sem ela não dá para julgá-lo.
+    expect(screen.getByText('Correlação')).toBeInTheDocument();
+  });
+
+  it('não mostra beta no intermediário nem no iniciante', async () => {
+    for (const level of ['beginner', 'intermediate']) {
+      withLevel(level);
+      const {unmount} = render(<ReturnsPanel />, {wrapper});
+      await screen.findByText(/45\.000/);
+      expect(screen.queryByText('Beta vs IBOV')).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  // O ponto que motivou TRA-145: métrica sem valor não ocupa espaço.
+  it('omite o bloco de beta quando o cálculo não foi possível', async () => {
+    withLevel('experienced');
+    getReturnsMock.mockResolvedValue(
+      returns({
+        benchmark: {
+          symbol: '^BVSP',
+          beta: null,
+          trackingError: null,
+          correlation: null,
+          observations: 8,
+        },
+        unavailable: ['benchmark_insufficient_observations'],
+      }),
+    );
+    render(<ReturnsPanel />, {wrapper});
+
+    await screen.findByText(/45\.000/);
+    expect(screen.queryByText('Beta vs IBOV')).not.toBeInTheDocument();
+    // Em vez do traço mudo, o motivo.
+    expect(
+      screen.getByText(/pelo menos 20 pregões de histórico/),
     ).toBeInTheDocument();
   });
 
