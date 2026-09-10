@@ -63,15 +63,25 @@ function renderDashboard() {
 }
 
 describe('Dashboard KPI strip', () => {
-  it('renders four KPI tiles above the main charts', async () => {
+  it('renders three KPI tiles above the main charts', async () => {
     renderDashboard();
     expect(await screen.findByText('Patrimônio total')).toBeInTheDocument();
     // pnlLabel resolves to 'P&L do período' for the default (intermediário) level
     expect(screen.getByText('P&L do período')).toBeInTheDocument();
     // Nocturne redesign — label updated from 'Dividendos no ano'
     expect(screen.getByText('Dividendos recebidos')).toBeInTheDocument();
-    // Nocturne redesign — 4th KPI card is Beta da carteira
-    expect(screen.getByText('Beta da carteira')).toBeInTheDocument();
+  });
+
+  // TRA-145: o card "Beta da carteira" exibia value="—" fixo, porque β exige
+  // marcação a mercado diária que ainda não existe (TRA-143). Um KPI de topo
+  // permanentemente vazio contamina a leitura dos vizinhos, então saiu da tela.
+  // Este teste falha se ele voltar antes da série diária estar disponível.
+  it('does not render metrics that are permanently unavailable', async () => {
+    renderDashboard();
+    await screen.findByText('Patrimônio total');
+    expect(screen.queryByText('Beta da carteira')).not.toBeInTheDocument();
+    expect(screen.queryByText('Beta vs IBOV')).not.toBeInTheDocument();
+    expect(screen.queryByText('Tracking error')).not.toBeInTheDocument();
   });
 });
 
