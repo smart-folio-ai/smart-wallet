@@ -1,43 +1,127 @@
-import {createContext, useContext, useState, type ReactNode} from 'react';
+import {createContext, useContext, useMemo, type ReactNode} from 'react';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {
+  getInvestorProfile,
+  setInvestorProfileOverride,
+  type InvestorProfileResponse,
+} from '@/services/ai/investorProfile';
+import {
+  DEFAULT_LEVEL,
+  isAdaptiveLevel,
+  toAdaptiveLevel,
+  toSophistication,
+  type AdaptiveLevel,
+} from './adaptive-level.mapping';
 
-export type AdaptiveLevel = 'iniciante' | 'intermediario' | 'avancado';
+export type {AdaptiveLevel} from './adaptive-level.mapping';
+export {ADAPTIVE_LEVELS, DEFAULT_LEVEL} from './adaptive-level.mapping';
 
-const STORAGE_KEY = 'adaptive-level';
-const VALID_LEVELS: AdaptiveLevel[] = ['iniciante', 'intermediario', 'avancado'];
-const DEFAULT_LEVEL: AdaptiveLevel = 'intermediario';
+/**
+ * Cache anti-flash, NÃO fonte de verdade (TRA-142).
+ *
+ * A fonte de verdade é o `InvestorProfileService` no servidor, que infere o
+ * nível diariamente a partir de sinais reais e guarda o override manual do
+ * usuário. Antes o nível vivia só aqui, nunca saía do navegador, e por isso a
+ * IA gerava todo texto sem saber com quem estava falando.
+ *
+ * O valor local serve só para a primeira pintura não piscar no default
+ * enquanto a requisição não volta. Toda escrita vai para o servidor.
+ */
+const CACHE_KEY = 'adaptive-level';
+
+export const INVESTOR_PROFILE_QUERY_KEY = ['investor-profile'] as const;
 
 interface AdaptiveLevelContextValue {
   level: AdaptiveLevel;
   setLevel: (level: AdaptiveLevel) => void;
+  /** Confiança da inferência (0.1 a 1). `null` enquanto o perfil não chegou. */
+  confidence: number | null;
+  /** `user_override` quando o usuário escolheu manualmente. */
+  source: InvestorProfileResponse['source'] | null;
+  isLoading: boolean;
 }
 
 const AdaptiveLevelContext = createContext<
   AdaptiveLevelContextValue | undefined
 >(undefined);
 
-function readStoredLevel(): AdaptiveLevel {
+function readCachedLevel(): AdaptiveLevel {
   if (typeof window === 'undefined') return DEFAULT_LEVEL;
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return VALID_LEVELS.includes(stored as AdaptiveLevel)
-    ? (stored as AdaptiveLevel)
-    : DEFAULT_LEVEL;
+  try {
+    const stored = localStorage.getItem(CACHE_KEY);
+    return isAdaptiveLevel(stored) ? stored : DEFAULT_LEVEL;
+  } catch {
+    // Safari em modo privado, storage cheio: seguir com o default.
+    return DEFAULT_LEVEL;
+  }
+}
+
+function writeCachedLevel(level: AdaptiveLevel): void {
+  try {
+    localStorage.setItem(CACHE_KEY, level);
+  } catch {
+    // Cache é otimização, não requisito. Falhar aqui não muda o comportamento.
+  }
 }
 
 export function AdaptiveLevelProvider({children}: {children: ReactNode}) {
-  const [level, setLevelState] = useState<AdaptiveLevel>(readStoredLevel);
+  const queryClient = useQueryClient();
 
-  const setLevel = (next: AdaptiveLevel) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      // Ignore persistence failures (e.g. Safari private mode, storage full)
-      // and still update in-memory state below.
-    }
-    setLevelState(next);
-  };
+  const {data: profile, isLoading} = useQuery({
+    queryKey: INVESTOR_PROFILE_QUERY_KEY,
+    queryFn: getInvestorProfile,
+    // O perfil é recalculado uma vez por dia no servidor; não faz sentido
+    // revalidar a cada foco de janela.
+    staleTime: 5 * 60 * 1000,
+    // Sem perfil a página ainda funciona no default. Repetir uma requisição
+    // que falhou só atrasa a primeira pintura.
+    retry: false,
+  });
+
+  const {mutate: persistLevel} = useMutation({
+    mutationFn: (level: AdaptiveLevel) =>
+      setInvestorProfileOverride({sophistication: toSophistication(level)}),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(INVESTOR_PROFILE_QUERY_KEY, updated);
+      writeCachedLevel(toAdaptiveLevel(updated.sophistication));
+    },
+    onError: () => {
+      // Desfaz o otimismo: volta ao que o servidor tem de fato.
+      queryClient.invalidateQueries({queryKey: INVESTOR_PROFILE_QUERY_KEY});
+    },
+  });
+
+  const level = profile ? toAdaptiveLevel(profile.sophistication) : readCachedLevel();
+
+  const value = useMemo<AdaptiveLevelContextValue>(
+    () => ({
+      level,
+      setLevel: (next: AdaptiveLevel) => {
+        // Otimista: a troca de nível é uma preferência de exibição e precisa
+        // responder na hora, como respondia quando era só localStorage.
+        queryClient.setQueryData<InvestorProfileResponse>(
+          INVESTOR_PROFILE_QUERY_KEY,
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  sophistication: toSophistication(next),
+                  source: 'user_override',
+                }
+              : current,
+        );
+        writeCachedLevel(next);
+        persistLevel(next);
+      },
+      confidence: profile?.confidence ?? null,
+      source: profile?.source ?? null,
+      isLoading,
+    }),
+    [level, profile, isLoading, persistLevel, queryClient],
+  );
 
   return (
-    <AdaptiveLevelContext.Provider value={{level, setLevel}}>
+    <AdaptiveLevelContext.Provider value={value}>
       {children}
     </AdaptiveLevelContext.Provider>
   );
