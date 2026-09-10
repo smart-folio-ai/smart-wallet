@@ -141,7 +141,6 @@ export async function getOrCreateAiAnalysis(params: {
       total_value: totalValue,
       plan,
     },
-    risk_profile: 'moderate' as const,
     address: {},
     preferences: {},
   };
