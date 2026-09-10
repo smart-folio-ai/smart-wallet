@@ -1,0 +1,56 @@
+import {useQuery} from '@tanstack/react-query';
+import {portfolioService} from '@/server/api/api';
+
+/**
+ * Retornos da carteira vindos de `GET /portfolio/returns` (TRA-147).
+ *
+ * Espelha `PortfolioReturnsOutput` do servidor. O campo `unavailable` é parte
+ * do contrato, não um detalhe: o backend declara o que NÃO conseguiu calcular
+ * em vez de devolver estimativa, e a interface precisa dizer isso ao usuário.
+ */
+
+export type ReturnsUnavailableReason =
+  | 'cash_flows_missing'
+  | 'twr_insufficient_series'
+  | 'irr_not_solvable';
+
+export interface PortfolioReturns {
+  from: string | null;
+  to: string | null;
+  contribution: {
+    currentValue: number;
+    contributed: number;
+    marketGain: number;
+    marketGainPct: number | null;
+  };
+  twr: {
+    value: number | null;
+    annualized: number | null;
+    periods: number;
+  };
+  irr: number | null;
+  unavailable: ReturnsUnavailableReason[];
+  staleDays: number;
+}
+
+/** Texto por motivo, para a tela não precisar conhecer os códigos. */
+export const UNAVAILABLE_LABEL: Record<ReturnsUnavailableReason, string> = {
+  cash_flows_missing:
+    'Importe suas notas de corretagem para separarmos aporte de rendimento.',
+  twr_insufficient_series:
+    'Ainda não há dias suficientes de histórico para calcular a rentabilidade.',
+  irr_not_solvable:
+    'Não foi possível calcular o retorno do seu capital com os aportes registrados.',
+};
+
+export const PORTFOLIO_RETURNS_QUERY_KEY = ['portfolio-returns'] as const;
+
+export function usePortfolioReturns(range?: {from?: string; to?: string}) {
+  return useQuery<PortfolioReturns>({
+    queryKey: [...PORTFOLIO_RETURNS_QUERY_KEY, range?.from, range?.to],
+    queryFn: async () => (await portfolioService.getReturns(range)).data,
+    // A série só muda uma vez por dia, no snapshot das 19:30.
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+}
