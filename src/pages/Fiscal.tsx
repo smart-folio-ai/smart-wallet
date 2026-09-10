@@ -3,6 +3,8 @@ import {useMutation, useQuery} from '@tanstack/react-query';
 import {fiscalService, brokerSyncService} from '@/server/api/api';
 import {formatCurrency} from '@/utils/formatters';
 import useAppToast from '@/hooks/use-app-toast';
+// TEASER DARF — remover esta linha e o <DarfComingSoonCard /> abaixo para desativar
+import DarfComingSoonCard from '@/components/fiscal/darf-coming-soon-card';
 import {KpiCard, SectionHeader} from '@/components/shared';
 
 interface FiscalOptimizerResponse {
@@ -302,6 +304,9 @@ export default function Fiscal() {
         <KpiCard label="Lucro/Prejuízo Cripto" value={loadingSummary ? '…' : formatCurrency(summary?.totals?.cryptoProfit || 0)} />
         <KpiCard label="Imposto Estimado" value={loadingSummary ? '…' : formatCurrency(taxDue)} />
       </div>
+
+      {/* TEASER DARF — remover esta linha e o import para desativar */}
+      <DarfComingSoonCard />
 
       {/* Two-col grid: Simular Venda + Status Importações */}
       <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24}}>
