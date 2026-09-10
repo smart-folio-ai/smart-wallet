@@ -1176,6 +1176,20 @@ const Dashboard = () => {
       ? `${estimatedDividendYieldPct.toFixed(2)}% DY`
       : undefined;
 
+  // Beta vs IBOV e Tracking error ficam FORA desta barra até a marcação a
+  // mercado diária existir (TRA-143). Ambos exigem retornos diários da carteira
+  // pareados dia-a-dia com o IBOV; a série hoje disponível é reconstruída das
+  // negociações e fica "achatada" entre trades (ver `history-from-trades.ts` no
+  // server), então covariância/correlação sobre ela produziria um número
+  // confiante mas incorreto — o mesmo problema que motivou remover o preço-alvo
+  // fabricado (TRA-55).
+  //
+  // Antes eram exibidos como '—' fixo. Uma métrica permanentemente indisponível
+  // ao lado de um Sharpe válido contamina a leitura de todas as outras da mesma
+  // barra, então foram removidas em TRA-145.
+  //
+  // Para restaurar quando TRA-143 concluir: reintroduzir as duas entradas aqui.
+  // A grade deriva as colunas de `quantMetrics.length`, então nada mais muda.
   const quantMetrics = [
     {
       label: 'Sharpe',
@@ -1187,20 +1201,11 @@ const Dashboard = () => {
       value: volatilityPct !== null ? `${volatilityPct.toFixed(2)}%` : '—',
       note: 'diária',
     },
-    // Beta vs IBOV e Tracking error exigem retornos diários da carteira
-    // pareados dia-a-dia com o IBOV (marcação a mercado real). A série
-    // hoje disponível é reconstruída das negociações e fica "achatada"
-    // entre trades (ver `history-from-trades.ts` no server) — usá-la para
-    // covariância/correlação produziria um número confiante mas incorreto,
-    // o mesmo problema que motivou remover o preço-alvo fabricado (TRA-55).
-    // Mesmo bloqueio do card "Beta da carteira" já existente acima.
-    {label: 'Beta vs IBOV', value: '—', note: 'dados insuficientes'},
     {
       label: 'Máx. drawdown',
       value: maxDrawdownPct !== null ? `${maxDrawdownPct.toFixed(2)}%` : '—',
       note: 'pior retração',
     },
-    {label: 'Tracking error', value: '—', note: 'dados insuficientes'},
   ];
 
   const portfolioPeriodPct =
@@ -1354,7 +1359,7 @@ const Dashboard = () => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, minmax(0,1fr))',
+          gridTemplateColumns: 'repeat(3, minmax(0,1fr))',
           gap: 11.2,
         }}>
         <KpiCard
@@ -1387,17 +1392,19 @@ const Dashboard = () => {
           deltaStyle={{color: 'var(--pos)', fontVariantNumeric: 'tabular-nums'}}
           sub="últimos 12 meses"
         />
-        <KpiCard
-          label="Beta da carteira"
-          value="—"
-          sub="vs IBOV"
-          tooltip={{
-            title: 'Beta',
-            body: 'Sensibilidade da carteira ao índice de referência',
-            formula: 'β = Cov(carteira, IBOV) / Var(IBOV)',
-            side: 'right',
-          }}
-        />
+        {/*
+          O quarto card era "Beta da carteira" com value="—" fixo, bloqueado
+          pelo mesmo motivo da barra quantitativa (ver comentário em
+          `quantMetrics`): sem marcação a mercado diária não há como calcular
+          β honestamente (TRA-143).
+
+          Diferente da barra, este card fica no topo e aparece para TODOS os
+          níveis, inclusive iniciante — um KPI de destaque permanentemente vazio
+          é a versão mais cara desse problema, então saiu em TRA-145.
+
+          Para restaurar quando TRA-143 concluir: reintroduzir o KpiCard abaixo
+          e voltar `gridTemplateColumns` desta grade para repeat(4, ...).
+        */}
       </div>
 
       {/* 3. Quant bar (intermediário/avançado only) */}
@@ -1405,7 +1412,7 @@ const Dashboard = () => {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(5, minmax(0,1fr))',
+            gridTemplateColumns: `repeat(${quantMetrics.length}, minmax(0,1fr))`,
             gap: 1,
             border: '1px solid var(--hair)',
             borderRadius: 8,
