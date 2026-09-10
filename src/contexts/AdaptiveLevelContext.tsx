@@ -40,6 +40,12 @@ interface AdaptiveLevelContextValue {
    * uma vez e nunca mais volta a acompanhar a própria evolução.
    */
   clearOverride: () => void;
+  /**
+   * Perfil bruto do servidor, para quem precisa de mais que o nível —
+   * `riskTolerance`, `signals`. Existe para não haver uma segunda busca do
+   * mesmo recurso em outra tela.
+   */
+  profile: InvestorProfileResponse | null;
   /** Confiança da inferência (0.1 a 1). `null` enquanto o perfil não chegou. */
   confidence: number | null;
   /** `user_override` quando o usuário escolheu manualmente. */
@@ -130,6 +136,7 @@ export function AdaptiveLevelProvider({children}: {children: ReactNode}) {
         // volta. Melhor esperar a resposta.
         persistLevel(null);
       },
+      profile: profile ?? null,
       confidence: profile?.confidence ?? null,
       source: profile?.source ?? null,
       isLoading,

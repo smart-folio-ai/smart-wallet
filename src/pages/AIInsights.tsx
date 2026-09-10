@@ -2,7 +2,6 @@ import React, {useState, useEffect} from 'react';
 import {Button} from '@/components/ui/button';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {Slider} from '@/components/ui/slider';
-import {Switch} from '@/components/ui/switch';
 import {toast} from 'sonner';
 import {
   aiAnalysisService,
@@ -21,11 +20,8 @@ import type {ScoreTone} from '@/utils/score-tone';
 import {useSubscription} from '@/hooks/useSubscription';
 import {RagAskPanel} from '@/components/ai/RagAskPanel';
 import {InvestorProfileBadge} from '@/components/ai/InvestorProfileBadge';
-import {
-  getInvestorProfile,
-  setInvestorProfileOverride,
-  InvestorProfileResponse,
-} from '@/services/ai/investorProfile';
+import {useAdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
+import {toAdaptiveLevel} from '@/contexts/adaptive-level.mapping';
 import {
   getAiPlanFromPlanName,
   getOrCreateAiAnalysis,
@@ -88,22 +84,16 @@ const AIInsights: React.FC = () => {
   const [simLoading, setSimLoading] = useState(false);
   const [cdiComparison, setCdiComparison] = useState<number | null>(null);
 
-  // viewMode: estado originalmente introduzido em versão mínima pela Task 9
-  // (comparação com CDI), que só precisava ler/persistir a preferência via
-  // localStorage. Esta Task (8) é a dona "real" do estado — adiciona o fetch
-  // do perfil do investidor e a sugestão de modo avançado baseada nele (ver
-  // useEffect abaixo), além do toggle na UI que efetivamente escreve em
-  // localStorage. O estado em si não é redeclarado aqui.
-  const [investorProfile, setInvestorProfile] = useState<InvestorProfileResponse | null>(null);
-  const [viewMode, setViewMode] = useState<'standard' | 'advanced'>('standard');
   const [insightTab, setInsightTab] = useState<InsightTab>('Todos');
 
-  useEffect(() => {
-    const savedMode = localStorage.getItem('ai_insights_view_mode');
-    if (savedMode === 'standard' || savedMode === 'advanced') {
-      setViewMode(savedMode);
-    }
-  }, []);
+  // O nível vem do perfil do servidor, compartilhado com o resto do app
+  // (TRA-142). Antes esta página tinha estado próprio, binário
+  // (`'standard' | 'advanced'`) e persistido em `ai_insights_view_mode`, que
+  // achatava `beginner` e `intermediate` na mesma tela — o intermediário
+  // deixava de existir justamente onde o perfil é melhor calculado. E o toggle
+  // local competia com o seletor do topbar, que grava no servidor.
+  const {level, profile: investorProfile, setLevel} = useAdaptiveLevel();
+  const isDetailedView = level !== 'iniciante';
 
   const hasProOrHigher = isProOrHigherPlan(planName, isSubscribed);
   const aiPlan = getAiPlanFromPlanName(planName);
@@ -139,12 +129,14 @@ const AIInsights: React.FC = () => {
       // independentes entre si e da análise do LLM: se o trackerr-ia estiver
       // fora, os dois ainda aparecem, e vice-versa. Por isso allSettled em
       // vez de await sequencial.
-      const [analysisOutcome, scoreOutcome, errorRadarOutcome, profileOutcome] =
+      // O perfil de investidor saiu daqui: agora é buscado uma vez só pelo
+      // AdaptiveLevelProvider e consumido por contexto (TRA-142). Antes esta
+      // página fazia sua própria chamada do mesmo recurso.
+      const [analysisOutcome, scoreOutcome, errorRadarOutcome] =
         await Promise.allSettled([
           getOrCreateAiAnalysis({rawAssets: assets, plan: aiPlan}),
           aiAnalysisService.portfolioScore(),
           aiAnalysisService.errorRadar(),
-          getInvestorProfile(),
         ]);
 
       if (scoreOutcome.status === 'fulfilled') {
@@ -158,23 +150,6 @@ const AIInsights: React.FC = () => {
       } else {
         setErrorRadar(null);
         setErrorRadarFailed(true);
-      }
-
-      // O perfil de investidor é independente das demais fontes: falhar não
-      // deve derrubar o resto da página — o badge já trata `null` como "não
-      // renderizar nada".
-      if (profileOutcome.status === 'fulfilled') {
-        setInvestorProfile(profileOutcome.value);
-        // A preferência salva pelo usuário sempre vence; só sugerimos o modo
-        // avançado a partir do perfil quando não há nada salvo ainda.
-        const savedMode = localStorage.getItem('ai_insights_view_mode');
-        if (savedMode === 'standard' || savedMode === 'advanced') {
-          setViewMode(savedMode);
-        } else if (profileOutcome.value.sophistication === 'experienced') {
-          setViewMode('advanced');
-        }
-      } else {
-        setInvestorProfile(null);
       }
 
       if (analysisOutcome.status === 'rejected') {
@@ -191,27 +166,23 @@ const AIInsights: React.FC = () => {
     }
   };
 
-  const handleProfileOverride = async (override: {
+  // O badge escreve no mesmo lugar que o seletor do topbar: o override de
+  // sofisticação no servidor. O contexto cuida da persistência e de manter as
+  // duas superfícies em sincronia.
+  const handleProfileOverride = (override: {
     sophistication?: 'beginner' | 'intermediate' | 'experienced';
   }) => {
-    try {
-      const updated = await setInvestorProfileOverride(override);
-      setInvestorProfile(updated);
-    } catch {
-      toast.error('Não foi possível salvar a alteração de perfil.');
-    }
+    if (!override.sophistication) return;
+    setLevel(toAdaptiveLevel(override.sophistication));
   };
 
-  const handleViewModeChange = (checked: boolean) => {
-    const mode = checked ? 'advanced' : 'standard';
-    setViewMode(mode);
-    localStorage.setItem('ai_insights_view_mode', mode);
-    // Mesmo padrão de "troca de parâmetro invalida resultado" usado no
-    // slider e nos botões de horizonte: uma simulação já calculada no modo
-    // antigo não deve continuar visível como se refletisse o modo novo.
+  // Mesmo padrão de "troca de parâmetro invalida resultado" usado no slider e
+  // nos botões de horizonte: uma simulação calculada para outro nível de
+  // detalhe não deve continuar visível como se refletisse o atual.
+  useEffect(() => {
     setSimulation(null);
     setCdiComparison(null);
-  };
+  }, [level]);
 
   const handleSimulate = async () => {
     setSimLoading(true);
@@ -226,7 +197,7 @@ const AIInsights: React.FC = () => {
       });
       setSimulation(res);
 
-      if (viewMode === 'advanced') {
+      if (isDetailedView) {
         const monthsBack = res.months;
         const from = new Date();
         from.setMonth(from.getMonth() - monthsBack);
@@ -451,27 +422,17 @@ const AIInsights: React.FC = () => {
             alignItems: 'center',
             gap: 12,
           }}>
+          {/*
+            O toggle "Avançado" que ficava aqui foi removido em TRA-142. Ele
+            escrevia um estado binário local que competia com o seletor de nível
+            do topbar e com este próprio badge — três controles para o mesmo
+            conceito, dois deles gravando em lugares diferentes. O badge segue
+            como a superfície da página, escrevendo no perfil do servidor.
+          */}
           <InvestorProfileBadge
             profile={investorProfile}
             onOverride={handleProfileOverride}
           />
-          <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-            <label
-              htmlFor="view-mode-toggle"
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'var(--color-neutral-500)',
-              }}>
-              Avançado
-            </label>
-            <Switch
-              id="view-mode-toggle"
-              aria-label="Modo avançado"
-              checked={viewMode === 'advanced'}
-              onCheckedChange={handleViewModeChange}
-            />
-          </div>
           {isPremium && <BadgePremium />}
         </div>
       </div>
@@ -1093,7 +1054,7 @@ const AIInsights: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  {viewMode === 'advanced' && cdiComparison !== null && (
+                  {isDetailedView && cdiComparison !== null && (
                     <div
                       style={{
                         paddingTop: 12,

@@ -1,7 +1,9 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import AIInsights from './AIInsights';
+import {AdaptiveLevelProvider} from '@/contexts/AdaptiveLevelContext';
 
 const portfolioScoreMock = vi.fn();
 const errorRadarMock = vi.fn();
@@ -49,11 +51,20 @@ vi.mock('@/server/api/api', () => ({
   },
 }));
 
+// A página passou a consumir o nível de detalhe do perfil do servidor via
+// AdaptiveLevelProvider (TRA-142), em vez de manter estado binário próprio.
 function renderPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: {queries: {retry: false}, mutations: {retry: false}},
+  });
   return render(
-    <MemoryRouter>
-      <AIInsights />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <AdaptiveLevelProvider>
+          <AIInsights />
+        </AdaptiveLevelProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -69,6 +80,25 @@ const okScore = {
   riskLevel: 'low',
   flags: [],
   positionsCount: 4,
+};
+
+// Resposta padrão do simulador, repetida em vários testes só para chegar ao
+// estado "já calculou". O que cada teste realmente afirma vem depois disso.
+const baseSimulation = {
+  modelVersion: 'future_simulator_v1',
+  horizon: '10y',
+  months: 120,
+  currentPortfolioValue: 100000,
+  monthlyContribution: 1000,
+  scenarios: {
+    pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+    base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+    optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
+  },
+  assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
+  dividendProjection: {current: {monthly: 0, annual: 0}},
+  limitations: [],
+  confidence: 'high',
 };
 
 const defaultInvestorProfile = {
@@ -579,8 +609,17 @@ describe('AIInsights — comparacao com CDI no modo avancado', () => {
     expect(await screen.findByText('CDI acumulado (últimos 120 meses)')).toBeInTheDocument();
   });
 
-  it('nao mostra a comparacao com CDI no modo padrao', async () => {
-    localStorage.setItem('ai_insights_view_mode', 'standard');
+  // A comparação com CDI é benchmark, não enfeite: entra a partir do
+  // intermediário e fica fora do iniciante. Antes dependia de um toggle
+  // binário local; agora do nível que vem do perfil do servidor (TRA-142).
+  it('nao mostra a comparacao com CDI para o nivel iniciante', async () => {
+    getInvestorProfileMock.mockResolvedValue({
+      sophistication: 'beginner',
+      riskTolerance: 'conservative',
+      confidence: 0.9,
+      signals: {},
+      source: 'inferred',
+    });
     futureSimulatorMock.mockResolvedValue({
       modelVersion: 'future_simulator_v1',
       horizon: '10y',
@@ -599,6 +638,9 @@ describe('AIInsights — comparacao com CDI no modo avancado', () => {
     });
 
     renderPage();
+    // Espera o perfil chegar antes de calcular: até lá o nível é o default
+    // intermediário, que mostraria o CDI e mascararia a asserção.
+    await screen.findByText('Perfil: Iniciante');
     const calcButton = await screen.findByText('Calcular Projeção IA');
     fireEvent.click(calcButton);
 
@@ -670,33 +712,44 @@ describe('AIInsights — toggle Padrao/Avancado', () => {
     });
   });
 
-  it('abre em modo avancado quando o perfil e experienced e nao ha preferencia salva', async () => {
-    renderPage();
-
-    // "before" assertion: enquanto o perfil ainda nao carregou, o toggle
-    // comeca no modo padrao (estado inicial do useState).
-    const toggle = await screen.findByLabelText('Modo avançado');
-    await waitFor(() => {
-      expect(toggle).toBeChecked();
+  // O perfil do servidor decide o nível de detalhe sozinho: não existe mais um
+  // toggle local para ligar (TRA-142).
+  it('usa a visao detalhada quando o perfil e experienced', async () => {
+    getCdiSeriesMock.mockResolvedValue({
+      data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
     });
+    futureSimulatorMock.mockResolvedValue(baseSimulation);
+
+    renderPage();
+    await screen.findByText('Perfil: Experiente');
+    fireEvent.click(await screen.findByText('Calcular Projeção IA'));
+
+    expect(
+      await screen.findByText('CDI acumulado (últimos 120 meses)'),
+    ).toBeInTheDocument();
   });
 
-  it('persiste a escolha do usuario em localStorage entre remounts', async () => {
-    const {unmount} = renderPage();
-    const toggle = await screen.findByLabelText('Modo avançado');
-    await waitFor(() => {
-      expect(toggle).toBeChecked();
+  // O toggle antigo escrevia em `ai_insights_view_mode` e nunca saía do
+  // navegador — era o motivo de a IA gerar texto sem saber o nível do usuário.
+  it('grava a escolha do usuario no servidor, nao em localStorage', async () => {
+    setInvestorProfileOverrideMock.mockResolvedValue({
+      sophistication: 'beginner',
+      riskTolerance: 'aggressive',
+      confidence: 0.9,
+      signals: {},
+      source: 'user_override',
     });
-
-    fireEvent.click(toggle);
-    expect(localStorage.getItem('ai_insights_view_mode')).toBe('standard');
-    unmount();
 
     renderPage();
-    const toggleAfterRemount = await screen.findByLabelText('Modo avançado');
+    fireEvent.click(await screen.findByText('Perfil: Experiente'));
+    fireEvent.click(await screen.findByText('Iniciante'));
+
     await waitFor(() => {
-      expect(toggleAfterRemount).not.toBeChecked();
+      expect(setInvestorProfileOverrideMock).toHaveBeenCalledWith({
+        sophistication: 'beginner',
+      });
     });
+    expect(localStorage.getItem('ai_insights_view_mode')).toBeNull();
   });
 
   it('mostra o badge de perfil quando o perfil carrega', async () => {
@@ -704,42 +757,39 @@ describe('AIInsights — toggle Padrao/Avancado', () => {
     expect(await screen.findByText('Perfil: Experiente')).toBeInTheDocument();
   });
 
-  it('limpa a simulacao ja calculada ao trocar o modo Padrao/Avancado', async () => {
-    futureSimulatorMock.mockResolvedValue({
-      modelVersion: 'future_simulator_v1',
-      horizon: '10y',
-      months: 120,
-      currentPortfolioValue: 1000,
-      monthlyContribution: 1000,
-      scenarios: {
-        pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-      },
-      assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
-      dividendProjection: {current: {monthly: 0, annual: 0}},
-      limitations: [],
-      confidence: 'high',
+  // Mesmo princípio de antes: uma projeção calculada para um nível de detalhe
+  // não pode continuar na tela como se refletisse o nível novo. Só o gatilho
+  // mudou — era o toggle local, agora é a troca de nível.
+  it('limpa a simulacao ja calculada ao trocar o nivel', async () => {
+    futureSimulatorMock.mockResolvedValue(baseSimulation);
+    setInvestorProfileOverrideMock.mockResolvedValue({
+      sophistication: 'beginner',
+      riskTolerance: 'aggressive',
+      confidence: 0.9,
+      signals: {},
+      source: 'user_override',
     });
 
     renderPage();
-    const calcButton = await screen.findByText('Calcular Projeção IA');
-    fireEvent.click(calcButton);
+    await screen.findByText('Perfil: Experiente');
+    fireEvent.click(await screen.findByText('Calcular Projeção IA'));
 
     await waitFor(() => {
       expect(screen.getByText(/847.000|847\.000,00/)).toBeInTheDocument();
     });
 
-    const toggle = screen.getByLabelText('Modo avançado');
-    fireEvent.click(toggle);
+    fireEvent.click(screen.getByText('Perfil: Experiente'));
+    fireEvent.click(await screen.findByText('Iniciante'));
 
-    expect(screen.queryByText(/847.000|847\.000,00/)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/847.000|847\.000,00/)).not.toBeInTheDocument();
+    });
     expect(
       screen.getByText('Ajuste os aportes e simule o poder dos juros compostos.'),
     ).toBeInTheDocument();
   });
 
-  it('fluxo completo: perfil -> badge -> override -> toggle -> CDI', async () => {
+  it('fluxo completo: perfil -> badge -> override -> CDI', async () => {
     getInvestorProfileMock.mockResolvedValue({
       sophistication: 'intermediate',
       riskTolerance: 'moderate',
@@ -780,35 +830,13 @@ describe('AIInsights — toggle Padrao/Avancado', () => {
       await screen.findByText('Perfil: Experiente'),
     ).toBeInTheDocument();
 
-    // 6. liga o modo Avancado
-    const toggle = screen.getByLabelText('Modo avançado');
-    if (!(toggle as HTMLInputElement).checked) {
-      fireEvent.click(toggle);
-    }
-    await waitFor(() => {
-      expect(toggle).toBeChecked();
-    });
+    // 6. o override já elevou o nível: não há mais toggle separado para ligar
 
     // 7. roda o simulador
     getCdiSeriesMock.mockResolvedValue({
       data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
     });
-    futureSimulatorMock.mockResolvedValue({
-      modelVersion: 'future_simulator_v1',
-      horizon: '10y',
-      months: 120,
-      currentPortfolioValue: 100000,
-      monthlyContribution: 1000,
-      scenarios: {
-        pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-      },
-      assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
-      dividendProjection: {current: {monthly: 0, annual: 0}},
-      limitations: [],
-      confidence: 'high',
-    });
+    futureSimulatorMock.mockResolvedValue(baseSimulation);
 
     fireEvent.click(screen.getByText('Calcular Projeção IA'));
 
