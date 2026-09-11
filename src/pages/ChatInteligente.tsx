@@ -15,6 +15,8 @@ import {
 } from '@/services/chat';
 import {SectionHeader} from '@/components/shared';
 import {useAdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
+import type {AdaptiveLevel} from '@/contexts/adaptive-level.mapping';
+import {usePortfolioReturns, type PortfolioReturns} from '@/hooks/usePortfolioReturns';
 import {
   buildCopilotMetrics,
   COPILOT_PROMPTS,
@@ -115,8 +117,20 @@ function ResponseEvidence({payload}: {payload?: StructuredChatResponse}) {
 }
 
 /** Grade de métricas da bolha do Copiloto, como no protótipo App do handoff. */
-function CopilotMetricTiles({payload}: {payload?: StructuredChatResponse}) {
-  const metrics = buildCopilotMetrics(payload?.data);
+function CopilotMetricTiles({
+  payload,
+  level,
+  returns,
+}: {
+  payload?: StructuredChatResponse;
+  level: AdaptiveLevel;
+  returns?: PortfolioReturns;
+}) {
+  const metrics = buildCopilotMetrics(payload?.data, {
+    intent: payload?.intent,
+    level,
+    returns,
+  });
   if (!metrics.length) return null;
   return (
     <div
@@ -497,6 +511,9 @@ export default function ChatInteligente() {
   }, [messages, sending]);
 
   const {level} = useAdaptiveLevel();
+  // Mesma query do dashboard (cache compartilhado): alimenta os tiles de
+  // risco por nível da bolha do Copiloto, como no `CHAT.metrics` do handoff.
+  const {data: returnsData} = usePortfolioReturns();
   const levelPrompts = COPILOT_PROMPTS[level] ?? COPILOT_PROMPTS.avancado;
 
   const introVisible = useMemo(
@@ -665,7 +682,9 @@ export default function ChatInteligente() {
                       <p style={{whiteSpace: 'pre-wrap'}}>{msg.text}</p>
                     )}
 
-                    {msg.role === 'assistant' && <CopilotMetricTiles payload={msg.payload} />}
+                    {msg.role === 'assistant' && (
+                      <CopilotMetricTiles payload={msg.payload} level={level} returns={returnsData} />
+                    )}
                     {msg.role === 'assistant' && <ResponseEvidence payload={msg.payload} />}
                     {msg.role === 'assistant' && msg.payload && <AssistantStructuredBlocks payload={msg.payload} />}
 

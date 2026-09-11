@@ -14,7 +14,9 @@ export type ReturnsUnavailableReason =
   | 'twr_insufficient_series'
   | 'irr_not_solvable'
   | 'benchmark_insufficient_observations'
-  | 'benchmark_no_variance';
+  | 'benchmark_no_variance'
+  | 'sharpe_insufficient_data'
+  | 'var_insufficient_windows';
 
 export interface PortfolioReturns {
   from: string | null;
@@ -41,6 +43,41 @@ export interface PortfolioReturns {
     trackingError: number | null;
     correlation: number | null;
     observations: number;
+    /** Beta nos dias de alta / queda do IBOV. Opcional: servidor anterior a TRA-141 não manda. */
+    upBeta?: number | null;
+    downBeta?: number | null;
+    /** Retornos acumulados nos pregões pareados, em fração. */
+    portfolioReturn?: number | null;
+    benchmarkReturn?: number | null;
+    /** Retorno da carteira − beta × retorno do IBOV, em fração. */
+    alpha?: number | null;
+  };
+  /**
+   * Risco do nível avançado do handoff, calculado no servidor sobre retorno
+   * ajustado por fluxo (TRA-141). Opcional pelo mesmo motivo.
+   */
+  risk?: {
+    sharpe: {
+      sharpe: number | null;
+      riskFreeAnnual: number | null;
+      observations: number;
+    };
+    valueAtRisk: {
+      varPct: number | null;
+      amount: number | null;
+      cvarPct: number | null;
+      cvarAmount: number | null;
+      horizonDays: number;
+      confidence: number;
+      windows: number;
+    };
+    drawdown: {
+      maxDrawdown: number | null;
+      peakDate: string | null;
+      troughDate: string | null;
+      durationDays: number | null;
+      recoveryDate: string | null;
+    };
   };
   unavailable: ReturnsUnavailableReason[];
   staleDays: number;
@@ -58,6 +95,10 @@ export const UNAVAILABLE_LABEL: Record<ReturnsUnavailableReason, string> = {
     'Beta e tracking error precisam de pelo menos 20 pregões de histórico.',
   benchmark_no_variance:
     'O IBOV não variou no período — não há como medir sensibilidade a ele.',
+  sharpe_insufficient_data:
+    'O Sharpe precisa de pelo menos 20 pregões com CDI disponível.',
+  var_insufficient_windows:
+    'O VaR de 21 dias precisa de cerca de dois meses de histórico diário.',
 };
 
 export const PORTFOLIO_RETURNS_QUERY_KEY = ['portfolio-returns'] as const;

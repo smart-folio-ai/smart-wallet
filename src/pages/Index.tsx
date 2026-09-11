@@ -26,6 +26,13 @@ import {usePortfolioComposition} from '@/hooks/usePortfolioComposition';
 import {describeLargestGap} from '@/pages/composition-display.utils';
 import {QuantMetricCell} from '@/components/shared/QuantMetricCell';
 import {
+  buildResult12mKpi,
+  buildVarKpi,
+  formatBetaNote,
+  formatDrawdownNote,
+  formatSharpeNote,
+} from '@/pages/risk-display.utils';
+import {
   formatCurrencyCompactPtBr,
   formatPctPtBr,
   formatSignedPctPtBr,
@@ -1255,11 +1262,37 @@ const Dashboard = () => {
   const annualVolatilityPct =
     volatilityPct !== null ? volatilityPct * Math.sqrt(252) : null;
   const showBenchmarkMetrics = isAdvancedLevel && benchmarkMetrics !== null;
+
+  // Sharpe e drawdown do servidor usam retorno ajustado por fluxo — um resgate
+  // não vira queda. O cálculo local sobre o valor bruto fica só como reserva
+  // enquanto o servidor não tem série suficiente (TRA-141).
+  const serverRisk = returnsData?.risk;
+  const serverSharpe = serverRisk?.sharpe?.sharpe ?? null;
+  const displaySharpe = serverSharpe ?? sharpeRatio;
+  const sharpeNote =
+    (serverSharpe !== null && formatSharpeNote(serverRisk?.sharpe?.riskFreeAnnual)) ||
+    (displaySharpe !== null ? 'anualizado' : 'dados insuficientes');
+  const serverDrawdown = serverRisk?.drawdown;
+  const displayDrawdownPct =
+    serverDrawdown?.maxDrawdown != null
+      ? serverDrawdown.maxDrawdown * 100
+      : maxDrawdownPct;
+  const drawdownNote =
+    (serverDrawdown?.maxDrawdown != null && formatDrawdownNote(serverDrawdown)) ||
+    'pior retração';
+
+  // 2º e 4º KPIs do `kpisAdv` do handoff: Resultado 12M com alpha e VaR 95% ·
+  // 21d. Só assumem o slot com número calculado.
+  const result12mKpi = isAdvancedLevel
+    ? buildResult12mKpi(benchmarkMetrics ?? undefined)
+    : null;
+  const varKpi = isAdvancedLevel ? buildVarKpi(serverRisk) : null;
+
   const quantMetrics = [
     {
       label: 'Sharpe',
-      value: sharpeRatio !== null ? ptBr2(sharpeRatio) : '—',
-      note: sharpeRatio !== null ? 'anualizado' : 'dados insuficientes',
+      value: displaySharpe !== null ? ptBr2(displaySharpe) : '—',
+      note: sharpeNote,
       tooltip: {
         title: 'Sharpe',
         body: 'Quanto de retorno a carteira entregou por unidade de risco assumido. Acima de 1,0 é considerado bom: você foi bem pago pelo sobe-e-desce que aceitou.',
@@ -1271,7 +1304,7 @@ const Dashboard = () => {
       label: 'Volatilidade',
       value:
         annualVolatilityPct !== null ? formatPctPtBr(annualVolatilityPct, 1) : '—',
-      note: 'anualizada',
+      note: 'anualizada 252d',
       tooltip: {
         title: 'Volatilidade',
         body: 'O tamanho médio das oscilações da carteira. Variações desse tamanho para cima ou para baixo são normais — não são erro nem prejuízo definitivo.',
@@ -1284,7 +1317,9 @@ const Dashboard = () => {
           {
             label: 'Beta vs IBOV',
             value: ptBr2(benchmarkMetrics.beta),
-            note: `${benchmarkMetrics.observations} pregões`,
+            note:
+              formatBetaNote(benchmarkMetrics.upBeta, benchmarkMetrics.downBeta) ??
+              `${benchmarkMetrics.observations} pregões`,
             tooltip: {
               title: 'Beta vs IBOV',
               body: 'Quanto a carteira se move quando o IBOV se move. Abaixo de 1, para cada 1% de alta do índice a carteira sobe menos — e cai menos também nas quedas.',
@@ -1296,8 +1331,9 @@ const Dashboard = () => {
       : []),
     {
       label: 'Máx. drawdown',
-      value: maxDrawdownPct !== null ? formatPctPtBr(maxDrawdownPct, 1) : '—',
-      note: 'pior retração',
+      value:
+        displayDrawdownPct !== null ? formatPctPtBr(displayDrawdownPct, 1) : '—',
+      note: drawdownNote,
       tooltip: {
         title: 'Máximo drawdown',
         body: 'A maior queda já vivida entre um topo e o fundo seguinte, antes de recuperar. É o pior momento histórico da carteira — útil para saber o que você aguentaria de novo.',
@@ -1310,7 +1346,7 @@ const Dashboard = () => {
           {
             label: 'Tracking error',
             value: formatPctPtBr(benchmarkMetrics.trackingError * 100, 1),
-            note: 'anualizado',
+            note: 'vs IBOV',
             tooltip: {
               title: 'Tracking error',
               body: 'Quanto a sua carteira se descola do benchmark que você definiu. Quanto maior, mais o resultado depende das suas escolhas, e menos do índice.',
@@ -1474,7 +1510,7 @@ const Dashboard = () => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, minmax(0,1fr))',
+          gridTemplateColumns: `repeat(${varKpi ? 4 : 3}, minmax(0,1fr))`,
           gap: 11.2,
         }}>
         <KpiCard
@@ -1484,22 +1520,40 @@ const Dashboard = () => {
           deltaStyle={patrimonioDeltaStyle}
           sub={patrimonioSub}
         />
-        <KpiCard
-          label={pnlLabel}
-          value={
-            summary.totalPnl === null
-              ? '—'
-              : `${summary.totalPnl >= 0 ? '+' : ''}${formatCurrency(Math.abs(summary.totalPnl))}`
-          }
-          delta={pnlDelta}
-          deltaStyle={pnlDeltaStyle}
-          sub={pnlSub}
-          tooltip={{
-            title: 'P&L',
-            body: 'Ganho/perda realizado + não realizado',
-            formula: '(Cotação - PM) × Qtd',
-          }}
-        />
+        {result12mKpi ? (
+          <KpiCard
+            label="Resultado 12M"
+            value={result12mKpi.value}
+            delta={result12mKpi.delta}
+            deltaStyle={{
+              fontVariantNumeric: 'tabular-nums',
+              color: result12mKpi.positive ? 'var(--pos)' : 'var(--neg)',
+            }}
+            sub={result12mKpi.sub}
+            tooltip={{
+              title: 'Alpha',
+              body: 'O retorno que veio das suas escolhas, além do que o índice já teria dado. Medido em pontos percentuais (p.p.) sobre o benchmark.',
+              formula: 'retorno da carteira − (beta × retorno do benchmark)',
+            }}
+          />
+        ) : (
+          <KpiCard
+            label={pnlLabel}
+            value={
+              summary.totalPnl === null
+                ? '—'
+                : `${summary.totalPnl >= 0 ? '+' : ''}${formatCurrency(Math.abs(summary.totalPnl))}`
+            }
+            delta={pnlDelta}
+            deltaStyle={pnlDeltaStyle}
+            sub={pnlSub}
+            tooltip={{
+              title: 'P&L',
+              body: 'Ganho/perda realizado + não realizado',
+              formula: '(Cotação - PM) × Qtd',
+            }}
+          />
+        )}
         {/*
           3º KPI: no avançado o handoff põe "Yield on cost" (`kpisAdv`); nos
           demais níveis, proventos. O protótipo mostra um delta "+0,6 p.p." no
@@ -1528,18 +1582,25 @@ const Dashboard = () => {
           />
         )}
         {/*
-          O quarto card era "Beta da carteira" com value="—" fixo, bloqueado
-          pelo mesmo motivo da barra quantitativa (ver comentário em
-          `quantMetrics`): sem marcação a mercado diária não há como calcular
-          β honestamente (TRA-143).
-
-          Diferente da barra, este card fica no topo e aparece para TODOS os
-          níveis, inclusive iniciante — um KPI de destaque permanentemente vazio
-          é a versão mais cara desse problema, então saiu em TRA-145.
-
-          Para restaurar quando TRA-143 concluir: reintroduzir o KpiCard abaixo
-          e voltar `gridTemplateColumns` desta grade para repeat(4, ...).
+          4º KPI do `kpisAdv` do handoff: VaR 95% · 21d. O antigo "Beta da
+          carteira" com '—' fixo saiu em TRA-145; o slot volta só no avançado e
+          só com VaR calculado pelo servidor — nunca vazio (TRA-141).
         */}
+        {varKpi && (
+          <KpiCard
+            label="VaR 95% · 21d"
+            value={varKpi.value}
+            delta={varKpi.delta}
+            deltaStyle={{fontVariantNumeric: 'tabular-nums', color: 'var(--neg)'}}
+            sub={varKpi.sub}
+            tooltip={{
+              title: 'VaR 95% · 21 dias',
+              body: 'A perda que não deve ser ultrapassada em 95% dos meses. Em 19 de cada 20 meses a perda tende a ficar abaixo desse valor — nos 5% restantes pode ser maior.',
+              formula: 'percentil 5% da distribuição de retornos em 21 dias × patrimônio',
+              side: 'right',
+            }}
+          />
+        )}
       </div>
 
       {/* 3. Quant bar (intermediário/avançado only) */}

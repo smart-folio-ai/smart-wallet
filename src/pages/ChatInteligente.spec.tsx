@@ -27,6 +27,10 @@ vi.mock('@/contexts/AdaptiveLevelContext', () => ({
   useAdaptiveLevel: () => ({level: adaptiveLevel.current}),
 }));
 
+vi.mock('@/hooks/usePortfolioReturns', () => ({
+  usePortfolioReturns: () => ({data: undefined}),
+}));
+
 vi.mock('@/services/chat', () => ({
   askStructuredChat: (...args: unknown[]) => askStructuredChatMock(...args),
   askStructuredCopilotChat: (...args: unknown[]) =>

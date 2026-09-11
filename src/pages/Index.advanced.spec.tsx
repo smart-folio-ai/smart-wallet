@@ -170,6 +170,65 @@ describe('Dashboard — slots do handoff no nível avançado (TRA-141)', () => {
     expect(screen.getByText(/rebalanceamento sugerido de R\$\s?48\.900/)).toBeInTheDocument();
   });
 
+  // `kpisAdv` do handoff: 2º KPI "Resultado 12M" com alpha, 4º "VaR 95% · 21d".
+  it('mostra Resultado 12M com alpha e o KPI de VaR', async () => {
+    getReturnsMock.mockResolvedValue(
+      returnsPayload({
+        benchmark: {
+          symbol: '^BVSP',
+          beta: 0.86,
+          trackingError: 0.041,
+          correlation: 0.8,
+          observations: 240,
+          upBeta: 0.88,
+          downBeta: 0.61,
+          portfolioReturn: 0.287,
+          benchmarkReturn: 0.146,
+          alpha: 0.141,
+        },
+        risk: {
+          sharpe: {sharpe: 1.42, riskFreeAnnual: 0.102, observations: 240},
+          valueAtRisk: {
+            varPct: 0.032,
+            amount: 41180,
+            cvarPct: 0.04,
+            cvarAmount: 51000,
+            horizonDays: 21,
+            confidence: 0.95,
+            windows: 220,
+          },
+          drawdown: {
+            maxDrawdown: -0.142,
+            peakDate: '2025-01-20',
+            troughDate: '2025-03-14',
+            durationDays: 38,
+            recoveryDate: null,
+          },
+        },
+      }),
+    );
+    renderDashboard();
+
+    expect(await screen.findByText('Resultado 12M')).toBeInTheDocument();
+    expect(screen.getByText('α +14,1 p.p.')).toBeInTheDocument();
+    expect(screen.getByText('vs IBOV +14,6%')).toBeInTheDocument();
+    expect(screen.getByText('VaR 95% · 21d')).toBeInTheDocument();
+    expect(screen.getByText(/^R\$\s?41\.180$/)).toBeInTheDocument();
+    // Notas da barra quant, textos do handoff.
+    expect(screen.getByText('rf 10,2% a.a.')).toBeInTheDocument();
+    expect(screen.getByText('up 0,88 / down 0,61')).toBeInTheDocument();
+    expect(screen.getByText('mar/25 · 38 dias')).toBeInTheDocument();
+    expect(screen.getByText('1,42')).toBeInTheDocument();
+    expect(screen.getByText('-14,2%')).toBeInTheDocument();
+  });
+
+  it('não mostra o KPI de VaR sem cálculo do servidor', async () => {
+    renderDashboard();
+    await screen.findByText('TWR desde início');
+    expect(screen.queryByText('VaR 95% · 21d')).not.toBeInTheDocument();
+    expect(screen.queryByText('Resultado 12M')).not.toBeInTheDocument();
+  });
+
   // O motivo de TRA-145: métrica sem valor não ocupa espaço.
   it('omite beta quando o cálculo não foi possível, sem traço', async () => {
     getReturnsMock.mockResolvedValue(
