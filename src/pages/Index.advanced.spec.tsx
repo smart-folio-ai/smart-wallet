@@ -259,15 +259,15 @@ describe('Dashboard — slots do handoff nos níveis base (TRA-141)', () => {
   });
 
   // `kpisBase`: delta do Patrimônio é o rendimento sobre o aportado.
-  it('usa o rendimento sobre o aportado como delta no intermediário', async () => {
-    withLevel('intermediate');
+  it('usa o rendimento sobre o aportado como delta no iniciante', async () => {
+    withLevel('beginner');
     renderDashboard();
     expect(await screen.findByText('desde o aporte inicial')).toBeInTheDocument();
     expect(screen.getByText('+11,1%')).toBeInTheDocument();
   });
 
-  it('não mostra YoC, beta nem desvio fora do avançado', async () => {
-    withLevel('intermediate');
+  it('não mostra YoC, beta nem desvio no iniciante', async () => {
+    withLevel('beginner');
     renderDashboard();
     await screen.findByText('desde o aporte inicial');
     expect(screen.queryByText('Yield on cost')).not.toBeInTheDocument();
@@ -275,5 +275,15 @@ describe('Dashboard — slots do handoff nos níveis base (TRA-141)', () => {
     expect(screen.queryByText('+6,2 p.p. em Ações')).not.toBeInTheDocument();
     // O card de proventos continua no slot.
     expect(screen.getByText('Proventos 12M')).toBeInTheDocument();
+  });
+
+  // Decisão de produto: visão quantitativa a partir do intermediário.
+  it('mostra TWR, YoC, beta e desvio já no intermediário', async () => {
+    withLevel('intermediate');
+    renderDashboard();
+    expect(await screen.findByText('TWR desde início')).toBeInTheDocument();
+    expect(screen.getByText('Yield on cost')).toBeInTheDocument();
+    expect(screen.getByText('Beta vs IBOV')).toBeInTheDocument();
+    expect(screen.getByText('+6,2 p.p. em Ações')).toBeInTheDocument();
   });
 });

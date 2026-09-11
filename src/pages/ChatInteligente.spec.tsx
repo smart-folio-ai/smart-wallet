@@ -95,6 +95,53 @@ describe('ChatInteligente', () => {
     expect(screen.getByTestId('chat-copilot-mode').textContent).toContain(mode);
   });
 
+  // Chips de fonte e "confiança X%" da bolha do handoff.
+  it('mostra fontes e confiança declaradas pelo servidor', async () => {
+    askStructuredChatMock.mockResolvedValueOnce({
+      intent: 'allocation_gap',
+      deterministic: true,
+      route: {type: 'deterministic_no_llm', reason: 'rules_resolved'},
+      message: 'Onde a carteira está fora do alvo: ...',
+      data: {},
+      warnings: [],
+      unavailable: [],
+      assumptions: [],
+      confidence: {score: 0.95, basis: 'deterministic'},
+      sources: ['Posições consolidadas', 'Política de investimento'],
+    });
+
+    renderPage();
+    await userEvent.type(screen.getByRole('textbox'), 'Onde estou fora do alvo?');
+    await userEvent.click(screen.getByRole('button', {name: /Enviar/i}));
+
+    const row = await screen.findByTestId('chat-sources-row');
+    expect(within(row).getByText('Posições consolidadas')).toBeDefined();
+    expect(within(row).getByText('Política de investimento')).toBeDefined();
+    expect(within(row).getByText('confiança 95%')).toBeDefined();
+  });
+
+  it('não mostra confiança em recusa honesta', async () => {
+    askStructuredChatMock.mockResolvedValueOnce({
+      intent: 'unsupported_quant_analysis',
+      deterministic: true,
+      route: {type: 'deterministic_no_llm', reason: 'capability_not_available'},
+      message: 'Ainda não calculo VaR decomposto por fator.',
+      data: {},
+      warnings: [],
+      unavailable: [],
+      assumptions: [],
+      confidence: {score: null, basis: 'refusal'},
+      sources: [],
+    });
+
+    renderPage();
+    await userEvent.type(screen.getByRole('textbox'), 'Decompor o VaR por fator');
+    await userEvent.click(screen.getByRole('button', {name: /Enviar/i}));
+
+    await screen.findByText(/Ainda não calculo VaR/);
+    expect(screen.queryByTestId('chat-sources-row')).toBeNull();
+  });
+
   it('mostra os tiles da matriz de correlação na resposta', async () => {
     askStructuredChatMock.mockResolvedValueOnce({
       intent: 'correlation_matrix',

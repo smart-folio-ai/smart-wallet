@@ -1193,7 +1193,10 @@ const Dashboard = () => {
   };
 
   // ── Slots do handoff alimentados por /returns e /composition (TRA-141) ──
-  const isAdvancedLevel = level === 'avancado';
+  // `showQuant` do protótipo: métricas quantitativas (TWR, YoC, beta, TE,
+  // VaR, desvio da política) aparecem do intermediário em diante — decisão de
+  // produto, diverge do handoff, que as reserva ao avançado.
+  const showQuant = level !== 'iniciante';
   const twrValue = returnsData?.twr?.value ?? null;
   const marketGainPct = returnsData?.contribution?.marketGainPct ?? null;
   const benchmarkMetrics = returnsData?.benchmark ?? null;
@@ -1207,7 +1210,7 @@ const Dashboard = () => {
   // rendimento sobre o que foi aportado, "desde o aporte inicial" — que é a
   // decomposição aporte vs rendimento no slot que o handoff reserva a ela. Sem
   // o dado, mantém o P&L em reais que o card já mostrava, nunca um traço.
-  const patrimonioReturn = isAdvancedLevel ? twrValue : marketGainPct;
+  const patrimonioReturn = showQuant ? twrValue : marketGainPct;
   const patrimonioDelta =
     patrimonioReturn !== null
       ? formatSignedPctPtBr(patrimonioReturn * 100)
@@ -1222,13 +1225,13 @@ const Dashboard = () => {
   const patrimonioSub =
     patrimonioReturn === null
       ? 'total investido'
-      : isAdvancedLevel
+      : showQuant
         ? 'TWR desde início'
         : 'desde o aporte inicial';
 
   // 3º KPI do avançado no handoff é "Yield on cost". Só assume o slot com
   // valor real; sem histórico de proventos, o card de dividendos continua.
-  const showYieldOnCost = isAdvancedLevel && portfolioYieldOnCost !== null;
+  const showYieldOnCost = showQuant && portfolioYieldOnCost !== null;
   const yieldOnCostSub = composition
     ? `proventos ${formatCurrencyCompactPtBr(composition.yield.estimatedAnnualIncome)}${
         // Quantidade atual projetada nos 12 meses superestima posição nova;
@@ -1256,7 +1259,7 @@ const Dashboard = () => {
   // usa. Anualizar na exibição faz número, nota e tooltip concordarem.
   const annualVolatilityPct =
     volatilityPct !== null ? volatilityPct * Math.sqrt(252) : null;
-  const showBenchmarkMetrics = isAdvancedLevel && benchmarkMetrics !== null;
+  const showBenchmarkMetrics = showQuant && benchmarkMetrics !== null;
 
   // Sharpe e drawdown do servidor usam retorno ajustado por fluxo — um resgate
   // não vira queda. O cálculo local sobre o valor bruto fica só como reserva
@@ -1278,10 +1281,10 @@ const Dashboard = () => {
 
   // 2º e 4º KPIs do `kpisAdv` do handoff: Resultado 12M com alpha e VaR 95% ·
   // 21d. Só assumem o slot com número calculado.
-  const result12mKpi = isAdvancedLevel
+  const result12mKpi = showQuant
     ? buildResult12mKpi(benchmarkMetrics ?? undefined)
     : null;
-  const varKpi = isAdvancedLevel ? buildVarKpi(serverRisk) : null;
+  const varKpi = showQuant ? buildVarKpi(serverRisk) : null;
 
   const quantMetrics = [
     {
@@ -1893,10 +1896,10 @@ const Dashboard = () => {
             </div>
             {/*
               Linha do handoff (card Alocação, `showQuant`): o maior desvio da
-              política e quanto rebalancear. Só no avançado e só com meta
-              configurada — sem ela `largestGapLine` é null.
+              política e quanto rebalancear. Do intermediário em diante e só
+              com meta configurada — sem ela `largestGapLine` é null.
             */}
-            {isAdvancedLevel && largestGapLine && (
+            {showQuant && largestGapLine && (
               <div
                 style={{
                   borderTop: '1px solid var(--hair-soft)',
