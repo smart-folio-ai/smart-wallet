@@ -274,6 +274,6 @@ describe('Dashboard — slots do handoff nos níveis base (TRA-141)', () => {
     expect(screen.queryByText('Beta vs IBOV')).not.toBeInTheDocument();
     expect(screen.queryByText('+6,2 p.p. em Ações')).not.toBeInTheDocument();
     // O card de proventos continua no slot.
-    expect(screen.getByText('Dividendos recebidos')).toBeInTheDocument();
+    expect(screen.getByText('Proventos 12M')).toBeInTheDocument();
   });
 });

@@ -41,6 +41,13 @@ import {
   hasFreshQuote,
 } from '@/pages/dashboard-summary.utils';
 import {usePortfolioComposition} from '@/hooks/usePortfolioComposition';
+import {usePortfolioRiskContribution} from '@/hooks/usePortfolioRiskContribution';
+import {
+  buildRiskRows,
+  describeExcluded,
+  describeRiskFooter,
+  riskBarWidthPct,
+} from '@/pages/risk-contribution-display.utils';
 import type {AllocationBucket} from '@/hooks/usePortfolioComposition';
 import {
   buildExposureRowsFromBuckets,
@@ -115,23 +122,6 @@ function computeExposure(
       };
     })
     .sort((a, b) => b.value - a.value);
-}
-
-const RISK_MUL: Record<string, number> = {
-  stock: 1.5, crypto: 2.5, fii: 1.0, fund: 0.5, etf: 0.8, other: 0.3,
-};
-
-function computeRiskContribution(assets: Asset[]) {
-  const weighted = assets.map((a) => ({
-    symbol: a.symbol,
-    rw: (a.allocation / 100) * (RISK_MUL[a.type] ?? 1),
-    alloc: a.allocation,
-  }));
-  const totalRisk = weighted.reduce((s, a) => s + a.rw, 0) || 1;
-  return weighted
-    .map(({symbol, rw, alloc}) => ({symbol, share: (rw / totalRisk) * 100, weight: alloc}))
-    .sort((a, b) => b.share - a.share)
-    .slice(0, 8);
 }
 
 const SIGNAL_STYLE: Record<string, {bg: string; color: string}> = {
@@ -268,6 +258,7 @@ const Portfolio = () => {
   // Meta real do usuário e desvio por balde (TRA-141). Substitui o
   // `DEFAULT_TARGETS` que o card de exposição exibia como se fosse a política.
   const {data: composition} = usePortfolioComposition();
+  const {data: riskContribution} = usePortfolioRiskContribution();
 
   // ── Existing state (untouched) ────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('all');
@@ -563,7 +554,10 @@ const Portfolio = () => {
     exposureGroupBy === 'class' && Boolean(composition?.rebalancing?.hasTarget);
   const groupLabel =
     exposureGroupBy === 'sector' ? 'setor' : exposureGroupBy === 'account' ? 'conta' : 'classe';
-  const riskRows = useMemo(() => computeRiskContribution(assets), [assets]);
+  // Decomposição de Euler do servidor (TRA-141). Antes a "fatia do VaR" saía
+  // de multiplicadores fixos por classe — sem dado, o card não aparece.
+  const riskRows = useMemo(() => buildRiskRows(riskContribution), [riskContribution]);
+  const riskExcludedNote = describeExcluded(riskContribution);
 
   const isAdvanced = level === 'avancado';
   const riskSectionTitle = isAdvanced ? 'Contribuição de risco por ativo' : 'Onde está concentrada a carteira';
@@ -571,15 +565,7 @@ const Portfolio = () => {
     ? 'Fatia do VaR 95% · janela 252 dias'
     : 'Quanto cada ativo pesa no sobe-e-desce da carteira';
 
-  const riskInsight = useMemo(() => {
-    if (riskRows.length < 2) return null;
-    const [first, second] = riskRows;
-    const shareSum = first.share + second.share;
-    const weightSum = first.weight + second.weight;
-    return isAdvanced
-      ? `Dois nomes (${first.symbol} e ${second.symbol}) respondem por ${shareSum.toFixed(1)}% do VaR com ${weightSum.toFixed(1)}% de peso. A concentração de risco é ${shareSum > weightSum ? 'maior que' : 'próxima de'} a concentração de valor.`
-      : `${first.symbol} e ${second.symbol} juntos movem ${shareSum.toFixed(0)}% do sobe-e-desce da sua carteira, mesmo somando só ${weightSum.toFixed(0)}% do valor investido.`;
-  }, [riskRows, isAdvanced]);
+  const riskInsight = describeRiskFooter(riskRows, isAdvanced);
 
   // Active columns for DataTable header
   const allColDefs: {
@@ -934,58 +920,38 @@ const Portfolio = () => {
       {riskRows.length > 0 && (
         <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
           <SectionHeader title={riskSectionTitle} subtitle={riskSectionSubtitle} />
-          <div style={{padding: '0 0 16px'}}>
-            <div style={{overflowX: 'auto'}}>
-              <table style={{width: '100%', borderCollapse: 'collapse'}}>
-                <thead>
-                  <tr style={{borderBottom: '1px solid var(--hair)'}}>
-                    <th style={{padding: '8px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Ativo</th>
-                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Risco %</th>
-                    <th style={{padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Peso %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {riskRows.map((row) => (
-                    <tr key={row.symbol} style={{borderBottom: '1px solid var(--hair-soft)'}}>
-                      <td style={{padding: '10px 20px', fontSize: 13, fontWeight: 600}}>{row.symbol}</td>
-                      <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, fontVariantNumeric: 'tabular-nums'}}>
-                        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8}}>
-                          <div style={{width: 60, height: 5, borderRadius: 3, background: 'var(--surf-3)', overflow: 'hidden'}}>
-                            <div style={{
-                              width: `${Math.min(row.share, 100)}%`,
-                              height: '100%',
-                              background: row.share > 20 ? 'var(--neg)' : row.share > 10 ? 'var(--warn)' : 'var(--pos)',
-                              borderRadius: 3,
-                            }} />
-                          </div>
-                          <span style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: row.share > 20 ? 'var(--neg)' : row.share > 10 ? 'var(--warn)' : 'var(--color-neutral-400)',
-                            minWidth: 40,
-                            textAlign: 'right',
-                          }}>
-                            {row.share.toFixed(1)}%
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{padding: '10px 12px', textAlign: 'right', fontSize: 13, color: 'var(--color-neutral-500)', fontVariantNumeric: 'tabular-nums'}}>{row.weight.toFixed(1)}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {riskInsight && (
-              <p style={{
-                margin: '4px 20px 0',
-                paddingTop: 12,
-                borderTop: '1px solid var(--hair-soft)',
-                fontSize: 12,
-                lineHeight: 1.5,
-                color: 'var(--color-neutral-500)',
-              }}>
+          {/* Linhas do handoff: ticker · barra · fatia do risco · peso. */}
+          <div
+            data-testid="risk-contribution-rows"
+            style={{padding: 16.8, display: 'flex', flexDirection: 'column', gap: 11.2}}>
+            {riskRows.map((row) => (
+              <div key={row.symbol} style={{display: 'flex', alignItems: 'center', gap: 11.2}}>
+                <span style={{width: 62, fontSize: 12, fontWeight: 600, color: 'var(--color-neutral-200)'}}>
+                  {row.symbol}
+                </span>
+                <div style={{flex: 1, height: 10, borderRadius: 2, background: 'rgba(var(--rgb-line),0.06)', overflow: 'hidden'}}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${riskBarWidthPct(row.sharePct)}%`,
+                      background: row.warn ? 'var(--warn)' : 'var(--color-accent-400)',
+                    }}
+                  />
+                </div>
+                <span style={{width: 52, textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-300)'}}>
+                  {row.share}
+                </span>
+                <span style={{width: 44, textAlign: 'right', fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-600)'}}>
+                  {row.weight}
+                </span>
+              </div>
+            ))}
+            {(riskInsight || riskExcludedNote) && (
+              <div style={{fontSize: 11.5, color: 'var(--color-neutral-500)', lineHeight: 1.5, paddingTop: 8.4, borderTop: '1px solid var(--hair-soft)'}}>
                 {riskInsight}
-              </p>
+                {riskInsight && riskExcludedNote ? ' ' : ''}
+                {riskExcludedNote}
+              </div>
             )}
           </div>
         </section>
