@@ -23,6 +23,16 @@ export interface StructuredChatResponse {
   unavailable?: string[];
   warnings?: string[];
   assumptions?: string[];
+  /**
+   * Índice de qualidade do dado que sustentou a resposta, 0-1 (TRA-141).
+   * `score: null` em recusa honesta. Opcional: histórico antigo não tem.
+   */
+  confidence?: {
+    score: number | null;
+    basis: 'deterministic' | 'rag' | 'fallback' | 'refusal';
+  };
+  /** Chips de fonte da bolha do handoff ("Posições consolidadas"…). */
+  sources?: string[];
 }
 
 export interface StructuredChatRequest {

@@ -116,6 +116,37 @@ function ResponseEvidence({payload}: {payload?: StructuredChatResponse}) {
   );
 }
 
+/**
+ * Chips de fonte e "confiança X%" da bolha do Copiloto (protótipo App,
+ * `m.sources` / `m.confidence`). Só com o que o servidor declarou: resposta
+ * antiga do histórico, sem esses campos, não ganha número inventado.
+ */
+function CopilotSourcesRow({payload}: {payload?: StructuredChatResponse}) {
+  const sources = payload?.sources ?? [];
+  const score = payload?.confidence?.score;
+  const hasScore = typeof score === 'number' && Number.isFinite(score);
+  if (!sources.length && !hasScore) return null;
+  return (
+    <div
+      data-testid="chat-sources-row"
+      style={{display: 'flex', alignItems: 'center', gap: 11.2, marginTop: 11.2, paddingTop: 8.4, borderTop: '1px solid var(--hair-soft)', flexWrap: 'wrap'}}>
+      {sources.map((source) => (
+        <span
+          key={source}
+          style={{display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: 'var(--color-neutral-600)', border: '1px solid var(--hair)', borderRadius: 6, padding: '2px 6px'}}>
+          <i className="ph ph-file-text" style={{fontSize: 11}} />
+          {source}
+        </span>
+      ))}
+      {hasScore && (
+        <span style={{fontSize: 10.5, color: 'var(--color-neutral-600)', marginLeft: 'auto'}}>
+          confiança {Math.round((score as number) * 100)}%
+        </span>
+      )}
+    </div>
+  );
+}
+
 /** Grade de métricas da bolha do Copiloto, como no protótipo App do handoff. */
 function CopilotMetricTiles({
   payload,
@@ -685,6 +716,7 @@ export default function ChatInteligente() {
                     {msg.role === 'assistant' && (
                       <CopilotMetricTiles payload={msg.payload} level={level} returns={returnsData} />
                     )}
+                    {msg.role === 'assistant' && <CopilotSourcesRow payload={msg.payload} />}
                     {msg.role === 'assistant' && <ResponseEvidence payload={msg.payload} />}
                     {msg.role === 'assistant' && msg.payload && <AssistantStructuredBlocks payload={msg.payload} />}
 

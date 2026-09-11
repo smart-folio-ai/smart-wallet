@@ -559,7 +559,8 @@ const Portfolio = () => {
   const riskRows = useMemo(() => buildRiskRows(riskContribution), [riskContribution]);
   const riskExcludedNote = describeExcluded(riskContribution);
 
-  const isAdvanced = level === 'avancado';
+  // Mesmo corte do dashboard: visão quantitativa do intermediário em diante.
+  const isAdvanced = level !== 'iniciante';
   const riskSectionTitle = isAdvanced ? 'Contribuição de risco por ativo' : 'Onde está concentrada a carteira';
   const riskSectionSubtitle = isAdvanced
     ? 'Fatia do VaR 95% · janela 252 dias'
