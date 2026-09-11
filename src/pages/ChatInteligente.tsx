@@ -14,6 +14,12 @@ import {
   StructuredChatResponse,
 } from '@/services/chat';
 import {SectionHeader} from '@/components/shared';
+import {useAdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
+import {
+  buildCopilotMetrics,
+  COPILOT_PROMPTS,
+  copilotModeLabel,
+} from './copilot-display.utils';
 
 type ChatMessage = {
   id: string;
@@ -29,15 +35,6 @@ type ChatMessage = {
    */
   aiGenerated?: boolean;
 };
-
-const QUICK_PROMPTS = [
-  'Minha carteira está concentrada?',
-  'Compare PETR4 e VALE3',
-  'Quanto imposto pago se vender ITUB4?',
-  'Mostre o risco da minha carteira',
-  'Esse ativo faz sentido para minha carteira? PETR4',
-  'Qual meu resumo da carteira hoje?',
-];
 
 const COPILOT_FLOWS: Array<{
   label: string;
@@ -113,6 +110,30 @@ function ResponseEvidence({payload}: {payload?: StructuredChatResponse}) {
           Cálculo determinístico
         </Badge>
       )}
+    </div>
+  );
+}
+
+/** Grade de métricas da bolha do Copiloto, como no protótipo App do handoff. */
+function CopilotMetricTiles({payload}: {payload?: StructuredChatResponse}) {
+  const metrics = buildCopilotMetrics(payload?.data);
+  if (!metrics.length) return null;
+  return (
+    <div
+      data-testid="chat-metric-tiles"
+      style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8.4, marginTop: 11.2}}>
+      {metrics.map((metric) => (
+        <div
+          key={metric.label}
+          style={{border: '1px solid var(--hair-soft)', borderRadius: 8, padding: '8.4px 11.2px', background: 'rgba(var(--rgb-bg),0.5)'}}>
+          <div style={{fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--color-neutral-600)'}}>
+            {metric.label}
+          </div>
+          <div style={{fontSize: 14, fontWeight: 600, marginTop: 4, fontVariantNumeric: 'tabular-nums'}}>
+            {metric.value}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -475,6 +496,9 @@ export default function ChatInteligente() {
     });
   }, [messages, sending]);
 
+  const {level} = useAdaptiveLevel();
+  const levelPrompts = COPILOT_PROMPTS[level] ?? COPILOT_PROMPTS.avancado;
+
   const introVisible = useMemo(
     () => messages.filter((message) => message.role === 'user').length === 0,
     [messages],
@@ -582,7 +606,7 @@ export default function ChatInteligente() {
               <i className="ph-fill ph-sparkle" style={{fontSize: 16, color: 'var(--ac)'}} />
               <div>
                 <div style={{fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 600}}>Copiloto Trackerr</div>
-                <div style={{fontSize: 11, color: 'var(--color-neutral-600)'}}>Análise em tempo real da sua carteira</div>
+                <div data-testid="chat-copilot-mode" style={{fontSize: 11, color: 'var(--color-neutral-600)', marginTop: 2}}>{copilotModeLabel(level)}</div>
               </div>
               <span style={{marginLeft: 'auto', fontSize: 10.5, padding: '2px 8px', borderRadius: 10, background: 'var(--badge-cy-bg)', color: 'var(--cy)'}}>
                 contexto: carteira consolidada
@@ -601,10 +625,13 @@ export default function ChatInteligente() {
                   <i className="ph-fill ph-sparkle" style={{fontSize: 32, color: 'var(--ac)'}} />
                   <div style={{fontSize: 13, color: 'var(--color-neutral-500)', textAlign: 'center'}}>Como posso ajudar com sua carteira hoje?</div>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center'}}>
-                    {QUICK_PROMPTS.map(p => (
-                      <button key={p} type="button" onClick={() => sendQuestion(p)}
-                        style={{height: 28, padding: '0 12px', borderRadius: 14, border: '1px solid var(--hair)', background: 'transparent', fontSize: 11.5, color: 'var(--color-neutral-400)', cursor: 'pointer'}}>
-                        {p}
+                    {/* Fluxos guiados (vender, rebalancear, reduzir risco, comitê).
+                        Não estão no handoff; ficam no estado vazio para a linha
+                        de prompts acima do input ser a do protótipo. */}
+                    {COPILOT_FLOWS.map(f => (
+                      <button key={f.flow} type="button" onClick={() => sendQuestion(f.question, {copilotFlow: f.flow})}
+                        style={{height: 28, padding: '0 11.2px', borderRadius: 6, border: '1px solid var(--hair)', background: 'transparent', fontSize: 11.5, color: 'var(--color-neutral-400)', cursor: 'pointer'}}>
+                        {f.label}
                       </button>
                     ))}
                   </div>
@@ -638,6 +665,7 @@ export default function ChatInteligente() {
                       <p style={{whiteSpace: 'pre-wrap'}}>{msg.text}</p>
                     )}
 
+                    {msg.role === 'assistant' && <CopilotMetricTiles payload={msg.payload} />}
                     {msg.role === 'assistant' && <ResponseEvidence payload={msg.payload} />}
                     {msg.role === 'assistant' && msg.payload && <AssistantStructuredBlocks payload={msg.payload} />}
 
@@ -681,12 +709,13 @@ export default function ChatInteligente() {
 
             {/* Input area */}
             <div style={{borderTop: '1px solid var(--hair-soft)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10}}>
-              {/* COPILOT_FLOWS chips */}
-              <div data-testid="chat-prompt-chips" style={{display: 'flex', gap: 6, flexWrap: 'wrap'}}>
-                {COPILOT_FLOWS.map(f => (
-                  <button key={f.flow} type="button" onClick={() => sendQuestion(f.question, {copilotFlow: f.flow})}
-                    style={{height: 28, padding: '0 12px', borderRadius: 14, border: '1px solid var(--hair)', background: 'transparent', fontSize: 11.5, color: 'var(--color-neutral-400)', cursor: 'pointer'}}>
-                    {f.label}
+              {/* Prompts por nível — handoff, tela Copiloto */}
+              <div data-testid="chat-prompt-chips" style={{display: 'flex', gap: 5.6, flexWrap: 'wrap'}}>
+                {levelPrompts.map(p => (
+                  <button key={p} type="button" onClick={() => sendQuestion(p)}
+                    className="hover:!border-[color:var(--color-accent-700)] hover:!text-[color:var(--color-neutral-100)]"
+                    style={{height: 28, padding: '0 11.2px', borderRadius: 6, border: '1px solid var(--hair)', background: 'transparent', fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--color-neutral-400)', cursor: 'pointer'}}>
+                    {p}
                   </button>
                 ))}
               </div>
