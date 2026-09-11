@@ -40,10 +40,29 @@ import {
   deriveMarketDataStatus,
   hasFreshQuote,
 } from '@/pages/dashboard-summary.utils';
+import {usePortfolioComposition} from '@/hooks/usePortfolioComposition';
+import type {AllocationBucket} from '@/hooks/usePortfolioComposition';
+import {
+  buildExposureRowsFromBuckets,
+  deviationColor,
+} from '@/pages/composition-display.utils';
+import {formatPctPtBr, formatPpPtBr} from '@/utils/formatters';
 
 // ── Exposure + Risk helpers ────────────────────────────────────────────────
-const DEFAULT_TARGETS: Record<string, number> = {
-  stock: 40, fii: 20, fund: 25, etf: 10, crypto: 5,
+//
+// Havia aqui um `DEFAULT_TARGETS` (stock 40 / fii 20 / fund 25 / etf 10 /
+// crypto 5) que o card "Real vs alvo da política de investimento" usava como
+// alvo. Não era a política do usuário: era um número inventado exibido com o
+// rótulo da política dele. Saiu em TRA-141 — o alvo agora vem de
+// `/portfolio/composition`, que lê a meta real e reusa o mesmo cálculo do
+// alerta de alocação.
+
+/** Balde da política -> chave de cor já usada pelo card. */
+const BUCKET_COLOR_KEY: Record<AllocationBucket, string> = {
+  stocks: 'stock',
+  crypto: 'crypto',
+  fiis: 'fii',
+  other: 'other',
 };
 const TYPE_LABEL: Record<string, string> = {
   stock: 'Ações', fii: 'FIIs', fund: 'Renda Fixa', etf: 'ETFs', crypto: 'Cripto', other: 'Outros',
@@ -81,7 +100,10 @@ function computeExposure(
   return Object.entries(acc)
     .map(([key, value]) => {
       const pct = totalValue > 0 ? (value / totalValue) * 100 : 0;
-      const target = groupBy === 'class' ? (DEFAULT_TARGETS[key] ?? 0) : 0;
+      // Sem alvo aqui: agrupamento por tipo cru (6 tipos) não casa com a
+      // política, que é definida em 4 baldes. Quando há meta, as linhas vêm
+      // de `buildExposureRowsFromBuckets` no lugar desta função.
+      const target = 0;
       return {
         type: key,
         label: groupBy === 'class' ? (TYPE_LABEL[key] || key) : key,
@@ -243,6 +265,9 @@ const Portfolio = () => {
   const queryClient = useQueryClient();
   const {planName} = useSubscription();
   const {level} = useAdaptiveLevel();
+  // Meta real do usuário e desvio por balde (TRA-141). Substitui o
+  // `DEFAULT_TARGETS` que o card de exposição exibia como se fosse a política.
+  const {data: composition} = usePortfolioComposition();
 
   // ── Existing state (untouched) ────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('all');
@@ -515,10 +540,27 @@ const Portfolio = () => {
     portfolios.find((p: any) => (p.id || p._id) === selectedPortfolioId)?.name ?? 'esta carteira';
 
   // ── Nocturne derived values ───────────────────────────────────────────
-  const exposureRows = useMemo(
-    () => computeExposure(filteredAssets, totalValue, exposureGroupBy),
-    [filteredAssets, totalValue, exposureGroupBy],
-  );
+  // Com meta configurada, o card compara contra a política REAL, nos 4 baldes
+  // em que ela é definida (TRA-141). Sem meta — ou agrupando por setor/conta,
+  // que a política não cobre — mostra só o peso, sem inventar alvo.
+  const exposureRows = useMemo(() => {
+    const rebalancing = composition?.rebalancing;
+    if (exposureGroupBy === 'class' && rebalancing?.hasTarget) {
+      return buildExposureRowsFromBuckets(
+        rebalancing.buckets,
+        rebalancing.totalValue,
+      ).map((row) => ({
+        ...row,
+        type: row.bucket,
+        color:
+          CLASS_COLORS[BUCKET_COLOR_KEY[row.bucket]] ||
+          'var(--color-neutral-400)',
+      }));
+    }
+    return computeExposure(filteredAssets, totalValue, exposureGroupBy);
+  }, [composition, filteredAssets, totalValue, exposureGroupBy]);
+  const hasPolicyTarget =
+    exposureGroupBy === 'class' && Boolean(composition?.rebalancing?.hasTarget);
   const groupLabel =
     exposureGroupBy === 'sector' ? 'setor' : exposureGroupBy === 'account' ? 'conta' : 'classe';
   const riskRows = useMemo(() => computeRiskContribution(assets), [assets]);
@@ -812,9 +854,19 @@ const Portfolio = () => {
           <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
             <SectionHeader
               title={`Exposição por ${groupLabel}`}
-              subtitle="Real vs alvo da política de investimento"
+              subtitle={
+                // "Nada é escondido sem dizer que existe" (handoff): sem meta,
+                // o card diz que o desvio existe e o que falta para vê-lo.
+                hasPolicyTarget
+                  ? 'Real vs alvo da política de investimento'
+                  : exposureGroupBy === 'class'
+                    ? 'Peso atual · defina uma política para ver o desvio'
+                    : `Peso atual por ${groupLabel}`
+              }
               action={
-                <span style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>peso · desvio</span>
+                <span style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>
+                  {hasPolicyTarget ? 'peso · desvio' : 'peso'}
+                </span>
               }
             />
             <div style={{padding: '14px 16.8px 16.8px', display: 'flex', flexDirection: 'column', gap: 14}}>
@@ -823,25 +875,24 @@ const Portfolio = () => {
                   <div style={{display: 'flex', alignItems: 'baseline', gap: 8.4, fontSize: 12.5}}>
                     <span style={{flex: 1, color: 'var(--color-neutral-200)'}}>{row.label}</span>
                     <span style={{color: 'var(--color-neutral-500)', fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(row.value)}</span>
-                    <span style={{width: 46, textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{row.pct.toFixed(1)}%</span>
-                    <span
-                      style={{
-                        width: 62,
-                        textAlign: 'right',
-                        fontVariantNumeric: 'tabular-nums',
-                        fontSize: 11.5,
-                        color: row.target === 0
-                          ? 'var(--color-neutral-500)'
-                          : row.dev > 5
-                            ? 'var(--warn)'
-                            : row.dev < -5
-                              ? 'var(--neg)'
-                              : 'var(--pos)',
-                      }}>
-                      {row.target === 0
-                        ? '—'
-                        : `${row.dev > 0 ? '+' : ''}${row.dev.toFixed(1)} p.p.`}
-                    </span>
+                    <span style={{width: 46, textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{formatPctPtBr(row.pct, 1)}</span>
+                    {/*
+                      Desvio só existe contra a política real. Antes, sem alvo,
+                      a coluna exibia '—' em toda linha; agora ela não aparece
+                      — e o cabeçalho deixa de prometer "desvio".
+                    */}
+                    {hasPolicyTarget && (
+                      <span
+                        style={{
+                          width: 62,
+                          textAlign: 'right',
+                          fontVariantNumeric: 'tabular-nums',
+                          fontSize: 11.5,
+                          color: deviationColor(row.dev),
+                        }}>
+                        {formatPpPtBr(row.dev)}
+                      </span>
+                    )}
                   </div>
                   <div style={{position: 'relative', height: 8, borderRadius: 2, background: 'rgba(var(--rgb-line),0.06)', marginTop: 5.6}}>
                     <div
@@ -868,7 +919,8 @@ const Portfolio = () => {
                   </div>
                 </div>
               ))}
-              {exposureGroupBy === 'class' && (
+              {/* Legenda da marca de alvo só quando existe alvo desenhado. */}
+              {hasPolicyTarget && (
                 <div style={{display: 'flex', alignItems: 'center', gap: 8.4, fontSize: 11, color: 'var(--color-neutral-600)', paddingTop: 5.6, borderTop: '1px solid var(--hair-soft)'}}>
                   <span style={{width: 2, height: 12, background: 'var(--color-neutral-400)'}} />
                   <span>marca vertical = alvo definido na sua política</span>

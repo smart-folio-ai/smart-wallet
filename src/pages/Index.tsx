@@ -21,7 +21,15 @@ import {formatCurrency} from '@/utils';
 import {CustomTooltip} from '@/components/ui/custom-tooltip';
 import {useSubscription} from '@/hooks/useSubscription';
 import {useAdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
-import ReturnsPanel from '@/components/portfolio/ReturnsPanel';
+import {usePortfolioReturns} from '@/hooks/usePortfolioReturns';
+import {usePortfolioComposition} from '@/hooks/usePortfolioComposition';
+import {describeLargestGap} from '@/pages/composition-display.utils';
+import {QuantMetricCell} from '@/components/shared/QuantMetricCell';
+import {
+  formatCurrencyCompactPtBr,
+  formatPctPtBr,
+  formatSignedPctPtBr,
+} from '@/utils/formatters';
 import {
   buildAiCacheSignature,
   deriveDashboardHighlights,
@@ -284,6 +292,11 @@ const classLabel = (type: string): string => {
 const Dashboard = () => {
   const navigate = useNavigate();
   const {level} = useAdaptiveLevel();
+  // Retornos (TWR, beta, tracking error) e composição (yield on cost, desvio da
+  // política) alimentam os slots do handoff: delta do Patrimônio, 3º KPI,
+  // barra quant e linha de desvio do card Alocação (TRA-141).
+  const {data: returnsData} = usePortfolioReturns();
+  const {data: composition} = usePortfolioComposition();
   const {
     planName,
     isSubscribed,
@@ -1177,36 +1190,137 @@ const Dashboard = () => {
       ? `${estimatedDividendYieldPct.toFixed(2)}% DY`
       : undefined;
 
-  // Beta vs IBOV e Tracking error ficam FORA desta barra até a marcação a
-  // mercado diária existir (TRA-143). Ambos exigem retornos diários da carteira
-  // pareados dia-a-dia com o IBOV; a série hoje disponível é reconstruída das
-  // negociações e fica "achatada" entre trades (ver `history-from-trades.ts` no
-  // server), então covariância/correlação sobre ela produziria um número
-  // confiante mas incorreto — o mesmo problema que motivou remover o preço-alvo
-  // fabricado (TRA-55).
+  // ── Slots do handoff alimentados por /returns e /composition (TRA-141) ──
+  const isAdvancedLevel = level === 'avancado';
+  const twrValue = returnsData?.twr?.value ?? null;
+  const marketGainPct = returnsData?.contribution?.marketGainPct ?? null;
+  const benchmarkMetrics = returnsData?.benchmark ?? null;
+  const portfolioYieldOnCost = composition?.yield?.portfolioYieldOnCost ?? null;
+  const largestGapLine = describeLargestGap(
+    composition?.rebalancing?.largestGap,
+  );
+
+  // Delta do Patrimônio conforme o handoff (`kpisAdv` / `kpisBase` do
+  // protótipo App): no avançado é o TWR, "TWR desde início"; nos demais, o
+  // rendimento sobre o que foi aportado, "desde o aporte inicial" — que é a
+  // decomposição aporte vs rendimento no slot que o handoff reserva a ela. Sem
+  // o dado, mantém o P&L em reais que o card já mostrava, nunca um traço.
+  const patrimonioReturn = isAdvancedLevel ? twrValue : marketGainPct;
+  const patrimonioDelta =
+    patrimonioReturn !== null
+      ? formatSignedPctPtBr(patrimonioReturn * 100)
+      : totalValueDelta;
+  const patrimonioDeltaStyle: React.CSSProperties =
+    patrimonioReturn !== null
+      ? {
+          fontVariantNumeric: 'tabular-nums',
+          color: patrimonioReturn >= 0 ? 'var(--pos)' : 'var(--neg)',
+        }
+      : totalValueDeltaStyle;
+  const patrimonioSub =
+    patrimonioReturn === null
+      ? 'total investido'
+      : isAdvancedLevel
+        ? 'TWR desde início'
+        : 'desde o aporte inicial';
+
+  // 3º KPI do avançado no handoff é "Yield on cost". Só assume o slot com
+  // valor real; sem histórico de proventos, o card de dividendos continua.
+  const showYieldOnCost = isAdvancedLevel && portfolioYieldOnCost !== null;
+  const yieldOnCostSub = composition
+    ? `proventos ${formatCurrencyCompactPtBr(composition.yield.estimatedAnnualIncome)}${
+        // Quantidade atual projetada nos 12 meses superestima posição nova;
+        // o servidor sinaliza e a tela diz em vez de esconder.
+        composition.yield.approximated ? ' · estimado' : ''
+      }`
+    : undefined;
+
+  // Barra quantitativa, na ordem do handoff: Sharpe, Volatilidade, Beta vs
+  // IBOV, Máx. drawdown, Tracking error.
   //
-  // Antes eram exibidos como '—' fixo. Uma métrica permanentemente indisponível
-  // ao lado de um Sharpe válido contamina a leitura de todas as outras da mesma
-  // barra, então foram removidas em TRA-145.
+  // Beta e tracking error saíram em TRA-145 porque eram '—' fixo — sem série
+  // marcada a mercado não havia como calculá-los. TRA-143 corrigiu a série e
+  // TRA-141 escreveu o cálculo; voltam aqui, onde o protótipo App os põe, no
+  // nível avançado e SÓ com valor calculado. Nunca traço.
   //
-  // Para restaurar quando TRA-143 concluir: reintroduzir as duas entradas aqui.
-  // A grade deriva as colunas de `quantMetrics.length`, então nada mais muda.
+  // Tooltips com o texto do GLOSSARY do protótipo, verbatim.
+  const ptBr2 = (value: number) =>
+    value.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  // `computeDailyVolatility` devolve o desvio DIÁRIO. O handoff define
+  // volatilidade anualizada (× √252) — a mesma premissa iid que o Sharpe já
+  // usa. Anualizar na exibição faz número, nota e tooltip concordarem.
+  const annualVolatilityPct =
+    volatilityPct !== null ? volatilityPct * Math.sqrt(252) : null;
+  const showBenchmarkMetrics = isAdvancedLevel && benchmarkMetrics !== null;
   const quantMetrics = [
     {
       label: 'Sharpe',
-      value: sharpeRatio !== null ? sharpeRatio.toFixed(2) : '—',
+      value: sharpeRatio !== null ? ptBr2(sharpeRatio) : '—',
       note: sharpeRatio !== null ? 'anualizado' : 'dados insuficientes',
+      tooltip: {
+        title: 'Sharpe',
+        body: 'Quanto de retorno a carteira entregou por unidade de risco assumido. Acima de 1,0 é considerado bom: você foi bem pago pelo sobe-e-desce que aceitou.',
+        formula:
+          '(retorno da carteira − taxa livre de risco) ÷ volatilidade · janela 252 dias úteis',
+      },
     },
     {
       label: 'Volatilidade',
-      value: volatilityPct !== null ? `${volatilityPct.toFixed(2)}%` : '—',
-      note: 'diária',
+      value:
+        annualVolatilityPct !== null ? formatPctPtBr(annualVolatilityPct, 1) : '—',
+      note: 'anualizada',
+      tooltip: {
+        title: 'Volatilidade',
+        body: 'O tamanho médio das oscilações da carteira. Variações desse tamanho para cima ou para baixo são normais — não são erro nem prejuízo definitivo.',
+        formula:
+          'desvio-padrão dos retornos diários × √252 · janela 252 dias úteis',
+      },
     },
+    ...(showBenchmarkMetrics && benchmarkMetrics.beta !== null
+      ? [
+          {
+            label: 'Beta vs IBOV',
+            value: ptBr2(benchmarkMetrics.beta),
+            note: `${benchmarkMetrics.observations} pregões`,
+            tooltip: {
+              title: 'Beta vs IBOV',
+              body: 'Quanto a carteira se move quando o IBOV se move. Abaixo de 1, para cada 1% de alta do índice a carteira sobe menos — e cai menos também nas quedas.',
+              formula:
+                'covariância(carteira, IBOV) ÷ variância(IBOV) · janela 252 dias úteis',
+            },
+          },
+        ]
+      : []),
     {
       label: 'Máx. drawdown',
-      value: maxDrawdownPct !== null ? `${maxDrawdownPct.toFixed(2)}%` : '—',
+      value: maxDrawdownPct !== null ? formatPctPtBr(maxDrawdownPct, 1) : '—',
       note: 'pior retração',
+      tooltip: {
+        title: 'Máximo drawdown',
+        body: 'A maior queda já vivida entre um topo e o fundo seguinte, antes de recuperar. É o pior momento histórico da carteira — útil para saber o que você aguentaria de novo.',
+        formula: '(menor valor após o topo ÷ topo) − 1 · pior janela do histórico',
+        side: 'right' as const,
+      },
     },
+    ...(showBenchmarkMetrics && benchmarkMetrics.trackingError !== null
+      ? [
+          {
+            label: 'Tracking error',
+            value: formatPctPtBr(benchmarkMetrics.trackingError * 100, 1),
+            note: 'anualizado',
+            tooltip: {
+              title: 'Tracking error',
+              body: 'Quanto a sua carteira se descola do benchmark que você definiu. Quanto maior, mais o resultado depende das suas escolhas, e menos do índice.',
+              formula:
+                'desvio-padrão da diferença de retorno (carteira − benchmark) anualizado',
+              side: 'right' as const,
+            },
+          },
+        ]
+      : []),
   ];
 
   const portfolioPeriodPct =
@@ -1366,9 +1480,9 @@ const Dashboard = () => {
         <KpiCard
           label="Patrimônio total"
           value={formatCurrency(summary.totalValue)}
-          delta={totalValueDelta}
-          deltaStyle={totalValueDeltaStyle}
-          sub="total investido"
+          delta={patrimonioDelta}
+          deltaStyle={patrimonioDeltaStyle}
+          sub={patrimonioSub}
         />
         <KpiCard
           label={pnlLabel}
@@ -1386,13 +1500,33 @@ const Dashboard = () => {
             formula: '(Cotação - PM) × Qtd',
           }}
         />
-        <KpiCard
-          label="Dividendos recebidos"
-          value={formatCurrency(totalDividendsYear)}
-          delta={divYieldDelta}
-          deltaStyle={{color: 'var(--pos)', fontVariantNumeric: 'tabular-nums'}}
-          sub="últimos 12 meses"
-        />
+        {/*
+          3º KPI: no avançado o handoff põe "Yield on cost" (`kpisAdv`); nos
+          demais níveis, proventos. O protótipo mostra um delta "+0,6 p.p." no
+          YoC, mas ele exige o YoC do período anterior, que ainda não é
+          guardado — omitido em vez de inventado.
+        */}
+        {showYieldOnCost ? (
+          <KpiCard
+            label="Yield on cost"
+            value={formatPctPtBr((portfolioYieldOnCost as number) * 100)}
+            sub={yieldOnCostSub}
+            tooltip={{
+              title: 'Yield on cost',
+              body: 'Os proventos dos últimos 12 meses divididos pelo que você pagou pelos ativos — não pelo preço de hoje. Mostra o retorno em renda sobre o seu custo real.',
+              formula: 'proventos 12M ÷ preço médio de aquisição da posição',
+              side: 'right',
+            }}
+          />
+        ) : (
+          <KpiCard
+            label="Dividendos recebidos"
+            value={formatCurrency(totalDividendsYear)}
+            delta={divYieldDelta}
+            deltaStyle={{color: 'var(--pos)', fontVariantNumeric: 'tabular-nums'}}
+            sub="últimos 12 meses"
+          />
+        )}
         {/*
           O quarto card era "Beta da carteira" com value="—" fixo, bloqueado
           pelo mesmo motivo da barra quantitativa (ver comentário em
@@ -1408,15 +1542,6 @@ const Dashboard = () => {
         */}
       </div>
 
-      {/*
-        Rentabilidade por nível (TRA-147). Vem logo abaixo dos KPIs porque
-        responde a pergunta que o P&L a custo médio deles não responde: fui
-        bem, ou só coloquei mais dinheiro? O painel adapta a apresentação ao
-        nível — o iniciante vê a decomposição em reais, o intermediário ganha
-        TWR, o avançado ganha IRR ao lado.
-      */}
-      <ReturnsPanel />
-
       {/* 3. Quant bar (intermediário/avançado only) */}
       {level !== 'iniciante' && (
         <div
@@ -1427,40 +1552,30 @@ const Dashboard = () => {
             border: '1px solid var(--hair)',
             borderRadius: 8,
             background: 'var(--hair-soft)',
-            overflow: 'hidden',
+            // `visible`, não `hidden`: a tooltip de cada métrica é absoluta e
+            // sai da célula — `hidden` a cortaria. Os cantos arredondados que o
+            // `hidden` garantia passam a vir das próprias células das pontas
+            // (prop `edge` do QuantMetricCell).
+            overflow: 'visible',
           }}>
-          {quantMetrics.map((q) => (
-            <div
+          {/*
+            Célula com tooltip de métrica no padrão do handoff: ícone info,
+            nome, definição em linguagem comum e fórmula com janela.
+          */}
+          {quantMetrics.map((q, index) => (
+            <QuantMetricCell
               key={q.label}
-              style={{padding: '11.2px 16.8px', background: 'var(--surf-3)'}}>
-              <div
-                style={{
-                  fontSize: 10.5,
-                  color: 'var(--color-neutral-600)',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                }}>
-                {q.label}
-              </div>
-              <div
-                style={{
-                  fontSize: 16,
-                  fontWeight: 600,
-                  marginTop: 5.6,
-                  fontVariantNumeric: 'tabular-nums',
-                  color: 'var(--color-neutral-100)',
-                }}>
-                {q.value}
-              </div>
-              <div
-                style={{
-                  fontSize: 10.5,
-                  color: 'var(--color-neutral-600)',
-                  marginTop: 2.8,
-                }}>
-                {q.note}
-              </div>
-            </div>
+              {...q}
+              edge={
+                quantMetrics.length === 1
+                  ? 'only'
+                  : index === 0
+                    ? 'first'
+                    : index === quantMetrics.length - 1
+                      ? 'last'
+                      : undefined
+              }
+            />
           ))}
         </div>
       )}
@@ -1715,6 +1830,27 @@ const Dashboard = () => {
                 </p>
               )}
             </div>
+            {/*
+              Linha do handoff (card Alocação, `showQuant`): o maior desvio da
+              política e quanto rebalancear. Só no avançado e só com meta
+              configurada — sem ela `largestGapLine` é null.
+            */}
+            {isAdvancedLevel && largestGapLine && (
+              <div
+                style={{
+                  borderTop: '1px solid var(--hair-soft)',
+                  paddingTop: 11.2,
+                  fontSize: 11.5,
+                  color: 'var(--color-neutral-500)',
+                  lineHeight: 1.5,
+                }}>
+                Desvio do alvo:{' '}
+                <span style={{color: 'var(--warn)', fontWeight: 600}}>
+                  {largestGapLine.highlight}
+                </span>
+                {' · '}rebalanceamento sugerido de {largestGapLine.amount}.
+              </div>
+            )}
           </div>
         </section>
       </div>
