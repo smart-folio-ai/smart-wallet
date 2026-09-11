@@ -1192,11 +1192,6 @@ const Dashboard = () => {
           : 'var(--neg)',
   };
 
-  const divYieldDelta =
-    estimatedDividendYieldPct !== null
-      ? `${estimatedDividendYieldPct.toFixed(2)}% DY`
-      : undefined;
-
   // ── Slots do handoff alimentados por /returns e /composition (TRA-141) ──
   const isAdvancedLevel = level === 'avancado';
   const twrValue = returnsData?.twr?.value ?? null;
@@ -1514,7 +1509,7 @@ const Dashboard = () => {
           gap: 11.2,
         }}>
         <KpiCard
-          label="Patrimônio total"
+          label="Patrimônio · AUM"
           value={formatCurrency(summary.totalValue)}
           delta={patrimonioDelta}
           deltaStyle={patrimonioDeltaStyle}
@@ -1573,12 +1568,17 @@ const Dashboard = () => {
             }}
           />
         ) : (
+          // `kpisBase` do handoff: "Proventos 12M" com o yield no subtexto. O
+          // delta do protótipo (+9,4% vs 12M anteriores) exige os 12M
+          // anteriores, que não são guardados — omitido em vez de inventado.
           <KpiCard
-            label="Dividendos recebidos"
+            label="Proventos 12M"
             value={formatCurrency(totalDividendsYear)}
-            delta={divYieldDelta}
-            deltaStyle={{color: 'var(--pos)', fontVariantNumeric: 'tabular-nums'}}
-            sub="últimos 12 meses"
+            sub={
+              estimatedDividendYieldPct !== null
+                ? `yield ${formatPctPtBr(estimatedDividendYieldPct, 1)} a.a.`
+                : 'últimos 12 meses'
+            }
           />
         )}
         {/*

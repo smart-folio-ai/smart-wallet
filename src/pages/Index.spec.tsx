@@ -72,11 +72,11 @@ function renderDashboard() {
 describe('Dashboard KPI strip', () => {
   it('renders three KPI tiles above the main charts', async () => {
     renderDashboard();
-    expect(await screen.findByText('Patrimônio total')).toBeInTheDocument();
+    expect(await screen.findByText('Patrimônio · AUM')).toBeInTheDocument();
     // pnlLabel resolves to 'P&L do período' for the default (intermediário) level
     expect(screen.getByText('P&L do período')).toBeInTheDocument();
     // Nocturne redesign — label updated from 'Dividendos no ano'
-    expect(screen.getByText('Dividendos recebidos')).toBeInTheDocument();
+    expect(screen.getByText('Proventos 12M')).toBeInTheDocument();
   });
 
   // TRA-145 removeu o KPI de topo "Beta da carteira" e as duas entradas da
@@ -92,7 +92,7 @@ describe('Dashboard KPI strip', () => {
   // permanentemente vazia, porque isso contamina a leitura das vizinhas.
   it('does not render permanently empty metrics in the KPI strip or quant bar', async () => {
     renderDashboard();
-    await screen.findByText('Patrimônio total');
+    await screen.findByText('Patrimônio · AUM');
     // O card de topo não voltou: β agora vive no painel de rentabilidade.
     expect(screen.queryByText('Beta da carteira')).not.toBeInTheDocument();
     // Nenhuma métrica exibida com traço mudo.
@@ -103,7 +103,7 @@ describe('Dashboard KPI strip', () => {
 describe('Dashboard neutral card styling', () => {
   it('does not render gradient background classes on insight cards', async () => {
     const {container} = renderDashboard();
-    await screen.findByText('Patrimônio total');
+    await screen.findByText('Patrimônio · AUM');
     // Use exact class-token matching rather than a CSS substring selector:
     // `[class*="from-amber-50"]` would also match unrelated Tailwind variant
     // classes such as `hover:from-amber-500` (e.g. the pre-existing,

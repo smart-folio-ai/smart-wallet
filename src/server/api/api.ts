@@ -118,6 +118,8 @@ export const portfolioService = {
    * (TRA-141). Separado de `/returns` porque não é série no tempo.
    */
   getComposition: () => apiClient.get('/portfolio/composition'),
+  /** Fatia do risco da carteira por ativo, sobre 1 ano de fechamentos (TRA-141). */
+  getRiskContribution: () => apiClient.get('/portfolio/risk-contribution'),
 };
 
 // export const connectionsService = {
