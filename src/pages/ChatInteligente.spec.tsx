@@ -19,6 +19,14 @@ vi.mock('@/hooks/useSubscription', () => ({
   }),
 }));
 
+const adaptiveLevel = vi.hoisted(() => ({
+  current: 'avancado' as 'iniciante' | 'intermediario' | 'avancado',
+}));
+
+vi.mock('@/contexts/AdaptiveLevelContext', () => ({
+  useAdaptiveLevel: () => ({level: adaptiveLevel.current}),
+}));
+
 vi.mock('@/services/chat', () => ({
   askStructuredChat: (...args: unknown[]) => askStructuredChatMock(...args),
   askStructuredCopilotChat: (...args: unknown[]) =>
@@ -47,6 +55,7 @@ const renderPage = () => {
 describe('ChatInteligente', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    adaptiveLevel.current = 'avancado';
     fetchChatHistoryMock.mockResolvedValue([]);
     appendChatHistoryMessageMock.mockResolvedValue({});
   });
@@ -57,7 +66,63 @@ describe('ChatInteligente', () => {
     const promptChips = screen.getByTestId('chat-prompt-chips');
     expect(emptyState).toBeDefined();
     expect(promptChips).toBeDefined();
-    expect(within(emptyState).getByRole('button', {name: /Compare PETR4 e VALE3/i})).toBeDefined();
+    expect(
+      within(promptChips).getByRole('button', {name: 'Matriz de correlação'}),
+    ).toBeDefined();
+    // Fluxos guiados seguem acessíveis no estado vazio.
+    expect(
+      within(emptyState).getByRole('button', {name: /Gerar comitê semanal/i}),
+    ).toBeDefined();
+  });
+
+  // Prompts e modo de resposta do handoff mudam com o nível.
+  it.each([
+    ['iniciante', 'O que é diversificação?', 'Iniciante'],
+    ['intermediario', 'Comparar com o IBOV', 'Intermediário'],
+  ] as const)('mostra os prompts do nível %s', (level, prompt, mode) => {
+    adaptiveLevel.current = level;
+    renderPage();
+
+    const promptChips = screen.getByTestId('chat-prompt-chips');
+    expect(within(promptChips).getByRole('button', {name: prompt})).toBeDefined();
+    expect(
+      within(promptChips).queryByRole('button', {name: 'Matriz de correlação'}),
+    ).toBeNull();
+    expect(screen.getByTestId('chat-copilot-mode').textContent).toContain(mode);
+  });
+
+  it('mostra os tiles da matriz de correlação na resposta', async () => {
+    askStructuredChatMock.mockResolvedValueOnce({
+      intent: 'correlation_matrix',
+      deterministic: true,
+      route: {type: 'deterministic_no_llm', reason: 'rules_resolved'},
+      message: 'Correlação média entre os 2 ativos: 0,42.',
+      data: {
+        correlationMatrix: {
+          symbols: ['ITUB4', 'BBDC4'],
+          averageCorrelation: 0.42,
+          highestPair: {a: 'ITUB4', b: 'BBDC4', correlation: 0.42},
+          lowestPair: null,
+        },
+      },
+      warnings: [],
+      unavailable: [],
+      assumptions: [],
+    });
+
+    renderPage();
+    await userEvent.click(
+      within(screen.getByTestId('chat-prompt-chips')).getByRole('button', {
+        name: 'Matriz de correlação',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(askStructuredChatMock).toHaveBeenCalledWith('Matriz de correlação');
+      const tiles = screen.getByTestId('chat-metric-tiles');
+      expect(within(tiles).getByText('Correlação média')).toBeDefined();
+      expect(within(tiles).getByText('ITUB4 × BBDC4')).toBeDefined();
+    });
   });
 
   /**
@@ -244,8 +309,8 @@ describe('ChatInteligente', () => {
     });
 
     renderPage();
-    const emptyState = screen.getByTestId('chat-empty-state');
-    await userEvent.click(within(emptyState).getByRole('button', {name: /Compare PETR4 e VALE3/i}));
+    await userEvent.type(screen.getByRole('textbox'), 'Compare PETR4 e VALE3');
+    await userEvent.click(screen.getByRole('button', {name: /Enviar/i}));
 
     await waitFor(() => {
       expect(askStructuredChatMock).toHaveBeenCalledWith('Compare PETR4 e VALE3');
