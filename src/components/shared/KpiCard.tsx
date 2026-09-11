@@ -33,14 +33,19 @@ export function KpiCard({label, value, delta, deltaStyle, sub, tooltip}: KpiCard
             onBlur={() => setTipOpen(false)}
             onClick={() => setTipOpen((v) => !v)}
             aria-label="O que é isso?"
-            style={{width: 15, height: 15, flexShrink: 0, borderRadius: 4, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-500)', cursor: 'help', display: 'grid', placeItems: 'center', padding: 0}}
+            // Handoff, "Tooltip de métrica": ícone 15×15, raio 4px, borda
+            // `--color-accent-700`.
+            style={{width: 15, height: 15, flexShrink: 0, borderRadius: 4, border: '1px solid var(--color-accent-700)', background: 'transparent', color: 'var(--color-neutral-500)', cursor: 'help', display: 'grid', placeItems: 'center', padding: 0}}
           >
-            <i className="ph-fill ph-info" style={{fontSize: 10}} />
+            {/* Regular, não fill: no handoff fill é só para IA e estado ativo. */}
+            <i className="ph ph-info" style={{fontSize: 10}} />
           </button>
         )}
       </div>
       {tooltip && tipOpen && (
-        <div style={{position: 'absolute', top: 34, left: tooltip.side === 'right' ? 'auto' : 0, right: tooltip.side === 'right' ? 0 : 'auto', zIndex: 60, width: 292, maxWidth: 'calc(100vw - 300px)', border: '1px solid rgba(145,132,217,0.35)', borderRadius: 8, background: 'var(--surf-4)', boxShadow: 'var(--shadow-lg)', padding: '11.2px 14px'}}>
+        // Borda no acento graphite atual; `rgba(145,132,217,…)` era o blurple
+        // anterior à migração de paleta descrita no handoff.
+        <div style={{position: 'absolute', top: 34, left: tooltip.side === 'right' ? 'auto' : 0, right: tooltip.side === 'right' ? 0 : 'auto', zIndex: 60, width: 292, maxWidth: 'calc(100vw - 300px)', border: '1px solid rgba(152,160,171,0.35)', borderRadius: 8, background: 'var(--surf-4)', boxShadow: 'var(--shadow-lg)', padding: '11.2px 14px'}}>
           <div style={{fontSize: 12.5, fontWeight: 600, color: 'var(--color-neutral-100)'}}>{tooltip.title}</div>
           <div style={{fontSize: 12, color: 'var(--color-neutral-400)', lineHeight: 1.55, marginTop: 5.6}}>{tooltip.body}</div>
           {tooltip.formula && (

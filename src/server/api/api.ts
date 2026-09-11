@@ -113,6 +113,11 @@ export const portfolioService = {
    */
   getReturns: (params?: {from?: string; to?: string}) =>
     apiClient.get('/portfolio/returns', {params}),
+  /**
+   * Retrato da carteira hoje: yield on cost e desvio da política-alvo
+   * (TRA-141). Separado de `/returns` porque não é série no tempo.
+   */
+  getComposition: () => apiClient.get('/portfolio/composition'),
 };
 
 // export const connectionsService = {

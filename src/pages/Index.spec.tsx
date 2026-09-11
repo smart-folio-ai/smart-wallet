@@ -30,6 +30,13 @@ vi.mock('@/server/api/api', () => ({
     getNationalStock: vi.fn().mockResolvedValue({data: {results: []}}),
     getCdiRate: vi.fn().mockResolvedValue({data: {value: 0, unit: 'daily_percent'}}),
   },
+  // TRA-141: o dashboard lê retornos e composição para os slots do handoff.
+  // Rejeitar aqui exercita o caminho sem dado: os slots mantêm o conteúdo
+  // anterior em vez de exibir traço.
+  portfolioService: {
+    getReturns: vi.fn().mockRejectedValue(new Error('sem retornos no teste')),
+    getComposition: vi.fn().mockRejectedValue(new Error('sem composição no teste')),
+  },
 }));
 
 const useSubscriptionMock = vi.fn();
@@ -75,15 +82,14 @@ describe('Dashboard KPI strip', () => {
   // TRA-145 removeu o KPI de topo "Beta da carteira" e as duas entradas da
   // barra quantitativa, todos com '—' fixo.
   //
-  // TRA-141 trouxe beta e tracking error DE VOLTA — mas no ReturnsPanel, só
-  // no nível avançado e só quando há valor real. Este teste guarda a intenção
-  // original, que nunca foi "beta não pode existir": nenhuma métrica pode
-  // ocupar espaço permanentemente vazia, porque isso contamina a leitura das
-  // vizinhas.
+  // Beta e tracking error voltaram (TRA-141) no lugar que o handoff reserva a
+  // eles: a barra quantitativa do nível avançado, e só com valor calculado.
+  // Este teste roda no nível padrão e sem dado de retornos, então nenhuma das
+  // duas deve aparecer. O KPI de topo "Beta da carteira" não voltou porque o
+  // handoff não tem esse card — o 4º KPI do protótipo é VaR 95%.
   //
-  // Por isso a asserção mudou de alvo: o KPI de topo e a barra quantitativa
-  // seguem sem essas métricas; quem as exibe agora é um componente que só
-  // renderiza com número calculado.
+  // A intenção original segue guardada: nenhuma métrica ocupa espaço
+  // permanentemente vazia, porque isso contamina a leitura das vizinhas.
   it('does not render permanently empty metrics in the KPI strip or quant bar', async () => {
     renderDashboard();
     await screen.findByText('Patrimônio total');
