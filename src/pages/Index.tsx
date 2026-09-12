@@ -26,6 +26,7 @@ import {usePortfolioComposition} from '@/hooks/usePortfolioComposition';
 import {describeLargestGap} from '@/pages/composition-display.utils';
 import {QuantMetricCell} from '@/components/shared/QuantMetricCell';
 import {
+  benchmarkLabel,
   buildResult12mKpi,
   buildVarKpi,
   formatBetaNote,
@@ -1260,6 +1261,9 @@ const Dashboard = () => {
   const annualVolatilityPct =
     volatilityPct !== null ? volatilityPct * Math.sqrt(252) : null;
   const showBenchmarkMetrics = showQuant && benchmarkMetrics !== null;
+  // O servidor escolhe o índice pela composição da carteira (IFIX quando FII
+  // domina), então o rótulo vem do payload em vez de ser fixo em IBOV.
+  const indexLabel = benchmarkLabel(benchmarkMetrics ?? undefined);
 
   // Sharpe e drawdown do servidor usam retorno ajustado por fluxo — um resgate
   // não vira queda. O cálculo local sobre o valor bruto fica só como reserva
@@ -1313,16 +1317,15 @@ const Dashboard = () => {
     ...(showBenchmarkMetrics && benchmarkMetrics.beta !== null
       ? [
           {
-            label: 'Beta vs IBOV',
+            label: `Beta vs ${indexLabel}`,
             value: ptBr2(benchmarkMetrics.beta),
             note:
               formatBetaNote(benchmarkMetrics.upBeta, benchmarkMetrics.downBeta) ??
               `${benchmarkMetrics.observations} pregões`,
             tooltip: {
-              title: 'Beta vs IBOV',
-              body: 'Quanto a carteira se move quando o IBOV se move. Abaixo de 1, para cada 1% de alta do índice a carteira sobe menos — e cai menos também nas quedas.',
-              formula:
-                'covariância(carteira, IBOV) ÷ variância(IBOV) · janela 252 dias úteis',
+              title: `Beta vs ${indexLabel}`,
+              body: `Quanto a carteira se move quando o ${indexLabel} se move. Abaixo de 1, para cada 1% de alta do índice a carteira sobe menos — e cai menos também nas quedas.`,
+              formula: `covariância(carteira, ${indexLabel}) ÷ variância(${indexLabel}) · janela 252 dias úteis`,
             },
           },
         ]
@@ -1344,7 +1347,7 @@ const Dashboard = () => {
           {
             label: 'Tracking error',
             value: formatPctPtBr(benchmarkMetrics.trackingError * 100, 1),
-            note: 'vs IBOV',
+            note: `vs ${indexLabel}`,
             tooltip: {
               title: 'Tracking error',
               body: 'Quanto a sua carteira se descola do benchmark que você definiu. Quanto maior, mais o resultado depende das suas escolhas, e menos do índice.',

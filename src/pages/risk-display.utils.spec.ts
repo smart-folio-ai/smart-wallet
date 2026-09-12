@@ -1,5 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {
+  benchmarkLabel,
   buildResult12mKpi,
   buildVarKpi,
   formatBetaNote,
@@ -46,6 +47,18 @@ describe('notas da barra quant do handoff', () => {
   it('reproduz "rf 10,2% a.a." do Sharpe', () => {
     expect(formatSharpeNote(0.102)).toBe('rf 10,2% a.a.');
     expect(formatSharpeNote(null)).toBeNull();
+  });
+});
+
+describe('benchmarkLabel', () => {
+  // O servidor troca o índice conforme a carteira; a tela não pode assumir.
+  it('usa o índice declarado pelo servidor', () => {
+    expect(benchmarkLabel({symbol: '^IFIX', label: 'IFIX'} as never)).toBe('IFIX');
+  });
+
+  it('cai para IBOV quando o servidor não declara', () => {
+    expect(benchmarkLabel(undefined)).toBe('IBOV');
+    expect(benchmarkLabel({symbol: '^BVSP'} as never)).toBe('IBOV');
   });
 });
 
@@ -99,6 +112,22 @@ describe('KPIs do avançado', () => {
       sub: 'vs IBOV +14,6%',
       positive: true,
     });
+  });
+
+  it('nomeia o índice de fato usado no subtexto', () => {
+    const kpi = buildResult12mKpi({
+      symbol: '^IFIX',
+      label: 'IFIX',
+      beta: 0.7,
+      trackingError: 0.03,
+      correlation: 0.9,
+      observations: 240,
+      portfolioReturn: 0.12,
+      benchmarkReturn: 0.1,
+      alpha: 0.05,
+    });
+
+    expect(kpi?.sub).toBe('vs IFIX +10,0%');
   });
 
   it('não monta Resultado 12M sem alpha', () => {

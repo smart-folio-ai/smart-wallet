@@ -73,6 +73,11 @@ export function buildVarKpi(risk: PortfolioReturns['risk']): KpiSlot | null {
   };
 }
 
+/** Nome do índice usado pelo servidor; sem ele, o padrão histórico é o IBOV. */
+export const benchmarkLabel = (
+  benchmark: PortfolioReturns['benchmark'] | undefined,
+): string => benchmark?.label || 'IBOV';
+
 /** 2º KPI do avançado: `Resultado 12M`, `+28,7%`, `α +14,1 p.p.`, `vs IBOV +14,6%`. */
 export function buildResult12mKpi(benchmark: PortfolioReturns['benchmark'] | undefined): KpiSlot | null {
   if (
@@ -85,7 +90,7 @@ export function buildResult12mKpi(benchmark: PortfolioReturns['benchmark'] | und
   return {
     value: formatSignedPctPtBr(benchmark.portfolioReturn * 100),
     delta: `α ${formatPpPtBr(benchmark.alpha * 100)}`,
-    sub: `vs IBOV ${formatSignedPctPtBr(benchmark.benchmarkReturn * 100)}`,
+    sub: `vs ${benchmarkLabel(benchmark)} ${formatSignedPctPtBr(benchmark.benchmarkReturn * 100)}`,
     positive: benchmark.alpha >= 0,
   };
 }
