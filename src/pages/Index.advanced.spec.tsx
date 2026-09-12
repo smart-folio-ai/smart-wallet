@@ -222,6 +222,33 @@ describe('Dashboard — slots do handoff no nível avançado (TRA-141)', () => {
     expect(screen.getByText('-14,2%')).toBeInTheDocument();
   });
 
+  // Carteira dominada por FII é medida contra o IFIX; a tela mostra o índice
+  // que o servidor usou, não IBOV fixo.
+  it('nomeia o índice declarado pelo servidor na barra quant', async () => {
+    getReturnsMock.mockResolvedValue(
+      returnsPayload({
+        benchmark: {
+          symbol: '^IFIX',
+          label: 'IFIX',
+          beta: 0.74,
+          trackingError: 0.052,
+          correlation: 0.9,
+          observations: 240,
+          upBeta: null,
+          downBeta: null,
+          portfolioReturn: null,
+          benchmarkReturn: null,
+          alpha: null,
+        },
+      }),
+    );
+    renderDashboard();
+
+    expect(await screen.findByText('Beta vs IFIX')).toBeInTheDocument();
+    expect(screen.getByText('vs IFIX')).toBeInTheDocument();
+    expect(screen.queryByText('Beta vs IBOV')).not.toBeInTheDocument();
+  });
+
   it('não mostra o KPI de VaR sem cálculo do servidor', async () => {
     renderDashboard();
     await screen.findByText('TWR desde início');

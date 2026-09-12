@@ -15,6 +15,7 @@ export type ReturnsUnavailableReason =
   | 'irr_not_solvable'
   | 'benchmark_insufficient_observations'
   | 'benchmark_no_variance'
+  | 'benchmark_preferred_index_unavailable'
   | 'sharpe_insufficient_data'
   | 'var_insufficient_windows';
 
@@ -39,6 +40,11 @@ export interface PortfolioReturns {
    */
   benchmark: {
     symbol: string;
+    /**
+     * Nome do índice usado de fato (`IBOV`, `IFIX`). O servidor escolhe pela
+     * composição da carteira, então a tela não pode assumir IBOV (TRA-141).
+     */
+    label?: string;
     beta: number | null;
     trackingError: number | null;
     correlation: number | null;
@@ -94,7 +100,9 @@ export const UNAVAILABLE_LABEL: Record<ReturnsUnavailableReason, string> = {
   benchmark_insufficient_observations:
     'Beta e tracking error precisam de pelo menos 20 pregões de histórico.',
   benchmark_no_variance:
-    'O IBOV não variou no período — não há como medir sensibilidade a ele.',
+    'O índice de referência não variou no período — não há como medir sensibilidade a ele.',
+  benchmark_preferred_index_unavailable:
+    'O índice mais adequado à sua carteira está indisponível; a comparação usa o IBOV.',
   sharpe_insufficient_data:
     'O Sharpe precisa de pelo menos 20 pregões com CDI disponível.',
   var_insufficient_windows:
