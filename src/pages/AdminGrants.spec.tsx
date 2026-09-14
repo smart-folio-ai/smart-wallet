@@ -159,6 +159,7 @@ describe('AdminGrants — concessão manual', () => {
           discountPercent: 10,
           performedByEmail: 'admin@example.com',
           createdAt: '2026-01-01T12:00:00.000Z',
+          status: 'active',
         },
       ],
       page: 1,
@@ -172,5 +173,6 @@ describe('AdminGrants — concessão manual', () => {
     expect(screen.getAllByText('Pro').length).toBeGreaterThan(0);
     expect(screen.getByText('admin@example.com')).toBeInTheDocument();
     expect(screen.getByText('10%')).toBeInTheDocument();
+    expect(screen.getByText('Ativo')).toBeInTheDocument();
   });
 });
