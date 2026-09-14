@@ -22,6 +22,7 @@ import AIInsights from './pages/AIInsights';
 import ChatInteligente from './pages/ChatInteligente';
 import Subscription from './pages/Subscription';
 import Settings from './pages/Settings';
+import Security from './pages/Security';
 import NotFound from './pages/NotFound';
 import Portfolio from './pages/Portfolio';
 import AssetDetail from './pages/AssetDetail';
@@ -197,6 +198,7 @@ const App = () => (
                             />
                             <Route path="/fiscal" element={<Fiscal />} />
                             <Route path="/settings" element={<Settings />} />
+                            <Route path="/security" element={<Security />} />
                             <Route
                               path="/admin"
                               element={

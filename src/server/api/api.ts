@@ -33,7 +33,10 @@ export const authService = {
     apiClient.post('/auth/google/signin', {idToken, keepConnected}),
   register: (data: ICreateUser) => apiClient.post('/users/create', data),
   logout: (token: string) => apiClient.post('/auth/signout', {token}),
-  changePassword: (data: any) => apiClient.post('/auth/change-password', data),
+  // O backend expõe PATCH /auth/update-password (UpdatePasswordDto); a rota
+  // antiga /auth/change-password nunca existiu no server.
+  changePassword: (data: {oldPassword: string; newPassword: string}) =>
+    apiClient.patch('/auth/update-password', data),
 };
 
 export const profileService = {
