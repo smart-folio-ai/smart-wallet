@@ -1,6 +1,6 @@
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {BrowserRouter, Routes, Route, useLocation} from 'react-router-dom';
-import {lazy, Suspense, useEffect} from 'react';
+import {lazy, Suspense, useEffect, type CSSProperties} from 'react';
 import {Toaster} from '@/components/ui/toaster';
 import {Toaster as Sonner} from '@/components/ui/sonner';
 import {TooltipProvider} from '@/components/ui/tooltip';
@@ -121,15 +121,22 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <AdaptiveLevelProvider>
-                <SidebarProvider>
-                  <div className="relative flex min-h-screen w-full bg-background">
+                <SidebarProvider
+                  style={{'--sidebar-width': '244px'} as CSSProperties}>
+                  {/* Fundo e medidas do shell de design_handoff_trackerr/Trackerr App.dc.html */}
+                  <div
+                    className="relative flex min-h-screen w-full"
+                    style={{
+                      background:
+                        'radial-gradient(1100px 560px at 10% -12%, var(--neb-1) 0%, rgba(43,39,65,0) 62%), radial-gradient(880px 520px at 92% -6%, var(--neb-2) 0%, rgba(35,39,82,0) 58%), var(--color-bg)',
+                    }}>
                     <AppSidebar />
-                    <SidebarInset className="bg-background">
+                    <SidebarInset className="bg-transparent">
                       <AppTopbar />
                       <main
-                        className="flex-1 px-3 py-4 md:px-6 md:py-6"
+                        className="flex-1 px-3 py-4 md:p-[22.4px]"
                         data-app-main="true">
-                        <div className="mx-auto w-full max-w-[1600px]">
+                        <div className="w-full">
                           <Routes>
                             <Route path="/dashboard" element={<Index />} />
                             <Route
