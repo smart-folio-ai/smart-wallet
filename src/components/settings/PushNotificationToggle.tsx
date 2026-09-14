@@ -19,8 +19,8 @@ import {PushSubscriptionError} from '@/services/notifications/push';
  * definitiva. Cada estado do navegador tem um desfecho próprio — nada de
  * switch morto.
  *
- * O handoff não tem tela de push; o layout copia as linhas já existentes da
- * NotificationsTab (Label + descrição muted + Switch à direita).
+ * O handoff não tem tela de push; o layout segue as linhas do card
+ * Notificações em Configurações (rótulo + descrição + Switch à direita).
  */
 
 function errorMessage(error: Error | null): string | null {
@@ -79,10 +79,13 @@ export function PushNotificationToggle() {
         <div className="pr-4">
           <Label
             htmlFor="push-notifications"
-            className={cn(disabled && 'text-muted-foreground')}>
+            className={cn(
+              'text-[12.5px] font-normal text-[color:var(--color-neutral-200)]',
+              disabled && 'opacity-70',
+            )}>
             Notificações Push
           </Label>
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-0.5 text-[10.5px] leading-snug text-[color:var(--color-neutral-600)]">
             Receba avisos da sua carteira neste dispositivo, mesmo com o
             Trackerr fechado.
           </p>
