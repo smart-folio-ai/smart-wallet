@@ -1,32 +1,54 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {render, screen, within, fireEvent} from '@testing-library/react';
+import {render, screen, within, fireEvent, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import Landing from './Landing';
 import SubscriptionService from '@/services/subscription';
 
 vi.mock('@/services/subscription');
+vi.mock('@/components/landing/showcase/ShowcaseVideo', () => ({
+  ShowcaseVideo: () => <div data-testid="showcase-video" />,
+}));
 
-const stubMatchMedia = (matches: boolean) => {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn().mockImplementation((query: string) => ({
-      matches,
-      media: query,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })),
-  );
-};
+const plans = [
+  {
+    _id: 'plan_pro',
+    name: 'Pro',
+    description: 'Para quem já tem carteira montada',
+    price: 14.9,
+    currency: 'brl',
+    interval: 'month',
+    intervalCount: 1,
+    isActive: true,
+    isFeatured: true,
+    features: ['Ativos ilimitados', 'Módulo fiscal'],
+  },
+  {
+    _id: 'plan_free',
+    name: 'Essencial',
+    description: 'Para quem está começando',
+    price: 0,
+    currency: 'brl',
+    interval: 'month',
+    intervalCount: 1,
+    isActive: true,
+    features: ['Até 10 ativos'],
+  },
+  {
+    _id: 'plan_old',
+    name: 'Legado',
+    description: 'desativado',
+    price: 5,
+    currency: 'brl',
+    interval: 'month',
+    intervalCount: 1,
+    isActive: false,
+    features: [],
+  },
+];
 
 const renderLanding = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {queries: {retry: false}},
-  });
+  const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
@@ -36,129 +58,115 @@ const renderLanding = () => {
   );
 };
 
-describe('Landing', () => {
+describe('Landing (design_handoff_trackerr/Trackerr Landing.dc.html)', () => {
   beforeEach(() => {
-    stubMatchMedia(false);
     vi.clearAllMocks();
-    (SubscriptionService.getPlans as any).mockResolvedValue([]);
+    localStorage.clear();
+    (SubscriptionService.getPlans as any).mockResolvedValue(plans);
   });
 
-  it('abre com a promessa central e o caminho de conversão', () => {
+  afterEach(() => {
+    document.documentElement.classList.remove('dark');
+  });
+
+  it('renders the handoff hero, header navigation and conversion paths', () => {
     renderLanding();
 
-    expect(screen.getAllByText('Trackerr').length).toBeGreaterThan(0);
-    expect(screen.getByText(/sua carteira inteira/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/sem planilha, sem surpresa no ir/i),
-    ).toBeInTheDocument();
-    // O hero sempre expõe um CTA "Começar grátis" apontando para /register.
-    // Se a API de planos (mockada vazia neste teste) retornar um plano
-    // gratuito, a PricingSection renderiza outro CTA com o mesmo texto —
-    // por isso a asserção abaixo tolera um ou mais links, todos para /register.
-    const ctaLinks = screen.getAllByRole('link', {name: /começar grátis/i});
-    expect(ctaLinks.length).toBeGreaterThan(0);
-    ctaLinks.forEach((link) =>
-      expect(link).toHaveAttribute('href', '/register'),
+    expect(screen.getByText('Copiloto de investimentos · AI-native')).toBeInTheDocument();
+    expect(screen.getByRole('heading', {level: 1})).toHaveTextContent(
+      'Sua carteira inteira,lida por uma IA que explica o porquê.',
     );
+    for (const label of ['Produto', 'Como funciona', 'Segurança', 'Planos', 'FAQ']) {
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    }
+    // "Entrar" aparece no header e no rodapé, como no handoff.
+    for (const link of screen.getAllByRole('link', {name: 'Entrar'})) {
+      expect(link).toHaveAttribute('href', '/signin');
+    }
+    expect(screen.getByRole('link', {name: /Criar minha conta/})).toHaveAttribute('href', '/register');
+    expect(screen.getByTestId('showcase-video')).toBeInTheDocument();
   });
 
-  it('renderiza as nove seções na ordem definida', () => {
+  it('renders the sections in the handoff order', () => {
     const {container} = renderLanding();
-
-    const ids = Array.from(container.querySelectorAll('section[id]')).map(
-      (el) => el.id,
-    );
+    const ids = Array.from(container.querySelectorAll('section[id]')).map((el) => el.id);
 
     expect(ids).toEqual([
       'inicio',
-      'problema',
+      'veja-em-acao',
       'produto',
-      'como-funciona',
       'profundidade',
+      'como-funciona',
+      'seguranca',
       'planos',
       'faq',
     ]);
   });
 
-  it('mostra prova de mercado, produto e credibilidade', () => {
+  it('shows only true security claims (no SOC 2, no uptime figure)', () => {
+    renderLanding();
+    const trust = document.getElementById('seguranca') as HTMLElement;
+
+    for (const value of ['AES-256', 'Argon2id', 'LGPD', '2FA']) {
+      expect(within(trust).getByText(value)).toBeInTheDocument();
+    }
+    expect(screen.queryByText(/SOC 2/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/99,98%/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/CNPJ 00\.000\.000/)).not.toBeInTheDocument();
+  });
+
+  it('switches the adaptive-depth preview between the three levels', () => {
     renderLanding();
 
-    expect(screen.getAllByText(/PETR4/i).length).toBeGreaterThan(0);
-    expect(screen.getByLabelText(/gráfico em alta/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/carteira consolidada/i).length).toBeGreaterThan(0);
-    expect(screen.getByText('Argon2id')).toBeInTheDocument();
+    expect(screen.getByText('Risco e atribuição')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Iniciante'}));
+    expect(screen.getByText('Resumo da carteira')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Iniciante'})).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('fecha com planos, dúvidas e o aviso de que não há recomendação', () => {
-    const {container} = renderLanding();
+  it('keeps one FAQ answer open at a time', () => {
+    renderLanding();
 
-    const pricingSection = container.querySelector('#planos');
-    expect(pricingSection).not.toBeNull();
-    expect(
-      within(pricingSection as HTMLElement).getByText(
-        'Comece grátis. Pague quando fizer diferença.',
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /meus dados ficam seguros/i}),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/não constituem recomendação de investimento/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/cifrados em repouso com AES-256/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: /Posso cancelar quando quiser/}));
+    expect(screen.getByText(/pelo próprio painel, sem falar com ninguém/)).toBeInTheDocument();
+    expect(screen.queryByText(/cifrados em repouso com AES-256/)).not.toBeInTheDocument();
   });
 
-  // Regressão: `--surface-base`/`--brand`/etc são declarados em `:root` e
-  // `.dark`, que casam com <html> — tirar a classe "dark" só do wrapper da
-  // Landing não desfaz um `<html class="dark">` herdado do tema global do
-  // app (CSS inheritance só é sobrescrita por uma regra que casa com o
-  // PRÓPRIO elemento). O toggle correto aplica a classe em
-  // document.documentElement, e precisa restaurar o valor anterior ao
-  // desmontar para não vazar tema pro resto do app.
-  describe('toggle de tema', () => {
-    afterEach(() => {
-      document.documentElement.classList.remove('dark');
-      localStorage.removeItem('landing-theme');
-    });
+  it('renders real Stripe plans sorted by price, with the featured badge and the right CTA per plan', async () => {
+    renderLanding();
 
-    it('aplica e remove a classe "dark" em document.documentElement ao alternar o tema', () => {
-      document.documentElement.classList.remove('dark');
-      renderLanding();
+    await waitFor(() => expect(screen.getAllByTestId('landing-plan')).toHaveLength(2));
+    const cards = screen.getAllByTestId('landing-plan');
+    expect(within(cards[0]).getByText('Essencial')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('Grátis')).toBeInTheDocument();
+    expect(within(cards[0]).getByRole('link', {name: 'Começar grátis'})).toHaveAttribute('href', '/register');
+    expect(within(cards[1]).getByText('Mais assinado')).toBeInTheDocument();
+    expect(screen.queryByText('Legado')).not.toBeInTheDocument();
 
-      expect(document.documentElement.classList.contains('dark')).toBe(true);
+    fireEvent.click(within(cards[1]).getByRole('button', {name: 'Assinar Pro'}));
+    expect(await screen.findByText(/Quero o plano Pro/i)).toBeInTheDocument();
+  });
 
-      fireEvent.click(screen.getByRole('button', {name: /ativar tema claro/i}));
-      expect(document.documentElement.classList.contains('dark')).toBe(false);
-
-      fireEvent.click(screen.getByRole('button', {name: /ativar tema escuro/i}));
-      expect(document.documentElement.classList.contains('dark')).toBe(true);
-    });
-
-    it('restaura o tema global anterior ao desmontar, sem vazar pro resto do app', () => {
+  describe('theme and language', () => {
+    it('toggles the theme on <html> and restores the previous app theme on unmount', () => {
       document.documentElement.classList.add('dark');
       const {unmount} = renderLanding();
 
-      fireEvent.click(screen.getByRole('button', {name: /ativar tema claro/i}));
+      fireEvent.click(screen.getByRole('button', {name: 'Mudar para tema claro'}));
       expect(document.documentElement.classList.contains('dark')).toBe(false);
+      expect(screen.getByRole('button', {name: 'Mudar para tema escuro'})).toBeInTheDocument();
 
       unmount();
-
       expect(document.documentElement.classList.contains('dark')).toBe(true);
     });
-  });
 
-  it('com prefers-reduced-motion o conteúdo continua visível', () => {
-    stubMatchMedia(true);
-    const {container} = renderLanding();
+    it('marks the chosen language and remembers it', () => {
+      renderLanding();
+      fireEvent.click(screen.getByRole('button', {name: 'EN'}));
 
-    const headline = screen.getByText(/sua carteira inteira/i);
-    expect(headline).toBeInTheDocument();
-    expect(headline).toBeVisible();
-
-    const pricingSection = container.querySelector('#planos');
-    expect(
-      within(pricingSection as HTMLElement).getByText(
-        'Comece grátis. Pague quando fizer diferença.',
-      ),
-    ).toBeVisible();
+      expect(screen.getByRole('button', {name: 'EN'})).toHaveAttribute('aria-pressed', 'true');
+      expect(localStorage.getItem('landing-lang')).toBe('en');
+    });
   });
 });
