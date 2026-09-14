@@ -1,16 +1,6 @@
-import {useMemo, useState, useEffect} from 'react';
-import {useQuery} from '@tanstack/react-query';
-import {Input} from '@/components/ui/input';
-import {Button} from '@/components/ui/button';
-import {Badge} from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {PremiumBlur} from '@/components/ui/premium-blur';
+import {useEffect, useMemo, useReducer, useState, type CSSProperties} from 'react';
+import {Link} from 'react-router-dom';
+import {useMutation, useQuery} from '@tanstack/react-query';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {useSubscription} from '@/hooks/useSubscription';
 import {
@@ -19,29 +9,27 @@ import {
   RiDocumentType,
 } from '@/interface/ri-intelligence';
 import {
-  RiDocumentSummaryOutput,
   autocompleteRiAssets,
   searchRiDocuments,
   summarizeRiDocument,
 } from '@/services/ri-intelligence';
 
-const documentTypeOptions: Array<{
-  label: string;
-  value: RiDocumentType | 'all';
-}> = [
-  {label: 'Todos os releases recentes', value: 'all'},
-  {label: 'Release de resultados', value: 'earnings_release'},
-  {label: 'Apresentação de resultados', value: 'investor_presentation'},
-  {label: 'Fato relevante', value: 'material_fact'},
-  {label: 'Formulário de referência', value: 'reference_form'},
-  {label: 'Aviso aos acionistas', value: 'shareholder_notice'},
-  {label: 'Demonstrações financeiras', value: 'financial_statement'},
-  {label: 'Relatório da administração', value: 'management_report'},
-  {label: 'Material de conference call', value: 'conference_call_material'},
-  {label: 'Aviso de dividendos/JCP', value: 'dividend_notice'},
-  {label: 'Outros documentos de RI', value: 'other_ri_document'},
-  {label: 'Tipo desconhecido', value: 'unknown'},
-];
+type TypeFilter = RiDocumentType | 'all';
+
+const filterLabels: Record<TypeFilter, string> = {
+  all: 'Todos os releases recentes',
+  earnings_release: 'Release de resultados',
+  investor_presentation: 'Apresentação de resultados',
+  material_fact: 'Fato relevante',
+  reference_form: 'Formulário de referência',
+  shareholder_notice: 'Aviso aos acionistas',
+  financial_statement: 'Demonstrações financeiras',
+  management_report: 'Relatório da administração',
+  conference_call_material: 'Material de conference call',
+  dividend_notice: 'Aviso de dividendos/JCP',
+  other_ri_document: 'Outros documentos de RI',
+  unknown: 'Tipo desconhecido',
+};
 
 const typeLabels: Record<string, string> = {
   earnings_release: 'Release',
@@ -57,42 +45,22 @@ const typeLabels: Record<string, string> = {
   unknown: 'Desconhecido',
 };
 
-const filterLabels: Record<RiDocumentType | 'all', string> = {
-  all: 'Todos os releases recentes',
-  earnings_release: 'Release de resultados',
-  investor_presentation: 'Apresentação de resultados',
-  material_fact: 'Fato relevante',
-  reference_form: 'Formulário de referência',
-  shareholder_notice: 'Aviso aos acionistas',
-  financial_statement: 'Demonstrações financeiras',
-  management_report: 'Relatório da administração',
-  conference_call_material: 'Material de conference call',
-  dividend_notice: 'Aviso de dividendos/JCP',
-  other_ri_document: 'Outros documentos de RI',
-  unknown: 'Tipo desconhecido',
-};
-
 type RiNoticeState = {
   title: string;
   description: string;
-  suggestedFilters: Array<RiDocumentType | 'all'>;
+  suggestedFilters: TypeFilter[];
 };
 
 function buildRiNotice(params: {
   warnings: string[];
   query: string;
-  typeFilter: RiDocumentType | 'all';
+  typeFilter: TypeFilter;
   availableDocumentTypes: RiDocumentType[];
-  suggestedFilters: Array<RiDocumentType | 'all'>;
+  suggestedFilters: TypeFilter[];
 }): RiNoticeState | null {
-  const {
-    warnings,
-    query,
-    typeFilter,
-    availableDocumentTypes,
-    suggestedFilters,
-  } = params;
+  const {warnings, query, typeFilter, availableDocumentTypes, suggestedFilters} = params;
   if (!warnings.length) return null;
+  const subject = query || 'o ticker informado';
 
   if (warnings.includes('ri_no_documents_for_selected_type')) {
     const availableTypesLabel = availableDocumentTypes
@@ -102,73 +70,59 @@ function buildRiNotice(params: {
     return {
       title: 'Nenhum documento neste tipo de filtro',
       description: availableTypesLabel
-        ? `Encontramos documentos de RI para ${query || 'o ticker informado'}, mas não em "${filterLabels[typeFilter]}". Tente ${availableTypesLabel} ou volte para "Todos os releases recentes".`
-        : `Encontramos documentos de RI para ${query || 'o ticker informado'}, mas não em "${filterLabels[typeFilter]}". Tente "Todos os releases recentes".`,
+        ? `Encontramos documentos de RI para ${subject}, mas não em "${filterLabels[typeFilter]}". Tente ${availableTypesLabel} ou volte para "Todos os releases recentes".`
+        : `Encontramos documentos de RI para ${subject}, mas não em "${filterLabels[typeFilter]}". Tente "Todos os releases recentes".`,
       suggestedFilters,
     };
   }
-
   if (warnings.includes('ri_no_documents_found')) {
     return {
       title: 'Nenhum documento encontrado para este ticker',
-      description: `Não encontramos documentos de RI para ${query || 'o ticker informado'} no período recente.`,
+      description: `Não encontramos documentos de RI para ${subject} no período recente.`,
       suggestedFilters: ['all'],
     };
   }
-
   if (warnings.includes('ri_no_matching_assets')) {
     return {
       title: 'Ticker não encontrado',
-      description:
-        'Não foi possível identificar o ticker informado. Revise o código e tente novamente.',
+      description: 'Não foi possível identificar o ticker informado. Revise o código e tente novamente.',
       suggestedFilters: ['all'],
     };
   }
-
   if (warnings.includes('ri_documents_unavailable')) {
     return {
       title: 'Busca de RI indisponível no momento',
-      description:
-        'Não foi possível consultar os documentos agora. Tente novamente em instantes.',
+      description: 'Não foi possível consultar os documentos agora. Tente novamente em instantes.',
       suggestedFilters: ['all'],
     };
   }
-
   if (warnings.includes('ri_no_recent_releases_found')) {
     return {
       title: 'Sem documentos recentes com os filtros atuais',
-      description:
-        'Encontramos histórico, mas não há documentos recentes válidos para a busca aplicada.',
+      description: 'Encontramos histórico, mas não há documentos recentes válidos para a busca aplicada.',
       suggestedFilters: ['all'],
     };
   }
-
-  // O backend encontrou documentos, mas nenhum passou na validação do link
-  // (arquivo indisponível, redirecionado para uma página de erro, ou tipo
-  // de conteúdo que não é PDF/planilha). Sem este caso, a busca caía na
-  // mensagem genérica de rodapé — que lê como "não encontrou nada", quando
-  // na verdade encontrou e descartou por o link não abrir de verdade.
+  // O backend encontrou documentos, mas nenhum passou na validação do link:
+  // sem este caso a tela diria "não encontrou nada" quando descartou links quebrados.
   if (warnings.includes('ri_no_valid_documents_found')) {
     return {
       title: 'Documentos encontrados, mas os links não abriram',
-      description: `Encontramos releases para ${query || 'o ticker informado'}, mas os links não passaram na validação (podem estar fora do ar ou redirecionando para uma página de erro). Tente novamente em instantes.`,
+      description: `Encontramos releases para ${subject}, mas os links não passaram na validação (podem estar fora do ar ou redirecionando para uma página de erro). Tente novamente em instantes.`,
       suggestedFilters: ['all'],
     };
   }
-
   return null;
 }
 
 function formatDate(value: string) {
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '-';
-  return parsed.toLocaleDateString('pt-BR');
+  return Number.isNaN(parsed.getTime()) ? '-' : parsed.toLocaleDateString('pt-BR');
 }
 
 function buildDocumentDisplayTitle(document: RiDocumentListItem): string {
-  const typeLabel = typeLabels[document.documentType] || 'Document';
-  if (document.period) return `${typeLabel} · ${document.period}`;
-  return typeLabel;
+  const typeLabel = typeLabels[document.documentType] || 'Documento';
+  return document.period ? `${typeLabel} · ${document.period}` : typeLabel;
 }
 
 function isPremiumOrGlobal(planName: string, isSubscribed: boolean) {
@@ -177,73 +131,116 @@ function isPremiumOrGlobal(planName: string, isSubscribed: boolean) {
   return plan.includes('premium') || plan.includes('global');
 }
 
-function normalizeSearchQuery(value: string): string {
-  return String(value || '').trim();
+interface SearchState {
+  draft: string;
+  query: string;
+  typeFilter: TypeFilter;
+  selected: RiDocumentListItem | null;
 }
 
-const RiInteligente = () => {
-  const [queryDraft, setQueryDraft] = useState('');
-  const [query, setQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<RiDocumentType | 'all'>('all');
-  const [selectedDocument, setSelectedDocument] =
-    useState<RiDocumentListItem | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summary, setSummary] = useState<RiDocumentSummaryOutput | null>(null);
-  const [showSlowNotice, setShowSlowNotice] = useState(false);
+type SearchAction =
+  | {type: 'draft'; value: string}
+  | {type: 'apply'; value: string}
+  | {type: 'filter'; value: TypeFilter}
+  | {type: 'select'; document: RiDocumentListItem}
+  | {type: 'clear'};
 
+const initialSearch: SearchState = {draft: '', query: '', typeFilter: 'all', selected: null};
+
+function searchReducer(state: SearchState, action: SearchAction): SearchState {
+  switch (action.type) {
+    case 'draft':
+      return {...state, draft: action.value};
+    case 'apply':
+      return {...state, draft: action.value, query: action.value, selected: null};
+    case 'filter':
+      return {...state, typeFilter: action.value};
+    case 'select':
+      return {...state, selected: action.document};
+    case 'clear':
+      return {...state, draft: '', query: '', selected: null};
+  }
+}
+
+const fieldStyle: CSSProperties = {
+  height: 38,
+  borderRadius: 8,
+  border: '1px solid var(--hair)',
+  background: 'var(--sunk)',
+  color: 'var(--color-text)',
+  fontFamily: 'var(--font-body)',
+};
+
+const cardStyle: CSSProperties = {border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'};
+
+const cardHeadStyle: CSSProperties = {padding: '14px 16.8px', borderBottom: '1px solid var(--hair-soft)'};
+
+const cardTitleStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6.4,
+  fontFamily: 'var(--font-heading)',
+  fontSize: 14,
+  fontWeight: 600,
+};
+
+const dashedStyle: CSSProperties = {
+  border: '1px dashed var(--hair)',
+  borderRadius: 8,
+  fontSize: 12.5,
+  color: 'var(--color-neutral-500)',
+};
+
+const chipStyle: CSSProperties = {
+  border: '1px solid var(--hair)',
+  borderRadius: 6,
+  padding: '2px 8px',
+  fontSize: 10.5,
+  color: 'var(--color-neutral-400)',
+};
+
+const RiInteligente = () => {
+  const [search, dispatch] = useReducer(searchReducer, initialSearch);
+  const [showSlowNotice, setShowSlowNotice] = useState(false);
   const {planName, isSubscribed} = useSubscription();
   const canUseAiSummary = isPremiumOrGlobal(planName, isSubscribed);
 
-  const normalizedDraft = normalizeSearchQuery(queryDraft);
-  const normalizedQuery = normalizeSearchQuery(query);
-  const hasSearchQuery = normalizedQuery.length >= 2;
+  const draft = search.draft.trim();
+  const query = search.query.trim();
+  const hasSearchQuery = query.length >= 2;
 
   const {data: suggestions = []} = useQuery({
-    queryKey: ['ri-autocomplete', normalizedDraft],
-    queryFn: () => autocompleteRiAssets(normalizedDraft, 8),
-    enabled: normalizedDraft.length >= 2,
+    queryKey: ['ri-autocomplete', draft],
+    queryFn: () => autocompleteRiAssets(draft, 8),
+    enabled: draft.length >= 2,
     staleTime: 5 * 60 * 1000,
   });
 
   const {data, isLoading, refetch} = useQuery({
-    queryKey: ['ri-documents', query, typeFilter],
-    queryFn: () =>
-      searchRiDocuments({
-        query: normalizedQuery,
-        documentType: typeFilter,
-        limit: 30,
-      }),
+    queryKey: ['ri-documents', query, search.typeFilter],
+    queryFn: () => searchRiDocuments({query, documentType: search.typeFilter, limit: 30}),
     enabled: hasSearchQuery,
   });
 
-  const documents = useMemo(() => data?.documents || [], [data?.documents]);
-  const warnings = useMemo(() => data?.warnings || [], [data?.warnings]);
-  const fallback = useMemo(
-    () =>
-      data?.fallback || {
-        availableDocumentTypes: [],
-        suggestedFilters: ['all' as const],
-      },
-    [data?.fallback],
-  );
+  const summary = useMutation({
+    mutationFn: (document: RiDocumentListItem) => summarizeRiDocument({document}),
+  });
+
+  const documents = data?.documents ?? [];
   const notice = useMemo(
     () =>
       buildRiNotice({
-        warnings,
+        warnings: data?.warnings ?? [],
         query,
-        typeFilter,
-        availableDocumentTypes: fallback.availableDocumentTypes,
-        suggestedFilters: fallback.suggestedFilters,
+        typeFilter: search.typeFilter,
+        availableDocumentTypes: data?.fallback?.availableDocumentTypes ?? [],
+        suggestedFilters: data?.fallback?.suggestedFilters ?? ['all'],
       }),
-    [
-      warnings,
-      query,
-      typeFilter,
-      fallback.availableDocumentTypes,
-      fallback.suggestedFilters,
-    ],
+    [data, query, search.typeFilter],
   );
 
+  // A busca consulta várias fontes oficiais e pode demorar: depois de 15s
+  // avisamos que ainda está trabalhando.
   useEffect(() => {
     if (!isLoading) {
       setShowSlowNotice(false);
@@ -253,458 +250,450 @@ const RiInteligente = () => {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  const handleOpenDocument = (document: RiDocumentListItem) => {
+  const applySearch = (value = search.draft) => {
+    const next = value.trim();
+    // Mesma busca de novo: a query key não muda, então refaz explicitamente.
+    if (next === query) void refetch();
+    dispatch({type: 'apply', value: next});
+    summary.reset();
+  };
+
+  const selectSuggestion = (suggestion: RiAssetSuggestion) => applySearch(suggestion.ticker);
+
+  const openDocument = (document: RiDocumentListItem) => {
     if (!document.source?.value) return;
     window.open(document.source.value, '_blank', 'noopener,noreferrer');
   };
 
-  const handleGenerateSummary = async () => {
-    if (!selectedDocument || !canUseAiSummary || summaryLoading) return;
-    setSummaryLoading(true);
-    try {
-      const result = await summarizeRiDocument({
-        document: selectedDocument,
-      });
-      setSummary(result);
-    } finally {
-      setSummaryLoading(false);
-    }
+  const generateSummary = () => {
+    if (!search.selected || !canUseAiSummary || summary.isPending) return;
+    summary.mutate(search.selected);
   };
 
-  const applySearch = (value?: string) => {
-    const next = normalizeSearchQuery(value ?? queryDraft);
-    setQueryDraft(next);
-    setQuery(next);
-    setSelectedDocument(null);
-    setSummary(null);
-  };
-
-  const selectSuggestion = (suggestion: RiAssetSuggestion) => {
-    const ticker = suggestion.ticker;
-    applySearch(ticker);
-    if (normalizeSearchQuery(query) === ticker) {
-      void refetch();
-    }
-  };
-
-  const clearSearch = () => {
-    setQueryDraft('');
-    setQuery('');
-    setSummary(null);
-    setSelectedDocument(null);
-  };
+  const showSuggestions = draft.length >= 2 && suggestions.length > 0 && draft !== query;
+  const result = summary.data;
+  const generateDisabled = !search.selected || summary.isPending;
 
   return (
-    <div className="container py-8 space-y-6">
-      <header
-        className="rounded-2xl p-6"
-        style={{
-          border: '1px solid var(--hair)',
-          background:
-            'linear-gradient(120deg, rgba(111,94,217,0.24) 0%, rgba(76,201,240,0.10) 100%)',
-        }}>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              RI Inteligente
-            </h1>
-            <p className="mt-2 text-sm" style={{color: 'var(--color-neutral-500)'}}>
-              Busque releases recentes e relevantes com links validados antes da
-              exibição.
-            </p>
-          </div>
-          <Badge
-            variant="outline"
-            style={{border: '1px solid var(--hair)', color: 'var(--ac)'}}>
-            Releases Recentes
-          </Badge>
-        </div>
-      </header>
-
+    <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
       <div
         style={{
-          border: '1px solid var(--hair)',
           borderRadius: 8,
-          background: 'var(--nk-card)',
+          padding: 22.4,
+          border: '1px solid var(--hair)',
+          background: 'linear-gradient(120deg, rgba(152,160,171,0.16) 0%, rgba(76,201,240,0.08) 100%)',
         }}>
-        <div
-          style={{
-            padding: '14px 16px',
-            borderBottom: '1px solid var(--hair-soft)',
-          }}>
-          <div
-            className="flex items-center gap-2"
-            style={{
-              fontFamily: 'var(--font-heading)',
-              fontSize: 14,
-              fontWeight: 600,
-            }}>
-            <i
-              className="ph-fill ph-file-magnifying-glass"
-              style={{fontSize: 20, color: 'var(--ac)'}}
-            />
-            Busca de RI
-          </div>
-          <p
-            style={{
-              fontSize: 14,
-              color: 'var(--color-neutral-500)',
-              marginTop: 4,
-            }}>
-            Pesquise por ticker ou empresa com autocomplete e filtre por tipo de
-            release.
-          </p>
-        </div>
-        <div className="space-y-4" style={{padding: '14px 16px'}}>
-          <div className="grid gap-3 md:grid-cols-[1fr_260px_auto_auto]">
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  value={queryDraft}
-                  onChange={(event) => setQueryDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      applySearch();
-                    }
-                  }}
-                  placeholder="Ex: PETR4, BBDC4 ou Bradesco"
-                  aria-label="Busca de RI"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => applySearch()}
-                  className="gap-2"
-                  data-testid="ri-apply-search">
-                  <i className="ph-fill ph-magnifying-glass" style={{fontSize: 16}} />
-                  Buscar
-                </Button>
-              </div>
-
-              {normalizedDraft.length >= 2 &&
-                suggestions.length > 0 &&
-                normalizedDraft !== normalizedQuery && (
-                  <div
-                    className="rounded-xl p-2"
-                    style={{
-                      border: '1px solid var(--hair)',
-                      background: 'var(--nk-card)',
-                    }}
-                    data-testid="ri-autocomplete-list">
-                    {suggestions.slice(0, 6).map((item) => (
-                      <button
-                        key={`${item.ticker}-${item.company}`}
-                        type="button"
-                        className="w-full rounded-lg px-3 py-2 text-left text-sm"
-                        onClick={() => selectSuggestion(item)}>
-                        <span className="font-semibold">{item.ticker}</span>
-                        <span style={{color: 'var(--color-neutral-500)'}}>
-                          {' '}
-                          · {item.company}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+        <div style={{display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16.8}}>
+          <div>
+            <h1 style={{fontFamily: 'var(--font-heading)', fontSize: 21, fontWeight: 600, letterSpacing: '-0.015em', margin: 0}}>
+              RI Inteligente
+            </h1>
+            <div style={{fontSize: 12.5, color: 'var(--color-neutral-500)', marginTop: 5.6}}>
+              Busque releases recentes e relevantes com links validados antes da exibição.
             </div>
+          </div>
+          <span
+            style={{
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: 24,
+              padding: '0 9.8px',
+              borderRadius: 6,
+              border: '1px solid var(--hair)',
+              fontSize: 11,
+              color: 'var(--ac)',
+            }}>
+            Releases recentes
+          </span>
+        </div>
+      </div>
 
-            <Select
-              value={typeFilter}
-              onValueChange={(value) =>
-                setTypeFilter(value as RiDocumentType | 'all')
-              }>
-              <SelectTrigger aria-label="Filtro por tipo">
-                <SelectValue placeholder="Tipo de documento" />
-              </SelectTrigger>
-              <SelectContent>
-                {documentTypeOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              className="gap-2">
-              <i className="ph-fill ph-arrows-clockwise" style={{fontSize: 16}} />
-              Atualizar
-            </Button>
-
-            <Button
-              variant="ghost"
-              onClick={clearSearch}
-              className="gap-2"
-              data-testid="ri-clear-search">
-              <i className="ph-fill ph-x-circle" style={{fontSize: 16}} />
+      <section style={cardStyle}>
+        <div style={cardHeadStyle}>
+          <h2 style={{...cardTitleStyle, margin: 0}}>
+            <i className="ph-fill ph-file-magnifying-glass" style={{fontSize: 17, color: 'var(--ac)'}} aria-hidden />
+            <span>Busca de RI</span>
+          </h2>
+          <div style={{fontSize: 12, color: 'var(--color-neutral-500)', marginTop: 3}}>
+            Pesquise por ticker ou empresa, com autocomplete, e filtre por tipo de documento.
+          </div>
+        </div>
+        <div style={{padding: '14px 16.8px', display: 'flex', flexDirection: 'column', gap: 11.2}}>
+          <div className="grid grid-cols-1 gap-[8.4px] md:grid-cols-[minmax(0,1fr)_240px_auto_auto]">
+            <div style={{position: 'relative'}}>
+              <input
+                type="text"
+                value={search.draft}
+                onChange={(event) => dispatch({type: 'draft', value: event.target.value})}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    applySearch();
+                  }
+                }}
+                placeholder="Ex: PETR4, BBDC4 ou Bradesco"
+                aria-label="Busca de RI"
+                style={{...fieldStyle, width: '100%', fontSize: 13, padding: '0 11.2px'}}
+              />
+              {showSuggestions && (
+                <div
+                  data-testid="ri-autocomplete-list"
+                  style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    top: 42,
+                    left: 0,
+                    right: 0,
+                    border: '1px solid var(--hair)',
+                    borderRadius: 8,
+                    background: 'var(--surf-4)',
+                    boxShadow: 'var(--shadow-md)',
+                    overflow: 'hidden',
+                  }}>
+                  {suggestions.slice(0, 6).map((item) => (
+                    <button
+                      key={`${item.ticker}-${item.company}`}
+                      type="button"
+                      onClick={() => selectSuggestion(item)}
+                      className="hover:bg-[rgba(152,160,171,0.08)]"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '8.4px 11.2px',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontFamily: 'var(--font-body)',
+                        fontSize: 12.5,
+                        color: 'var(--color-neutral-200)',
+                      }}>
+                      <b>{item.ticker}</b> <span style={{color: 'var(--color-neutral-500)'}}>· {item.company}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <select
+              aria-label="Filtro por tipo"
+              value={search.typeFilter}
+              onChange={(event) => dispatch({type: 'filter', value: event.target.value as TypeFilter})}
+              style={{...fieldStyle, fontSize: 12.5, padding: '0 8.4px'}}>
+              {(Object.keys(filterLabels) as TypeFilter[]).map((value) => (
+                <option key={value} value={value}>
+                  {filterLabels[value]}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => applySearch()}
+              data-testid="ri-apply-search"
+              style={{
+                height: 38,
+                padding: '0 14px',
+                borderRadius: 8,
+                border: '1px solid var(--color-accent)',
+                background: 'rgba(152,160,171,0.14)',
+                color: 'var(--color-accent-100)',
+                fontFamily: 'var(--font-body)',
+                fontSize: 12.5,
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                whiteSpace: 'nowrap',
+              }}>
+              <i className="ph ph-magnifying-glass" style={{fontSize: 14}} aria-hidden />
+              Buscar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                dispatch({type: 'clear'});
+                summary.reset();
+              }}
+              data-testid="ri-clear-search"
+              className="text-[color:var(--color-neutral-400)] hover:border-[color:var(--color-accent-700)] hover:text-[color:var(--color-neutral-100)]"
+              style={{
+                height: 38,
+                padding: '0 12px',
+                borderRadius: 8,
+                borderWidth: 1,
+                borderStyle: 'solid',
+                borderColor: 'var(--hair)',
+                background: 'transparent',
+                fontFamily: 'var(--font-body)',
+                fontSize: 12.5,
+                cursor: 'pointer',
+              }}>
               Limpar
-            </Button>
+            </button>
           </div>
 
           {notice && (
             <div
-              className="rounded-lg text-sm space-y-2 p-3"
+              data-testid="ri-notice"
               style={{
                 border: '1px solid var(--warn)',
-                background: 'var(--badge-warn-bg)',
-                color: 'var(--warn)',
-              }}
-              data-testid="ri-notice">
-              <p className="font-semibold">{notice.title}</p>
-              <p>{notice.description}</p>
-              {notice.suggestedFilters.some(
-                (filter) => filter !== typeFilter,
-              ) && (
-                <div className="flex flex-wrap gap-2">
-                  {notice.suggestedFilters
-                    .filter((filter) => filter !== typeFilter)
-                    .map((filter) => (
-                      <Button
-                        key={filter}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        style={{
-                          border: '1px solid var(--warn)',
-                          background: 'var(--badge-warn-bg)',
-                          color: 'var(--warn)',
-                        }}
-                        onClick={() => setTypeFilter(filter)}
-                        data-testid={`ri-fallback-filter-${filter}`}>
-                        Ver {filterLabels[filter]}
-                      </Button>
-                    ))}
-                </div>
-              )}
+                borderRadius: 8,
+                background: 'rgba(240,179,46,0.10)',
+                padding: '11.2px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+              }}>
+              <div style={{fontSize: 12.5, fontWeight: 600, color: 'var(--warn)'}}>{notice.title}</div>
+              <div style={{fontSize: 12, color: 'var(--color-neutral-300)', lineHeight: 1.5}}>{notice.description}</div>
+              <div style={{display: 'flex', gap: 6, flexWrap: 'wrap'}}>
+                {notice.suggestedFilters
+                  .filter((filter) => filter !== search.typeFilter)
+                  .map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => dispatch({type: 'filter', value: filter})}
+                      data-testid={`ri-fallback-filter-${filter}`}
+                      style={{
+                        height: 28,
+                        padding: '0 11.2px',
+                        borderRadius: 6,
+                        border: '1px solid var(--warn)',
+                        background: 'transparent',
+                        color: 'var(--warn)',
+                        fontFamily: 'var(--font-body)',
+                        fontSize: 11.5,
+                        cursor: 'pointer',
+                      }}>
+                      Ver {filter === 'all' ? 'todos os releases recentes' : filterLabels[filter]}
+                    </button>
+                  ))}
+              </div>
             </div>
           )}
 
           {!hasSearchQuery ? (
-            <div
-              className="rounded-xl text-sm p-6"
-              style={{
-                border: '1px dashed var(--hair)',
-                color: 'var(--color-neutral-500)',
-              }}>
-              Type a ticker (e.g. PETR4) and click search.
+            <div style={{...dashedStyle, padding: 22.4, textAlign: 'center'}}>
+              Digite um ticker (ex: PETR4) e clique em buscar.
             </div>
           ) : isLoading ? (
-            <div
-              className="flex flex-col items-center gap-3 rounded-xl text-sm p-6"
-              style={{
-                border: '1px dashed var(--hair)',
-                color: 'var(--color-neutral-500)',
-              }}>
-              <i
-                className="ph-fill ph-spinner animate-spin"
-                style={{fontSize: 20}}
-                data-testid="ri-loading-spinner"
-              />
-              <span>Carregando documentos...</span>
+            <div style={{...dashedStyle, padding: 22.4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8.4}}>
+              <i className="ph ph-circle-notch animate-spin" style={{fontSize: 20}} data-testid="ri-loading-spinner" aria-hidden />
+              <span>Carregando documentos…</span>
               {showSlowNotice && (
-                <span className="text-xs" style={{color: 'var(--warn)'}}>
+                <span style={{fontSize: 11.5, color: 'var(--warn)'}}>
                   Isso pode levar até um minuto — estamos consultando múltiplas fontes oficiais.
                 </span>
               )}
             </div>
           ) : documents.length === 0 ? (
-            <div
-              className="rounded-xl text-sm p-6"
-              style={{
-                border: '1px dashed var(--hair)',
-                color: 'var(--color-neutral-500)',
-              }}
-              data-testid="ri-empty-state">
-              {notice?.description ||
-                'Nenhum release recente válido encontrado com os filtros atuais.'}
+            <div style={{...dashedStyle, padding: 22.4, textAlign: 'center'}} data-testid="ri-empty-state">
+              {notice?.description || 'Nenhum release recente válido encontrado com os filtros atuais.'}
             </div>
           ) : (
-            <div className="space-y-3" data-testid="ri-document-list">
-              {documents.map((document) => (
-                <div
-                  key={document.id}
-                  className="rounded-xl p-4 transition-colors"
-                  style={{border: '1px solid var(--hair)'}}>
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold">
+            <div style={{display: 'flex', flexDirection: 'column', gap: 8.4}} data-testid="ri-document-list">
+              {documents.map((document) => {
+                const selected = search.selected?.id === document.id;
+                return (
+                  <div
+                    key={document.id}
+                    className="flex flex-col gap-[11.2px] md:flex-row md:items-start md:justify-between md:gap-[16.8px]"
+                    style={{
+                      border: `1px solid ${selected ? 'var(--color-accent)' : 'var(--hair)'}`,
+                      borderRadius: 8,
+                      padding: '14px 16.8px',
+                      background: selected ? 'rgba(152,160,171,0.08)' : 'transparent',
+                    }}>
+                    <div style={{minWidth: 0}}>
+                      <div style={{fontSize: 13, fontWeight: 600}}>
                         {document.ticker} · {document.company}
-                      </p>
-                      <p className="text-sm" style={{color: 'var(--color-neutral-500)'}}>
+                      </div>
+                      <div style={{fontSize: 12, color: 'var(--color-neutral-400)', marginTop: 2}}>
                         {buildDocumentDisplayTitle(document)}
-                      </p>
-                      <div
-                        className="flex flex-wrap items-center gap-2 text-xs"
-                        style={{color: 'var(--color-neutral-500)'}}>
-                        <Badge variant="secondary">
+                      </div>
+                      <div style={{display: 'flex', alignItems: 'center', gap: 8.4, fontSize: 11, color: 'var(--color-neutral-600)', marginTop: 5.6, flexWrap: 'wrap'}}>
+                        <span style={{border: '1px solid var(--hair)', borderRadius: 4, padding: '1px 6px'}}>
                           {typeLabels[document.documentType] || 'Outros'}
-                        </Badge>
+                        </span>
                         <span>Data: {formatDate(document.publishedAt)}</span>
                         <span>Período: {document.period || 'N/A'}</span>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenDocument(document)}>
+                    <div style={{display: 'flex', gap: 8.4, flexShrink: 0}}>
+                      <button
+                        type="button"
+                        onClick={() => openDocument(document)}
+                        className="text-[color:var(--color-neutral-200)] hover:border-[color:var(--color-accent-700)] hover:text-[color:var(--color-neutral-100)]"
+                        style={{height: 30, padding: '0 11.2px', borderRadius: 6, borderWidth: 1, borderStyle: 'solid', borderColor: 'var(--hair)', background: 'transparent', fontSize: 11.5, cursor: 'pointer'}}>
                         Abrir PDF
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={
-                          selectedDocument?.id === document.id
-                            ? 'secondary'
-                            : 'default'
-                        }
-                        onClick={() => setSelectedDocument(document)}>
-                        Selecionar
-                      </Button>
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => dispatch({type: 'select', document})}
+                        style={{
+                          height: 30,
+                          padding: '0 11.2px',
+                          borderRadius: 6,
+                          border: `1px solid ${selected ? 'var(--color-accent)' : 'var(--hair)'}`,
+                          background: selected ? 'rgba(152,160,171,0.16)' : 'transparent',
+                          color: selected ? 'var(--color-accent-100)' : 'var(--color-neutral-300)',
+                          fontFamily: 'var(--font-body)',
+                          fontSize: 11.5,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                        }}>
+                        {selected ? 'Selecionado' : 'Selecionar'}
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      <PremiumBlur
-        locked={!canUseAiSummary}
-        title="Resumo e comparação de release"
-        description="Disponível para planos Premium e Global Investor">
-        <div
-          data-testid="ri-summary-panel"
-          style={{
-            border: '1px solid var(--hair)',
-            borderRadius: 8,
-            background: 'var(--nk-card)',
-          }}>
-          <div
-            style={{
-              padding: '14px 16px',
-              borderBottom: '1px solid var(--hair-soft)',
-            }}>
-            <div
-              className="flex items-center gap-2"
-              style={{
-                fontFamily: 'var(--font-heading)',
-                fontSize: 14,
-                fontWeight: 600,
-              }}>
-              <i
-                className="ph-fill ph-sparkle"
-                style={{fontSize: 20, color: 'var(--ac)'}}
-              />
-              Resumo automático do release
-            </div>
-            <p
-              style={{
-                fontSize: 14,
-                color: 'var(--color-neutral-500)',
-                marginTop: 4,
-              }}>
-              Gera highlights estruturados do documento selecionado com fallback
-              seguro.
-            </p>
-          </div>
-          <div className="space-y-4" style={{padding: '14px 16px'}}>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                onClick={handleGenerateSummary}
-                disabled={!selectedDocument || summaryLoading}
-                className="gap-2"
-                data-testid="ri-generate-summary">
-                <i className="ph-fill ph-file-text" style={{fontSize: 16}} />
-                {summaryLoading ? 'Gerando resumo...' : 'Gerar resumo IA'}
-              </Button>
-              <span className="text-xs" style={{color: 'var(--color-neutral-500)'}}>
-                {selectedDocument
-                  ? `Documento selecionado: ${selectedDocument.ticker}`
-                  : 'Selecione um documento para resumir'}
-              </span>
-            </div>
-
-            {!summary ? (
-              <div
-                className="rounded-lg text-sm p-4"
-                style={{
-                  border: '1px dashed var(--hair)',
-                  color: 'var(--color-neutral-500)',
-                }}>
-                Resumo ainda não gerado.
-              </div>
-            ) : (
-              <div
-                className="rounded-lg p-4 space-y-3"
-                style={{border: '1px solid var(--hair)'}}
-                data-testid="ri-summary-result">
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <Badge variant="outline">
-                    Status: {summary.summary.status}
-                  </Badge>
-                  <Badge variant="outline">
-                    Fonte: {summary.summary.sourceLabel}
-                  </Badge>
-                  <Badge variant="outline">
-                    Cache hit: {summary.cache.hit ? 'sim' : 'não'}
-                  </Badge>
-                  <Badge variant="outline">
-                    AI calls: {summary.cost.aiCalls}
-                  </Badge>
-                </div>
-
-                {summary.summary.highlights.length > 0 ? (
-                  <ul className="space-y-2">
-                    {summary.summary.highlights.map((highlight, index) => (
-                      <li
-                        key={`${highlight}-${index}`}
-                        className="text-sm rounded-md px-3 py-2"
-                        style={{background: 'var(--surf-3)'}}>
-                        {highlight}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm" style={{color: 'var(--color-neutral-500)'}}>
-                    Sem highlights disponíveis no momento.
-                  </p>
-                )}
-
-                {summary.summary.limitations.length > 0 && (
-                  <div
-                    className="rounded-md px-3 py-2 text-xs"
-                    style={{
-                      border: '1px solid var(--warn)',
-                      background: 'var(--badge-warn-bg)',
-                      color: 'var(--warn)',
-                    }}>
-                    Limitações: {summary.summary.limitations.join(', ')}
-                  </div>
-                )}
-
-                {summary.summary.sourceLabel === 'ai_summary' && (
-                  <AiGeneratedNotice />
-                )}
-              </div>
-            )}
-
-            <div
-              className="rounded-lg text-xs p-4"
-              style={{
-                border: '1px dashed var(--hair)',
-                color: 'var(--color-neutral-500)',
-              }}
-              data-testid="ri-release-comparison-placeholder">
-              Comparação com release anterior será habilitada nesta área para
-              planos Premium/Global.
-            </div>
+      <section data-testid="ri-summary-panel" style={{...cardStyle, position: 'relative', overflow: 'hidden'}}>
+        <div style={cardHeadStyle}>
+          <h2 style={{...cardTitleStyle, margin: 0}}>
+            <i className="ph-fill ph-sparkle" style={{fontSize: 17, color: 'var(--ac)'}} aria-hidden />
+            <span>Resumo automático do release</span>
+          </h2>
+          <div style={{fontSize: 12, color: 'var(--color-neutral-500)', marginTop: 3}}>
+            Gera highlights estruturados do documento selecionado, com fonte e nível de confiança.
           </div>
         </div>
-      </PremiumBlur>
+
+        <div
+          aria-hidden={!canUseAiSummary}
+          style={{
+            padding: '14px 16.8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 11.2,
+            ...(canUseAiSummary ? {} : {filter: 'blur(3px)', pointerEvents: 'none', userSelect: 'none'}),
+          }}>
+          <div style={{display: 'flex', alignItems: 'center', gap: 11.2, flexWrap: 'wrap'}}>
+            <button
+              type="button"
+              onClick={generateSummary}
+              disabled={generateDisabled}
+              data-testid="ri-generate-summary"
+              style={{
+                height: 34,
+                padding: '0 14px',
+                borderRadius: 8,
+                border: 'none',
+                cursor: generateDisabled ? 'not-allowed' : 'pointer',
+                opacity: generateDisabled ? 0.5 : 1,
+                background: 'var(--grad-violet)',
+                color: 'var(--sunk)',
+                fontFamily: 'var(--font-body)',
+                fontSize: 12.5,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}>
+              <i className="ph-fill ph-file-text" style={{fontSize: 14}} aria-hidden />
+              {summary.isPending ? 'Gerando resumo…' : 'Gerar resumo IA'}
+            </button>
+            <span style={{fontSize: 11.5, color: 'var(--color-neutral-500)'}}>
+              {search.selected ? `Documento selecionado: ${search.selected.ticker}` : 'Selecione um documento para resumir'}
+            </span>
+          </div>
+
+          {summary.isError && (
+            <div style={{border: '1px solid var(--neg)', borderRadius: 8, padding: '11.2px 14px', fontSize: 12, color: 'var(--neg)'}}>
+              Não foi possível gerar o resumo agora. Tente novamente em instantes.
+            </div>
+          )}
+
+          {result ? (
+            <div
+              data-testid="ri-summary-result"
+              style={{border: '1px solid var(--hair)', borderRadius: 8, padding: '14px 16.8px', display: 'flex', flexDirection: 'column', gap: 11.2}}>
+              <div style={{display: 'flex', gap: 6, flexWrap: 'wrap'}}>
+                <span style={chipStyle}>Status: {result.summary.status}</span>
+                <span style={chipStyle}>Fonte: {result.summary.sourceLabel}</span>
+                <span style={chipStyle}>Cache hit: {result.cache.hit ? 'sim' : 'não'}</span>
+                <span style={chipStyle}>AI calls: {result.cost.aiCalls}</span>
+              </div>
+              {result.summary.highlights.length > 0 ? (
+                <ul style={{margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6.4}}>
+                  {result.summary.highlights.map((highlight, index) => (
+                    <li
+                      key={`${highlight}-${index}`}
+                      style={{listStyle: 'none', fontSize: 12.5, lineHeight: 1.5, background: 'var(--surf-3)', borderRadius: 6, padding: '8.4px 11.2px'}}>
+                      {highlight}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div style={{fontSize: 12.5, color: 'var(--color-neutral-500)'}}>Sem highlights disponíveis no momento.</div>
+              )}
+              {result.summary.limitations.length > 0 && (
+                <div style={{border: '1px solid var(--warn)', borderRadius: 6, background: 'rgba(240,179,46,0.10)', padding: '6.4px 11.2px', fontSize: 11, color: 'var(--warn)'}}>
+                  Limitações: {result.summary.limitations.join(', ')}
+                </div>
+              )}
+              {result.summary.sourceLabel === 'ai_summary' && <AiGeneratedNotice />}
+            </div>
+          ) : (
+            <div style={{...dashedStyle, padding: 16.8}}>Resumo ainda não gerado.</div>
+          )}
+
+          <div data-testid="ri-release-comparison-placeholder" style={{...dashedStyle, padding: '14px 16.8px', fontSize: 11, color: 'var(--color-neutral-600)'}}>
+            Comparação com release anterior será habilitada nesta área para planos Premium/Global.
+          </div>
+        </div>
+
+        {!canUseAiSummary && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              top: 61,
+              backdropFilter: 'blur(4px)',
+              background: 'rgba(var(--rgb-bg),0.55)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8.4,
+              textAlign: 'center',
+              padding: 22.4,
+            }}>
+            <i className="ph-fill ph-lock-simple" style={{fontSize: 22, color: 'var(--color-accent-300)'}} aria-hidden />
+            <div style={{fontSize: 13.5, fontWeight: 600}}>Resumo e comparação de release</div>
+            <div style={{fontSize: 12, color: 'var(--color-neutral-500)', maxWidth: 320}}>
+              Disponível para planos Premium e Global Investor.
+            </div>
+            <Link
+              to="/subscription"
+              style={{
+                marginTop: 4,
+                height: 32,
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '0 14px',
+                borderRadius: 8,
+                border: '1px solid var(--color-accent)',
+                background: 'rgba(152,160,171,0.14)',
+                color: 'var(--color-accent-100)',
+                fontSize: 12,
+                fontWeight: 500,
+                textDecoration: 'none',
+              }}>
+              Fazer upgrade
+            </Link>
+          </div>
+        )}
+      </section>
     </div>
   );
 };
