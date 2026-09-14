@@ -1,5 +1,23 @@
 import apiClient from '@/server/api/api';
 
+export type UpcomingDividend = {
+  id: string;
+  portfolioId: string;
+  symbol: string;
+  name?: string;
+  paymentType: 'JCP' | 'DIVIDEND' | 'RENDIMENTO' | 'OTHER';
+  expectedPaymentDate: string;
+  quantity: number;
+  unitValue: number;
+  netValue: number;
+};
+
+export type UpcomingDividendsResponse = {
+  windowDays: number;
+  totalNetValue: number;
+  items: UpcomingDividend[];
+};
+
 class PortfolioService {
   async getPortfolios() {
     const response = await apiClient.get('/portfolio');
@@ -45,7 +63,15 @@ class PortfolioService {
     return response.data;
   }
 
-  /** Qualquer um dos 3 arquivos da B3 — o backend decide o importador pelo conteúdo. */
+  /** Proventos anunciados e ainda não pagos (relatório de Eventos da B3). */
+  async getUpcomingDividends(days = 45): Promise<UpcomingDividendsResponse> {
+    const response = await apiClient.get('/portfolio/upcoming-dividends', {
+      params: {days},
+    });
+    return response.data;
+  }
+
+  /** Qualquer um dos arquivos da B3 — o backend decide o importador pelo conteúdo. */
   async importB3Auto(portfolioId: string, file: File) {
     const formData = new FormData();
     formData.append('file', file);
