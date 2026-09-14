@@ -8,6 +8,7 @@ import {SidebarInset, SidebarProvider} from '@/components/ui/sidebar';
 import {AppSidebar} from '@/components/app-sidebar';
 import {AppTopbar} from '@/components/layout/AppTopbar';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import {AdminHostRedirect} from '@/components/AdminHostRedirect';
 import {ConsentProvider} from '@/contexts/ConsentContext';
 import {AdaptiveLevelProvider} from '@/contexts/AdaptiveLevelContext';
 import {CookieConsentBanner} from '@/components/CookieConsentBanner';
@@ -82,6 +83,7 @@ const App = () => (
         <BrowserRouter>
         <CookieConsentBanner />
         <ScrollToTopOnRouteChange />
+        <AdminHostRedirect />
         <Routes>
           <Route
             path="/"
