@@ -2,6 +2,9 @@ import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {Button} from '@/components/ui/button';
 import {AppLogo} from '@/components/AppLogo';
+import {Moon, Sun} from '@/components/ui/icons';
+
+export type LandingTheme = 'light' | 'dark';
 
 const navLinks = [
   {label: 'Produto', id: 'produto'},
@@ -11,7 +14,12 @@ const navLinks = [
   {label: 'Dúvidas', id: 'faq'},
 ];
 
-export function LandingNav() {
+interface LandingNavProps {
+  theme: LandingTheme;
+  onToggleTheme: () => void;
+}
+
+export function LandingNav({theme, onToggleTheme}: LandingNavProps) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -50,6 +58,14 @@ export function LandingNav() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleTheme}
+            className="rounded-full text-on-surface-muted/70 hover:bg-surface-hairline/[0.06] hover:text-on-surface"
+            aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}>
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
           <Button
             asChild
             variant="ghost"
