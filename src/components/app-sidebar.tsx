@@ -153,7 +153,7 @@ export function AppSidebar() {
             <span>Ambiente seguro · LGPD</span>
           </div>
           <div className="mt-[5.6px] text-[11px] leading-[1.45] text-[color:var(--color-neutral-500)]">
-            Uptime 99,98% · dados cifrados AES-256
+            Dados cifrados AES-256 · senhas com Argon2id
           </div>
         </div>
       </SidebarFooter>
