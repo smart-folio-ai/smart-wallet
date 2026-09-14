@@ -40,6 +40,7 @@ import Comparator from './pages/Comparator';
 import TwoFactorVerify from './pages/TwoFactorVerify';
 import MyAssetDetail from './pages/MyAssetDetail';
 import Fiscal from './pages/Fiscal';
+import Reports from './pages/Reports';
 import Transactions from './pages/Transactions';
 import Dividends from './pages/Dividends';
 import DividendDetail from './pages/DividendDetail';
@@ -197,6 +198,7 @@ const App = () => (
                               element={<DividendDetail />}
                             />
                             <Route path="/fiscal" element={<Fiscal />} />
+                            <Route path="/reports" element={<Reports />} />
                             <Route path="/settings" element={<Settings />} />
                             <Route path="/security" element={<Security />} />
                             <Route
