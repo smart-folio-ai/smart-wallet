@@ -24,11 +24,20 @@ function getInitialLandingTheme(): LandingTheme {
 }
 
 /**
- * A landing tem tema próprio (default escuro), independente do tema global
- * do app autenticado — handoff especifica um toggle sol/lua no header
- * público (Trackerr Landing.dc.html), então o estado precisa viver aqui, não
- * no `useThemeToggle` global (que mexe em `document.documentElement`, o
- * escopo errado: afetaria o app inteiro, não só a landing).
+ * A landing tem tema próprio (default escuro), independente do tema salvo
+ * pelo app autenticado — handoff especifica um toggle sol/lua no header
+ * público (Trackerr Landing.dc.html).
+ *
+ * O toggle não pode ser só uma classe local no wrapper: `--surface-base`,
+ * `--brand` etc são declarados em `:root`/`.dark` (ambos casam com <html>,
+ * já que `:root` === `html`), e como CSS custom property herdada só é
+ * sobrescrita por uma regra que casa com o PRÓPRIO elemento, tirar a classe
+ * "dark" de um div filho não desfaz o que `<html class="dark">` já
+ * estabeleceu quando o tema global do app está em dark — o valor herdado
+ * continua vencendo. Por isso o toggle da Landing aplica a classe
+ * diretamente em `document.documentElement`, no mesmo nível de `:root`/
+ * `.dark`, restaurando o que estava lá ao desmontar para não vazar pro
+ * resto do app.
  */
 export default function Landing() {
   const containerRef = useGsapReveal<HTMLDivElement>();
@@ -37,6 +46,17 @@ export default function Landing() {
   useEffect(() => {
     captureAttribution(window.location.search);
   }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const hadDarkBeforeLanding = root.classList.contains('dark');
+
+    root.classList.toggle('dark', theme === 'dark');
+
+    return () => {
+      root.classList.toggle('dark', hadDarkBeforeLanding);
+    };
+  }, [theme]);
 
   const toggleTheme = () => {
     setTheme((prev) => {
@@ -47,9 +67,7 @@ export default function Landing() {
   };
 
   return (
-    <div
-      ref={containerRef}
-      className={`${theme === 'dark' ? 'dark' : ''} min-h-screen bg-surface font-body`}>
+    <div ref={containerRef} className="min-h-screen bg-surface font-body">
       <LandingNav theme={theme} onToggleTheme={toggleTheme} />
 
       <main>
