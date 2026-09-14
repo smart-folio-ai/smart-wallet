@@ -29,7 +29,7 @@ const month = (overrides: Partial<FiscalMonth> = {}): FiscalMonth => ({
   ...overrides,
 });
 
-const text = (value: string) => value.replace(/ /g, ' ');
+const text = (value: string) => value.replace(/00a0/g, ' ');
 
 describe('fiscal-summary', () => {
   it('dues the DARF on the last business day of the following month', () => {
