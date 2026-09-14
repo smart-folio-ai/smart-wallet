@@ -76,7 +76,8 @@ describe('AppSidebar', () => {
   it('shows the handoff security footer', () => {
     renderSidebar();
     expect(screen.getByText('Ambiente seguro · LGPD')).toBeInTheDocument();
-    expect(screen.getByText('Uptime 99,98% · dados cifrados AES-256')).toBeInTheDocument();
+    expect(screen.getByText('Dados cifrados AES-256 · senhas com Argon2id')).toBeInTheDocument();
+    expect(screen.queryByText(/Uptime/)).not.toBeInTheDocument();
   });
 
   it('adds "Ativo · {símbolo}" right after Dividendos once an asset has been opened', () => {
