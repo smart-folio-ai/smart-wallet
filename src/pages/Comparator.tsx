@@ -376,7 +376,7 @@ export default function Comparator() {
                 {label: 'Prazo (meses)', value: rfPrazo, set: setRfPrazo, placeholder: '24'},
                 {label: 'IPCA (% a.a.)', value: rfIPCA, set: setRfIPCA, placeholder: '4.5'},
                 {label: 'CDI (% a.a.)', value: rfCDI, set: setRfCDI, placeholder: '10.5'},
-                {label: 'IR padrão (%)', value: '15', set: () => {}, placeholder: '15'},
+                {label: 'IR padrão (%)', value: '15', set: () => {}, placeholder: '15', fixed: true},
               ].map((f) => (
                 <div key={f.label}>
                   <label
@@ -394,6 +394,8 @@ export default function Comparator() {
                     value={f.value}
                     onChange={(e) => f.set(e.target.value)}
                     placeholder={f.placeholder}
+                    disabled={f.fixed}
+                    title={f.fixed ? 'Alíquota regressiva padrão da Renda Fixa — não editável' : undefined}
                     style={{
                       width: '100%',
                       height: 34,
@@ -402,8 +404,10 @@ export default function Comparator() {
                       background: 'var(--surf-3)',
                       padding: '0 10px',
                       fontSize: 12.5,
-                      color: 'inherit',
+                      color: f.fixed ? 'var(--color-neutral-500)' : 'inherit',
                       outline: 'none',
+                      cursor: f.fixed ? 'not-allowed' : 'text',
+                      opacity: f.fixed ? 0.7 : 1,
                     }}
                   />
                 </div>
