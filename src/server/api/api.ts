@@ -330,5 +330,34 @@ export const investmentPolicyService = {
     apiClient.get<{policy: InvestmentPolicy; savedAt: string}[]>('/investment-policy/versions'),
 };
 
+export type ReportKind = 'portfolio' | 'income' | 'fiscal' | 'risk' | 'operations' | 'accountant';
+export type ReportFormat = 'pdf' | 'xlsx' | 'csv' | 'zip';
+export type ReportFrequency = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
+export interface ReportSchedule {
+  id: string;
+  kind: ReportKind;
+  title: string;
+  format: ReportFormat;
+  frequency: ReportFrequency;
+  status: 'active' | 'paused';
+  nextRunAt: string | null;
+  lastRunAt: string | null;
+  lastError: string | null;
+  pausedAt: string | null;
+}
+
+export const reportsService = {
+  // TRA-171: relatórios do próprio usuário.
+  download: (kind: ReportKind, format: ReportFormat, year: number) =>
+    apiClient.get<Blob>(`/reports/${kind}/download`, {params: {format, year}, responseType: 'blob'}),
+  listSchedules: () => apiClient.get<ReportSchedule[]>('/reports/schedules'),
+  createSchedule: (data: {kind: ReportKind; format: ReportFormat; frequency: ReportFrequency}) =>
+    apiClient.post<ReportSchedule>('/reports/schedules', data),
+  setScheduleStatus: (id: string, status: 'active' | 'paused') =>
+    apiClient.patch<ReportSchedule>(`/reports/schedules/${encodeURIComponent(id)}`, {status}),
+  deleteSchedule: (id: string) => apiClient.delete(`/reports/schedules/${encodeURIComponent(id)}`),
+};
+
 export {apiClient as api};
 export default apiClient;
