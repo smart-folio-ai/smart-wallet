@@ -1,9 +1,12 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
+import {act, render, screen, waitFor, fireEvent, within} from '@testing-library/react';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import AIInsights from './AIInsights';
-import {AdaptiveLevelProvider} from '@/contexts/AdaptiveLevelContext';
+import {
+  AdaptiveLevelProvider,
+  INVESTOR_PROFILE_QUERY_KEY,
+} from '@/contexts/AdaptiveLevelContext';
 
 const portfolioScoreMock = vi.fn();
 const errorRadarMock = vi.fn();
@@ -11,6 +14,19 @@ const futureSimulatorMock = vi.fn();
 const getOrCreateAiAnalysisMock = vi.fn();
 const useSubscriptionMock = vi.fn();
 const isProOrHigherPlanMock = vi.fn();
+const getInvestorProfileMock = vi.fn();
+const setInvestorProfileOverrideMock = vi.fn();
+const getCdiSeriesMock = vi.fn();
+const getAssetsMock = vi.fn();
+const toastInfoMock = vi.fn();
+
+vi.mock('sonner', () => ({
+  toast: {
+    info: (...args: unknown[]) => toastInfoMock(...args),
+    error: vi.fn(),
+    success: vi.fn(),
+  },
+}));
 
 vi.mock('@/services/ai', () => ({
   aiAnalysisService: {
@@ -21,8 +37,7 @@ vi.mock('@/services/ai', () => ({
 }));
 
 vi.mock('@/services/ai/trakkerAi', () => ({
-  getOrCreateAiAnalysis: (...args: unknown[]) =>
-    getOrCreateAiAnalysisMock(...args),
+  getOrCreateAiAnalysis: (...args: unknown[]) => getOrCreateAiAnalysisMock(...args),
   getAiPlanFromPlanName: () => 'pro',
   isProOrHigherPlan: (...args: unknown[]) => isProOrHigherPlanMock(...args),
 }));
@@ -31,41 +46,43 @@ vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => useSubscriptionMock(),
 }));
 
-const getInvestorProfileMock = vi.fn();
-const setInvestorProfileOverrideMock = vi.fn();
-
 vi.mock('@/services/ai/investorProfile', () => ({
   getInvestorProfile: (...args: unknown[]) => getInvestorProfileMock(...args),
-  setInvestorProfileOverride: (...args: unknown[]) =>
-    setInvestorProfileOverrideMock(...args),
+  setInvestorProfileOverride: (...args: unknown[]) => setInvestorProfileOverrideMock(...args),
 }));
-
-const getCdiSeriesMock = vi.fn();
 
 vi.mock('@/server/api/api', () => ({
   stockServices: {
     getCdiSeries: (...args: unknown[]) => getCdiSeriesMock(...args),
   },
   portfolioService: {
-    getAssets: vi.fn().mockResolvedValue({data: []}),
+    getAssets: (...args: unknown[]) => getAssetsMock(...args),
   },
 }));
 
-// A página passou a consumir o nível de detalhe do perfil do servidor via
-// AdaptiveLevelProvider (TRA-142), em vez de manter estado binário próprio.
+// O painel de perguntas tem seus próprios testes e faz chamadas próprias.
+vi.mock('@/components/ai/RagAskPanel', () => ({
+  RagAskPanel: () => <div data-testid="rag-ask-panel" />,
+}));
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: {queries: {retry: false}, mutations: {retry: false}},
   });
-  return render(
+  const utils = render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/ai-insights']}>
         <AdaptiveLevelProvider>
-          <AIInsights />
+          <Routes>
+            <Route path="/ai-insights" element={<AIInsights />} />
+            <Route path="/asset/:symbol" element={<div>Página do ativo</div>} />
+            <Route path="/subscription" element={<div>Página de planos</div>} />
+          </Routes>
         </AdaptiveLevelProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return {...utils, queryClient};
 }
 
 const okScore = {
@@ -82,8 +99,14 @@ const okScore = {
   positionsCount: 4,
 };
 
-// Resposta padrão do simulador, repetida em vários testes só para chegar ao
-// estado "já calculou". O que cada teste realmente afirma vem depois disso.
+const clearRadar = {
+  modelVersion: 'portfolio_error_radar_v1',
+  status: 'ok',
+  riskLevel: 'low',
+  alerts: [],
+  positionsCount: 4,
+};
+
 const baseSimulation = {
   modelVersion: 'future_simulator_v1',
   horizon: '10y',
@@ -101,748 +124,359 @@ const baseSimulation = {
   confidence: 'high',
 };
 
-const defaultInvestorProfile = {
-  sophistication: 'intermediate' as const,
-  riskTolerance: 'moderate' as const,
-  confidence: 0.7,
-  signals: {},
-  source: 'inferred' as const,
+const cdiSeries = {
+  data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
 };
 
-describe('AIInsights — score da carteira', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    isProOrHigherPlanMock.mockReturnValue(true);
-    useSubscriptionMock.mockReturnValue({
-      planName: 'Investidor Pro',
-      isSubscribed: true,
-      isLoading: false,
-    });
-    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
-    portfolioScoreMock.mockResolvedValue(okScore);
-    errorRadarMock.mockResolvedValue({
-      modelVersion: 'portfolio_error_radar_v1',
-      status: 'ok',
-      riskLevel: 'low',
-      alerts: [],
-      positionsCount: 4,
-    });
-    getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
-  });
+const profileWith = (sophistication: string, source = 'inferred') => ({
+  sophistication,
+  riskTolerance: 'moderate',
+  confidence: 0.7,
+  signals: {distinctAssetCount: 4, tradesLast12Months: 10, accountAgeDays: 200},
+  source,
+});
 
-  it('exibe o overall vindo do endpoint determinístico', async () => {
+function signalValue(label: string): string | null {
+  const row = screen.getByText(label).parentElement as HTMLElement;
+  return row.lastElementChild?.textContent ?? null;
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
+  isProOrHigherPlanMock.mockReturnValue(true);
+  useSubscriptionMock.mockReturnValue({planName: 'Investidor Pro', isSubscribed: true, isLoading: false});
+  getAssetsMock.mockResolvedValue({data: []});
+  getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
+  portfolioScoreMock.mockResolvedValue(okScore);
+  errorRadarMock.mockResolvedValue(clearRadar);
+  getInvestorProfileMock.mockResolvedValue(profileWith('intermediate'));
+  getCdiSeriesMock.mockResolvedValue(cdiSeries);
+});
+
+describe('AIInsights — como a IA definiu seu nível', () => {
+  it('mostra score e dimensões determinísticas nas barras de sinais', async () => {
     renderPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('72.5')).toBeInTheDocument();
-    });
-    expect(screen.getByText('Score da carteira')).toBeInTheDocument();
-  });
-
-  it('renderiza apenas diversificação e controle de risco', async () => {
-    renderPage();
-
-    await waitFor(() =>
-      expect(screen.getByText('Diversificação')).toBeInTheDocument(),
-    );
-
-    expect(screen.getByText('Controle de risco')).toBeInTheDocument();
-    // Consistência e volatilidade vinham do LLM e não têm cálculo
-    // determinístico — foram removidas, não substituídas por zero.
+    await waitFor(() => expect(signalValue('Score da carteira')).toBe('72.5'));
+    expect(signalValue('Diversificação')).toBe('65');
+    expect(signalValue('Controle de risco')).toBe('80');
+    expect(signalValue('Confiança do perfil')).toBe('70%');
+    // Consistência e volatilidade vinham do LLM, sem cálculo determinístico.
     expect(screen.queryByText('Consistência')).not.toBeInTheDocument();
     expect(screen.queryByText('Volatilidade')).not.toBeInTheDocument();
   });
 
-  it('rotula a dimensão de risco como "controle", já que vem invertida', async () => {
+  it('usa o nível e a quantidade de sinais do perfil no subtítulo', async () => {
     renderPage();
-
-    await waitFor(() =>
-      expect(screen.getByText('Controle de risco')).toBeInTheDocument(),
-    );
-    // Uma barra cheia sob o rótulo "Risco" leria como o oposto do que é.
-    expect(screen.queryByText('Risco')).not.toBeInTheDocument();
+    expect(await screen.findByText('Sugerido: Intermediário · 3 sinais de uso')).toBeInTheDocument();
   });
 
-  describe('carteira sem dados suficientes', () => {
-    beforeEach(() => {
-      portfolioScoreMock.mockResolvedValue({
-        ...okScore,
-        overall: null,
-        status: 'insufficient_data',
-        dimensions: [],
-        diversificationStatus: null,
-        riskLevel: null,
-        positionsCount: 0,
-      });
+  it('mostra "—" e barra vazia quando a carteira não tem dados suficientes', async () => {
+    portfolioScoreMock.mockResolvedValue({
+      ...okScore,
+      overall: null,
+      status: 'insufficient_data',
+      dimensions: [],
     });
+    renderPage();
 
-    it('mostra em dash e não zero', async () => {
-      renderPage();
-
-      await waitFor(() =>
-        expect(screen.getByText('Sem dados suficientes')).toBeInTheDocument(),
-      );
-      expect(screen.getByText('--')).toBeInTheDocument();
-      expect(screen.queryByText('0')).not.toBeInTheDocument();
-    });
-
-    it('não renderiza as barras de dimensão', async () => {
-      renderPage();
-
-      await waitFor(() =>
-        expect(screen.getByText('Sem dados suficientes')).toBeInTheDocument(),
-      );
-      expect(screen.queryByText('Diversificação')).not.toBeInTheDocument();
-    });
+    await waitFor(() => expect(getOrCreateAiAnalysisMock).toHaveBeenCalled());
+    await waitFor(() => expect(signalValue('Score da carteira')).toBe('—'));
+    expect(signalValue('Diversificação')).toBe('—');
+    expect(screen.getAllByTestId('signal-bar')[0]).toHaveStyle({width: '0%'});
   });
 
   it('mantém a página utilizável quando só o score falha', async () => {
     portfolioScoreMock.mockRejectedValue(new Error('500'));
-
     renderPage();
 
-    // A análise do LLM resolveu, então a página não vai para o estado de erro
-    // — o score simplesmente não aparece. As duas chamadas são independentes.
-    await waitFor(() => {
-      expect(screen.getByText('--')).toBeInTheDocument();
-    });
-    expect(
-      screen.queryByText('Ops! Algo deu errado.'),
-    ).not.toBeInTheDocument();
+    expect(await screen.findByText(/Nenhum alerta no momento/)).toBeInTheDocument();
+    expect(signalValue('Score da carteira')).toBe('—');
+    expect(screen.queryByText(/Não foi possível carregar os insights/)).not.toBeInTheDocument();
   });
 
-  describe('Radar Anti-Erro', () => {
-    it('exibe o rótulo em português e o symbol do alerta', async () => {
-      errorRadarMock.mockResolvedValue({
-        modelVersion: 'portfolio_error_radar_v1',
-        status: 'ok',
-        riskLevel: 'high',
-        alerts: [
-          {
-            code: 'ASSET_CONCENTRATION_HIGH',
-            type: 'concentration',
-            severity: 'high',
-            message: 'PETR4 representa 42.3% da carteira — concentração alta.',
-            symbol: 'PETR4',
-          },
-        ],
-        positionsCount: 3,
-      });
-
-      renderPage();
-
-      await waitFor(() => {
-        expect(
-          screen.getByText('PETR4 representa 42.3% da carteira — concentração alta.'),
-        ).toBeInTheDocument();
-      });
-      expect(screen.getByText('Concentração')).toBeInTheDocument();
-      expect(screen.getByText('PETR4')).toBeInTheDocument();
-    });
-
-    it('mostra estado neutro quando não há alertas', async () => {
-      renderPage();
-
-      await waitFor(() => {
-        expect(
-          screen.getByText(/Nenhum alerta no momento/),
-        ).toBeInTheDocument();
-      });
-    });
-
-    it('mantém a página utilizável quando só o radar falha', async () => {
-      errorRadarMock.mockRejectedValue(new Error('500'));
-
-      renderPage();
-
-      await waitFor(() => {
-        expect(screen.getByText('72.5')).toBeInTheDocument();
-      });
-      expect(
-        screen.queryByText('Ops! Algo deu errado.'),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByText(/Nenhum alerta no momento/),
-      ).not.toBeInTheDocument();
-    });
-  });
-
-  describe('Simulador de Futuro', () => {
-    const okSimulation = {
-      modelVersion: 'future_simulator_v1',
-      horizon: '10y',
-      months: 120,
-      currentPortfolioValue: 5000,
-      monthlyContribution: 1000,
-      scenarios: {
-        pessimistic: {
-          label: 'pessimistic',
-          annualReturnPct: 0.02,
-          projectedValue: 140000,
-          range: {lower: 130000, upper: 150000},
-          projectedDividendFlow: {monthly: 50, annual: 600},
-        },
-        base: {
-          label: 'base',
-          annualReturnPct: 0.08,
-          projectedValue: 200000,
-          range: {lower: 180000, upper: 220000},
-          projectedDividendFlow: {monthly: 80, annual: 960},
-        },
-        optimistic: {
-          label: 'optimistic',
-          annualReturnPct: 0.14,
-          projectedValue: 260000,
-          range: {lower: 240000, upper: 280000},
-          projectedDividendFlow: {monthly: 110, annual: 1320},
-        },
-      },
-      assumptions: {
-        contributionFrequency: 'monthly',
-        scenarioReturnsAnnualPct: {pessimistic: 0.02, base: 0.08, optimistic: 0.14},
-      },
-      dividendProjection: {current: {monthly: 40, annual: 480}},
-      limitations: [],
-      confidence: 'high',
-    };
-
-    it('chama futureSimulator com o horizonte selecionado e o aporte mensal, exibindo o cenário base', async () => {
-      futureSimulatorMock.mockResolvedValue(okSimulation);
-
-      renderPage();
-      await waitFor(() => expect(screen.getByText('72.5')).toBeInTheDocument());
-
-      fireEvent.click(screen.getByRole('button', {name: '5 anos'}));
-      fireEvent.click(
-        screen.getByRole('button', {name: /Calcular Projeção IA/}),
-      );
-
-      await waitFor(() => {
-        expect(futureSimulatorMock).toHaveBeenCalledWith({
-          horizon: '5y',
-          monthlyContribution: 1000,
-        });
-      });
-      expect(screen.getByText('R$ 200.000,00')).toBeInTheDocument();
-    });
-
-    it('mostra erro quando a simulação falha, sem quebrar a página', async () => {
-      futureSimulatorMock.mockRejectedValue(new Error('500'));
-
-      renderPage();
-      await waitFor(() => expect(screen.getByText('72.5')).toBeInTheDocument());
-
-      fireEvent.click(
-        screen.getByRole('button', {name: /Calcular Projeção IA/}),
-      );
-
-      await waitFor(() => {
-        expect(futureSimulatorMock).toHaveBeenCalled();
-      });
-      expect(
-        screen.getByText(/Ajuste os aportes e simule/),
-      ).toBeInTheDocument();
-    });
-  });
-
-  describe('AIInsights — simulador nao mantem resultado obsoleto', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-      useSubscriptionMock.mockReturnValue({
-        planName: 'Investidor Pro',
-        isSubscribed: true,
-        isLoading: false,
-      });
-      getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
-      portfolioScoreMock.mockResolvedValue(okScore);
-      errorRadarMock.mockResolvedValue({
-        modelVersion: 'portfolio_error_radar_v1',
-        status: 'ok',
-        riskLevel: 'low',
-        alerts: [],
-        positionsCount: 0,
-      });
-      getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
-    });
-
-    it('limpa a projecao ao trocar o horizonte apos calcular', async () => {
-      futureSimulatorMock.mockResolvedValue({
-        modelVersion: 'future_simulator_v1',
-        horizon: '10y',
-        months: 120,
-        currentPortfolioValue: 1000,
-        monthlyContribution: 1000,
-        scenarios: {
-          pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-          base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-          optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        },
-        assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
-        dividendProjection: {current: {monthly: 0, annual: 0}},
-        limitations: [],
-        confidence: 'high',
-      });
-
-      renderPage();
-      const calcButton = await screen.findByText('Calcular Projeção IA');
-      fireEvent.click(calcButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/847.000|847\.000,00/)).toBeInTheDocument();
-      });
-
-      const oneYearButton = screen.getByText('1 ano');
-      fireEvent.click(oneYearButton);
-
-      expect(screen.queryByText(/847.000|847\.000,00/)).not.toBeInTheDocument();
-      expect(
-        screen.getByText('Ajuste os aportes e simule o poder dos juros compostos.'),
-      ).toBeInTheDocument();
-    });
-  });
-});
-
-describe('AIInsights — severidade do radar de erro', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    isProOrHigherPlanMock.mockReturnValue(true);
-    useSubscriptionMock.mockReturnValue({
-      planName: 'Investidor Pro',
-      isSubscribed: true,
-      isLoading: false,
-    });
-    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
-    portfolioScoreMock.mockResolvedValue(okScore);
-    getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
-  });
-
-  it('ordena alertas por severidade e mostra chip de texto, nao so cor', async () => {
-    errorRadarMock.mockResolvedValue({
-      modelVersion: 'portfolio_error_radar_v1',
-      status: 'ok',
-      riskLevel: 'high',
-      positionsCount: 3,
-      alerts: [
-        {code: 'div_low', type: 'diversification', severity: 'medium', message: 'Diversificação baixa'},
-        {code: 'conc_high', type: 'concentration', severity: 'high', symbol: 'PETR4', message: 'Concentração alta em PETR4'},
-      ],
-    });
+  it('"Assumir controle manual" grava o nível atual como override no servidor', async () => {
+    setInvestorProfileOverrideMock.mockResolvedValue(profileWith('intermediate', 'user_override'));
     renderPage();
+    // O botão só habilita depois que o perfil chega do servidor.
+    await screen.findByText('Sugerido: Intermediário · 3 sinais de uso');
 
-    const highChip = await screen.findByText('ALTO');
-    const mediumChip = screen.getByText('MÉDIO');
-    expect(highChip).toBeInTheDocument();
-    expect(mediumChip).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Assumir controle manual'}));
 
-    // resumo no topo
-    expect(screen.getByText(/2 alertas/)).toBeInTheDocument();
-    expect(screen.getByText(/1 alto/)).toBeInTheDocument();
-  });
-
-  it('mostra mensagem de falha explicita quando o radar nao carrega', async () => {
-    errorRadarMock.mockRejectedValue(new Error('network error'));
-    renderPage();
-
-    expect(
-      await screen.findByText('Não foi possível carregar o radar.'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Tentar novamente')).toBeInTheDocument();
-  });
-});
-
-describe('AIInsights — badge Pro Account', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    isProOrHigherPlanMock.mockReturnValue(true);
-    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
-    portfolioScoreMock.mockResolvedValue(okScore);
-    errorRadarMock.mockResolvedValue({
-      modelVersion: 'portfolio_error_radar_v1',
-      status: 'ok',
-      riskLevel: 'low',
-      alerts: [],
-      positionsCount: 0,
-    });
-    getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
-  });
-
-  it('mostra o badge Pro Account para assinante premium', async () => {
-    useSubscriptionMock.mockReturnValue({
-      planName: 'Investidor Pro',
-      isSubscribed: true,
-      isLoading: false,
-    });
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByText('Insights IA')).toBeInTheDocument();
-    });
-    expect(screen.getByText('Pro Account')).toBeInTheDocument();
-  });
-
-  it('nao mostra o badge Pro Account para usuario free', async () => {
-    useSubscriptionMock.mockReturnValue({
-      planName: 'Free',
-      isSubscribed: false,
-      isLoading: false,
-    });
-    isProOrHigherPlanMock.mockReturnValue(false);
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByText('Insights IA')).toBeInTheDocument();
-    });
-    expect(screen.queryByText('Pro Account')).not.toBeInTheDocument();
-  });
-
-  it('nao mostra falha do radar para usuario free — fetchData nunca tentou buscar', async () => {
-    useSubscriptionMock.mockReturnValue({
-      planName: 'Free',
-      isSubscribed: false,
-      isLoading: false,
-    });
-    isProOrHigherPlanMock.mockReturnValue(false);
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByText('Insights IA')).toBeInTheDocument();
-    });
-    expect(
-      screen.queryByText('Não foi possível carregar o radar.'),
-    ).not.toBeInTheDocument();
-  });
-});
-
-describe('AIInsights — transparencia de conteudo gerado por IA', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    isProOrHigherPlanMock.mockReturnValue(true);
-    useSubscriptionMock.mockReturnValue({
-      planName: 'Investidor Pro',
-      isSubscribed: true,
-      isLoading: false,
-    });
-    portfolioScoreMock.mockResolvedValue(okScore);
-    errorRadarMock.mockResolvedValue({
-      modelVersion: 'portfolio_error_radar_v1',
-      status: 'ok',
-      riskLevel: 'low',
-      alerts: [],
-      positionsCount: 0,
-    });
-    getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
-  });
-
-  it('mostra aviso de conteudo gerado por IA junto do radar de oportunidades', async () => {
-    getOrCreateAiAnalysisMock.mockResolvedValue({
-      ai_analysis: {
-        opportunity_radar: [
-          {symbol: 'BBAS3', type: 'attractive_range', price: 20, rationale: 'P/L baixo'},
-        ],
-      },
-    });
-    renderPage();
-
-    const notices = await screen.findAllByText(
-      'Esse texto foi gerado com o auxílio de inteligência artificial.',
+    await waitFor(() =>
+      expect(setInvestorProfileOverrideMock).toHaveBeenCalledWith({sophistication: 'intermediate'}),
     );
-    expect(notices.length).toBeGreaterThan(0);
-  });
-
-  it('mostra botao de atualizar no header apos carregar com sucesso', async () => {
-    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
-    renderPage();
-
-    expect(await screen.findByLabelText('Atualizar análise')).toBeInTheDocument();
-  });
-});
-
-describe('AIInsights — comparacao com CDI no modo avancado', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    localStorage.clear();
-    isProOrHigherPlanMock.mockReturnValue(true);
-    localStorage.setItem('ai_insights_view_mode', 'advanced');
-    useSubscriptionMock.mockReturnValue({
-      planName: 'Investidor Pro',
-      isSubscribed: true,
-      isLoading: false,
-    });
-    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
-    portfolioScoreMock.mockResolvedValue(okScore);
-    errorRadarMock.mockResolvedValue({
-      modelVersion: 'portfolio_error_radar_v1',
-      status: 'ok',
-      riskLevel: 'low',
-      alerts: [],
-      positionsCount: 0,
-    });
-    getInvestorProfileMock.mockResolvedValue(defaultInvestorProfile);
-  });
-
-  it('mostra a comparacao com CDI apos simular, no modo avancado', async () => {
-    getCdiSeriesMock.mockResolvedValue({
-      data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
-    });
-    futureSimulatorMock.mockResolvedValue({
-      modelVersion: 'future_simulator_v1',
-      horizon: '10y',
-      months: 120,
-      currentPortfolioValue: 100000,
-      monthlyContribution: 1000,
-      scenarios: {
-        pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-      },
-      assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
-      dividendProjection: {current: {monthly: 0, annual: 0}},
-      limitations: [],
-      confidence: 'high',
-    });
-
-    renderPage();
-    const calcButton = await screen.findByText('Calcular Projeção IA');
-
-    // "before" assertion: a comparacao com CDI nao deve existir antes de simular.
-    expect(screen.queryByText('CDI acumulado (últimos 120 meses)')).not.toBeInTheDocument();
-
-    fireEvent.click(calcButton);
-
-    expect(await screen.findByText('CDI acumulado (últimos 120 meses)')).toBeInTheDocument();
-  });
-
-  // A comparação com CDI é benchmark, não enfeite: entra a partir do
-  // intermediário e fica fora do iniciante. Antes dependia de um toggle
-  // binário local; agora do nível que vem do perfil do servidor (TRA-142).
-  it('nao mostra a comparacao com CDI para o nivel iniciante', async () => {
-    getInvestorProfileMock.mockResolvedValue({
-      sophistication: 'beginner',
-      riskTolerance: 'conservative',
-      confidence: 0.9,
-      signals: {},
-      source: 'inferred',
-    });
-    futureSimulatorMock.mockResolvedValue({
-      modelVersion: 'future_simulator_v1',
-      horizon: '10y',
-      months: 120,
-      currentPortfolioValue: 100000,
-      monthlyContribution: 1000,
-      scenarios: {
-        pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-      },
-      assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
-      dividendProjection: {current: {monthly: 0, annual: 0}},
-      limitations: [],
-      confidence: 'high',
-    });
-
-    renderPage();
-    // Espera o perfil chegar antes de calcular: até lá o nível é o default
-    // intermediário, que mostraria o CDI e mascararia a asserção.
-    await screen.findByText('Perfil: Iniciante');
-    const calcButton = await screen.findByText('Calcular Projeção IA');
-    fireEvent.click(calcButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/847.000|847\.000,00/)).toBeInTheDocument();
-    });
-    expect(screen.queryByText('CDI acumulado (últimos 120 meses)')).not.toBeInTheDocument();
-  });
-
-  it('limpa a comparacao com CDI ao trocar o horizonte apos calcular', async () => {
-    getCdiSeriesMock.mockResolvedValue({
-      data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
-    });
-    futureSimulatorMock.mockResolvedValue({
-      modelVersion: 'future_simulator_v1',
-      horizon: '10y',
-      months: 120,
-      currentPortfolioValue: 100000,
-      monthlyContribution: 1000,
-      scenarios: {
-        pessimistic: {label: 'pessimistic', annualReturnPct: 2, projectedValue: 100000, range: {lower: 90000, upper: 110000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        base: {label: 'base', annualReturnPct: 8, projectedValue: 847000, range: {lower: 800000, upper: 900000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-        optimistic: {label: 'optimistic', annualReturnPct: 14, projectedValue: 1200000, range: {lower: 1100000, upper: 1300000}, projectedDividendFlow: {monthly: 0, annual: 0}},
-      },
-      assumptions: {contributionFrequency: 'monthly', scenarioReturnsAnnualPct: {pessimistic: 2, base: 8, optimistic: 14}},
-      dividendProjection: {current: {monthly: 0, annual: 0}},
-      limitations: [],
-      confidence: 'high',
-    });
-
-    renderPage();
-    const calcButton = await screen.findByText('Calcular Projeção IA');
-    fireEvent.click(calcButton);
-
-    expect(await screen.findByText('CDI acumulado (últimos 120 meses)')).toBeInTheDocument();
-
-    const oneYearButton = screen.getByText('1 ano');
-    fireEvent.click(oneYearButton);
-
-    expect(screen.queryByText('CDI acumulado (últimos 120 meses)')).not.toBeInTheDocument();
-  });
-});
-
-describe('AIInsights — toggle Padrao/Avancado', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    localStorage.clear();
-    isProOrHigherPlanMock.mockReturnValue(true);
-    useSubscriptionMock.mockReturnValue({
-      planName: 'Investidor Pro',
-      isSubscribed: true,
-      isLoading: false,
-    });
-    getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
-    portfolioScoreMock.mockResolvedValue(okScore);
-    errorRadarMock.mockResolvedValue({
-      modelVersion: 'portfolio_error_radar_v1',
-      status: 'ok',
-      riskLevel: 'low',
-      alerts: [],
-      positionsCount: 0,
-    });
-    getInvestorProfileMock.mockResolvedValue({
-      sophistication: 'experienced',
-      riskTolerance: 'aggressive',
-      confidence: 0.9,
-      signals: {},
-      source: 'inferred',
-    });
-  });
-
-  // O perfil do servidor decide o nível de detalhe sozinho: não existe mais um
-  // toggle local para ligar (TRA-142).
-  it('usa a visao detalhada quando o perfil e experienced', async () => {
-    getCdiSeriesMock.mockResolvedValue({
-      data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
-    });
-    futureSimulatorMock.mockResolvedValue(baseSimulation);
-
-    renderPage();
-    await screen.findByText('Perfil: Experiente');
-    fireEvent.click(await screen.findByText('Calcular Projeção IA'));
-
-    expect(
-      await screen.findByText('CDI acumulado (últimos 120 meses)'),
-    ).toBeInTheDocument();
-  });
-
-  // O toggle antigo escrevia em `ai_insights_view_mode` e nunca saía do
-  // navegador — era o motivo de a IA gerar texto sem saber o nível do usuário.
-  it('grava a escolha do usuario no servidor, nao em localStorage', async () => {
-    setInvestorProfileOverrideMock.mockResolvedValue({
-      sophistication: 'beginner',
-      riskTolerance: 'aggressive',
-      confidence: 0.9,
-      signals: {},
-      source: 'user_override',
-    });
-
-    renderPage();
-    fireEvent.click(await screen.findByText('Perfil: Experiente'));
-    fireEvent.click(await screen.findByText('Iniciante'));
-
-    await waitFor(() => {
-      expect(setInvestorProfileOverrideMock).toHaveBeenCalledWith({
-        sophistication: 'beginner',
-      });
-    });
+    expect(await screen.findByRole('button', {name: 'Devolver controle à IA'})).toBeInTheDocument();
     expect(localStorage.getItem('ai_insights_view_mode')).toBeNull();
   });
 
-  it('mostra o badge de perfil quando o perfil carrega', async () => {
+  it('"Devolver controle à IA" limpa o override', async () => {
+    getInvestorProfileMock.mockResolvedValue(profileWith('experienced', 'user_override'));
+    setInvestorProfileOverrideMock.mockResolvedValue(profileWith('intermediate'));
     renderPage();
-    expect(await screen.findByText('Perfil: Experiente')).toBeInTheDocument();
+
+    expect(await screen.findByText('Manual: Avançado · 3 sinais de uso')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Devolver controle à IA'}));
+
+    await waitFor(() =>
+      expect(setInvestorProfileOverrideMock).toHaveBeenCalledWith({sophistication: null}),
+    );
+  });
+});
+
+describe('AIInsights — ficha do modelo', () => {
+  it('mostra as versões reais dos modelos e "—" onde a API não informa', async () => {
+    renderPage();
+
+    expect(
+      await screen.findByText('portfolio_score_v1 · portfolio_error_radar_v1'),
+    ).toBeInTheDocument();
+    expect(signalValue('Janela de dados')).toBe('—');
+    expect(signalValue('Retenção de logs')).toBe('—');
+    expect(signalValue('Última execução')).toMatch(/^hoje, \d{2}:\d{2}$/);
+    expect(screen.getByText(/O Trackerr não recomenda ativos/)).toBeInTheDocument();
+  });
+});
+
+describe('AIInsights — feed de insights', () => {
+  const radarWithAlerts = {
+    ...clearRadar,
+    riskLevel: 'high',
+    alerts: [
+      {code: 'div_low', type: 'diversification', severity: 'medium', message: 'Diversificação baixa'},
+      {code: 'ASSET_CONCENTRATION_HIGH', type: 'concentration', severity: 'high', symbol: 'PETR4', message: 'PETR4 representa 42.3% da carteira — concentração alta.'},
+    ],
+  };
+
+  it('ordena por severidade e mostra prioridade em texto, não só cor', async () => {
+    errorRadarMock.mockResolvedValue(radarWithAlerts);
+    renderPage();
+
+    const high = await screen.findByText('PETR4 representa 42.3% da carteira — concentração alta.');
+    const medium = screen.getByText('Diversificação baixa');
+    expect(high.compareDocumentPosition(medium) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText('Alta')).toBeInTheDocument();
+    expect(screen.getByText('Média')).toBeInTheDocument();
   });
 
-  // Mesmo princípio de antes: uma projeção calculada para um nível de detalhe
-  // não pode continuar na tela como se refletisse o nível novo. Só o gatilho
-  // mudou — era o toggle local, agora é a troca de nível.
-  it('limpa a simulacao ja calculada ao trocar o nivel', async () => {
-    futureSimulatorMock.mockResolvedValue(baseSimulation);
-    setInvestorProfileOverrideMock.mockResolvedValue({
-      sophistication: 'beginner',
-      riskTolerance: 'aggressive',
-      confidence: 0.9,
-      signals: {},
-      source: 'user_override',
-    });
-
+  it('monta as abas com "Tudo" e as categorias presentes, com contagem', async () => {
+    errorRadarMock.mockResolvedValue(radarWithAlerts);
     renderPage();
-    await screen.findByText('Perfil: Experiente');
-    fireEvent.click(await screen.findByText('Calcular Projeção IA'));
 
-    await waitFor(() => {
-      expect(screen.getByText(/847.000|847\.000,00/)).toBeInTheDocument();
+    await screen.findByText('Diversificação baixa');
+    expect(screen.getByRole('button', {name: 'Tudo 2'})).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Concentração 1'}));
+
+    expect(screen.getByText('PETR4 representa 42.3% da carteira — concentração alta.')).toBeInTheDocument();
+    expect(screen.queryByText('Diversificação baixa')).not.toBeInTheDocument();
+  });
+
+  it('leva ao ativo pela ação do card', async () => {
+    errorRadarMock.mockResolvedValue(radarWithAlerts);
+    renderPage();
+
+    await screen.findByText('Diversificação baixa');
+    fireEvent.click(screen.getByRole('button', {name: 'Ver ativo'}));
+
+    expect(await screen.findByText('Página do ativo')).toBeInTheDocument();
+  });
+
+  it('abre a trilha de auditoria com modelo e origem do insight', async () => {
+    errorRadarMock.mockResolvedValue(radarWithAlerts);
+    renderPage();
+
+    await screen.findByText('Diversificação baixa');
+    fireEvent.click(screen.getAllByRole('button', {name: 'Trilha de auditoria'})[0]);
+
+    expect(toastInfoMock).toHaveBeenCalledWith(
+      'Trilha de auditoria',
+      expect.objectContaining({
+        description: expect.stringContaining('portfolio_error_radar_v1 · cálculo determinístico'),
+      }),
+    );
+  });
+
+  it('não inventa confiança nem nº de fontes que a API não devolve', async () => {
+    errorRadarMock.mockResolvedValue(radarWithAlerts);
+    renderPage();
+
+    await screen.findByText('Diversificação baixa');
+    expect(screen.getAllByText('confiança —')).toHaveLength(2);
+    expect(screen.getAllByText('fontes —')).toHaveLength(2);
+  });
+
+  it('mostra o detalhe técnico a partir do intermediário e esconde no iniciante', async () => {
+    errorRadarMock.mockResolvedValue(radarWithAlerts);
+    const {queryClient} = renderPage();
+
+    expect(await screen.findByText(/Regra ASSET_CONCENTRATION_HIGH/)).toBeInTheDocument();
+
+    act(() => {
+      queryClient.setQueryData(INVESTOR_PROFILE_QUERY_KEY, profileWith('beginner'));
     });
 
-    fireEvent.click(screen.getByText('Perfil: Experiente'));
-    fireEvent.click(await screen.findByText('Iniciante'));
+    await waitFor(() =>
+      expect(screen.queryByText(/Regra ASSET_CONCENTRATION_HIGH/)).not.toBeInTheDocument(),
+    );
+  });
 
-    await waitFor(() => {
-      expect(screen.queryByText(/847.000|847\.000,00/)).not.toBeInTheDocument();
+  it('mostra estado neutro quando o radar não tem alertas', async () => {
+    renderPage();
+    expect(await screen.findByText(/Nenhum alerta no momento/)).toBeInTheDocument();
+  });
+
+  it('mostra falha explícita do radar sem derrubar a página', async () => {
+    errorRadarMock.mockRejectedValue(new Error('network error'));
+    renderPage();
+
+    expect(await screen.findByText('Não foi possível carregar o radar.')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Tentar novamente'})).toBeInTheDocument();
+    expect(signalValue('Score da carteira')).toBe('72.5');
+    expect(screen.queryByText(/Nenhum alerta no momento/)).not.toBeInTheDocument();
+  });
+
+  it('mostra erro com nova tentativa quando a análise falha', async () => {
+    getOrCreateAiAnalysisMock.mockRejectedValueOnce(new Error('500'));
+    renderPage();
+
+    expect(await screen.findByText(/Não foi possível carregar os insights agora/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Tentar novamente'}));
+
+    expect(await screen.findByText(/Nenhum alerta no momento/)).toBeInTheDocument();
+  });
+
+  it('marca oportunidades do LLM com o aviso de conteúdo gerado por IA', async () => {
+    getOrCreateAiAnalysisMock.mockResolvedValue({
+      ai_analysis: {
+        opportunity_radar: [{symbol: 'BBAS3', type: 'attractive_range', price: 20, rationale: 'P/L baixo'}],
+      },
     });
+    renderPage();
+
+    const title = await screen.findByText('BBAS3');
+    const card = title.closest('section') as HTMLElement;
+    // Sem prioridade na resposta do LLM: o badge não inventa uma.
+    expect(within(card).queryByText(/^(Alta|Média|Baixa)$/)).not.toBeInTheDocument();
     expect(
-      screen.getByText('Ajuste os aportes e simule o poder dos juros compostos.'),
+      screen.getByText('Esse texto foi gerado com o auxílio de inteligência artificial.'),
     ).toBeInTheDocument();
   });
 
-  it('fluxo completo: perfil -> badge -> override -> CDI', async () => {
-    getInvestorProfileMock.mockResolvedValue({
-      sophistication: 'intermediate',
-      riskTolerance: 'moderate',
-      confidence: 0.7,
-      signals: {},
-      source: 'inferred',
-    });
-
+  it('atualiza a análise pelo botão do cabeçalho do feed', async () => {
     renderPage();
 
-    // 1-2. badge mostra o perfil carregado
-    expect(
-      await screen.findByText('Perfil: Intermediário'),
-    ).toBeInTheDocument();
+    const refresh = await screen.findByLabelText('Atualizar análise');
+    await waitFor(() => expect(refresh).not.toBeDisabled());
+    fireEvent.click(refresh);
 
-    // 3. abre o popover e escolhe "Experiente"
-    fireEvent.click(screen.getByText('Perfil: Intermediário'));
-    const experiencedOption = await screen.findByText('Experiente');
+    await waitFor(() => expect(getOrCreateAiAnalysisMock).toHaveBeenCalledTimes(2));
+  });
+});
 
-    // 4. o override retorna o perfil atualizado
-    setInvestorProfileOverrideMock.mockResolvedValue({
-      sophistication: 'experienced',
-      riskTolerance: 'moderate',
-      confidence: 0.7,
-      signals: {},
-      source: 'user_override',
+describe('AIInsights — usuário sem plano Pro', () => {
+  beforeEach(() => {
+    useSubscriptionMock.mockReturnValue({planName: 'Free', isSubscribed: false, isLoading: false});
+    isProOrHigherPlanMock.mockReturnValue(false);
+  });
+
+  it('não busca a análise e oferece os planos', async () => {
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', {name: 'Ver planos'}));
+
+    expect(await screen.findByText('Página de planos')).toBeInTheDocument();
+    expect(getOrCreateAiAnalysisMock).not.toHaveBeenCalled();
+    expect(errorRadarMock).not.toHaveBeenCalled();
+  });
+
+  it('não mostra falha do radar — a busca nunca aconteceu', async () => {
+    renderPage();
+    await screen.findByRole('button', {name: 'Ver planos'});
+    expect(screen.queryByText('Não foi possível carregar o radar.')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Atualizar análise')).not.toBeInTheDocument();
+  });
+});
+
+describe('AIInsights — simulador de futuro', () => {
+  async function renderAndWait() {
+    const utils = renderPage();
+    await screen.findByText(/Nenhum alerta no momento/);
+    return utils;
+  }
+
+  it('chama o simulador com horizonte e aporte e exibe o cenário base', async () => {
+    futureSimulatorMock.mockResolvedValue({
+      ...baseSimulation,
+      scenarios: {
+        ...baseSimulation.scenarios,
+        base: {...baseSimulation.scenarios.base, projectedValue: 200000},
+      },
     });
-    fireEvent.click(experiencedOption);
+    await renderAndWait();
 
-    await waitFor(() => {
-      expect(setInvestorProfileOverrideMock).toHaveBeenCalledWith({
-        sophistication: 'experienced',
-      });
-    });
+    fireEvent.click(screen.getByRole('button', {name: '5 anos'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Calcular Projeção IA'}));
 
-    // 5. o badge reflete a resposta do override, nao so o clique
-    expect(
-      await screen.findByText('Perfil: Experiente'),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(futureSimulatorMock).toHaveBeenCalledWith({horizon: '5y', monthlyContribution: 1000}),
+    );
+    expect(await screen.findByText('R$ 200.000,00')).toBeInTheDocument();
+  });
 
-    // 6. o override já elevou o nível: não há mais toggle separado para ligar
+  it('volta ao estado inicial quando a simulação falha', async () => {
+    futureSimulatorMock.mockRejectedValue(new Error('500'));
+    await renderAndWait();
 
-    // 7. roda o simulador
-    getCdiSeriesMock.mockResolvedValue({
-      data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
-    });
+    fireEvent.click(screen.getByRole('button', {name: 'Calcular Projeção IA'}));
+
+    await waitFor(() => expect(futureSimulatorMock).toHaveBeenCalled());
+    expect(screen.getByText(/Ajuste os aportes e simule/)).toBeInTheDocument();
+  });
+
+  it('limpa a projeção ao trocar o horizonte', async () => {
     futureSimulatorMock.mockResolvedValue(baseSimulation);
+    await renderAndWait();
 
-    fireEvent.click(screen.getByText('Calcular Projeção IA'));
+    fireEvent.click(screen.getByRole('button', {name: 'Calcular Projeção IA'}));
+    expect(await screen.findByText('R$ 847.000,00')).toBeInTheDocument();
+    expect(screen.getByText('CDI acumulado (últimos 120 meses)')).toBeInTheDocument();
 
-    // 8. a comparacao com CDI aparece
-    expect(
-      await screen.findByText('CDI acumulado (últimos 120 meses)'),
-    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: '1 ano'}));
+
+    expect(screen.queryByText('R$ 847.000,00')).not.toBeInTheDocument();
+    expect(screen.queryByText('CDI acumulado (últimos 120 meses)')).not.toBeInTheDocument();
+  });
+
+  it('não compara com CDI no nível iniciante', async () => {
+    getInvestorProfileMock.mockResolvedValue(profileWith('beginner'));
+    futureSimulatorMock.mockResolvedValue(baseSimulation);
+    await renderAndWait();
+    // Até o perfil chegar o nível é o default intermediário, que mostraria o CDI.
+    await screen.findByText('Sugerido: Iniciante · 3 sinais de uso');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Calcular Projeção IA'}));
+
+    expect(await screen.findByText('R$ 847.000,00')).toBeInTheDocument();
+    expect(screen.queryByText('CDI acumulado (últimos 120 meses)')).not.toBeInTheDocument();
+    expect(getCdiSeriesMock).not.toHaveBeenCalled();
+  });
+
+  it('esconde a projeção calculada ao trocar o nível de detalhe', async () => {
+    getInvestorProfileMock.mockResolvedValue(profileWith('experienced'));
+    futureSimulatorMock.mockResolvedValue(baseSimulation);
+    const {queryClient} = await renderAndWait();
+    await screen.findByText('Sugerido: Avançado · 3 sinais de uso');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Calcular Projeção IA'}));
+    expect(await screen.findByText('R$ 847.000,00')).toBeInTheDocument();
+
+    act(() => {
+      queryClient.setQueryData(INVESTOR_PROFILE_QUERY_KEY, profileWith('beginner'));
+    });
+
+    await waitFor(() => expect(screen.queryByText('R$ 847.000,00')).not.toBeInTheDocument());
+    expect(screen.getByText('Ajuste os aportes e simule o poder dos juros compostos.')).toBeInTheDocument();
   });
 });
