@@ -185,4 +185,49 @@ describe('GoogleLoginButton', () => {
 
     offsetWidthSpy.mockRestore();
   });
+
+  /**
+   * Bug real de produção: "hover mostra, clique não faz nada — só funciona
+   * depois de Ctrl+Shift+R". Causa: `renderButton()` do Google ANEXA um
+   * novo iframe a cada chamada, sem substituir o anterior. O efeito que
+   * chama `renderButton()` reexecuta toda vez que `handleGoogleLogin` muda
+   * de identidade (o que acontecia a cada render antes do fix em
+   * useAppToast, já que `error`/`success`/etc não eram memoizados) —
+   * empilhando botões invisíveis no mesmo overlay. O clique passava a
+   * acertar um iframe de uma chamada `initialize()` já obsoleta,
+   * silenciosamente não fazendo nada.
+   */
+  it('clears the overlay before each render so a re-run of the effect never stacks a duplicate Google iframe', async () => {
+    let renderCount = 0;
+    mockRenderButton.mockImplementation((container: HTMLElement) => {
+      renderCount += 1;
+      const fakeIframe = document.createElement('div');
+      fakeIframe.dataset.renderCall = String(renderCount);
+      container.appendChild(fakeIframe);
+    });
+
+    const {rerender} = renderButton();
+
+    await waitFor(() => {
+      expect(mockRenderButton).toHaveBeenCalledTimes(1);
+    });
+
+    // Simula o efeito reexecutando por handleGoogleLogin mudar de
+    // identidade entre renders (keepConnected muda -> useCallback recria a
+    // função -> deps do useEffect mudam), o cenário real que empilhava
+    // iframes antes do fix.
+    rerender(
+      <MemoryRouter>
+        <GoogleLoginButton keepConnected />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(mockRenderButton).toHaveBeenCalledTimes(2);
+    });
+
+    const overlay = document.querySelector('[data-render-call]')?.parentElement;
+    expect(overlay?.children.length).toBe(1);
+    expect(overlay?.firstElementChild).toHaveAttribute('data-render-call', '2');
+  });
 });

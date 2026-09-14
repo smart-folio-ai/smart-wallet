@@ -93,6 +93,20 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
     // Google exatamente do tamanho do botão visual e sobrepô-lo com
     // opacidade zero. O clique do usuário sempre acerta o iframe real —
     // nenhum JS precisa encaminhar nada.
+    //
+    // renderButton() ANEXA um novo iframe a cada chamada, não substitui o
+    // anterior — se este efeito reexecutar (handleGoogleLogin mudando de
+    // identidade a cada render, por exemplo), o overlay acumula múltiplos
+    // botões do Google empilhados e invisíveis. O clique passa a acertar um
+    // iframe de uma inicialização já obsoleta e simplesmente não faz nada,
+    // sem erro nenhum no console — exatamente o bug relatado em produção
+    // ("preciso dar Ctrl+Shift+R toda vez"): com script em cache, várias
+    // rerenderizações do mount inicial aconteciam antes do Google carregar,
+    // empilhando iframes mortos; sem cache, o carregamento mais lento do
+    // script dava tempo do componente se estabilizar antes do único
+    // renderButton() útil rodar. Limpar o container aqui garante só um
+    // botão vivo por vez, independente de quantas vezes o efeito reexecute.
+    overlayRef.current.replaceChildren();
     window.google.accounts.id.renderButton(overlayRef.current, {
       type: 'standard',
       theme: 'outline',
