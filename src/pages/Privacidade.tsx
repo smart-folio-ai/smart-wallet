@@ -45,7 +45,7 @@ const sections: LegalSection[] = [
     id: 'retencao',
     title: '6. Retenção e exclusão',
     paragraphs: [
-      'Pretendemos manter os dados enquanto sua conta estiver ativa e por um período adicional após o encerramento, para cumprimento de obrigações fiscais e legais, salvo pedido de eliminação antecipada nos casos permitidos por lei. O prazo exato de retenção pós-encerramento ainda está sob definição jurídica.',
+      'Pretendemos manter os dados enquanto sua conta estiver ativa e por um período adicional após o encerramento, para cumprimento de obrigações fiscais e legais, salvo pedido de eliminação antecipada nos casos permitidos por lei.',
     ],
   },
   {
