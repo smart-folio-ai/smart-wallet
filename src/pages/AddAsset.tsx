@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useMemo, useReducer, useRef, useState} from 'react';
 import {
   Select,
   SelectContent,
@@ -23,6 +23,82 @@ import {
 } from '@/components/stocks/StockAutocompleteInput';
 import {normalizeStockSymbol} from '@/components/stocks/stock-autocomplete.utils';
 import {SectionHeader} from '@/components/shared';
+import {B3ImportGuideModal} from '@/components/portfolio/B3ImportGuideModal';
+
+type SessionImport = {
+  name: string;
+  status: 'pending' | 'success' | 'error';
+  summary?: string;
+  warnings?: string[];
+};
+
+type SessionImportAction =
+  | {type: 'start'; name: string}
+  | {type: 'done'; name: string; summary: string; warnings?: string[]}
+  | {type: 'fail'; name: string; summary: string};
+
+function sessionImportsReducer(
+  state: SessionImport[],
+  action: SessionImportAction,
+): SessionImport[] {
+  if (action.type === 'start') {
+    return [{name: action.name, status: 'pending'}, ...state];
+  }
+  const index = state.findIndex(
+    (item) => item.name === action.name && item.status === 'pending',
+  );
+  if (index === -1) return state;
+  const next = [...state];
+  next[index] = {
+    name: action.name,
+    status: action.type === 'done' ? 'success' : 'error',
+    summary: action.summary,
+    warnings: action.type === 'done' ? action.warnings : undefined,
+  };
+  return next;
+}
+
+const isPdf = (file: File) =>
+  file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
+
+const normalizeFileName = (name: string) =>
+  name.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+/**
+ * Consolidado primeiro (cria as posições), negociação depois, movimentação
+ * por último: os proventos datados da movimentação só se prendem a ativos
+ * que já existem na carteira — importada antes do consolidado, ela descarta
+ * os proventos por não achar os papéis.
+ */
+function sortB3Files(files: File[]): File[] {
+  const rank = (file: File) => {
+    const name = normalizeFileName(file.name);
+    if (name.includes('consolidado') || name.includes('relatorio')) return 0;
+    if (name.includes('movimentacao')) return 2;
+    return 1;
+  };
+  return [...files].sort((a, b) => rank(a) - rank(b));
+}
+
+function summarizeB3Import(result: any): string {
+  if (result?.kind === 'transactions') {
+    const imported = Number(result?.tradesImported ?? 0);
+    if (!imported && !result?.totalParsed) {
+      return result?.message || 'Nenhuma operação encontrada no arquivo.';
+    }
+    const duplicates = Number(result?.ignoredDuplicates ?? 0);
+    return `${imported} operação(ões) importada(s)${duplicates ? `, ${duplicates} já existiam` : ''}`;
+  }
+
+  const parts: string[] = [];
+  const created = Number(result?.assetsCreated ?? 0);
+  const updated = Number(result?.assetsUpdated ?? 0);
+  if (created) parts.push(`${created} ativo(s) criado(s)`);
+  if (updated) parts.push(`${updated} atualizado(s)`);
+  const dividends = Number(result?.dividendsAttachedToExistingAssets ?? 0);
+  if (dividends) parts.push(`proventos em ${dividends} ativo(s)`);
+  return parts.length ? parts.join(', ') : result?.message || 'Arquivo importado';
+}
 
 const IMPORT_STATUS_STYLE: Record<string, React.CSSProperties> = {
   success: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'var(--badge-pos-bg)', color: 'var(--pos)'},
@@ -259,12 +335,23 @@ export default function AddAsset() {
   const chooseFiles = () => fileInputRef.current?.click();
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [sessionImports, dispatchSessionImport] = useReducer(
+    sessionImportsReducer,
+    [],
+  );
 
-  // Nota de corretagem enviada por aqui não tem seletor de corretora explícito
-  // (diferente de SyncAccounts). Usamos 'b3' como provider padrão: o backend
-  // reconhece automaticamente nota de corretagem, extrato de movimentação e
-  // relatório consolidado da B3 a partir do conteúdo do arquivo.
+  // PDF é nota de corretagem (BTG) e continua indo pro upload de nota.
   const DEFAULT_UPLOAD_PROVIDER = 'b3';
+
+  // Os arquivos da B3 entram na carteira escolhida no formulário; com uma
+  // carteira só, não faz sentido obrigar a escolha.
+  const importPortfolioId =
+    selectedPortfolioId ||
+    (Array.isArray(portfolios) && portfolios.length === 1
+      ? String(portfolios[0].id || portfolios[0]._id)
+      : '');
 
   const {data: uploads = []} = useQuery<any[]>({
     queryKey: ['broker-uploads'],
@@ -374,32 +461,97 @@ export default function AddAsset() {
     [queryClient, toast],
   );
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploading(true);
-    try {
-      const res = await brokerSyncService.uploadNote(DEFAULT_UPLOAD_PROVIDER, file);
-      toast({
-        title: 'Arquivo enviado!',
-        description: `${file.name} recebido e em processamento.`,
-      });
-      queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+  const uploadBrokerageNotePdf = async (file: File) => {
+    const res = await brokerSyncService.uploadNote(DEFAULT_UPLOAD_PROVIDER, file);
+    queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+    const uploadId = res.data?.uploadId;
+    if (uploadId) {
+      void pollUploadStatus(String(uploadId));
+    }
+  };
 
-      const uploadId = res.data?.uploadId;
-      if (uploadId) {
-        void pollUploadStatus(String(uploadId));
-      }
-    } catch {
+  const importFiles = async (files: File[]) => {
+    if (!files.length) return;
+
+    const b3Files = files.filter((file) => !isPdf(file));
+    if (b3Files.length && !importPortfolioId) {
       toast({
-        title: 'Falha no envio',
-        description: 'Não foi possível enviar o arquivo. Tente novamente.',
+        title: 'Escolha o portfólio',
+        description:
+          Array.isArray(portfolios) && portfolios.length === 0
+            ? 'Crie uma carteira antes de importar os arquivos da B3.'
+            : 'Selecione no formulário ao lado em qual portfólio os arquivos da B3 devem entrar.',
         variant: 'destructive',
       });
+      return;
+    }
+
+    setIsUploading(true);
+    let imported = 0;
+    try {
+      for (const file of sortB3Files(files)) {
+        dispatchSessionImport({type: 'start', name: file.name});
+        try {
+          if (isPdf(file)) {
+            await uploadBrokerageNotePdf(file);
+            dispatchSessionImport({
+              type: 'done',
+              name: file.name,
+              summary: 'Nota enviada — processando',
+            });
+          } else {
+            const result = await PortfolioService.importB3Auto(importPortfolioId, file);
+            dispatchSessionImport({
+              type: 'done',
+              name: file.name,
+              summary: summarizeB3Import(result),
+              warnings: result?.warnings,
+            });
+          }
+          imported += 1;
+        } catch (error: any) {
+          dispatchSessionImport({
+            type: 'fail',
+            name: file.name,
+            summary:
+              error?.response?.data?.message ||
+              'Não foi possível importar este arquivo.',
+          });
+        }
+      }
     } finally {
       setIsUploading(false);
-      e.target.value = '';
     }
+
+    if (imported > 0) {
+      queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
+      queryClient.invalidateQueries({queryKey: ['dashboardAssets']});
+      queryClient.invalidateQueries({queryKey: ['portfolios']});
+      queryClient.invalidateQueries({queryKey: ['portfolio-transactions']});
+      toast({
+        title: 'Importação concluída',
+        description: `${imported} de ${files.length} arquivo(s) importado(s). Veja o resultado em "Importações recentes".`,
+      });
+    } else {
+      toast({
+        title: 'Nenhum arquivo importado',
+        description: 'Veja o motivo de cada arquivo em "Importações recentes".',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    await importFiles(files);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (isUploading) return;
+    await importFiles(Array.from(e.dataTransfer.files ?? []));
   };
 
   return (
@@ -546,13 +698,23 @@ export default function AddAsset() {
       {/* Right: upload + recent imports */}
       <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
         {/* Dropzone */}
-        <section style={{position: 'relative', border: '1px dashed rgba(145,132,217,0.45)', borderRadius: 8, overflow: 'hidden', background: 'linear-gradient(122deg, rgba(111,94,217,0.24) 0%, rgba(76,201,240,0.10) 58%, rgba(var(--rgb-surf-2),0.86) 100%), var(--surf-2)'}}>
+        <section
+          data-testid="b3-dropzone"
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (!isDragging) setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          style={{position: 'relative', border: `1px dashed ${isDragging ? 'var(--color-accent)' : 'rgba(145,132,217,0.45)'}`, borderRadius: 8, overflow: 'hidden', background: 'linear-gradient(122deg, rgba(111,94,217,0.24) 0%, rgba(76,201,240,0.10) 58%, rgba(var(--rgb-surf-2),0.86) 100%), var(--surf-2)'}}>
           <input
             ref={fileInputRef}
             type="file"
+            multiple
             accept=".pdf,.csv,.xlsx,.xls"
             style={{display: 'none'}}
             onChange={handleFileChange}
+            data-testid="b3-file-input"
           />
           <div style={{padding: '28px 22.4px', textAlign: 'center'}}>
             <div style={{width: 44, height: 44, margin: '0 auto', borderRadius: 8, background: 'var(--grad-aurora)', display: 'grid', placeItems: 'center', boxShadow: '0 0 28px var(--aurora-glow)'}}>
@@ -570,7 +732,7 @@ export default function AddAsset() {
                 style={{height: 36, padding: '0 16.8px', borderRadius: 8, border: '1px solid var(--color-accent)', background: 'rgba(145,132,217,0.14)', color: 'var(--color-accent-100)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 500, cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.7 : 1}}>
                 {isUploading ? 'Enviando...' : 'Escolher arquivos'}
               </button>
-              <button type="button" onClick={() => {}} style={{height: 36, padding: '0 16.8px', borderRadius: 8, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-200)', fontFamily: 'var(--font-body)', fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5.6}}>
+              <button type="button" onClick={() => setGuideOpen(true)} style={{height: 36, padding: '0 16.8px', borderRadius: 8, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-200)', fontFamily: 'var(--font-body)', fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5.6}}>
                 <i className="ph-fill ph-question" style={{fontSize: 14}} /> Qual arquivo eu preciso?
               </button>
             </div>
@@ -581,7 +743,27 @@ export default function AddAsset() {
         <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
           <SectionHeader title="Importações recentes" />
           <div style={{padding: '5.6px 0'}}>
-            {recentImports.length === 0 ? (
+            {sessionImports.map((imp, index) => (
+              <div key={`session-${imp.name}-${index}`} style={{display: 'flex', alignItems: 'center', gap: 11.2, padding: '9.8px 16.8px'}}>
+                <i
+                  className={imp.status === 'success' ? 'ph-fill ph-check-circle' : imp.status === 'error' ? 'ph-fill ph-x-circle' : 'ph-fill ph-spinner-gap'}
+                  style={{fontSize: 16, color: imp.status === 'success' ? 'var(--pos)' : imp.status === 'error' ? 'var(--neg)' : 'var(--warn)'}}
+                />
+                <div style={{flex: 1, minWidth: 0}}>
+                  <div style={{fontSize: 12.5, color: 'var(--color-neutral-200)'}}>{imp.name}</div>
+                  <div style={{fontSize: 10.5, color: 'var(--color-neutral-600)', marginTop: 2}}>
+                    {imp.status === 'pending' ? 'Importando…' : imp.summary}
+                  </div>
+                  {imp.warnings?.map((warning) => (
+                    <div key={warning} style={{fontSize: 10.5, color: 'var(--warn)', marginTop: 2}}>{warning}</div>
+                  ))}
+                </div>
+                <span style={IMPORT_STATUS_STYLE[imp.status]}>
+                  {imp.status === 'success' ? 'Concluído' : imp.status === 'error' ? 'Falhou' : 'Importando'}
+                </span>
+              </div>
+            ))}
+            {sessionImports.length === 0 && recentImports.length === 0 ? (
               <div style={{padding: '12px 16.8px', fontSize: 12.5, color: 'var(--color-neutral-600)'}}>
                 Nenhuma importação recente.
               </div>
@@ -600,6 +782,19 @@ export default function AddAsset() {
           </div>
         </section>
       </div>
+
+      <B3ImportGuideModal
+        open={guideOpen}
+        onOpenChange={setGuideOpen}
+        onImportReport={() => {
+          setGuideOpen(false);
+          chooseFiles();
+        }}
+        onGoToTransactions={() => {
+          setGuideOpen(false);
+          chooseFiles();
+        }}
+      />
     </div>
   );
 }

@@ -45,6 +45,19 @@ class PortfolioService {
     return response.data;
   }
 
+  /** Qualquer um dos 3 arquivos da B3 — o backend decide o importador pelo conteúdo. */
+  async importB3Auto(portfolioId: string, file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post(
+      `/portfolio/${portfolioId}/import-b3-auto`,
+      formData,
+      {headers: {'Content-Type': 'multipart/form-data'}},
+    );
+    return response.data;
+  }
+
   async createPortfolio(data: {name: string; ownerType: string; cpf?: string}) {
     const response = await apiClient.post('/portfolio/create', data);
     return response.data;
