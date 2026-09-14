@@ -363,6 +363,7 @@ export default function AdminGrants() {
                       <th style={{padding: '8px 12px', color: 'var(--color-neutral-400)', fontWeight: 600}}>Desconto</th>
                       <th style={{padding: '8px 12px', color: 'var(--color-neutral-400)', fontWeight: 600}}>Data</th>
                       <th style={{padding: '8px 12px', color: 'var(--color-neutral-400)', fontWeight: 600}}>Concedido por</th>
+                      <th style={{padding: '8px 12px', color: 'var(--color-neutral-400)', fontWeight: 600}}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -379,6 +380,19 @@ export default function AdminGrants() {
                         </td>
                         <td style={{padding: '8px 12px'}}>{formatDate(item.createdAt)}</td>
                         <td style={{padding: '8px 12px'}}>{item.performedByEmail}</td>
+                        <td style={{padding: '8px 12px'}}>
+                          <span
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              background: item.status === 'active' ? 'var(--badge-pos-bg)' : 'var(--badge-neg-bg)',
+                              color: item.status === 'active' ? 'var(--pos)' : 'var(--neg)',
+                            }}>
+                            {item.status === 'active' ? 'Ativo' : 'Expirado'}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

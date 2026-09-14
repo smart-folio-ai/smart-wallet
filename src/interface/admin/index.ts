@@ -38,6 +38,7 @@ export type ManualGrantHistoryItem = {
   notes?: string;
   performedByEmail: string;
   createdAt: string;
+  status: 'active' | 'expired';
 };
 
 export type ListManualGrantsQuery = {
