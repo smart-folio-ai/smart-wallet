@@ -1,5 +1,5 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {render, screen, within, fireEvent} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import Landing from './Landing';
@@ -105,6 +105,45 @@ describe('Landing', () => {
     expect(
       screen.getByText(/não constituem recomendação de investimento/i),
     ).toBeInTheDocument();
+  });
+
+  // Regressão: `--surface-base`/`--brand`/etc são declarados em `:root` e
+  // `.dark`, que casam com <html> — tirar a classe "dark" só do wrapper da
+  // Landing não desfaz um `<html class="dark">` herdado do tema global do
+  // app (CSS inheritance só é sobrescrita por uma regra que casa com o
+  // PRÓPRIO elemento). O toggle correto aplica a classe em
+  // document.documentElement, e precisa restaurar o valor anterior ao
+  // desmontar para não vazar tema pro resto do app.
+  describe('toggle de tema', () => {
+    afterEach(() => {
+      document.documentElement.classList.remove('dark');
+      localStorage.removeItem('landing-theme');
+    });
+
+    it('aplica e remove a classe "dark" em document.documentElement ao alternar o tema', () => {
+      document.documentElement.classList.remove('dark');
+      renderLanding();
+
+      expect(document.documentElement.classList.contains('dark')).toBe(true);
+
+      fireEvent.click(screen.getByRole('button', {name: /ativar tema claro/i}));
+      expect(document.documentElement.classList.contains('dark')).toBe(false);
+
+      fireEvent.click(screen.getByRole('button', {name: /ativar tema escuro/i}));
+      expect(document.documentElement.classList.contains('dark')).toBe(true);
+    });
+
+    it('restaura o tema global anterior ao desmontar, sem vazar pro resto do app', () => {
+      document.documentElement.classList.add('dark');
+      const {unmount} = renderLanding();
+
+      fireEvent.click(screen.getByRole('button', {name: /ativar tema claro/i}));
+      expect(document.documentElement.classList.contains('dark')).toBe(false);
+
+      unmount();
+
+      expect(document.documentElement.classList.contains('dark')).toBe(true);
+    });
   });
 
   it('com prefers-reduced-motion o conteúdo continua visível', () => {
