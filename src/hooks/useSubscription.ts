@@ -90,7 +90,8 @@ export function useSubscription() {
     if (features.includes(feature)) return true;
     if (feature === 'ai_insights' && planName.includes('premium')) return true;
     if (
-      feature === 'comparator' &&
+      // Sincronização com corretora é do plano Pro (plano 2) para cima.
+      (feature === 'comparator' || feature === 'broker_sync') &&
       (planName.includes('premium') || planName.includes('pro'))
     ) {
       return true;
@@ -110,5 +111,6 @@ export function useSubscription() {
     hasFeature,
     hasAiInsights: hasFeature('ai_insights'),
     hasComparator: hasFeature('comparator'),
+    hasBrokerSync: hasFeature('broker_sync'),
   };
 }

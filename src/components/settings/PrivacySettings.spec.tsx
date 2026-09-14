@@ -116,7 +116,7 @@ describe('PrivacySettings', () => {
       const user = userEvent.setup();
       renderSettings();
 
-      await user.click(screen.getByText(/baixar meus dados/i));
+      await user.click(screen.getByText(/exportar meus dados/i));
 
       await waitFor(() => {
         expect(privacyService.exportMyData).toHaveBeenCalled();
@@ -133,9 +133,9 @@ describe('PrivacySettings', () => {
       const user = userEvent.setup();
       renderSettings();
 
-      await user.click(screen.getByText(/deletar minha conta/i));
+      await user.click(screen.getByText(/apagar conta e dados/i));
 
-      const confirmButton = await screen.findByRole('button', {name: /apagar conta/i});
+      const confirmButton = await screen.findByRole('button', {name: 'Apagar conta'});
       expect(confirmButton).toBeDisabled();
 
       const input = screen.getByLabelText(/digite/i);
@@ -150,11 +150,11 @@ describe('PrivacySettings', () => {
       const user = userEvent.setup();
       renderSettings();
 
-      await user.click(screen.getByText(/deletar minha conta/i));
+      await user.click(screen.getByText(/apagar conta e dados/i));
       const input = screen.getByLabelText(/digite/i);
       await user.type(input, 'APAGAR');
 
-      const confirmButton = screen.getByRole('button', {name: /apagar conta/i});
+      const confirmButton = screen.getByRole('button', {name: 'Apagar conta'});
       await user.click(confirmButton);
 
       await waitFor(() => {
@@ -170,11 +170,11 @@ describe('PrivacySettings', () => {
       const user = userEvent.setup();
       renderSettings();
 
-      await user.click(screen.getByText(/deletar minha conta/i));
+      await user.click(screen.getByText(/apagar conta e dados/i));
       const input = screen.getByLabelText(/digite/i);
       await user.type(input, 'apagar');
 
-      const confirmButton = screen.getByRole('button', {name: /apagar conta/i});
+      const confirmButton = screen.getByRole('button', {name: 'Apagar conta'});
       expect(confirmButton).toBeDisabled();
       expect(privacyService.deleteMyAccount).not.toHaveBeenCalled();
     });

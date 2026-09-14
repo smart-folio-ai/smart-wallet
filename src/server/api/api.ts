@@ -308,5 +308,27 @@ export const privacyService = {
   deleteMyAccount: () => apiClient.delete('/privacy/account'),
 };
 
+export type InvestmentBenchmark = 'IBOV_CDI' | 'IBOV' | 'CDI' | 'IFIX' | 'SMLL' | 'IVVB11';
+
+export interface InvestmentPolicy {
+  maxAssetWeightPct: number;
+  maxSectorWeightPct: number;
+  fixedIncomeTargetPct: number;
+  brStocksTargetPct: number;
+  maxCryptoPct: number;
+  benchmark: InvestmentBenchmark;
+}
+
+export const investmentPolicyService = {
+  // TRA-175: política do próprio usuário (limites que geram alertas).
+  get: () =>
+    apiClient.get<{policy: InvestmentPolicy; isDefault: boolean; savedAt: string | null}>(
+      '/investment-policy',
+    ),
+  save: (policy: InvestmentPolicy) => apiClient.put('/investment-policy', policy),
+  versions: () =>
+    apiClient.get<{policy: InvestmentPolicy; savedAt: string}[]>('/investment-policy/versions'),
+};
+
 export {apiClient as api};
 export default apiClient;
