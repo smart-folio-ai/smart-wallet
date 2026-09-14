@@ -1,110 +1,160 @@
+import {useEffect, useState} from 'react';
+import {NavLink, useLocation} from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import {AppLogo} from '@/components/AppLogo';
-import {
-  CircleDollarSign,
-  ShieldCheck,
-  Users,
-} from '@/components/ui/icons';
-import {NavLink} from 'react-router-dom';
 import {useAuth} from '@/hooks/useAuth';
-import {sections, type NavItem} from './layout/nav-data';
+import {
+  assetFromPath,
+  isAssetPath,
+  readLastAsset,
+  sections,
+  writeLastAsset,
+  type LastAsset,
+  type NavItem,
+} from './layout/nav-data';
 
-function SidebarLink({to, label, icon: Icon}: NavItem) {
+// Estilos de `navStyle` e do <aside> de design_handoff_trackerr/Trackerr App.dc.html.
+const ITEM_BASE =
+  'flex w-full items-center gap-[8.4px] rounded-[8px] px-[8.4px] py-[7px] text-[12.5px] font-medium transition-all duration-150';
+const ITEM_IDLE =
+  'text-[color:var(--color-neutral-400)] hover:bg-[rgba(152,160,171,0.10)] hover:text-[color:var(--color-neutral-100)]';
+const ITEM_ACTIVE =
+  'bg-[rgba(152,160,171,0.16)] text-[color:var(--color-accent-100)] shadow-[inset_0_0_0_1px_rgba(152,160,171,0.35)]';
+
+function SidebarLink({
+  item,
+  isActive,
+}: {
+  item: NavItem;
+  isActive?: (pathname: string) => boolean;
+}) {
+  const {pathname} = useLocation();
   return (
-    <SidebarMenuItem>
-      <SidebarMenuButton asChild>
-        <NavLink
-          to={to}
-          end={to === '/dashboard'}
-          className={({isActive}) =>
-            [
-              'group flex items-center gap-2 rounded-lg px-2 py-2 text-[13px] font-medium transition-all',
-              isActive
-                ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_hsl(var(--sidebar-border))]'
-                : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground',
-            ].join(' ')
-          }>
-          <Icon className="h-4 w-4 shrink-0 text-current" />
-          <span>{label}</span>
-        </NavLink>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
+    <NavLink
+      to={item.to}
+      className={({isActive: routeActive}) => {
+        const active = isActive ? isActive(pathname) : routeActive;
+        return `${ITEM_BASE} ${active ? ITEM_ACTIVE : ITEM_IDLE}`;
+      }}>
+      <i className={item.icon} style={{fontSize: 15, opacity: 0.9}} aria-hidden="true" />
+      <span className="flex-1 text-left group-data-[collapsible=icon]:hidden">{item.label}</span>
+    </NavLink>
+  );
+}
+
+function NavGroup({label, children}: {label: string; children: React.ReactNode}) {
+  return (
+    <div className="flex flex-col gap-[2.8px]">
+      <div className="px-[8.4px] py-[5.6px] group-data-[collapsible=icon]:hidden text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--color-neutral-600)]">
+        {label}
+      </div>
+      {children}
+    </div>
   );
 }
 
 export function AppSidebar() {
   const {role} = useAuth();
+  const {pathname} = useLocation();
+  const [lastAsset, setLastAsset] = useState<LastAsset | null>(readLastAsset);
+
+  // O handoff tem "Ativo · PETR4" no menu: aqui é o último ativo aberto.
+  useEffect(() => {
+    const current = assetFromPath(pathname);
+    if (current && current.to !== lastAsset?.to) {
+      writeLastAsset(current);
+      setLastAsset(current);
+    }
+  }, [pathname, lastAsset?.to]);
+
   const adminItems: NavItem[] =
     role === 'admin'
       ? [
-          {to: '/admin', label: 'Dashboard Admin', icon: ShieldCheck},
-          {to: '/admin/plans', label: 'Planos', icon: Users},
-          {to: '/admin/grants', label: 'Concessões', icon: CircleDollarSign},
+          {to: '/admin', label: 'Dashboard Admin', icon: 'ph ph-shield-check'},
+          {to: '/admin/plans', label: 'Planos', icon: 'ph ph-users'},
+          {to: '/admin/grants', label: 'Concessões', icon: 'ph ph-currency-circle-dollar'},
         ]
       : role === 'editor'
-        ? [{to: '/admin/grants', label: 'Concessões', icon: CircleDollarSign}]
+        ? [{to: '/admin/grants', label: 'Concessões', icon: 'ph ph-currency-circle-dollar'}]
         : [];
 
   return (
-    <Sidebar variant="inset" collapsible="icon" className="z-40">
-      <SidebarHeader className="border-b border-sidebar-border/60 py-4">
-        <div className="px-4">
-          <AppLogo size="md" tagline="Enterprise" />
+    <Sidebar
+      variant="sidebar"
+      collapsible="icon"
+      className="z-40 border-r border-[color:var(--hair)] [&>[data-sidebar=sidebar]]:bg-[rgba(var(--rgb-bg),0.72)] [&>[data-sidebar=sidebar]]:backdrop-blur-[12px]">
+      <SidebarHeader className="flex-row items-center gap-[8.4px] border-b border-[color:var(--hair-soft)] p-[16.8px]">
+        <AppLogo variant="icon" size="md" className="text-[color:var(--color-text)]" />
+        <div className="leading-[1.1] group-data-[collapsible=icon]:hidden">
+          <div className="font-heading text-[15px] font-semibold tracking-[-0.015em] text-[color:var(--color-text)]">
+            Trackerr
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-neutral-500)]">
+            Enterprise
+          </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-3">
+      <SidebarContent className="gap-[16.8px] px-[8.4px] py-[11.2px]">
         {sections.map((section) => (
-          <SidebarGroup key={section.label}>
-            <SidebarGroupLabel className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/55">
-              {section.label}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {section.items.map((item) => (
-                  <SidebarLink key={item.to} {...item} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <NavGroup key={section.label} label={section.label}>
+            {section.items.map((item) => (
+              <div key={item.to} className="contents">
+                <SidebarLink
+                  item={item}
+                  isActive={
+                    item.to === '/portfolio'
+                      ? (path) => path === '/portfolio'
+                      : undefined
+                  }
+                />
+                {item.to === '/dividends' && lastAsset ? (
+                  <SidebarLink
+                    item={{
+                      to: lastAsset.to,
+                      label: `Ativo · ${lastAsset.symbol}`,
+                      icon: 'ph ph-chart-line-up',
+                    }}
+                    isActive={isAssetPath}
+                  />
+                ) : null}
+              </div>
+            ))}
+          </NavGroup>
         ))}
 
         {adminItems.length ? (
-          <SidebarGroup>
-            <SidebarGroupLabel className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/55">
-              Administração
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminItems.map((item) => (
-                  <SidebarLink key={item.to} {...item} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <NavGroup label="Administração">
+            {adminItems.map((item) => (
+              <SidebarLink
+                key={item.to}
+                item={item}
+                isActive={item.to === '/admin' ? (path) => path === '/admin' : undefined}
+              />
+            ))}
+          </NavGroup>
         ) : null}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border/60 px-3 py-3">
-        <div className="rounded-lg border border-sidebar-border/60 bg-gradient-to-b from-brand/20 to-sidebar-accent/40 px-3 py-2.5">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold text-brand">
-            <ShieldCheck className="h-3.5 w-3.5" weight="fill" />
-            LGPD · 2FA
-          </p>
-          <p className="mt-1 text-[11px] leading-snug text-sidebar-foreground/60">
-            Conexão via TLS · exporte ou apague seus dados quando quiser
-          </p>
+      <SidebarFooter className="group-data-[collapsible=icon]:hidden border-t border-[color:var(--hair-soft)] p-[11.2px]">
+        <div
+          className="rounded-[8px] border border-[color:var(--hair)] p-[11.2px]"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(var(--rgb-accent-deep),0.35), rgba(var(--rgb-surf),0.4))',
+          }}>
+          <div className="flex items-center gap-[5.6px] text-[11px] font-semibold text-[color:var(--color-accent-300)]">
+            <i className="ph-fill ph-shield-check" style={{fontSize: 14}} aria-hidden="true" />
+            <span>Ambiente seguro · LGPD</span>
+          </div>
+          <div className="mt-[5.6px] text-[11px] leading-[1.45] text-[color:var(--color-neutral-500)]">
+            Uptime 99,98% · dados cifrados AES-256
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

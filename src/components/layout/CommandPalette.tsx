@@ -94,7 +94,7 @@ export function CommandPalette({open, onOpenChange}: CommandPaletteProps) {
                     value={`${section.label} ${item.label} ${item.hint ?? ''}`}
                     onSelect={() => go(item.to)}
                     className="flex items-center gap-2.5 rounded-lg px-2 py-2.5 text-[13px] font-medium text-foreground data-[selected=true]:bg-brand/10">
-                    <item.icon className="text-brand" />
+                    <i className={item.icon} style={{fontSize: 15}} aria-hidden="true" />
                     <span>{item.label}</span>
                     {item.hint ? (
                       <span className="flex-1 text-[11.5px] font-normal text-muted-foreground">

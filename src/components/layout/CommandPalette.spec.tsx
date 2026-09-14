@@ -31,7 +31,7 @@ describe('CommandPalette', () => {
     renderPalette();
     const input = screen.getByRole('combobox');
     await user.type(input, 'fiscal');
-    expect(screen.getByText('Fiscal')).toBeInTheDocument();
+    expect(screen.getByText('Fiscal & IR')).toBeInTheDocument();
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
   });
 
