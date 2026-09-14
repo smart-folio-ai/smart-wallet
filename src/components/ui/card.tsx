@@ -6,8 +6,7 @@ import { cn } from "@/lib/utils"
 /**
  * `variant="glass"` é o cartão do redesign de dashboard (TRA — ver
  * PRODUCT.md e docs/superpowers do redesign): gradiente translúcido +
- * borda hairline + blur, o mesmo vocabulário visual já usado na landing
- * (`web/src/components/landing/ui/GlassPanel.tsx`). Nunca sombra colorida.
+ * borda hairline + blur. Nunca sombra colorida.
  *
  * O default ("surface") é o `Card` de sempre, inalterado — trocar a
  * variante em uma página não afeta nenhuma das outras 70+ que usam

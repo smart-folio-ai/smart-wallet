@@ -1,0 +1,117 @@
+/* Estados de hover/foco e animações da Landing — `style-hover` e <style> de
+   design_handoff_trackerr/Trackerr Landing.dc.html. O resto do visual é
+   estilo inline nos componentes, copiado do protótipo. */
+
+.tl-root a {
+  color: var(--color-accent-300);
+  text-decoration: none;
+}
+.tl-root a:hover {
+  color: var(--color-accent-200);
+}
+.tl-root ::selection {
+  background: var(--color-accent-800);
+}
+.tl-root *:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.tl-root a.tl-nav-link {
+  color: var(--color-neutral-400);
+}
+.tl-root a.tl-nav-link:hover {
+  color: var(--color-neutral-100);
+}
+
+.tl-root a.tl-signin {
+  color: var(--color-neutral-300);
+}
+.tl-root a.tl-signin:hover {
+  color: var(--color-neutral-100);
+}
+
+.tl-theme-btn:hover {
+  color: var(--color-accent-200) !important;
+  border-color: var(--color-accent-700) !important;
+  background: rgba(152, 160, 171, 0.1) !important;
+}
+
+.tl-root a.tl-cta-outline:hover {
+  background: rgba(152, 160, 171, 0.12);
+}
+
+.tl-root a.tl-cta-primary {
+  color: var(--color-accent-100);
+}
+.tl-root a.tl-cta-primary:hover {
+  color: var(--color-accent-100);
+  background: rgba(152, 160, 171, 0.14);
+}
+
+.tl-root a.tl-cta-secondary {
+  color: var(--color-neutral-300);
+}
+.tl-root a.tl-cta-secondary:hover {
+  border-color: var(--color-accent-700) !important;
+  color: var(--color-neutral-100);
+}
+
+.tl-root a.tl-cta-header {
+  color: var(--color-accent-200);
+}
+.tl-root a.tl-cta-header:hover {
+  color: var(--color-accent-200);
+  background: rgba(152, 160, 171, 0.12);
+}
+
+.tl-product-card:hover {
+  border-color: rgba(152, 160, 171, 0.35) !important;
+}
+
+.tl-root a.tl-footer-link {
+  color: var(--color-neutral-400);
+}
+.tl-root a.tl-footer-link:hover {
+  color: var(--color-neutral-100);
+}
+
+.tl-plan-cta:not(:disabled):hover {
+  background: rgba(152, 160, 171, 0.14) !important;
+}
+
+@keyframes tkTape {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.tl-tape-track {
+  animation: tkTape 40s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-tape-track {
+    animation: none;
+  }
+}
+
+/* O protótipo é desenhado para 1440px; abaixo disso as grades empilham para
+   não quebrar a leitura no celular. */
+@media (max-width: 1024px) {
+  .tl-grid-2,
+  .tl-grid-3,
+  .tl-grid-4,
+  .tl-grid-footer {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .tl-hide-md {
+    display: none !important;
+  }
+  .tl-h1 {
+    font-size: 40px !important;
+  }
+}
