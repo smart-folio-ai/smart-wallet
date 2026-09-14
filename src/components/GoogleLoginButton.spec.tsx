@@ -150,4 +150,39 @@ describe('GoogleLoginButton', () => {
     });
     expect(localStorage.getItem('access_token')).toBeNull();
   });
+
+  /**
+   * Bug real de produção: o botão do Google renderiza como <iframe>
+   * cross-origin, não como `<div role="button">`. Um clique sintético
+   * nunca alcança conteúdo dentro de um iframe de outra origem — é a
+   * mesma barreira que a Same-Origin Policy impõe a DOM/postMessage.
+   * A versão anterior tentava `querySelector('div[role="button"]').click()`
+   * e nunca encontrava nada: TODO clique caía no fallback de erro, e login
+   * com Google nunca completava em produção.
+   *
+   * A correção é a técnica de overlay: o botão real do Google é desenhado
+   * com o MESMO tamanho do botão visual e sobreposto com opacidade zero,
+   * então o clique do usuário sempre acerta o iframe diretamente — sem
+   * nenhum forwarding via JS. Este teste trava que `renderButton` recebe
+   * uma largura numérica (não um contêiner de 1x1 escondido no canto).
+   */
+  it('renders the real Google button overlaying the full width of the visual button, not hidden at 1x1', async () => {
+    // jsdom não faz layout de verdade — offsetWidth é sempre 0 a menos que
+    // seja explicitamente definido. Simula o container medindo 320px, como
+    // o botão faria numa tela real.
+    const offsetWidthSpy = vi
+      .spyOn(HTMLElement.prototype, 'offsetWidth', 'get')
+      .mockReturnValue(320);
+
+    renderButton();
+
+    await waitFor(() => {
+      expect(mockRenderButton).toHaveBeenCalled();
+    });
+
+    const [, options] = mockRenderButton.mock.calls[0];
+    expect(options.width).toBe(320);
+
+    offsetWidthSpy.mockRestore();
+  });
 });

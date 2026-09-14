@@ -20,7 +20,8 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
   const {error: showError} = useAppToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
-  const hiddenButtonRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -69,107 +70,108 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
   );
 
   useEffect(() => {
-    if (isGoogleLoaded && window.google && hiddenButtonRef.current) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleLogin,
-      });
-
-      // O Google Identity Services não expõe um "signIn()" programático real
-      // (accounts.id.signIn não existe na API; accounts.id.prompt() é o One
-      // Tap automático, não confiável quando disparado por clique). A forma
-      // suportada de abrir o fluxo a partir de um clique é o botão que o
-      // próprio SDK renderiza — por isso ele é renderizado aqui, escondido, e
-      // o botão visível (estilizado Nocturne) só encaminha o clique pra ele.
-      window.google.accounts.id.renderButton(hiddenButtonRef.current, {
-        type: 'standard',
-        theme: 'outline',
-        size: 'large',
-      });
-    }
-  }, [isGoogleLoaded, handleGoogleLogin]);
-
-  const handleClick = () => {
-    const realButton = hiddenButtonRef.current?.querySelector<HTMLElement>(
-      'div[role="button"]'
-    );
-    if (realButton) {
-      realButton.click();
+    if (!isGoogleLoaded || !window.google || !overlayRef.current || !containerRef.current) {
       return;
     }
-    showError(
-      'Erro ao entrar com Google',
-      'Não foi possível iniciar o login com Google. Recarregue a página e tente novamente.'
-    );
-  };
+
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: handleGoogleLogin,
+    });
+
+    // O Google Identity Services não expõe estilização própria além de
+    // theme/size/shape, e o botão que ele desenha é um <iframe> de
+    // accounts.google.com — não um <div role="button"> no DOM da página.
+    // Um clique sintético nunca alcança conteúdo cross-origin dentro de um
+    // iframe (é a mesma barreira que o Same-Origin Policy impõe a
+    // postMessage/DOM); tentar `querySelector('div[role="button"]').click()`
+    // nunca encontra nada e é isso que fazia TODO clique em "Entrar com
+    // Google" cair no fallback de erro.
+    //
+    // A saída suportada é a técnica de overlay: desenhar o botão oficial do
+    // Google exatamente do tamanho do botão visual e sobrepô-lo com
+    // opacidade zero. O clique do usuário sempre acerta o iframe real —
+    // nenhum JS precisa encaminhar nada.
+    window.google.accounts.id.renderButton(overlayRef.current, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      width: containerRef.current.offsetWidth,
+    });
+  }, [isGoogleLoaded, handleGoogleLogin]);
 
   return (
     <>
       <WalletLoadingScreen isLoading={isLoading} loadingText="Conectando com Google..." />
-      {/* Botão real do Google, fora da vista mas clicável — é o único
-          disparador confiável do fluxo OAuth (ver comentário acima). */}
-      <div
-        ref={hiddenButtonRef}
-        aria-hidden="true"
-        style={{position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none'}}
-      />
-      {!isGoogleLoaded ? (
-        <button
-          disabled
+      <div ref={containerRef} style={{position: 'relative', height: 40}}>
+        {!isGoogleLoaded ? (
+          <button
+            disabled
+            style={{
+              width: '100%',
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              border: '1px solid var(--hair)',
+              borderRadius: 8,
+              background: 'transparent',
+              color: 'var(--color-neutral-400)',
+              fontFamily: 'var(--font-body)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'not-allowed',
+              opacity: 0.5,
+            }}>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Carregando Google...
+          </button>
+        ) : (
+          <button
+            type="button"
+            aria-hidden="true"
+            tabIndex={-1}
+            disabled={isLoading}
+            style={{
+              width: '100%',
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              border: '1px solid var(--hair)',
+              borderRadius: 8,
+              background: 'transparent',
+              color: 'var(--color-neutral-400)',
+              fontFamily: 'var(--font-body)',
+              fontSize: 13,
+              fontWeight: 500,
+              // Decorativo: o clique de verdade é capturado pelo iframe real
+              // do Google, sobreposto por cima (ver overlayRef abaixo).
+              pointerEvents: 'none',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.7 : 1,
+              transition: 'all 0.15s ease',
+            }}>
+            <i className="ph ph-google-logo" style={{fontSize: 15}} />
+            Entrar com Google
+          </button>
+        )}
+        {/* Botão real do Google, invisível e por cima do decorativo — é
+            um iframe cross-origin, então precisa RECEBER o clique
+            diretamente; nenhum forwarding via querySelector funciona nele. */}
+        <div
+          ref={overlayRef}
           style={{
-            height: 40,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            border: '1px solid var(--hair)',
-            borderRadius: 8,
-            background: 'transparent',
-            color: 'var(--color-neutral-400)',
-            fontFamily: 'var(--font-body)',
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: 'not-allowed',
-            opacity: 0.5,
-          }}>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Carregando Google...
-        </button>
-      ) : (
-        <button
-          onClick={handleClick}
-          disabled={isLoading}
-          style={{
-            height: 40,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            border: '1px solid var(--hair)',
-            borderRadius: 8,
-            background: 'transparent',
-            color: 'var(--color-neutral-400)',
-            fontFamily: 'var(--font-body)',
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            opacity: isLoading ? 0.7 : 1,
-            transition: 'all 0.15s ease',
+            position: 'absolute',
+            inset: 0,
+            overflow: 'hidden',
+            opacity: 0,
+            display: isLoading ? 'none' : 'block',
           }}
-          onMouseEnter={(e) => {
-            if (!isLoading) {
-              e.currentTarget.style.background = 'rgba(145,132,217,0.08)';
-              e.currentTarget.style.borderColor = 'var(--ac)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.borderColor = 'var(--hair)';
-          }}>
-          <i className="ph ph-google-logo" style={{fontSize: 15}} />
-          Entrar com Google
-        </button>
-      )}
+        />
+      </div>
     </>
   );
 };
