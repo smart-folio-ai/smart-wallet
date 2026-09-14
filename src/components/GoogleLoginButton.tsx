@@ -22,6 +22,7 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -103,7 +104,16 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
   return (
     <>
       <WalletLoadingScreen isLoading={isLoading} loadingText="Conectando com Google..." />
-      <div ref={containerRef} style={{position: 'relative', height: 40}}>
+      <div
+        ref={containerRef}
+        style={{position: 'relative', height: 40}}
+        // O botão decorativo tem pointer-events: none (o clique de verdade
+        // vai pro overlay do Google por cima), então ele nunca recebe
+        // mouseenter/mouseleave — o hover precisa ser lido aqui, no
+        // container, que continua same-origin mesmo com o iframe do Google
+        // dentro dele.
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}>
         {!isGoogleLoaded ? (
           <button
             disabled
@@ -140,15 +150,18 @@ export const GoogleLoginButton = ({keepConnected = false}: GoogleLoginButtonProp
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              border: '1px solid var(--hair)',
+              border: `1px solid ${isHovered && !isLoading ? 'var(--ac)' : 'var(--hair)'}`,
               borderRadius: 8,
-              background: 'transparent',
+              background:
+                isHovered && !isLoading ? 'rgba(145,132,217,0.08)' : 'transparent',
               color: 'var(--color-neutral-400)',
               fontFamily: 'var(--font-body)',
               fontSize: 13,
               fontWeight: 500,
               // Decorativo: o clique de verdade é capturado pelo iframe real
-              // do Google, sobreposto por cima (ver overlayRef abaixo).
+              // do Google, sobreposto por cima (ver overlayRef abaixo). O
+              // hover em si é controlado pelo container (isHovered), não por
+              // :hover CSS, porque este elemento nunca recebe o mouse.
               pointerEvents: 'none',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               opacity: isLoading ? 0.7 : 1,
