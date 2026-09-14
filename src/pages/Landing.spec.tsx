@@ -115,6 +115,15 @@ describe('Landing (design_handoff_trackerr/Trackerr Landing.dc.html)', () => {
     expect(screen.queryByText(/CNPJ 00\.000\.000/)).not.toBeInTheDocument();
   });
 
+  // Sincronização direta com corretora é exclusiva do plano Pro: a Landing
+  // não pode prometê-la como recurso geral.
+  it('does not promise direct broker sync', () => {
+    renderLanding();
+    fireEvent.click(screen.getByRole('button', {name: /Funciona com a minha corretora/}));
+
+    expect(screen.queryByText(/sincroniza/i)).not.toBeInTheDocument();
+  });
+
   it('switches the adaptive-depth preview between the three levels', () => {
     renderLanding();
 

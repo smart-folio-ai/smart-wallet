@@ -120,7 +120,7 @@ export const STEPS = [
   {
     step: '01',
     title: 'Conecte sua carteira',
-    body: 'Importe a nota de corretagem, o extrato da B3 ou sincronize direto com a corretora. Leva alguns minutos, uma vez só.',
+    body: 'Importe a nota de corretagem ou o extrato da B3. Leva alguns minutos, uma vez só.',
   },
   {
     step: '02',
@@ -150,7 +150,7 @@ export const FAQ = [
   {
     question: 'Funciona com a minha corretora?',
     answer:
-      'O Trackerr importa nota de corretagem e extrato da B3, o que cobre qualquer corretora que opere no mercado brasileiro. Para as principais, há sincronização direta, sem importação manual.',
+      'O Trackerr importa nota de corretagem e extrato da B3, o que cobre qualquer corretora que opere no mercado brasileiro.',
   },
   {
     question: 'Quem define o meu nível de investidor?',
