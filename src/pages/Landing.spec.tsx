@@ -148,6 +148,18 @@ describe('Landing (design_handoff_trackerr/Trackerr Landing.dc.html)', () => {
     expect(await screen.findByText(/Quero o plano Pro/i)).toBeInTheDocument();
   });
 
+  // Produção sem planos ativos: a seção não pode ficar em branco.
+  it('shows an empty state with a sign-up path when there are no active plans', async () => {
+    (SubscriptionService.getPlans as any).mockResolvedValue([]);
+    renderLanding();
+
+    expect(await screen.findByTestId('plans-empty')).toHaveTextContent('Nenhum plano disponível no momento');
+    expect(within(screen.getByTestId('plans-empty')).getByRole('link', {name: 'Criar conta'})).toHaveAttribute(
+      'href',
+      '/register',
+    );
+  });
+
   describe('theme and language', () => {
     it('toggles the theme on <html> and restores the previous app theme on unmount', () => {
       document.documentElement.classList.add('dark');

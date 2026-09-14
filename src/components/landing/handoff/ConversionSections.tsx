@@ -128,6 +128,28 @@ export function PlansSection() {
             Tentar novamente
           </button>
         </div>
+      ) : plans.length === 0 ? (
+        <div
+          data-testid="plans-empty"
+          style={{
+            marginTop: 40,
+            border: '1px solid var(--hair)',
+            borderRadius: 8,
+            background: 'var(--nk-card)',
+            padding: 22.4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16.8,
+            flexWrap: 'wrap',
+          }}>
+          <div style={{fontSize: 13.5, color: 'var(--color-neutral-400)'}}>
+            Nenhum plano disponível no momento. Você já pode criar sua conta e começar grátis.
+          </div>
+          <Link to="/register" className="tl-plan-cta" style={{...ctaStyle(true), marginTop: 0, padding: '0 16.8px'}}>
+            Criar conta
+          </Link>
+        </div>
       ) : (
         <div
           className="tl-grid-4"
