@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 import {Link} from 'react-router-dom';
-import {Cookie, Shield, FileText} from '@/components/ui/icons';
+import {Cookie, Shield, FileText, Settings} from '@/components/ui/icons';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from '@/components/ui/card';
 import {Switch} from '@/components/ui/switch';
@@ -53,8 +53,8 @@ export const CookieConsentBanner = () => {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
-      <Card className="max-w-4xl mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-surface-base/95 backdrop-blur supports-[backdrop-filter]:bg-surface-base/60 border-t border-surface-hairline/10">
+      <Card className="max-w-4xl mx-auto border-surface-hairline/[0.12] bg-surface-panel">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Cookie className="h-5 w-5" />
@@ -70,14 +70,14 @@ export const CookieConsentBanner = () => {
             <div className="flex items-center justify-between space-x-2">
               <div className="flex-1">
                 <Label className="font-medium">Essenciais</Label>
-                <p className="text-sm text-muted-foreground">Necessários para o funcionamento</p>
+                <p className="text-sm text-on-surface-muted">Necessários para o funcionamento</p>
               </div>
               <Switch checked disabled />
             </div>
             <div className="flex items-center justify-between space-x-2">
               <div className="flex-1">
-                <Label className="font-medium">Funcionais</Label>
-                <p className="text-sm text-muted-foreground">Melhoram sua experiência</p>
+                <Label className="font-medium">Personalização</Label>
+                <p className="text-sm text-on-surface-muted">Melhoram sua experiência</p>
               </div>
               <Switch
                 checked={preferences.functional}
@@ -89,7 +89,7 @@ export const CookieConsentBanner = () => {
             <div className="flex items-center justify-between space-x-2">
               <div className="flex-1">
                 <Label className="font-medium">Analytics</Label>
-                <p className="text-sm text-muted-foreground">Nos ajudam a melhorar</p>
+                <p className="text-sm text-on-surface-muted">Nos ajudam a melhorar</p>
               </div>
               <Switch
                 checked={preferences.analytics}
@@ -101,7 +101,7 @@ export const CookieConsentBanner = () => {
             <div className="flex items-center justify-between space-x-2">
               <div className="flex-1">
                 <Label className="font-medium">Marketing</Label>
-                <p className="text-sm text-muted-foreground">Publicidade personalizada</p>
+                <p className="text-sm text-on-surface-muted">Publicidade personalizada</p>
               </div>
               <Switch
                 checked={preferences.marketing}
@@ -111,7 +111,7 @@ export const CookieConsentBanner = () => {
               />
             </div>
           </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-4 text-sm text-on-surface-muted">
             <Link to="/privacidade" className="flex items-center gap-1 hover:underline">
               <Shield className="h-4 w-4" />
               Política de Privacidade
@@ -119,6 +119,10 @@ export const CookieConsentBanner = () => {
             <Link to="/termos" className="flex items-center gap-1 hover:underline">
               <FileText className="h-4 w-4" />
               Termos de Uso
+            </Link>
+            <Link to="/cookies" className="flex items-center gap-1 hover:underline">
+              <Settings className="h-4 w-4" />
+              Política de Cookies
             </Link>
           </div>
         </CardContent>
