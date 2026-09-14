@@ -1,6 +1,7 @@
 import React, {useMemo, useReducer} from 'react';
 import useAppToast from '@/hooks/use-app-toast';
 import RecoveryCodesSection from '@/components/security/RecoveryCodesSection';
+import {badgeStyle, type BadgeSeverity as Severity} from '@/components/shared/badge-style';
 import {
   describePasswordError,
   useChangePassword,
@@ -64,27 +65,6 @@ const PASSWORD_FIELDS: {field: PasswordField; label: string; placeholder: string
   {field: 'next', label: 'Nova senha', placeholder: 'mínimo 10 caracteres', autoComplete: 'new-password'},
   {field: 'confirm', label: 'Confirmar nova senha', placeholder: 'repita a nova senha', autoComplete: 'new-password'},
 ];
-
-type Severity = 'warn' | 'info' | 'ok' | 'neg';
-
-const BADGE_COLORS: Record<Severity, React.CSSProperties> = {
-  warn: {color: 'var(--warn)', borderColor: 'rgba(240,179,46,0.35)', background: 'rgba(240,179,46,0.10)'},
-  info: {color: 'var(--color-accent-200)', borderColor: 'rgba(152,160,171,0.40)', background: 'rgba(152,160,171,0.12)'},
-  ok: {color: 'var(--pos)', borderColor: 'rgba(47,214,163,0.32)', background: 'rgba(47,214,163,0.10)'},
-  neg: {color: 'var(--neg)', borderColor: 'rgba(242,80,107,0.35)', background: 'rgba(242,80,107,0.10)'},
-};
-
-const badgeStyle = (sev: Severity): React.CSSProperties => ({
-  flexShrink: 0,
-  border: '1px solid',
-  borderRadius: 6,
-  padding: '3px 8px',
-  fontSize: 10.5,
-  fontWeight: 600,
-  letterSpacing: '0.02em',
-  whiteSpace: 'nowrap',
-  ...BADGE_COLORS[sev],
-});
 
 const onlyDigits = (value: string) => value.replace(/\D/g, '').slice(0, 6);
 
