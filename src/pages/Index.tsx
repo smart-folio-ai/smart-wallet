@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useState} from 'react';
 import portfolioService from '@/services/portfolio';
+import {UpcomingDividendsCard} from '@/components/dashboard/UpcomingDividendsCard';
 import {useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 import {fiscalService, stockServices} from '@/server/api/api';
@@ -1122,16 +1123,24 @@ const Dashboard = () => {
       computeSharpeRatio(summary.history || [], marketComparators?.cdi?.value ?? null),
     [summary.history, marketComparators?.cdi?.value],
   );
-  const futureDividendEvents = useMemo(() => {
-    const now = new Date();
-    return (summary.dividendEntries || [])
-      .filter((event) => {
-        const date = new Date(event.date);
-        return !Number.isNaN(date.getTime()) && date >= now;
-      })
-      .sort((a, b) => +new Date(a.date) - +new Date(b.date))
-      .slice(0, 4);
-  }, [summary.dividendEntries]);
+  // Proventos a receber vêm do relatório de Eventos da B3. Antes o card
+  // filtrava o histórico de proventos PAGOS por data futura — o que só
+  // encontrava lançamentos com data errada (ex.: carimbados no fim do
+  // período do consolidado), nunca um provento anunciado de verdade.
+  const {data: upcomingDividends, isLoading: loadingUpcomingDividends} = useQuery({
+    queryKey: ['upcoming-dividends', 45],
+    queryFn: () => portfolioService.getUpcomingDividends(45),
+  });
+
+  const positionValueBySymbol = useMemo(() => {
+    const bySymbol: Record<string, number> = {};
+    for (const asset of apiAssets as any[]) {
+      const symbol = String(asset?.symbol || '').toUpperCase();
+      if (!symbol) continue;
+      bySymbol[symbol] = (bySymbol[symbol] || 0) + Number(asset?.total || 0);
+    }
+    return bySymbol;
+  }, [apiAssets]);
 
   const pnlLabel =
     level === 'iniciante'
@@ -1425,13 +1434,6 @@ const Dashboard = () => {
     body: ins.description,
   }));
 
-  const upcomingDividends = futureDividendEvents.map((d) => ({
-    symbol: d.symbol,
-    type: d.type === 'fii' ? 'FII' : d.type === 'stock' ? 'Ação' : 'Outro',
-    comDate: formatHistoryDate(d.date),
-    value: formatCurrency(d.value),
-    perShare: '—',
-  }));
 
   // ── End Nocturne layout variables ─────────────────────────────────────────
 
@@ -2000,67 +2002,14 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* 6. Próximos dividendos */}
-      <section
-        style={{
-          border: '1px solid var(--hair)',
-          borderRadius: 8,
-          background: 'var(--nk-card)',
-        }}>
-        <SectionHeader title="Dividendos próximos" subtitle="Próximos 30 dias" />
-        {upcomingDividends.length === 0 ? (
-          <div
-            style={{
-              padding: '14px 16.8px',
-              color: 'var(--color-neutral-500)',
-              fontSize: 12,
-            }}>
-            Sem eventos de dividendos futuros nas fontes atuais.
-          </div>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, minmax(0,1fr))',
-              gap: 1,
-              background: 'var(--hair-soft)',
-            }}>
-            {upcomingDividends.map((d) => (
-              <div
-                key={d.symbol}
-                style={{padding: '14px 16.8px', background: 'var(--nk-card)'}}>
-                <div style={{fontWeight: 600, fontSize: 14}}>{d.symbol}</div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--color-neutral-500)',
-                    marginTop: 2,
-                  }}>
-                  {d.type} · {d.comDate}
-                </div>
-                <div
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 600,
-                    color: 'var(--pos)',
-                    marginTop: 8.4,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}>
-                  {d.value}
-                </div>
-                <div
-                  style={{
-                    fontSize: 10.5,
-                    color: 'var(--color-neutral-600)',
-                    marginTop: 2,
-                  }}>
-                  {d.perShare} por ação
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* 6. Proventos a receber */}
+      <UpcomingDividendsCard
+        items={(upcomingDividends?.items ?? []).slice(0, 4)}
+        totalNetValue={upcomingDividends?.totalNetValue ?? 0}
+        windowDays={upcomingDividends?.windowDays ?? 45}
+        positionValueBySymbol={positionValueBySymbol}
+        isLoading={loadingUpcomingDividends}
+      />
 
       {/* 7. Posições em destaque */}
       <section

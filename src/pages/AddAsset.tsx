@@ -81,6 +81,15 @@ function sortB3Files(files: File[]): File[] {
 }
 
 function summarizeB3Import(result: any): string {
+  if (result?.kind === 'upcoming') {
+    const count = Number(result?.eventsImported ?? 0);
+    if (!count) return result?.message || 'Nenhum provento previsto no arquivo.';
+    const total = Number(result?.totalNetValue ?? 0).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+    return `${count} provento(s) a receber · ${total} previstos`;
+  }
   if (result?.kind === 'transactions') {
     const imported = Number(result?.tradesImported ?? 0);
     if (!imported && !result?.totalParsed) {
@@ -528,6 +537,7 @@ export default function AddAsset() {
       queryClient.invalidateQueries({queryKey: ['dashboardAssets']});
       queryClient.invalidateQueries({queryKey: ['portfolios']});
       queryClient.invalidateQueries({queryKey: ['portfolio-transactions']});
+      queryClient.invalidateQueries({queryKey: ['upcoming-dividends']});
       toast({
         title: 'Importação concluída',
         description: `${imported} de ${files.length} arquivo(s) importado(s). Veja o resultado em "Importações recentes".`,
