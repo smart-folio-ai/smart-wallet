@@ -15,20 +15,25 @@
      * PALETA NOCTURNE CLARA — papel. Off-white baseado em azul neutro,
      * seguindo o design system Nocturne.
      * ────────────────────────────────────────────────────────────── */
-    --surface-base: 240 29% 97%;
-    --surface-panel: 240 45% 98%;
+    /* TRA-159: superfícies e marca alinhadas ao graphite (mesmo hex do
+     * handoff usado por --background/--card/--primary acima) — antes
+     * herdavam o azul da paleta Nocturne original e a marca continuava
+     * blurple (#6f5ed9-ish) mesmo depois da migração TRA-157, porque essa
+     * família de tokens (usada só pela Landing) nunca tinha sido tocada. */
+    --surface-base: 45 26% 91%;
+    --surface-panel: 40 36% 95%;
     --surface-raised: 240 100% 100%;
-    --surface-input: 232 25% 94%;
+    --surface-input: 44 28% 92%;
     --surface-hairline: 234 16% 12%;
 
     --on-surface: 234 16% 12%;
-    --on-surface-accent: 248 62% 61%;
+    --on-surface-accent: 220 8% 42%;
     --on-surface-muted: 33 9% 38%;
     --on-surface-subtle: 35 7% 50%;
 
-    /* Marca: Nocturne blurple claro */
-    --brand: 248 62% 61%;
-    --brand-strong: 248 55% 52%;
+    /* Marca: graphite (mesmo hex do --primary claro, #616773) */
+    --brand: 220 8% 42%;
+    --brand-strong: 219 9% 30%;
     --brand-foreground: 0 0% 100%;
 
     /* Vocabulário financeiro: alta e baixa. */
@@ -47,7 +52,7 @@
 
     /* Tokens de benchmark e brand-soft */
     --benchmark: 198 73% 38%;
-    --brand-soft: 250 29% 45%;
+    --brand-soft: 215 10% 63%;
 
     /* ──────────────────────────────────────────────────────────────
      * Tokens do shadcn. Derivam dos canônicos acima — é isto que faz
@@ -160,20 +165,23 @@
     /* ──────────────────────────────────────────────────────────────
      * PALETA NOCTURNE ESCURA — seguindo o design system Nocturne.
      * ────────────────────────────────────────────────────────────── */
-    --surface-base: 233 27% 12%;
-    --surface-panel: 233 23% 15%;
-    --surface-raised: 232 19% 15%;
-    --surface-input: 229 22% 10%;
+    /* TRA-159: idem ao bloco claro — superfícies e marca no hex do
+     * graphite (#1b1b1d/#222224/#272729/#151516/#98a0ab), não mais o azul
+     * e o blurple da paleta Nocturne original. */
+    --surface-base: 240 4% 11%;
+    --surface-panel: 240 3% 14%;
+    --surface-raised: 240 3% 16%;
+    --surface-input: 240 2% 8%;
     --surface-hairline: 240 10% 92%;
 
     --on-surface: 240 10% 92%;
-    --on-surface-accent: 249 53% 68%;
+    --on-surface-accent: 215 10% 63%;
     --on-surface-muted: 228 18% 72%;
     --on-surface-subtle: 228 12% 55%;
 
-    /* Marca: Nocturne blurple escuro */
-    --brand: 249 53% 68%;
-    --brand-strong: 248 62% 61%;
+    /* Marca: graphite (mesmo hex do --primary escuro, #98a0ab) */
+    --brand: 215 10% 63%;
+    --brand-strong: 220 9% 52%;
     --brand-foreground: 0 0% 100%;
 
     /* Vocabulário financeiro: alta e baixa. */
@@ -192,7 +200,7 @@
 
     /* Tokens de benchmark e brand-soft */
     --benchmark: 194 85% 62%;
-    --brand-soft: 247 93% 83%;
+    --brand-soft: 228 6% 84%;
 
     /* TRA-157: alinhado ao handoff — migração blurple → graphite. */
     --background: 240 4% 11%;

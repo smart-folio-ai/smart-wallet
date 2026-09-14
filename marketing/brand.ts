@@ -5,8 +5,8 @@ import {resolve} from 'node:path';
 // hex. Converting would be one more place for the values to drift, and
 // brand.spec.ts asserts these strings against the stylesheet.
 export const BRAND = {
-  brand: '249 53% 68%',
-  surfaceBase: '233 27% 12%',
+  brand: '215 10% 63%',
+  surfaceBase: '240 4% 11%',
   onSurface: '240 10% 92%',
   onSurfaceMuted: '228 18% 72%',
 } as const;
