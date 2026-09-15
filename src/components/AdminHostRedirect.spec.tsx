@@ -1,7 +1,7 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import {MemoryRouter, Routes, Route} from 'react-router-dom';
-import {AdminHostRedirect} from './AdminHostRedirect';
+import {AdminHostRedirect, resolveHostRedirect} from './AdminHostRedirect';
 
 const mockUseAuth = vi.fn();
 
@@ -9,83 +9,96 @@ vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-function renderAtRoot() {
-  return render(
-    <MemoryRouter initialEntries={['/']}>
-      <AdminHostRedirect />
-      <Routes>
-        <Route path="/" element={<div>Landing</div>} />
-        <Route path="/admin" element={<div>Painel Admin</div>} />
-      </Routes>
-    </MemoryRouter>,
-  );
-}
+const base = {search: '', isAuthenticated: true, role: 'admin'};
+
+describe('resolveHostRedirect', () => {
+  it('sends /admin on the app domain to the admin subdomain, keeping the path', () => {
+    expect(resolveHostRedirect({...base, hostname: 'trackerr.com.br', pathname: '/admin/plans', search: '?x=1'})).toEqual({
+      type: 'external',
+      to: 'https://admin.trackerr.com.br/admin/plans?x=1',
+    });
+    expect(resolveHostRedirect({...base, hostname: 'www.trackerr.com.br', pathname: '/admin'})?.type).toBe('external');
+    expect(resolveHostRedirect({...base, hostname: 'trackerr.com.br', pathname: '/dashboard'})).toBeNull();
+  });
+
+  it('keeps the admin subdomain on the admin only', () => {
+    const admin = {...base, hostname: 'admin.trackerr.com.br'};
+    expect(resolveHostRedirect({...admin, pathname: '/dashboard'})).toEqual({type: 'internal', to: '/admin'});
+    expect(resolveHostRedirect({...admin, pathname: '/'})).toEqual({type: 'internal', to: '/admin'});
+    expect(resolveHostRedirect({...admin, pathname: '/admin/grants'})).toBeNull();
+  });
+
+  it('asks visitors to sign in on the admin subdomain, but lets auth pages through', () => {
+    const visitor = {...base, hostname: 'admin.trackerr.com.br', isAuthenticated: false, role: null};
+    expect(resolveHostRedirect({...visitor, pathname: '/'})).toEqual({type: 'internal', to: '/signin'});
+    expect(resolveHostRedirect({...visitor, pathname: '/admin'})).toEqual({type: 'internal', to: '/signin'});
+    expect(resolveHostRedirect({...visitor, pathname: '/signin'})).toBeNull();
+    expect(resolveHostRedirect({...visitor, pathname: '/2fa-verify'})).toBeNull();
+  });
+
+  it('routes editors to grants and regular users back to the app (no redirect loop)', () => {
+    const host = {...base, hostname: 'admin.trackerr.com.br'};
+    expect(resolveHostRedirect({...host, role: 'editor', pathname: '/admin'})).toEqual({type: 'internal', to: '/admin/grants'});
+    expect(resolveHostRedirect({...host, role: 'user', pathname: '/dashboard'})).toEqual({
+      type: 'external',
+      to: 'https://trackerr.com.br/dashboard',
+    });
+  });
+
+  it('does nothing on localhost or previews', () => {
+    expect(resolveHostRedirect({...base, hostname: 'localhost', pathname: '/admin'})).toBeNull();
+    expect(resolveHostRedirect({...base, hostname: 'abc.trackerr.pages.dev', pathname: '/dashboard'})).toBeNull();
+  });
+});
 
 describe('AdminHostRedirect', () => {
-  const originalHostname = window.location.hostname;
+  const originalLocation = window.location;
 
   function setHostname(hostname: string) {
     Object.defineProperty(window, 'location', {
-      value: {...window.location, hostname},
+      value: {...originalLocation, hostname, replace: vi.fn()},
       writable: true,
     });
   }
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  const renderAt = (path: string) =>
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <AdminHostRedirect />
+        <Routes>
+          <Route path="/" element={<div>Landing</div>} />
+          <Route path="/signin" element={<div>Entrar</div>} />
+          <Route path="/admin" element={<div>Painel Admin</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
 
+  beforeEach(() => vi.clearAllMocks());
   afterEach(() => {
-    setHostname(originalHostname);
+    Object.defineProperty(window, 'location', {value: originalLocation, writable: true});
   });
 
-  it('does not redirect on the regular domain, even when authenticated', async () => {
+  it('waits for auth before redirecting', () => {
+    setHostname('admin.trackerr.com.br');
+    mockUseAuth.mockReturnValue({isAuthenticated: false, isLoading: true, role: null});
+    renderAt('/');
+
+    expect(screen.getByText('Landing')).toBeInTheDocument();
+  });
+
+  it('opens the panel for an admin on the admin subdomain', async () => {
+    setHostname('admin.trackerr.com.br');
+    mockUseAuth.mockReturnValue({isAuthenticated: true, isLoading: false, role: 'admin'});
+    renderAt('/');
+
+    await waitFor(() => expect(screen.getByText('Painel Admin')).toBeInTheDocument());
+  });
+
+  it('leaves the app domain for the admin subdomain on /admin', async () => {
     setHostname('trackerr.com.br');
-    mockUseAuth.mockReturnValue({isAuthenticated: true, isLoading: false});
+    mockUseAuth.mockReturnValue({isAuthenticated: true, isLoading: false, role: 'admin'});
+    renderAt('/admin');
 
-    renderAtRoot();
-
-    await waitFor(() => {
-      expect(screen.getByText('Landing')).toBeInTheDocument();
-    });
-  });
-
-  /**
-   * O caso que importa: sem a checagem de isAuthenticated, um visitante
-   * deslogado em admin.trackerr.com.br entraria em loop — ProtectedRoute
-   * manda quem não está logado de volta pra "/", e este componente
-   * mandaria de "/" pra "/admin" de novo, indefinidamente.
-   */
-  it('does not redirect on the admin subdomain when NOT authenticated (prevents a redirect loop with ProtectedRoute)', async () => {
-    setHostname('admin.trackerr.com.br');
-    mockUseAuth.mockReturnValue({isAuthenticated: false, isLoading: false});
-
-    renderAtRoot();
-
-    await waitFor(() => {
-      expect(screen.getByText('Landing')).toBeInTheDocument();
-    });
-  });
-
-  it('does not redirect while auth is still loading', async () => {
-    setHostname('admin.trackerr.com.br');
-    mockUseAuth.mockReturnValue({isAuthenticated: true, isLoading: true});
-
-    renderAtRoot();
-
-    await waitFor(() => {
-      expect(screen.getByText('Landing')).toBeInTheDocument();
-    });
-  });
-
-  it('redirects "/" to "/admin" on the admin subdomain once authenticated', async () => {
-    setHostname('admin.trackerr.com.br');
-    mockUseAuth.mockReturnValue({isAuthenticated: true, isLoading: false});
-
-    renderAtRoot();
-
-    await waitFor(() => {
-      expect(screen.getByText('Painel Admin')).toBeInTheDocument();
-    });
+    await waitFor(() => expect(window.location.replace).toHaveBeenCalledWith('https://admin.trackerr.com.br/admin'));
   });
 });
