@@ -34,6 +34,7 @@ import {useCommandPalette} from '@/hooks/useCommandPalette';
 import {useThemeToggle} from '@/components/ThemeToggle';
 import {CommandPalette} from './CommandPalette';
 import {NotificationBell} from './NotificationBell';
+import {openTutorial} from '@/components/onboarding/OnboardingTutorial';
 import {sections} from './nav-data';
 import portfolioService from '@/services/portfolio';
 import {CreatePortfolioDialog} from '@/components/portfolio/CreatePortfolioDialog';
@@ -175,6 +176,17 @@ export function AppTopbar() {
             aria-label={themeLabel}
             title={themeLabel}>
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 border-border/70 text-muted-foreground hover:text-foreground"
+            onClick={openTutorial}
+            aria-label="Ver tutorial"
+            title="Ver tutorial">
+            <i className="ph ph-question" style={{fontSize: 15}} aria-hidden />
           </Button>
 
           <NotificationBell />
