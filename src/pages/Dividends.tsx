@@ -1,7 +1,8 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useMemo} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {useQuery} from '@tanstack/react-query';
 import portfolioService from '@/services/portfolio';
+import {ALL_PORTFOLIOS, useSelectedPortfolio} from '@/contexts/SelectedPortfolioContext';
 import {formatCurrency} from '@/utils';
 import {
   KpiCard,
@@ -50,6 +51,16 @@ const normalizeDividendEventType = (value: unknown): DividendEventType => {
   return 'Dividendo';
 };
 
+const UPCOMING_WINDOW_DAYS = 90;
+const AGENDA_DAYS = 45;
+
+const PAYMENT_TYPE_LABEL: Record<string, string> = {
+  JCP: 'JCP',
+  DIVIDEND: 'Dividendo',
+  RENDIMENTO: 'Rendimento',
+  OTHER: 'Provento',
+};
+
 const parseDate = (dateValue: unknown): Date | null => {
   if (!dateValue) return null;
   const parsed = new Date(String(dateValue));
@@ -66,24 +77,39 @@ const formatPercent = (value: number | null | undefined): string =>
 const Dividends = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState('all');
+  // O link do detalhe de proventos pode fixar a carteira; fora dele vale a
+  // escolhida no seletor do topo.
+  const {selectedId} = useSelectedPortfolio();
+  const selectedPortfolioId = searchParams.get('portfolioId') || selectedId;
 
-  const {data: portfolios = []} = useQuery({
-    queryKey: ['portfolios'],
-    queryFn: async () => portfolioService.getPortfolios(),
+  // Proventos a receber vêm do relatório de Eventos da B3 — o histórico pago
+  // nunca tem data futura de verdade.
+  const {data: upcomingPayload} = useQuery({
+    queryKey: ['upcoming-dividends', UPCOMING_WINDOW_DAYS],
+    queryFn: () => portfolioService.getUpcomingDividends(UPCOMING_WINDOW_DAYS),
   });
-
-  useEffect(() => {
-    const fromUrl = searchParams.get('portfolioId');
-    if (fromUrl) {
-      setSelectedPortfolioId(fromUrl);
-      return;
-    }
-
-    if (portfolios.length > 0 && selectedPortfolioId === 'all') {
-      setSelectedPortfolioId('all');
-    }
-  }, [portfolios, searchParams, selectedPortfolioId]);
+  const upcomingItems = useMemo(
+    () =>
+      (upcomingPayload?.items ?? [])
+        .filter(
+          (item) =>
+            selectedPortfolioId === ALL_PORTFOLIOS || item.portfolioId === selectedPortfolioId,
+        )
+        // A data prevista é um dia do calendário gravado à meia-noite UTC;
+        // lida no fuso local ela cairia no dia anterior.
+        .map((item) => {
+          const utc = parseDate(item.expectedPaymentDate);
+          return {
+            ...item,
+            payDate: utc
+              ? new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate())
+              : null,
+          };
+        })
+        .filter((item): item is typeof item & {payDate: Date} => item.payDate !== null)
+        .sort((a, b) => a.payDate.getTime() - b.payDate.getTime()),
+    [upcomingPayload, selectedPortfolioId],
+  );
 
   const {data: portfolioPayload, isLoading} = useQuery({
     queryKey: ['dividends-portfolio', selectedPortfolioId],
@@ -157,7 +183,9 @@ const Dividends = () => {
       const label = MONTH_LABELS[mo];
       const isProjected = yr > currentYear || (yr === currentYear && mo > currentMonthIdx);
       const value = isProjected
-        ? 0
+        ? upcomingItems
+            .filter((item) => item.payDate.getFullYear() === yr && item.payDate.getMonth() === mo)
+            .reduce((sum, item) => sum + item.netValue, 0)
         : allDividendEvents
             .filter((ev) => {
               const parsed = parseDate(ev.date);
@@ -167,7 +195,7 @@ const Dividends = () => {
       result.push({label, value, projected: isProjected});
     }
     return result;
-  }, [allDividendEvents, currentMonthIdx, currentYear]);
+  }, [allDividendEvents, upcomingItems, currentMonthIdx, currentYear]);
 
   const maxMonthValue = useMemo(
     () => Math.max(...monthlyData.map((m) => m.value), 1),
@@ -178,25 +206,20 @@ const Dividends = () => {
 
   /** Upcoming 45-day agenda from dividend events with future/today pay dates */
   const agenda = useMemo(() => {
-    const cutoff = new Date(now.getTime() + 45 * 24 * 60 * 60 * 1000);
-    return allDividendEvents
-      .filter((ev) => {
-        const d = parseDate(ev.date);
-        return d && d >= now && d <= cutoff;
-      })
-      .map((ev) => {
-        const d = parseDate(ev.date)!;
-        return {
-          symbol: ev.symbol,
-          day: String(d.getDate()).padStart(2, '0'),
-          month: MONTH_LABELS[d.getMonth()],
-          type: ev.eventType,
-          comDate: d.toLocaleDateString('pt-BR'),
-          value: formatCurrency(ev.totalValue),
-          perShare: `${formatCurrency(ev.valuePerUnit)}/cota`,
-        };
-      });
-  }, [allDividendEvents, now]);
+    const cutoff = new Date(now.getTime() + AGENDA_DAYS * 24 * 60 * 60 * 1000);
+    return upcomingItems
+      .filter((item) => item.payDate <= cutoff)
+      .map((item) => ({
+        id: item.id,
+        symbol: item.symbol,
+        day: String(item.payDate.getDate()).padStart(2, '0'),
+        month: MONTH_LABELS[item.payDate.getMonth()],
+        type: PAYMENT_TYPE_LABEL[item.paymentType] ?? 'Provento',
+        payDate: item.payDate.toLocaleDateString('pt-BR'),
+        value: formatCurrency(item.netValue),
+        perShare: `${formatCurrency(item.unitValue)}/cota`,
+      }));
+  }, [upcomingItems, now]);
 
   /** Per-symbol snapshot (current value, cost basis, backend-provided DY) used for DY/YoC math */
   const assetInfoBySymbol = useMemo(() => {
@@ -287,25 +310,14 @@ const Dividends = () => {
       : '—';
 
   const nextDiv = useMemo(() => {
-    const upcoming = allDividendEvents
-      .filter((ev) => {
-        const d = parseDate(ev.date);
-        return d && d >= now;
-      })
-      .sort((a, b) => {
-        const da = parseDate(a.date)!;
-        const db = parseDate(b.date)!;
-        return da.getTime() - db.getTime();
-      });
-    if (upcoming.length === 0) return {value: '—', symbol: '—', payDate: '—'};
-    const nxt = upcoming[0];
-    const d = parseDate(nxt.date)!;
+    const nxt = upcomingItems[0];
+    if (!nxt) return {value: '—', symbol: '—', payDate: '—'};
     return {
-      value: formatCurrency(nxt.totalValue),
+      value: formatCurrency(nxt.netValue),
       symbol: nxt.symbol,
-      payDate: d.toLocaleDateString('pt-BR'),
+      payDate: nxt.payDate.toLocaleDateString('pt-BR'),
     };
-  }, [allDividendEvents, now]);
+  }, [upcomingItems]);
 
   const fiisTotal = useMemo(
     () =>
@@ -404,7 +416,7 @@ const Dividends = () => {
       {/* 3. Agenda + Renda por ativo */}
       <div style={{display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.2fr)', gap: 16.8, alignItems: 'start'}}>
         <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
-          <SectionHeader title="Agenda · próximos 45 dias" subtitle="Data-com, pagamento e valor líquido previsto" />
+          <SectionHeader title="Agenda · próximos 45 dias" subtitle="Pagamento previsto e valor líquido · relatório de Eventos da B3" />
           <div style={{padding: '5.6px 0'}}>
             {agenda.length === 0 ? (
               <div style={{padding: '16.8px', fontSize: 12.5, color: 'var(--color-neutral-600)', textAlign: 'center'}}>
@@ -412,14 +424,14 @@ const Dividends = () => {
               </div>
             ) : (
               agenda.map((d) => (
-                <div key={`${d.symbol}-${d.comDate}`} style={{display: 'flex', alignItems: 'center', gap: 11.2, padding: '9.8px 16.8px'}}>
+                <div key={d.id} style={{display: 'flex', alignItems: 'center', gap: 11.2, padding: '9.8px 16.8px'}}>
                   <div style={{width: 38, flexShrink: 0, textAlign: 'center', border: '1px solid var(--hair)', borderRadius: 6, padding: '4px 0', background: 'rgba(var(--rgb-bg),0.6)'}}>
                     <div style={{fontSize: 13, fontWeight: 600, lineHeight: 1, fontVariantNumeric: 'tabular-nums'}}>{d.day}</div>
                     <div style={{fontSize: 9, color: 'var(--color-neutral-600)', textTransform: 'uppercase', letterSpacing: '0.06em'}}>{d.month}</div>
                   </div>
                   <div style={{flex: 1, minWidth: 0}}>
                     <div style={{fontSize: 12.5, fontWeight: 600}}>{d.symbol}</div>
-                    <div style={{fontSize: 10.5, color: 'var(--color-neutral-600)'}}>{d.type} · data-com {d.comDate}</div>
+                    <div style={{fontSize: 10.5, color: 'var(--color-neutral-600)'}}>{d.type} · pagamento {d.payDate}</div>
                   </div>
                   <div style={{textAlign: 'right'}}>
                     <div style={{fontSize: 12.5, fontWeight: 600, color: 'var(--pos)', fontVariantNumeric: 'tabular-nums'}}>{d.value}</div>

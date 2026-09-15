@@ -1,11 +1,11 @@
 import {useMemo, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {useQuery} from '@tanstack/react-query';
 import {SidebarTrigger} from '@/components/ui/sidebar';
 import {Button} from '@/components/ui/button';
 import {Separator} from '@/components/ui/separator';
 import {Skeleton} from '@/components/ui/skeleton';
 import {
+  Check,
   ChevronDown,
   Download,
   LogOut,
@@ -36,8 +36,12 @@ import {CommandPalette} from './CommandPalette';
 import {NotificationBell} from './NotificationBell';
 import {openTutorial} from '@/components/onboarding/OnboardingTutorial';
 import {sections} from './nav-data';
-import portfolioService from '@/services/portfolio';
 import {CreatePortfolioDialog} from '@/components/portfolio/CreatePortfolioDialog';
+import {
+  ALL_PORTFOLIOS,
+  portfolioIdOf,
+  useSelectedPortfolio,
+} from '@/contexts/SelectedPortfolioContext';
 
 type PageMeta = {crumb: string; title: string};
 
@@ -98,13 +102,10 @@ export function AppTopbar() {
   const {theme, toggleTheme} = useThemeToggle();
   const [walletOpen, setWalletOpen] = useState(false);
 
-  const {data: portfolios} = useQuery({
-    queryKey: ['portfolios'],
-    queryFn: () => portfolioService.getPortfolios(),
-    staleTime: 60_000,
-  });
+  const {portfolios, selectedId, selectedPortfolio, isAll, setSelectedId} =
+    useSelectedPortfolio();
 
-  const portfolioCount = Array.isArray(portfolios) ? portfolios.length : 0;
+  const portfolioCount = portfolios.length;
   const initials = profile
     ? `${profile.firstName?.[0] ?? ''}${profile.lastName?.[0] ?? ''}`.toUpperCase()
     : '';
@@ -230,12 +231,38 @@ export function AppTopbar() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-border/50 px-4 py-2 md:px-6">
-        <div className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-muted/40 px-2.5 h-[30px] text-xs">
-          <Wallet className="h-3.5 w-3.5 text-brand" />
-          <span className="text-foreground">Carteira consolidada</span>
-          <span className="text-muted-foreground">· {walletLabel}</span>
-          <ChevronDown className="ml-0.5 h-3 w-3 text-muted-foreground" />
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Escolher carteira"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-muted/40 px-2.5 h-[30px] text-xs transition-colors hover:border-brand/45">
+              <Wallet className="h-3.5 w-3.5 text-brand" />
+              <span className="text-foreground">
+                {selectedPortfolio?.name ?? 'Carteira consolidada'}
+              </span>
+              <span className="text-muted-foreground">· {walletLabel}</span>
+              <ChevronDown className="ml-0.5 h-3 w-3 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[220px]">
+            <DropdownMenuItem onClick={() => setSelectedId(ALL_PORTFOLIOS)}>
+              <Wallet className="mr-2 h-4 w-4" />
+              <span className="flex-1">Carteira consolidada</span>
+              {isAll ? <Check className="ml-2 h-3.5 w-3.5 text-brand" /> : null}
+            </DropdownMenuItem>
+            {portfolios.length > 0 ? <DropdownMenuSeparator /> : null}
+            {portfolios.map((portfolio) => {
+              const id = portfolioIdOf(portfolio);
+              return (
+                <DropdownMenuItem key={id} onClick={() => setSelectedId(id)}>
+                  <span className="flex-1 truncate">{portfolio.name}</span>
+                  {id === selectedId ? <Check className="ml-2 h-3.5 w-3.5 text-brand" /> : null}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <button
           type="button"

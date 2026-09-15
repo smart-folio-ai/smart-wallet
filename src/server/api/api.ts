@@ -257,6 +257,8 @@ export const brokerSyncService = {
   disconnect: (provider: string) =>
     apiClient.delete(`/broker-sync/disconnect/${provider}`),
   getUploads: () => apiClient.get('/broker-sync/uploads'),
+  dismissUpload: (uploadId: string) =>
+    apiClient.delete(`/broker-sync/uploads/${uploadId}`),
   getUploadStatus: (uploadId: string) =>
     apiClient.get(`/broker-sync/upload-note/${uploadId}/status`),
   uploadNote: (provider: string, file: File) => {

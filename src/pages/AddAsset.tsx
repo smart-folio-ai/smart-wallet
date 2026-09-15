@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {CalendarIcon} from '@/components/ui/icons';
-import {useToast} from '@/components/ui/use-toast';
+import useAppToast from '@/hooks/use-app-toast';
 import {Calendar} from '@/components/ui/calendar';
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
 import {format} from 'date-fns';
@@ -109,6 +109,13 @@ function summarizeB3Import(result: any): string {
   return parts.length ? parts.join(', ') : result?.message || 'Arquivo importado';
 }
 
+const IMPORT_KIND_LABEL: Record<string, string> = {
+  brokerage_note: 'Nota de corretagem',
+  b3_report: 'Relatório B3',
+  b3_transactions: 'Extrato de negociação B3',
+  b3_events: 'Eventos B3',
+};
+
 const IMPORT_STATUS_STYLE: Record<string, React.CSSProperties> = {
   success: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'var(--badge-pos-bg)', color: 'var(--pos)'},
   error: {padding: '2px 8px', borderRadius: 6, fontSize: 11, background: 'var(--badge-neg-bg)', color: 'var(--neg)'},
@@ -136,7 +143,7 @@ const LABEL_STYLE: React.CSSProperties = {
 };
 
 export default function AddAsset() {
-  const {toast} = useToast();
+  const toast = useAppToast();
   const [date, setDate] = useState<Date>();
   const [symbolSearch, setSymbolSearch] = useState('');
   const normalizedSymbolSearch = String(symbolSearch || '').trim().toUpperCase();
@@ -278,14 +285,9 @@ export default function AddAsset() {
     mutationFn: (assetData: any) =>
       PortfolioService.addAssetToPortfolio(selectedPortfolioId, assetData),
     onSuccess: () => {
-      toast({
-        title: 'Ativo adicionado!',
-        description: `${formData.symbol} foi adicionado ao seu portfólio com sucesso.`,
-      });
+      toast.success('Ativo adicionado!', `${formData.symbol} foi adicionado ao seu portfólio com sucesso.`);
 
-      queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
-      queryClient.invalidateQueries({queryKey: ['dashboardAssets']});
-      queryClient.invalidateQueries({queryKey: ['portfolios']});
+      queryClient.invalidateQueries();
 
       setFormData({
         symbol: '',
@@ -300,11 +302,7 @@ export default function AddAsset() {
       setDate(undefined);
     },
     onError: () => {
-      toast({
-        title: 'Não foi possível adicionar o ativo',
-        description: 'Revise as informações do ativo e tente novamente.',
-        variant: 'destructive',
-      });
+      toast.error('Não foi possível adicionar o ativo', 'Revise as informações do ativo e tente novamente.');
     },
   });
 
@@ -316,11 +314,7 @@ export default function AddAsset() {
       !formData.purchasePrice ||
       !selectedPortfolioId
     ) {
-      toast({
-        title: 'Erro',
-        description: 'Por favor, preencha todos os campos obrigatórios.',
-        variant: 'destructive',
-      });
+      toast.error('Erro', 'Por favor, preencha todos os campos obrigatórios.');
       return;
     }
     addAssetMutation.mutate({
@@ -377,7 +371,10 @@ export default function AddAsset() {
 
   const recentImports = useMemo(
     () =>
-      uploads.slice(0, 8).map((u: any) => {
+      uploads
+        .filter((u: any) => !sessionImports.some((imp) => imp.name === u.originalName))
+        .slice(0, 8)
+        .map((u: any) => {
         const status =
           u.status === 'processed'
             ? 'success'
@@ -409,13 +406,29 @@ export default function AddAsset() {
               ? 'var(--neg)'
               : 'var(--warn)',
           label: u.originalName || 'Arquivo enviado',
-          meta: [u.provider, u.kind || 'brokerage_note'].filter(Boolean).join(' • '),
+          meta: [
+            IMPORT_KIND_LABEL[u.kind || 'brokerage_note'] || u.kind,
+            u.createdAt
+              ? new Date(u.createdAt).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'})
+              : null,
+            status === 'error' ? u.errorMessage : null,
+          ]
+            .filter(Boolean)
+            .join(' • '),
           status,
           statusLabel,
         };
       }),
-    [uploads],
+    [uploads, sessionImports],
   );
+
+  const dismissUpload = useMutation({
+    mutationFn: (uploadId: string) => brokerSyncService.dismissUpload(uploadId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({queryKey: ['broker-uploads']}),
+    onError: () =>
+      toast.error('Não foi possível remover', 'Tente novamente em instantes.'),
+  });
 
   // Faz polling do status de processamento de um upload até virar
   // `processed` ou `failed` (ou até estourar o timeout), igual ao fluxo
@@ -434,25 +447,15 @@ export default function AddAsset() {
           const status = res.data?.status;
 
           if (status === 'processed') {
-            queryClient.invalidateQueries({queryKey: ['broker-uploads']});
-            queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
-            queryClient.invalidateQueries({queryKey: ['dashboardAssets']});
-            queryClient.invalidateQueries({queryKey: ['portfolios']});
+            queryClient.invalidateQueries();
             const stats = res.data?.stats || {};
-            toast({
-              title: 'Nota processada!',
-              description: `${stats.tradesImported ?? 0} operação(ões) importada(s) e ${stats.assetsUpdated ?? 0} ativo(s) atualizado(s).`,
-            });
+            toast.success('Nota processada!', `${stats.tradesImported ?? 0} operação(ões) importada(s) e ${stats.assetsUpdated ?? 0} ativo(s) atualizado(s).`);
             return;
           }
 
           if (status === 'failed') {
             queryClient.invalidateQueries({queryKey: ['broker-uploads']});
-            toast({
-              title: 'Falha ao processar nota',
-              description: res.data?.errorMessage || 'Não foi possível processar o arquivo enviado.',
-              variant: 'destructive',
-            });
+            toast.error('Falha ao processar nota', res.data?.errorMessage || 'Não foi possível processar o arquivo enviado.');
             return;
           }
           // received | queued | processing: continua o polling
@@ -462,10 +465,10 @@ export default function AddAsset() {
       }
 
       queryClient.invalidateQueries({queryKey: ['broker-uploads']});
-      toast({
-        title: 'Processamento demorado',
-        description: 'O processamento do arquivo está demorando mais que o esperado. Acompanhe o status na lista de importações.',
-      });
+      toast.info(
+        'Processamento demorado',
+        'O processamento do arquivo está demorando mais que o esperado. Acompanhe o status na lista de importações.',
+      );
     },
     [queryClient, toast],
   );
@@ -479,19 +482,24 @@ export default function AddAsset() {
     }
   };
 
+  const importB3OrNote = async (file: File) => {
+    try {
+      return await PortfolioService.importB3Auto(importPortfolioId, file);
+    } catch (error: any) {
+      if (error?.response?.data?.code !== 'NOT_B3_PDF') throw error;
+      await uploadBrokerageNotePdf(file);
+      return null;
+    }
+  };
+
   const importFiles = async (files: File[]) => {
     if (!files.length) return;
 
     const b3Files = files.filter((file) => !isPdf(file));
     if (b3Files.length && !importPortfolioId) {
-      toast({
-        title: 'Escolha o portfólio',
-        description:
-          Array.isArray(portfolios) && portfolios.length === 0
+      toast.error('Escolha o portfólio', Array.isArray(portfolios) && portfolios.length === 0
             ? 'Crie uma carteira antes de importar os arquivos da B3.'
-            : 'Selecione no formulário ao lado em qual portfólio os arquivos da B3 devem entrar.',
-        variant: 'destructive',
-      });
+            : 'Selecione no formulário ao lado em qual portfólio os arquivos da B3 devem entrar.');
       return;
     }
 
@@ -501,15 +509,17 @@ export default function AddAsset() {
       for (const file of sortB3Files(files)) {
         dispatchSessionImport({type: 'start', name: file.name});
         try {
-          if (isPdf(file)) {
-            await uploadBrokerageNotePdf(file);
+          const result =
+            importPortfolioId || !isPdf(file)
+              ? await importB3OrNote(file)
+              : await uploadBrokerageNotePdf(file).then(() => null);
+          if (!result) {
             dispatchSessionImport({
               type: 'done',
               name: file.name,
               summary: 'Nota enviada — processando',
             });
           } else {
-            const result = await PortfolioService.importB3Auto(importPortfolioId, file);
             dispatchSessionImport({
               type: 'done',
               name: file.name,
@@ -533,21 +543,11 @@ export default function AddAsset() {
     }
 
     if (imported > 0) {
-      queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
-      queryClient.invalidateQueries({queryKey: ['dashboardAssets']});
-      queryClient.invalidateQueries({queryKey: ['portfolios']});
-      queryClient.invalidateQueries({queryKey: ['portfolio-transactions']});
-      queryClient.invalidateQueries({queryKey: ['upcoming-dividends']});
-      toast({
-        title: 'Importação concluída',
-        description: `${imported} de ${files.length} arquivo(s) importado(s). Veja o resultado em "Importações recentes".`,
-      });
+      queryClient.invalidateQueries();
+      toast.success('Importação concluída', `${imported} de ${files.length} arquivo(s) importado(s). Veja o resultado em "Importações recentes".`);
     } else {
-      toast({
-        title: 'Nenhum arquivo importado',
-        description: 'Veja o motivo de cada arquivo em "Importações recentes".',
-        variant: 'destructive',
-      });
+      queryClient.invalidateQueries({queryKey: ['broker-uploads']});
+      toast.error('Nenhum arquivo importado', 'Veja o motivo de cada arquivo em "Importações recentes".');
     }
   };
 
@@ -786,6 +786,16 @@ export default function AddAsset() {
                     <div style={{fontSize: 10.5, color: 'var(--color-neutral-600)', marginTop: 2}}>{imp.meta}</div>
                   </div>
                   <span style={IMPORT_STATUS_STYLE[imp.status]}>{imp.statusLabel}</span>
+                  {imp.status !== 'pending' ? (
+                    <button
+                      type="button"
+                      aria-label={`Remover ${imp.label} das importações recentes`}
+                      onClick={() => dismissUpload.mutate(imp.id)}
+                      disabled={dismissUpload.isPending}
+                      style={{border: 0, background: 'transparent', color: 'var(--color-neutral-600)', cursor: 'pointer', padding: 2, display: 'inline-flex'}}>
+                      <i className="ph ph-x" style={{fontSize: 14}} />
+                    </button>
+                  ) : null}
                 </div>
               ))
             )}
