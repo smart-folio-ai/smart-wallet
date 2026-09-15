@@ -70,13 +70,10 @@ test.describe('Subscription Coming Soon', () => {
 
     await page.goto('/subscription');
 
-    const globalCard = page
-      .locator('[class*="border"]')
-      .filter({has: page.getByRole('heading', {name: 'GlobalInvestor'})})
-      .first();
+    const globalColumn = page.getByTestId('plan-column').filter({hasText: 'GlobalInvestor'});
 
-    await expect(globalCard).toBeVisible();
-    await expect(globalCard.getByText('Em breve').first()).toBeVisible();
-    await expect(globalCard.getByRole('button', {name: 'Em breve'})).toBeDisabled();
+    await expect(globalColumn).toBeVisible();
+    await expect(globalColumn.getByText('Em breve')).toBeVisible();
+    await expect(page.getByRole('button', {name: 'Em breve'})).toBeDisabled();
   });
 });

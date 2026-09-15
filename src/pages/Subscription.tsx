@@ -251,8 +251,8 @@ export default function Subscription() {
                           <button
                             type="button"
                             onClick={() => subscribe(column.plan)}
-                            disabled={checkout.isPending}
-                            className="hover:bg-[rgba(152,160,171,0.12)] disabled:opacity-60"
+                            disabled={checkout.isPending || column.plan.isComingSoon}
+                            className="hover:bg-[rgba(152,160,171,0.12)] disabled:cursor-not-allowed disabled:opacity-60"
                             style={{height: 30, padding: '0 12px', borderRadius: 8, border: '1px solid var(--color-accent-700)', background: 'transparent', color: 'var(--color-accent-200)', fontFamily: 'var(--font-body)', fontSize: 11.5, fontWeight: 500, cursor: 'pointer'}}>
                             {column.plan.isComingSoon ? 'Em breve' : checkout.isPending && checkout.variables?._id === column.plan._id ? 'Abrindo…' : `Assinar ${column.plan.name}`}
                           </button>
