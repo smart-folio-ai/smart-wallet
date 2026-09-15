@@ -152,6 +152,8 @@ export const subscriptionService = {
   getPlans: () => apiClient.get('/subscription'),
   getById: (id: string) => apiClient.get(`/subscription/${id}`),
   getCurrentPlan: () => apiClient.get('/subscription/current'),
+  // TRA-177: faturas Stripe do próprio usuário.
+  getInvoices: () => apiClient.get('/subscription/invoices'),
   createPlan: (data: ICreateSubscription) =>
     apiClient.post('/subscription/create', data),
   upgradePlan: (planId: string) =>

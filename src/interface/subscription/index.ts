@@ -94,6 +94,19 @@ export interface ICurrentUserSubscription {
   plan: ISubscription;
 }
 
+export interface SubscriptionInvoice {
+  id: string;
+  number: string | null;
+  status: 'draft' | 'open' | 'paid' | 'uncollectible' | 'void' | null;
+  description: string | null;
+  total: number;
+  currency: string;
+  createdAt: string;
+  dueDate: string | null;
+  paidAt: string | null;
+  pdfUrl: string | null;
+}
+
 export interface CurrentSubscriptionResponse {
   hasSubscription: boolean;
   subscription?: {
