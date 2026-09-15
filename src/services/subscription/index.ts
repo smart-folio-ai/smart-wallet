@@ -62,7 +62,8 @@ class SubscriptionService implements SubscriptionInterface {
 
   async getInvoices(): Promise<SubscriptionInvoice[]> {
     const response = await subscriptionService.getInvoices();
-    return response.data ?? [];
+    // Qualquer resposta que não seja lista (proxy, HTML de erro) vira lista vazia.
+    return Array.isArray(response.data) ? response.data : [];
   }
 
   async createPortalSession(
