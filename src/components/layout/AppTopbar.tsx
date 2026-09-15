@@ -130,17 +130,17 @@ export function AppTopbar() {
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/95 backdrop-blur-xl">
-      <div className="flex items-center gap-4 px-4 py-2.5 md:px-6">
+      <div className="flex min-w-0 items-center gap-2 px-4 py-2.5 sm:gap-4 md:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <SidebarTrigger className="md:hidden" />
           <Separator orientation="vertical" className="h-6 md:hidden" />
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-              <span>{meta.crumb}</span>
-              <ChevronDown className="h-3 w-3 -rotate-90" />
-              <span className="text-muted-foreground/70">{meta.title}</span>
+            <div className="hidden min-w-0 items-center gap-1.5 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground sm:flex">
+              <span className="shrink-0">{meta.crumb}</span>
+              <ChevronDown className="h-3 w-3 shrink-0 -rotate-90" />
+              <span className="truncate text-muted-foreground/70">{meta.title}</span>
             </div>
-            <p className="mt-0.5 truncate text-[18px] font-semibold tracking-tight text-foreground">
+            <p className="truncate text-[16px] font-semibold tracking-tight text-foreground sm:mt-0.5 sm:text-[18px]">
               {meta.title}
             </p>
           </div>
@@ -155,9 +155,9 @@ export function AppTopbar() {
           <CommandShortcut>{isMac ? '⌘K' : 'Ctrl+K'}</CommandShortcut>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           {isLoading ? (
-            <Skeleton className="h-8 w-20 rounded-md" />
+            <Skeleton className="hidden h-8 w-20 rounded-md sm:block" />
           ) : !isSubscribed ? (
             <Button
               type="button"
@@ -184,7 +184,7 @@ export function AppTopbar() {
             type="button"
             variant="outline"
             size="icon"
-            className="h-8 w-8 border-border/70 text-muted-foreground hover:text-foreground"
+            className="hidden h-8 w-8 border-border/70 text-muted-foreground hover:text-foreground sm:inline-flex"
             onClick={openTutorial}
             aria-label="Ver tutorial"
             title="Ver tutorial">
@@ -217,6 +217,10 @@ export function AppTopbar() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem className="sm:hidden" onClick={openTutorial}>
+                <i className="ph ph-question mr-2" style={{fontSize: 16}} aria-hidden />
+                Ver tutorial
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Configurações
@@ -231,18 +235,18 @@ export function AppTopbar() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-border/50 px-4 py-2 md:px-6">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 border-t border-border/50 px-4 py-2 sm:gap-3 md:px-6">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               aria-label="Escolher carteira"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-muted/40 px-2.5 h-[30px] text-xs transition-colors hover:border-brand/45">
-              <Wallet className="h-3.5 w-3.5 text-brand" />
-              <span className="text-foreground">
+              className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-lg border border-border/70 bg-muted/40 px-2.5 h-[30px] text-xs transition-colors hover:border-brand/45">
+              <Wallet className="h-3.5 w-3.5 shrink-0 text-brand" />
+              <span className="truncate text-foreground">
                 {selectedPortfolio?.name ?? 'Carteira consolidada'}
               </span>
-              <span className="text-muted-foreground">· {walletLabel}</span>
+              <span className="hidden shrink-0 text-muted-foreground min-[420px]:inline">· {walletLabel}</span>
               <ChevronDown className="ml-0.5 h-3 w-3 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
@@ -268,12 +272,13 @@ export function AppTopbar() {
         <button
           type="button"
           onClick={() => setWalletOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-brand/45 bg-transparent px-2.5 h-[30px] text-xs text-brand transition-colors hover:border-solid hover:bg-brand/10">
+          aria-label="Nova carteira"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-dashed border-brand/45 bg-transparent px-2.5 h-[30px] text-xs text-brand transition-colors hover:border-solid hover:bg-brand/10">
           <Plus className="h-3.5 w-3.5" />
-          <span>Nova carteira</span>
+          <span className="hidden min-[420px]:inline">Nova carteira</span>
         </button>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
           <div className="hidden items-center gap-1.5 text-[11px] text-muted-foreground md:flex">
             <Sparkles className="h-3.5 w-3.5 text-brand" />
             <span>Profundidade definida pela IA</span>
@@ -281,7 +286,7 @@ export function AppTopbar() {
           <div
             role="radiogroup"
             aria-label="Nível de detalhe"
-            className="inline-flex gap-0.5 rounded-lg border border-border/70 bg-background/80 p-0.5">
+            className="inline-flex max-w-full gap-0.5 overflow-x-auto rounded-lg border border-border/70 bg-background/80 p-0.5">
             {/*
               "Auto" devolve o nível ao valor que o servidor infere do
               comportamento da carteira (TRA-142). Sem esta opção o override é
