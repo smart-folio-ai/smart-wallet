@@ -11,6 +11,7 @@ import useAppToast from '@/hooks/use-app-toast';
 import {Calendar} from '@/components/ui/calendar';
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
 import {format} from 'date-fns';
+import {useSearchParams} from 'react-router-dom';
 import {ptBR} from 'date-fns/locale';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import PortfolioService from '@/services/portfolio';
@@ -145,12 +146,15 @@ const LABEL_STYLE: React.CSSProperties = {
 export default function AddAsset() {
   const toast = useAppToast();
   const [date, setDate] = useState<Date>();
-  const [symbolSearch, setSymbolSearch] = useState('');
+  // "Registrar operação" na tela do ativo abre o formulário com o símbolo.
+  const [searchParams] = useSearchParams();
+  const initialSymbol = String(searchParams.get('symbol') || '').trim().toUpperCase();
+  const [symbolSearch, setSymbolSearch] = useState(initialSymbol);
   const normalizedSymbolSearch = String(symbolSearch || '').trim().toUpperCase();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [formData, setFormData] = useState({
-    symbol: '',
+    symbol: initialSymbol,
     name: '',
     type: '',
     quantity: '',

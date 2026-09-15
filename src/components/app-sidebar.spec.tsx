@@ -1,8 +1,13 @@
 import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
 import {render, screen, within} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {SidebarProvider} from '@/components/ui/sidebar';
 import {AppSidebar} from './app-sidebar';
+
+vi.mock('@/services/portfolio', () => ({
+  default: {getAssets: vi.fn().mockResolvedValue([])},
+}));
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({role: null}),
@@ -29,12 +34,15 @@ beforeEach(() => {
 });
 
 function renderSidebar(path = '/dashboard') {
+  const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <SidebarProvider>
-        <AppSidebar />
-      </SidebarProvider>
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[path]}>
+        <SidebarProvider>
+          <AppSidebar />
+        </SidebarProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

@@ -1,4 +1,6 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import portfolioService from '@/services/portfolio';
 import {NavLink, useLocation} from 'react-router-dom';
 import {
   Sidebar,
@@ -72,6 +74,27 @@ export function AppSidebar() {
     }
   }, [pathname, lastAsset?.to]);
 
+  // Antes de abrir qualquer ativo, o item aponta para a maior posição — assim
+  // "Ativo · X" existe no menu desde o primeiro acesso, como no handoff.
+  const {data: assets} = useQuery({
+    queryKey: ['portfolioAssets'],
+    queryFn: async () => {
+      const data = await portfolioService.getAssets();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !lastAsset,
+    staleTime: 60_000,
+  });
+  const assetItem = useMemo<LastAsset | null>(() => {
+    if (lastAsset) return lastAsset;
+    const largest = (Array.isArray(assets) ? assets : [])
+      .filter((a: any) => a?.symbol)
+      .sort((a: any, b: any) => Number(b.total || 0) - Number(a.total || 0))[0];
+    if (!largest) return null;
+    const symbol = String(largest.symbol).toUpperCase();
+    return {symbol, to: `/portfolio/asset/symbol/${encodeURIComponent(symbol)}`};
+  }, [assets, lastAsset]);
+
   const adminItems: NavItem[] =
     role === 'admin'
       ? [
@@ -113,11 +136,11 @@ export function AppSidebar() {
                       : undefined
                   }
                 />
-                {item.to === '/dividends' && lastAsset ? (
+                {item.to === '/dividends' && assetItem ? (
                   <SidebarLink
                     item={{
-                      to: lastAsset.to,
-                      label: `Ativo · ${lastAsset.symbol}`,
+                      to: assetItem.to,
+                      label: `Ativo · ${assetItem.symbol}`,
                       icon: 'ph ph-chart-line-up',
                     }}
                     isActive={isAssetPath}

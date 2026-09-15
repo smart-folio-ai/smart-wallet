@@ -1,3 +1,10 @@
+import {hasFreshQuote} from '@/pages/dashboard-summary.utils';
+
+/** Classe no singular, como na coluna "Classe" do handoff. */
+export const ASSET_CLASS_LABEL: Record<string, string> = {
+  stock: 'Ação BR', fii: 'FII', fund: 'Renda fixa', etf: 'ETF', crypto: 'Cripto', other: 'Outros',
+};
+
 export interface AssetDisplay {
   badge: string;
   title: string;
@@ -42,4 +49,41 @@ export function describeAsset(asset: {symbol: string; name?: string}): AssetDisp
       : undefined;
 
   return {badge: symbol.replace(/[^A-Z0-9]/gi, '').slice(0, 3).toUpperCase(), title: symbol, subtitle};
+}
+
+export interface PositionPricing {
+  /** Fechamento do relatório da B3, quando o ativo veio dele. */
+  reportPrice?: number;
+  /** Cotação viva ou, sem ela, o fechamento da B3. */
+  marketPrice?: number;
+  avgPrice?: number;
+  pnlPct?: number;
+  pnlValue?: number;
+}
+
+/**
+ * Preço e resultado de uma posição. Em lançamento manual `price` é o preço
+ * de compra — só o fechamento do relatório da B3 serve de fallback para a
+ * cotação. Sem custo real (`avgPrice` sai das negociações importadas) o
+ * resultado fica indisponível em vez de virar um zero falso (TRA-92).
+ */
+export function resolvePositionPricing(asset: {
+  source?: string;
+  price?: number | null;
+  currentPrice?: number | null;
+  avgPrice?: number | null;
+  quantity?: number | null;
+}): PositionPricing {
+  const price = Number(asset.price);
+  const reportPrice = asset.source === 'b3' && price > 0 ? price : undefined;
+  const marketPrice = hasFreshQuote(asset) ? Number(asset.currentPrice) : reportPrice;
+  const avgPrice = Number(asset.avgPrice) > 0 ? Number(asset.avgPrice) : undefined;
+  if (!avgPrice || !marketPrice) return {reportPrice, marketPrice, avgPrice};
+  return {
+    reportPrice,
+    marketPrice,
+    avgPrice,
+    pnlPct: ((marketPrice - avgPrice) / avgPrice) * 100,
+    pnlValue: (marketPrice - avgPrice) * Number(asset.quantity ?? 0),
+  };
 }
