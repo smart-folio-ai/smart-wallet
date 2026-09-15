@@ -5,6 +5,7 @@ import {
   IUpdateSubscription,
   IUpdateSubscriptionFeature,
   SubscriptionInterface,
+  SubscriptionInvoice,
 } from '@/interface/subscription';
 import {api, subscriptionService} from '@/server/api/api';
 
@@ -57,6 +58,12 @@ class SubscriptionService implements SubscriptionInterface {
       billingInterval,
     );
     return response.data;
+  }
+
+  async getInvoices(): Promise<SubscriptionInvoice[]> {
+    const response = await subscriptionService.getInvoices();
+    // Qualquer resposta que não seja lista (proxy, HTML de erro) vira lista vazia.
+    return Array.isArray(response.data) ? response.data : [];
   }
 
   async createPortalSession(

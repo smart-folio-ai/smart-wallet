@@ -1,316 +1,119 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import Subscriptions from './Subscription';
+import Subscription from './Subscription';
 import SubscriptionService from '@/services/subscription';
 import Profile from '@/services/profile';
 
 vi.mock('@/services/subscription');
 vi.mock('@/services/profile');
+const toast = {success: vi.fn(), error: vi.fn(), info: vi.fn()};
+vi.mock('@/hooks/use-app-toast', () => ({default: () => toast}));
 
-Object.defineProperty(window, 'location', {
-  value: {href: ''},
-  writable: true,
+Object.defineProperty(window, 'location', {value: {href: ''}, writable: true});
+
+const plan = (overrides: Record<string, unknown>) => ({
+  _id: 'p',
+  name: 'Plano',
+  description: '',
+  price: 0,
+  currency: 'brl',
+  interval: 'month',
+  intervalCount: 1,
+  stripePriceId: '',
+  stripeProductId: '',
+  isActive: true,
+  features: [],
+  createdAt: '',
+  updatedAt: '',
+  ...overrides,
 });
 
-function renderWithQueryClient(ui: React.ReactElement) {
-  const queryClient = new QueryClient({
-    defaultOptions: {queries: {retry: false}},
-  });
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+const PLANS = [
+  plan({_id: 'pro', name: 'Pro', price: 14.9, annualPrice: 149, isFeatured: true, features: ['Módulo fiscal com DARF', 'Relatórios exportáveis']}),
+  plan({_id: 'free', name: 'Essencial', price: 0, features: ['Alocação e proventos']}),
+  plan({_id: 'wealth', name: 'Wealth Premium', price: 24.9, features: ['Módulo fiscal com DARF']}),
+  plan({_id: 'soon', name: 'Global Investor', price: 99, isActive: false, isComingSoon: true, features: []}),
+];
+
+const renderPage = () =>
+  render(
+    <QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>
+      <Subscription />
+    </QueryClientProvider>,
   );
-}
 
-describe('Subscription page — real annual pricing', () => {
+const column = (name: string) => screen.getAllByTestId('plan-column').find((el) => el.textContent?.includes(name))!;
+
+describe('Subscription', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.location.href = '';
-    (Profile.getProfile as any).mockResolvedValue({_id: 'user_1'});
-    (SubscriptionService.getCurrentPlan as any).mockResolvedValue({
-      plan: null,
-    });
+    vi.mocked(Profile.getProfile).mockResolvedValue({_id: 'user_1'} as never);
+    vi.mocked(SubscriptionService.getPlans).mockResolvedValue(PLANS as never);
+    vi.mocked(SubscriptionService.getCurrentPlan).mockResolvedValue({hasSubscription: false, plan: null} as never);
+    vi.mocked(SubscriptionService.getInvoices).mockResolvedValue([]);
   });
 
-  it('shows the real annual price when the backend provides one, not a computed 30% discount', async () => {
-    (SubscriptionService.getPlans as any).mockResolvedValue([
-      {
-        _id: 'plan_1',
-        name: 'Investidor Pro',
-        description: 'desc',
-        price: 49,
-        annualPrice: 399,
-        currency: 'BRL',
-        interval: 'month',
-        intervalCount: 1,
-        stripePriceId: 'price_1',
-        stripeProductId: 'prod_1',
-        isActive: true,
-        features: ['Feature A'],
-        createdAt: '',
-        updatedAt: '',
-      },
+  it('compares real plans sorted by price with a feature matrix', async () => {
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByTestId('plan-column')).toHaveLength(4));
+    expect(screen.getAllByTestId('plan-column').map((el) => el.textContent)).toEqual([
+      expect.stringContaining('Essencial'),
+      expect.stringContaining('Pro'),
+      expect.stringContaining('Wealth Premium'),
+      expect.stringContaining('Global Investor'),
     ]);
-
-    renderWithQueryClient(<Subscriptions />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Investidor Pro')).toBeInTheDocument();
-    });
-
-    // Switch to the annual pricing view via the SeletorPrice "Anual" button.
-    fireEvent.click(screen.getByRole('button', {name: /Anual/i}));
-
-    // The old buggy computation would have rendered 411,60 (49 * 12 * 0.7).
-    // The real backend-provided annualPrice (399) must be shown instead.
-    await waitFor(() => {
-      expect(screen.getByText(/399,00/)).toBeInTheDocument();
-    });
-    expect(screen.queryByText(/411,60/)).not.toBeInTheDocument();
+    expect(within(column('Pro')).getByText('Popular')).toBeInTheDocument();
+    expect(within(column('Global Investor')).getByText('Em breve')).toBeInTheDocument();
+    const row = screen.getByText('Módulo fiscal com DARF').closest('tr')!;
+    expect(within(row).getAllByText('✓')).toHaveLength(2);
   });
 
-  it('sends the selected billing interval when starting checkout', async () => {
-    (SubscriptionService.getPlans as any).mockResolvedValue([
-      {
-        _id: 'plan_1',
-        name: 'Investidor Pro',
-        description: 'desc',
-        price: 49,
-        annualPrice: 399,
-        currency: 'BRL',
-        interval: 'month',
-        intervalCount: 1,
-        stripePriceId: 'price_1',
-        stripeProductId: 'prod_1',
-        isActive: true,
-        features: ['Feature A'],
-        createdAt: '',
-        updatedAt: '',
-      },
+  it('shows the real annual price only when Stripe has one, with the real discount', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getAllByTestId('plan-column')).toHaveLength(4));
+    fireEvent.click(screen.getByRole('button', {name: 'Anual'}));
+
+    expect(within(column('Pro')).getByText(/149,00\/ano/)).toBeInTheDocument();
+    // Sem preço anual real: continua mensal, nunca desconto inventado.
+    expect(within(column('Wealth Premium')).getByText(/24,90\/mês/)).toBeInTheDocument();
+    expect(screen.getByText('Economize 17%')).toBeInTheDocument();
+  });
+
+  it('starts checkout for the token user with the chosen billing interval', async () => {
+    vi.mocked(SubscriptionService.createCheckoutSession).mockResolvedValue({url: 'https://checkout.stripe.com/x'});
+    renderPage();
+    await waitFor(() => expect(screen.getAllByTestId('plan-column')).toHaveLength(4));
+    fireEvent.click(screen.getByRole('button', {name: 'Anual'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Assinar Pro'}));
+
+    await waitFor(() =>
+      expect(SubscriptionService.createCheckoutSession).toHaveBeenCalledWith('pro', 'user_1', expect.any(String), expect.any(String), 'annual'),
+    );
+    await waitFor(() => expect(window.location.href).toBe('https://checkout.stripe.com/x'));
+  });
+
+  it('marks the current plan, opens the billing portal and lists invoices', async () => {
+    vi.mocked(SubscriptionService.getCurrentPlan).mockResolvedValue({
+      hasSubscription: true,
+      plan: PLANS[0],
+      subscription: {status: 'active', currentPeriodEnd: '2026-10-14T12:00:00Z', cancelAtPeriodEnd: false},
+    } as never);
+    vi.mocked(SubscriptionService.getInvoices).mockResolvedValue([
+      {id: 'in_1', number: 'A-1', status: 'paid', description: 'Pro · mensal', total: 14.9, currency: 'brl', createdAt: '2026-09-14T12:00:00Z', dueDate: null, paidAt: '2026-09-14T12:00:00Z', pdfUrl: 'https://stripe/pdf'},
     ]);
-    (SubscriptionService.createCheckoutSession as any).mockResolvedValue({
-      url: 'https://checkout.stripe.com/x',
-    });
+    vi.mocked(SubscriptionService.createPortalSession).mockResolvedValue({url: 'https://billing.stripe.com/p'});
+    renderPage();
 
-    renderWithQueryClient(<Subscriptions />);
+    expect(await screen.findByRole('heading', {name: 'Pro'})).toBeInTheDocument();
+    expect(screen.getByText(/Renovação em 14 de outubro de 2026/)).toBeInTheDocument();
+    const invoice = await screen.findByTestId('invoice');
+    expect(within(invoice).getByText('Pago')).toBeInTheDocument();
+    expect(within(invoice).getByRole('link', {name: 'Pro · mensal'})).toHaveAttribute('href', 'https://stripe/pdf');
 
-    await waitFor(() => {
-      expect(screen.getByText('Investidor Pro')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', {name: /Anual/i}));
-    fireEvent.click(screen.getByRole('button', {name: /Assinar Agora/i}));
-
-    await waitFor(() => {
-      expect(SubscriptionService.createCheckoutSession).toHaveBeenCalledWith(
-        'plan_1',
-        'user_1',
-        expect.any(String),
-        expect.any(String),
-        'annual',
-      );
-    });
-  });
-
-  it('keeps showing the monthly price with a "/mês" label (never "/ano") when the plan has no real annual price, even after switching to Anual', async () => {
-    (SubscriptionService.getPlans as any).mockResolvedValue([
-      {
-        _id: 'plan_1',
-        name: 'Investidor Pro',
-        description: 'desc',
-        price: 49,
-        // annualPrice intentionally omitted — plan has no real annual price configured.
-        currency: 'BRL',
-        interval: 'month',
-        intervalCount: 1,
-        stripePriceId: 'price_1',
-        stripeProductId: 'prod_1',
-        isActive: true,
-        features: ['Feature A'],
-        createdAt: '',
-        updatedAt: '',
-      },
-    ]);
-
-    renderWithQueryClient(<Subscriptions />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Investidor Pro')).toBeInTheDocument();
-    });
-
-    // Capture the Mensal (default) displayed price.
-    const monthlyPriceMatch = screen.getByText(/49,00/);
-    expect(monthlyPriceMatch).toBeInTheDocument();
-    expect(screen.getByText('/mês')).toBeInTheDocument();
-
-    // Switch to the annual pricing view via the SeletorPrice "Anual" button.
-    fireEvent.click(screen.getByRole('button', {name: /Anual/i}));
-
-    // Without a real annualPrice, the fallback must show the SAME price
-    // as Mensal — never a fabricated 30% discount (which would be 411,60) —
-    // AND must never claim it's an annual price via a "/ano" label, since
-    // the backend silently charges monthly in this case.
-    await waitFor(() => {
-      expect(screen.getByText(/49,00/)).toBeInTheDocument();
-    });
-    expect(screen.queryByText(/411,60/)).not.toBeInTheDocument();
-    expect(screen.getByText('/mês')).toBeInTheDocument();
-    expect(screen.queryByText('/ano')).not.toBeInTheDocument();
-  });
-
-  it('shows a discount badge computed from the real annual price, not a hardcoded percentage', async () => {
-    (SubscriptionService.getPlans as any).mockResolvedValue([
-      {
-        _id: 'plan_1',
-        name: 'Investidor Pro',
-        description: 'desc',
-        // Monthly * 12 = 588. Annual = 499 => 100 - round(499/588*100) = 15% off.
-        price: 49,
-        annualPrice: 499,
-        currency: 'BRL',
-        interval: 'month',
-        intervalCount: 1,
-        stripePriceId: 'price_1',
-        stripeProductId: 'prod_1',
-        isActive: true,
-        features: ['Feature A'],
-        createdAt: '',
-        updatedAt: '',
-      },
-    ]);
-
-    renderWithQueryClient(<Subscriptions />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Investidor Pro')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText('Economize 15%')).toBeInTheDocument();
-    expect(screen.queryByText('Economize 30%')).not.toBeInTheDocument();
-  });
-
-  it('hides the discount badge entirely when no plan has a real annual price', async () => {
-    (SubscriptionService.getPlans as any).mockResolvedValue([
-      {
-        _id: 'plan_1',
-        name: 'Investidor Pro',
-        description: 'desc',
-        price: 49,
-        currency: 'BRL',
-        interval: 'month',
-        intervalCount: 1,
-        stripePriceId: 'price_1',
-        stripeProductId: 'prod_1',
-        isActive: true,
-        features: ['Feature A'],
-        createdAt: '',
-        updatedAt: '',
-      },
-    ]);
-
-    renderWithQueryClient(<Subscriptions />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Investidor Pro')).toBeInTheDocument();
-    });
-
-    expect(screen.queryByText(/Economize/)).not.toBeInTheDocument();
-  });
-});
-
-describe('Subscription page — flags drive badge and coming-soon', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    window.location.href = '';
-    (Profile.getProfile as any).mockResolvedValue({_id: 'user_1'});
-    (SubscriptionService.getCurrentPlan as any).mockResolvedValue({
-      plan: null,
-    });
-  });
-
-  it('marca como "em breve" o plano com isComingSoon, não pelo nome', async () => {
-    (SubscriptionService.getPlans as any).mockResolvedValue([
-      {
-        _id: 'plan_1',
-        name: 'Qualquer Nome',
-        description: 'desc',
-        price: 49,
-        currency: 'BRL',
-        interval: 'month',
-        intervalCount: 1,
-        stripePriceId: 'price_1',
-        stripeProductId: 'prod_1',
-        isActive: true,
-        isComingSoon: true,
-        features: ['Feature A'],
-        createdAt: '',
-        updatedAt: '',
-      },
-    ]);
-
-    renderWithQueryClient(<Subscriptions />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Qualquer Nome')).toBeInTheDocument();
-    });
-
-    expect(
-      screen.getByRole('button', {name: /Em breve/i}),
-    ).toBeDisabled();
-  });
-
-  it('não marca "em breve" um plano chamado Global Investor sem a flag', async () => {
-    (SubscriptionService.getPlans as any).mockResolvedValue([
-      {
-        _id: 'plan_1',
-        name: 'Global Investor',
-        description: 'desc',
-        price: 49,
-        currency: 'BRL',
-        interval: 'month',
-        intervalCount: 1,
-        stripePriceId: 'price_1',
-        stripeProductId: 'prod_1',
-        isActive: true,
-        features: ['Feature A'],
-        createdAt: '',
-        updatedAt: '',
-      },
-    ]);
-
-    renderWithQueryClient(<Subscriptions />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Global Investor')).toBeInTheDocument();
-    });
-
-    expect(screen.queryByText(/Em breve/i)).not.toBeInTheDocument();
-  });
-
-  it('exibe o badge Popular no plano com isFeatured', async () => {
-    (SubscriptionService.getPlans as any).mockResolvedValue([
-      {
-        _id: 'plan_1',
-        name: 'Qualquer Nome',
-        description: 'desc',
-        price: 49,
-        currency: 'BRL',
-        interval: 'month',
-        intervalCount: 1,
-        stripePriceId: 'price_1',
-        stripeProductId: 'prod_1',
-        isActive: true,
-        isFeatured: true,
-        features: ['Feature A'],
-        createdAt: '',
-        updatedAt: '',
-      },
-    ]);
-
-    renderWithQueryClient(<Subscriptions />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Popular')).toBeInTheDocument();
-    });
+    fireEvent.click(screen.getByRole('button', {name: 'Gerenciar assinatura'}));
+    await waitFor(() => expect(window.location.href).toBe('https://billing.stripe.com/p'));
   });
 });
