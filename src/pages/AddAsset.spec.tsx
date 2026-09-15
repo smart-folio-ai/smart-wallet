@@ -26,9 +26,9 @@ vi.mock('@/services/stocks', () => ({
   default: {getAllNacionalStocks: vi.fn(), getNationalStock: vi.fn()},
 }));
 
-const toastMock = vi.fn();
-vi.mock('@/components/ui/use-toast', () => ({
-  useToast: () => ({toast: toastMock}),
+const toastMock = {success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn()};
+vi.mock('@/hooks/use-app-toast', () => ({
+  default: () => toastMock,
 }));
 
 const xlsxFile = (name: string) =>
@@ -102,9 +102,7 @@ describe('AddAsset — importação dos arquivos da B3', () => {
     });
 
     await waitFor(() =>
-      expect(toastMock).toHaveBeenCalledWith(
-        expect.objectContaining({title: 'Escolha o portfólio'}),
-      ),
+      expect(toastMock.error).toHaveBeenCalledWith('Escolha o portfólio', expect.any(String)),
     );
     expect(PortfolioService.importB3Auto).not.toHaveBeenCalled();
   });

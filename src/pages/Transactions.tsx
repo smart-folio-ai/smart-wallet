@@ -1,7 +1,8 @@
 import React, {useMemo, useRef, useState} from 'react';
-import {useMutation, useQuery} from '@tanstack/react-query';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {useToast} from '@/hooks/use-toast';
 import portfolioService from '@/services/portfolio';
+import {portfolioIdOf, useSelectedPortfolio} from '@/contexts/SelectedPortfolioContext';
 import {formatCurrency} from '@/utils/formatters';
 import {formatDate} from '@/utils';
 import {KpiCard, SectionHeader, DataTable, TD_STYLE, TD_RIGHT} from '@/components/shared';
@@ -40,48 +41,42 @@ type Transaction = {
 
 export default function Transactions() {
   const {toast} = useToast();
-  const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState<number>(currentYear);
-  const [symbol, setSymbol] = useState('');
-  const [selectedPortfolio, setSelectedPortfolio] = useState('all');
+  // Carteira do seletor do topo. Com uma carteira só, o import não precisa
+  // de escolha.
+  const {portfolios, selectedId, isAll} = useSelectedPortfolio();
+  const importPortfolioId = !isAll
+    ? selectedId
+    : portfolios.length === 1
+      ? portfolioIdOf(portfolios[0])
+      : '';
+  const queryClient = useQueryClient();
   const [txFilter, setTxFilter] = useState('all');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const {data: portfolios = []} = useQuery({
-    queryKey: ['portfolios-for-transactions'],
-    queryFn: async () => {
-      const data = await portfolioService.getPortfolios();
-      return Array.isArray(data) ? data : [];
-    },
-  });
 
   const {
     data: transactionsResponse,
     isLoading: loadingTransactions,
-    refetch,
   } = useQuery({
-    queryKey: ['portfolio-transactions', year, symbol],
+    queryKey: ['portfolio-transactions'],
     queryFn: async () => {
-      const params: Record<string, unknown> = {year};
-      if (symbol.trim()) params.symbol = symbol.trim().toUpperCase();
-      const response = await portfolioService.getTransactions(params);
+      const response = await portfolioService.getTransactions();
       return response?.transactions || [];
     },
   });
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      if (selectedPortfolio === 'all') {
-        throw new Error('Selecione uma carteira para importar o extrato.');
+      if (!importPortfolioId) {
+        throw new Error('Escolha a carteira no seletor do topo para importar o extrato.');
       }
-      return portfolioService.importB3Transactions(selectedPortfolio, file);
+      return portfolioService.importB3Auto(importPortfolioId, file);
     },
     onSuccess: (result: any) => {
       toast({
         title: 'Extrato importado',
         description: `${result?.tradesImported || 0} transações importadas (${result?.ignoredDuplicates || 0} duplicadas ignoradas).`,
       });
-      refetch();
+      queryClient.invalidateQueries();
     },
     onError: (error: any) => {
       toast({
@@ -95,10 +90,12 @@ export default function Transactions() {
 
   const transactions = useMemo(() => {
     const list = Array.isArray(transactionsResponse) ? transactionsResponse : [];
-    return list.slice().sort((a: Transaction, b: Transaction) => {
+    return list
+      .filter((t: any) => isAll || !t.portfolioId || String(t.portfolioId) === selectedId)
+      .sort((a: Transaction, b: Transaction) => {
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
-  }, [transactionsResponse]);
+  }, [transactionsResponse, isAll, selectedId]);
 
   const handleUploadFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -129,8 +126,12 @@ export default function Transactions() {
     return transactions.filter((t) => (t.type || t.side) === txFilter);
   }, [transactions, txFilter]);
 
-  const accounts = portfolios;
-  const period = String(year);
+  const years = transactions.map((t) => new Date(t.date).getFullYear()).filter(Number.isFinite);
+  const period = years.length
+    ? Math.min(...years) === Math.max(...years)
+      ? String(years[0])
+      : `${Math.min(...years)}–${Math.max(...years)}`
+    : 'sem lançamentos';
   const openImportModal = () => fileInputRef.current?.click();
 
   return (
@@ -138,7 +139,7 @@ export default function Transactions() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".xlsx,.xls,.csv"
+        accept=".xlsx,.xls,.csv,.pdf"
         style={{display: 'none'}}
         onChange={handleUploadFile}
         disabled={uploadMutation.isPending}
@@ -161,7 +162,7 @@ export default function Transactions() {
       <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
         <SectionHeader
           title="Todas as movimentações"
-          subtitle={`${transactions.length} lançamentos · ${accounts.length} contas · ${period}`}
+          subtitle={`${transactions.length} lançamentos · ${portfolios.length} contas · ${period}`}
           action={
             <div style={{display: 'flex', gap: 8.4, flexWrap: 'wrap', alignItems: 'center'}}>
               {TX_FILTERS.map((f) => (

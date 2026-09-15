@@ -12,6 +12,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import {AdminHostRedirect} from '@/components/AdminHostRedirect';
 import {ConsentProvider} from '@/contexts/ConsentContext';
 import {AdaptiveLevelProvider} from '@/contexts/AdaptiveLevelContext';
+import {SelectedPortfolioProvider} from '@/contexts/SelectedPortfolioContext';
 import {CookieConsentBanner} from '@/components/CookieConsentBanner';
 
 import Index from './pages/Index';
@@ -124,6 +125,7 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <AdaptiveLevelProvider>
+                <SelectedPortfolioProvider>
                 <SidebarProvider
                   style={{'--sidebar-width': '244px'} as CSSProperties}>
                   {/* Fundo e medidas do shell de design_handoff_trackerr/Trackerr App.dc.html */}
@@ -243,6 +245,7 @@ const App = () => (
                     </SidebarInset>
                   </div>
                 </SidebarProvider>
+                </SelectedPortfolioProvider>
                 </AdaptiveLevelProvider>
               </ProtectedRoute>
             }

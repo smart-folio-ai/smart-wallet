@@ -42,6 +42,8 @@ export function hasFreshQuote(
   return typeof raw === 'number' && Number.isFinite(raw) && raw > 0;
 }
 
+const NO_MARKET_QUOTE_TYPES = new Set(['fund', 'other']);
+
 export interface MarketDataStatus {
   isStale: boolean;
   staleCount: number;
@@ -59,6 +61,7 @@ export function deriveMarketDataStatus(
         currentPrice?: number | null;
         price?: number | null;
         quantity?: number | null;
+        type?: string | null;
       }>
     | null
     | undefined,
@@ -72,6 +75,9 @@ export function deriveMarketDataStatus(
     // saiu do papel e ele só está no histórico.
     const qty = Number(asset?.quantity ?? 0);
     if (!(qty > 0)) continue;
+    // Renda fixa (LCA, CDB…) não tem cotação em bolsa: o valor vem da curva
+    // informada pela B3, então a falta de cotação não é falha do feed.
+    if (asset?.type && NO_MARKET_QUOTE_TYPES.has(asset.type)) continue;
     if (!hasFreshQuote(asset)) {
       staleSymbols.push(String(asset?.symbol ?? '').trim() || '—');
     }

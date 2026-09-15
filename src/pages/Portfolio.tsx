@@ -1,31 +1,15 @@
-import {useMemo, useState} from 'react';
+import {useMemo, useReducer, useState} from 'react';
 import * as XLSX from 'xlsx';
-import {useLocation, useNavigate} from 'react-router-dom';
-import {useToast} from '@/hooks/use-toast';
-import {useQueryClient, useMutation} from '@tanstack/react-query';
+import {useNavigate} from 'react-router-dom';
+import {useQuery, useQueryClient, useMutation} from '@tanstack/react-query';
 import {Loader2, Trash2} from '@/components/ui/icons';
-import {Button} from '@/components/ui/button';
-import {B3ImportGuideModal} from '@/components/portfolio/B3ImportGuideModal';
-import {AssetDetailModal} from '@/components/portfolio/AssetDetailModal';
 import {ConfirmDialog} from '@/components/ConfirmDialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import useAppToast from '@/hooks/use-app-toast';
 
 // Types and Services
-import {Asset, SortConfig} from '@/types/portfolio';
+import {Asset} from '@/types/portfolio';
 import portfolioService from '@/services/portfolio';
-import {useQuery} from '@tanstack/react-query';
-import {useSubscription} from '@/hooks/useSubscription';
-import {
-  buildAiCacheSignature,
-  getAiPlanFromPlanName,
-  getOrCreateAiAnalysis,
-} from '@/services/ai/trakkerAi';
+import {useSelectedPortfolio} from '@/contexts/SelectedPortfolioContext';
 
 // Nocturne shared components
 import {
@@ -35,6 +19,7 @@ import {
   TD_RIGHT,
   MarketDataStaleBanner,
 } from '@/components/shared';
+import {badgeStyle, type BadgeSeverity} from '@/components/shared/badge-style';
 import {useAdaptiveLevel} from '@/contexts/AdaptiveLevelContext';
 import {
   deriveMarketDataStatus,
@@ -53,7 +38,8 @@ import {
   buildExposureRowsFromBuckets,
   deviationColor,
 } from '@/pages/composition-display.utils';
-import {formatPctPtBr, formatPpPtBr} from '@/utils/formatters';
+import {formatPctPtBr, formatPpPtBr, formatSignedPctPtBr} from '@/utils/formatters';
+import {describeAsset} from '@/pages/portfolio-asset-display.utils';
 
 // ── Exposure + Risk helpers ────────────────────────────────────────────────
 //
@@ -73,6 +59,10 @@ const BUCKET_COLOR_KEY: Record<AllocationBucket, string> = {
 };
 const TYPE_LABEL: Record<string, string> = {
   stock: 'Ações', fii: 'FIIs', fund: 'Renda Fixa', etf: 'ETFs', crypto: 'Cripto', other: 'Outros',
+};
+/** Classe no singular, como na coluna "Classe" do handoff. */
+const CLASS_LABEL: Record<string, string> = {
+  stock: 'Ação BR', fii: 'FII', fund: 'Renda fixa', etf: 'ETF', crypto: 'Cripto', other: 'Outros',
 };
 
 // Mesma paleta usada no donut/legenda de alocação do dashboard (ver ALLOCATION_COLORS em Index.tsx),
@@ -124,101 +114,117 @@ function computeExposure(
     .sort((a, b) => b.value - a.value);
 }
 
-const SIGNAL_STYLE: Record<string, {bg: string; color: string}> = {
-  COMPRA: {bg: 'var(--badge-pos-bg)', color: 'var(--pos)'},
-  NEUTRO: {bg: 'var(--badge-warn-bg)', color: 'var(--warn)'},
-  VENDA: {bg: 'var(--badge-neg-bg)', color: 'var(--neg)'},
-};
-
-function SignalBadge({signal}: {signal?: string}) {
-  if (!signal) return <span style={{color: 'var(--color-neutral-500)'}}>—</span>;
-  const s = SIGNAL_STYLE[signal] ?? {bg: 'var(--surf-3)', color: 'var(--color-neutral-400)'};
-  return (
-    <span style={{
-      display: 'inline-block',
-      padding: '2px 7px',
-      borderRadius: 10,
-      fontSize: 11,
-      fontWeight: 700,
-      letterSpacing: '0.04em',
-      background: s.bg,
-      color: s.color,
-    }}>
-      {signal}
-    </span>
-  );
+/**
+ * Leitura da posição no vocabulário do handoff ("Em linha", "Concentração"…).
+ * Não é recomendação de compra ou venda: só aponta o que merece atenção.
+ */
+function positionSignal(asset: {allocation: number; profitLossPercentage?: number; beta?: number}):
+  | {label: string; severity: BadgeSeverity}
+  | null {
+  if (asset.allocation > 15) return {label: 'Concentração', severity: 'warn'};
+  if (asset.beta != null && asset.beta > 1.5) return {label: 'Risco alto', severity: 'neg'};
+  const pnl = asset.profitLossPercentage;
+  if (pnl == null) return null;
+  if (pnl >= 30) return {label: 'Realizar parcial', severity: 'info'};
+  if (pnl <= -15) return {label: 'Revisar tese', severity: 'info'};
+  return {label: 'Em linha', severity: 'ok'};
 }
 
-// ── ColumnConfigurator ─────────────────────────────────────────────────────
-function ColumnConfigurator({visibleCols, onToggle}: {visibleCols: Record<string, boolean>; onToggle: (col: string) => void}) {
+// ── Colunas ────────────────────────────────────────────────────────────────
+type ColumnKey = 'class' | 'account' | 'qty' | 'price' | 'weight' | 'beta';
+const OPTIONAL_COLUMNS: {key: ColumnKey; label: string}[] = [
+  {key: 'class', label: 'Classe'},
+  {key: 'account', label: 'Conta'},
+  {key: 'qty', label: 'Qtd'},
+  {key: 'price', label: 'Preço'},
+  {key: 'weight', label: 'Peso'},
+  {key: 'beta', label: 'Beta'},
+];
+
+function hiddenColumnsReducer(state: Record<ColumnKey, boolean>, key: ColumnKey) {
+  return {...state, [key]: !state[key]};
+}
+
+const COLUMN_TIPS = {
+  weight: {
+    title: 'Peso na carteira',
+    body: 'Percentual do valor total da carteira que esse ativo representa hoje.',
+    formula: 'valor do ativo ÷ valor total',
+  },
+  beta: {
+    title: 'Beta vs IBOV',
+    body: 'Sensibilidade do ativo ao índice de referência. Acima de 1 amplifica movimentos do índice; abaixo de 1 amortece.',
+    formula: 'cov(ativo, ibov) ÷ var(ibov)',
+  },
+};
+
+function ColumnMenu({
+  hidden,
+  onToggle,
+  showBeta,
+}: {
+  hidden: Record<ColumnKey, boolean>;
+  onToggle: (key: ColumnKey) => void;
+  showBeta: boolean;
+}) {
   const [open, setOpen] = useState(false);
-  const cols = ['class', 'account', 'qty', 'avgPrice', 'price', 'value', 'pnl', 'dy', 'weight', 'beta', 'signal'];
-  const labels: Record<string, string> = {
-    class: 'Classe',
-    account: 'Conta',
-    qty: 'Qtd',
-    avgPrice: 'Preço Médio',
-    price: 'Cotação',
-    value: 'Valor',
-    pnl: 'P&L R$',
-    dy: 'DY',
-    weight: 'Peso',
-    beta: 'Beta',
-    signal: 'Sinal',
-  };
   return (
     <div style={{position: 'relative'}}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         style={{
-          height: 30,
-          padding: '0 11.2px',
-          border: '1px solid var(--hair)',
-          borderRadius: 8,
-          background: 'transparent',
-          color: 'var(--color-neutral-400)',
-          cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           gap: 5.6,
+          height: 30,
+          padding: '0 11.2px',
+          borderRadius: 8,
+          background: 'transparent',
+          fontFamily: 'var(--font-body)',
+          fontSize: 11.5,
+          cursor: 'pointer',
+          border: `1px solid ${open ? 'var(--color-accent-700)' : 'var(--hair)'}`,
+          color: open ? 'var(--color-accent-200)' : 'var(--color-neutral-300)',
         }}>
-        <i className="ph ph-sliders" style={{fontSize: 14}} /> Colunas
+        <i className="ph ph-columns" style={{fontSize: 13}} />
+        <span>Colunas</span>
+        <i className={open ? 'ph ph-caret-up' : 'ph ph-caret-down'} style={{fontSize: 11}} />
       </button>
       {open && (
         <div
           style={{
             position: 'absolute',
-            right: 0,
             top: 36,
-            zIndex: 50,
-            width: 180,
+            right: 0,
+            zIndex: 70,
+            width: 216,
             border: '1px solid var(--hair)',
             borderRadius: 8,
             background: 'var(--surf-4)',
             boxShadow: 'var(--shadow-lg)',
-            padding: '8px 0',
+            padding: 8.4,
           }}>
-          {cols.map((c) => (
-            <label
-              key={c}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8.4,
-                padding: '6px 14px',
-                fontSize: 12.5,
-                cursor: 'pointer',
-              }}>
-              <input
-                type="checkbox"
-                checked={visibleCols[c] ?? true}
-                onChange={() => onToggle(c)}
-                style={{accentColor: 'var(--ac)'}}
-              />
-              {labels[c]}
-            </label>
-          ))}
+          <div style={{fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--color-neutral-600)', padding: '4px 8px 8px'}}>
+            Mostrar colunas
+          </div>
+          {OPTIONAL_COLUMNS.filter((c) => showBeta || c.key !== 'beta').map((c) => {
+            const on = !hidden[c.key];
+            return (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => onToggle(c.key)}
+                style={{display: 'flex', alignItems: 'center', gap: 8.4, width: '100%', padding: '7px 8px', border: 'none', borderRadius: 6, background: 'transparent', color: 'var(--color-neutral-200)', fontFamily: 'var(--font-body)', fontSize: 12.5, cursor: 'pointer'}}>
+                <i
+                  className={on ? 'ph-fill ph-check-square' : 'ph ph-square'}
+                  style={{fontSize: 14, color: on ? 'var(--color-accent-300)' : 'var(--color-neutral-600)'}}
+                />
+                <span style={{flex: 1, textAlign: 'left'}}>{c.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -228,76 +234,46 @@ function ColumnConfigurator({visibleCols, onToggle}: {visibleCols: Record<string
 // ── Helpers ────────────────────────────────────────────────────────────────
 const formatCurrency = (v: number) =>
   v.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+const formatQuantity = (v: number) =>
+  v.toLocaleString('pt-BR', {maximumFractionDigits: 8});
 
-// Value getters for XLSX export — mirrors the columns rendered in the table body
-const COLUMN_VALUE_GETTERS: Record<string, (asset: Asset) => string | number> = {
-  symbol: (a) => a.symbol,
-  class: (a) => a.type,
-  account: (a) => a.account ?? '—',
-  qty: (a) => a.amount,
-  avgPrice: (a) => a.avgPrice ?? a.price,
-  // Sem cotação viva do feed, exportar 0 ou o próprio avgPrice esconde o
-  // problema — melhor deixar em branco para o usuário perceber (TRA-92).
-  price: (a) => (hasFreshQuote(a) ? (a.currentPrice as number) : ''),
-  value: (a) => a.value,
-  pnl: (a) => (a.profitLoss == null ? '' : a.profitLoss),
-  dy: (a) => a.dividendYield ?? '',
-  weight: (a) => a.allocation ?? 0,
-  beta: (a) => a.beta ?? 0,
-  signal: (a) => a.signal ?? '—',
+const CHIP_STYLE: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 5.6,
+  height: 26,
+  padding: '0 8.4px',
+  border: '1px solid var(--hair)',
+  borderRadius: 6,
+  fontSize: 11.5,
+  color: 'var(--color-neutral-400)',
+  background: 'transparent',
 };
 
 // ── Portfolio Page ─────────────────────────────────────────────────────────
 const Portfolio = () => {
-  const {toast} = useToast();
+  const toast = useAppToast();
   const navigate = useNavigate();
-  const location = useLocation();
   const queryClient = useQueryClient();
-  const {planName} = useSubscription();
   const {level} = useAdaptiveLevel();
   // Meta real do usuário e desvio por balde (TRA-141). Substitui o
   // `DEFAULT_TARGETS` que o card de exposição exibia como se fosse a política.
   const {data: composition} = usePortfolioComposition();
   const {data: riskContribution} = usePortfolioRiskContribution();
+  // A carteira é escolhida no seletor do topo e vale para todas as telas.
+  const {portfolios, selectedId, selectedPortfolio, isAll, setSelectedId} =
+    useSelectedPortfolio();
 
-  // ── Existing state (untouched) ────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState('all');
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sectorFilter, setSectorFilter] = useState('all');
-  const [imbalanceFilter, setImbalanceFilter] = useState('all');
-  const [isUploadingB3, setIsUploadingB3] = useState(false);
-  const [b3GuideOpen, setB3GuideOpen] = useState(false);
-  const [sortConfig, setSortConfig] = useState<SortConfig>({key: '', direction: 'asc'});
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('all');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-  // ── New Nocturne UI state ─────────────────────────────────────────────
   const [exposureGroupBy, setExposureGroupBy] = useState<ExposureGroupBy>('class');
   const [includeFixedIncome, setIncludeFixedIncome] = useState(true);
-  const [visibleCols, setVisibleCols] = useState<Record<string, boolean>>({
-    class: true,
-    account: true,
-    qty: true,
-    avgPrice: true,
-    price: true,
-    value: true,
-    pnl: true,
-    dy: true,
-    weight: true,
+  const [hiddenCols, toggleCol] = useReducer(hiddenColumnsReducer, {
+    class: false,
+    account: false,
+    qty: false,
+    price: false,
+    weight: false,
     beta: false,
-    signal: true,
-  });
-  const toggleCol = (col: string) =>
-    setVisibleCols((prev) => ({...prev, [col]: !(prev[col] ?? true)}));
-
-  // ── Queries (untouched) ───────────────────────────────────────────────
-  const {data: portfolios = []} = useQuery({
-    queryKey: ['portfolios'],
-    queryFn: async () => {
-      const data = await portfolioService.getPortfolios();
-      return Array.isArray(data) ? data : [];
-    },
   });
 
   const {
@@ -312,223 +288,81 @@ const Portfolio = () => {
     },
   });
 
-  const {
-    data: portfolioHistory = [],
-    isLoading: historyLoading,
-    isFetching: historyFetching,
-  } = useQuery({
-    queryKey: ['portfolioHistory', selectedPortfolioId],
-    queryFn: async () => {
-      if (selectedPortfolioId === 'all') return [];
-      return portfolioService.getPortfolioHistory(selectedPortfolioId);
-    },
-    enabled: selectedPortfolioId !== 'all',
-  });
-
-  const displayApiAssets =
-    selectedPortfolioId === 'all'
-      ? apiAssets
-      : apiAssets.filter((a: any) => a.portfolioId === selectedPortfolioId);
-
-  const aiPlan = getAiPlanFromPlanName(planName);
-  const aiSignature = buildAiCacheSignature(displayApiAssets);
-
-  const {data: portfolioAiAnalysis} = useQuery({
-    queryKey: ['portfolio-ai-analysis', aiPlan, aiSignature],
-    enabled: displayApiAssets.length > 0,
-    staleTime: 30 * 60 * 1000,
-    retry: false,
-    queryFn: async () =>
-      getOrCreateAiAnalysis({rawAssets: displayApiAssets, plan: aiPlan}),
-  });
+  const displayApiAssets = useMemo(
+    () =>
+      isAll ? apiAssets : apiAssets.filter((a: any) => a.portfolioId === selectedId),
+    [apiAssets, isAll, selectedId],
+  );
 
   const totalApiValue = displayApiAssets.reduce(
     (sum: number, asset: any) => sum + (asset.total || 0),
     0,
   );
 
-  // Sem cotação viva, P&L e sinal viram chute (voltavam "R$ 0,00" ou "NEUTRO"
-  // como se fosse informação real — TRA-92). Preferimos deixar como
-  // desconhecido e sinalizar via banner.
+  // Preço: cotação viva quando o feed tem; senão o fechamento que veio do
+  // relatório da B3 (`price`). Resultado só com custo real — `avgPrice` sai
+  // das negociações importadas; sem ele o P&L fica indisponível em vez de
+  // virar um zero falso (TRA-92).
   const assets: Asset[] = displayApiAssets.map((a: any) => {
-    const fresh = hasFreshQuote(a);
-    const avg = a.avgPrice ?? a.price;
+    const marketPrice = hasFreshQuote(a) ? a.currentPrice : a.price;
+    const avg = Number(a.avgPrice) > 0 ? Number(a.avgPrice) : undefined;
     const pnlPct =
-      fresh && avg > 0
-        ? ((a.currentPrice - avg) / avg) * 100
-        : null;
+      avg && marketPrice > 0 ? ((marketPrice - avg) / avg) * 100 : undefined;
     const pnlValue =
-      fresh ? (a.currentPrice - avg) * (a.quantity ?? 0) : null;
-    const dy = a.indicators?.dividendYield ?? 0;
+      avg && marketPrice > 0 ? (marketPrice - avg) * (a.quantity ?? 0) : undefined;
 
     return {
       _id: a.id || a._id,
       symbol: a.symbol,
       name: a.name || a.symbol,
       price: a.price,
-      currentPrice: a.currentPrice ?? undefined,
+      currentPrice: hasFreshQuote(a) ? a.currentPrice : undefined,
       change24h: a.change24h ?? 0,
       amount: a.quantity,
       value: a.total,
-      allocation:
-        totalApiValue > 0
-          ? Number(((a.total / totalApiValue) * 100).toFixed(2))
-          : 0,
+      allocation: totalApiValue > 0 ? (a.total / totalApiValue) * 100 : 0,
       type: a.type,
       sector: a.sector ?? undefined,
       avgPrice: avg,
       purchasePrice: avg,
-      profitLoss: pnlValue as number | undefined,
-      profitLossPercentage: pnlPct as number | undefined,
-      dividendYield: fresh ? dy : undefined,
-      lastDividend: 0,
-      dividendHistory: a.dividendHistory ?? undefined,
+      profitLoss: pnlValue,
+      profitLossPercentage: pnlPct,
       beta: a.indicators?.beta ?? undefined,
-      // Sem cotação viva não dá para decidir COMPRA/VENDA — o "NEUTRO"
-      // padrão iludia o usuário.
-      signal: (() => {
-        if (pnlPct === null) return undefined;
-        if (pnlPct > 5 || dy > 5) return 'COMPRA';
-        if (pnlPct < -5) return 'VENDA';
-        return 'NEUTRO';
-      })(),
       account: a.portfolio?.name ?? undefined,
     };
   });
 
-  const availableSectors = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          assets
-            .map((asset) => String(asset.sector || '').trim())
-            .filter((value) => value.length > 0),
-        ),
-      ).sort((a, b) => a.localeCompare(b)),
-    [assets],
-  );
-
   const FIXED_INCOME_TYPES = new Set(['fund', 'other']);
-
   const filteredAssets = assets
-    .filter((asset) => {
-      if (!includeFixedIncome && FIXED_INCOME_TYPES.has(asset.type)) return false;
-      if (
-        searchQuery &&
-        !asset.symbol.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !asset.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-        return false;
-      if (sectorFilter !== 'all' && String(asset.sector || '') !== sectorFilter)
-        return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (!sortConfig.key) return 0;
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
-      if (aValue === undefined || bValue === undefined) return 0;
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortConfig.direction === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-      return 0;
-    });
+    .filter((asset) => includeFixedIncome || !FIXED_INCOME_TYPES.has(asset.type))
+    .sort((a, b) => b.value - a.value);
 
   const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+  const accountCount = new Set(assets.map((a) => a.account).filter(Boolean)).size;
 
   const marketStatus = useMemo(
     () => deriveMarketDataStatus(displayApiAssets),
     [displayApiAssets],
   );
 
-  const requestSort = (key: keyof Asset) => {
-    const direction =
-      sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
-    setSortConfig({key, direction});
-  };
-
   const openAssetDetails = (asset: Asset) => {
-    const id = asset._id || (asset as any).id;
-    if (id && id !== 'all') {
-      navigate(`/portfolio/asset/${id}`);
-    } else if (asset.symbol) {
-      navigate(`/portfolio/asset/symbol/${asset.symbol}`);
-    } else {
-      setSelectedAsset(asset);
-    }
-  };
-
-  const totalDividends = assets
-    .filter((asset) => asset.dividendHistory)
-    .reduce((sum, asset) => {
-      const assetDividends =
-        asset.dividendHistory?.reduce((total, div) => total + div.value, 0) || 0;
-      return sum + assetDividends * asset.amount;
-    }, 0);
-
-  const dividendYield = totalValue > 0 ? (totalDividends / totalValue) * 100 : 0;
-
-  const imbalanceInsights = useMemo(() => {
-    const overAllocated = assets.filter((asset) => asset.allocation > 20);
-    const highRisk = assets.filter((asset) => Math.abs(asset.change24h || 0) > 5);
-    const concentrated = assets.filter((asset) => asset.allocation > 25);
-    const temDadoDeOscilacao = displayApiAssets.some(
-      (asset: any) =>
-        asset?.change24h !== null &&
-        asset?.change24h !== undefined &&
-        Number(asset.change24h) !== 0,
-    );
-    return {overAllocated, highRisk, concentrated, temDadoDeOscilacao};
-  }, [assets, displayApiAssets]);
-
-  const handleB3Import = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (selectedPortfolioId === 'all') {
-      toast({
-        title: 'Atenção',
-        description: 'Selecione uma carteira específica para importar os ativos.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      setIsUploadingB3(true);
-      await portfolioService.importB3Report(selectedPortfolioId, file);
-      toast({title: 'Importação concluída', description: 'Os ativos da B3 foram importados com sucesso.'});
-      queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
-      queryClient.invalidateQueries({queryKey: ['portfolioHistory', selectedPortfolioId]});
-      queryClient.invalidateQueries({queryKey: ['portfolios']});
-    } catch {
-      toast({title: 'Erro na importação', description: 'Ocorreu um problema ao processar o arquivo B3.', variant: 'destructive'});
-    } finally {
-      setIsUploadingB3(false);
-      e.target.value = '';
-    }
+    if (asset._id) navigate(`/portfolio/asset/${asset._id}`);
+    else navigate(`/portfolio/asset/symbol/${asset.symbol}`);
   };
 
   const deletePortfolioMutation = useMutation({
     mutationFn: async (portfolioId: string) => portfolioService.deletePortfolio(portfolioId),
     onSuccess: async () => {
-      toast({title: 'Carteira removida', description: 'A carteira foi removida com sucesso.'});
-      await queryClient.invalidateQueries({queryKey: ['portfolios']});
-      await queryClient.invalidateQueries({queryKey: ['portfolioAssets']});
-      setSelectedPortfolioId('all');
+      toast.success('Carteira removida', 'A carteira foi removida com sucesso.');
+      setSelectedId('all');
       setDeleteDialogOpen(false);
+      await queryClient.invalidateQueries();
     },
     onError: () => {
-      toast({title: 'Erro ao remover carteira', description: 'Não foi possível remover a carteira selecionada.', variant: 'destructive'});
+      toast.error('Erro ao remover carteira', 'Não foi possível remover a carteira selecionada.');
       setDeleteDialogOpen(false);
     },
   });
-
-  const selectedPortfolioName =
-    portfolios.find((p: any) => (p.id || p._id) === selectedPortfolioId)?.name ?? 'esta carteira';
 
   // ── Nocturne derived values ───────────────────────────────────────────
   // Com meta configurada, o card compara contra a política REAL, nos 4 baldes
@@ -565,142 +399,189 @@ const Portfolio = () => {
   const riskSectionSubtitle = isAdvanced
     ? 'Fatia do VaR 95% · janela 252 dias'
     : 'Quanto cada ativo pesa no sobe-e-desce da carteira';
-
   const riskInsight = describeRiskFooter(riskRows, isAdvanced);
 
-  // Active columns for DataTable header
-  const allColDefs: {
+  const show = {
+    class: !hiddenCols.class,
+    account: !hiddenCols.account,
+    qty: !hiddenCols.qty,
+    price: !hiddenCols.price,
+    weight: !hiddenCols.weight,
+    beta: isAdvanced && !hiddenCols.beta,
+  };
+
+  // Cabeçalho e linhas saem da mesma lista: a ordem das colunas não pode
+  // divergir entre `<th>` e `<td>`.
+  const columns: {
     key: string;
     label: string;
-    always?: boolean;
-    align?: 'left' | 'right' | 'center';
+    align?: 'left' | 'right';
+    visible: boolean;
     tooltip?: {title: string; body: string; formula?: string};
+    cell: (asset: Asset) => React.ReactNode;
+    exportValue: (asset: Asset) => string | number;
   }[] = [
-    {key: 'symbol', label: 'Ativo', always: true},
+    {
+      key: 'symbol',
+      label: 'Ativo',
+      visible: true,
+      cell: (asset) => {
+        const display = describeAsset(asset);
+        return (
+          <div style={{display: 'flex', alignItems: 'center', gap: 8.4}}>
+            <div style={{width: 24, height: 24, borderRadius: 6, border: '1px solid var(--hair)', display: 'grid', placeItems: 'center', fontSize: 9, fontWeight: 600, color: 'var(--color-neutral-400)', flexShrink: 0}}>
+              {display.badge}
+            </div>
+            <div style={{minWidth: 0}}>
+              <div style={{fontWeight: 600}}>{display.title}</div>
+              {display.subtitle ? (
+                <div style={{fontSize: 10.5, color: 'var(--color-neutral-600)'}}>{display.subtitle}</div>
+              ) : null}
+            </div>
+          </div>
+        );
+      },
+      exportValue: (asset) => describeAsset(asset).title,
+    },
     {
       key: 'class',
       label: 'Classe',
-      tooltip: {
-        title: 'Classe do ativo',
-        body: 'Ações, FIIs, ETFs, renda fixa, cripto — usado para agrupar a exposição da carteira e comparar com a política.',
-      },
+      visible: show.class,
+      cell: (asset) => (
+        <span style={{color: 'var(--color-neutral-500)', fontSize: 11.5}}>{CLASS_LABEL[asset.type] ?? asset.type}</span>
+      ),
+      exportValue: (asset) => CLASS_LABEL[asset.type] ?? asset.type,
     },
     {
       key: 'account',
       label: 'Conta',
-      tooltip: {
-        title: 'Conta / corretora',
-        body: 'Corretora ou banco onde a posição está custodiada. Ajuda a identificar concentração em um único intermediário.',
-      },
+      visible: show.account,
+      cell: (asset) => (
+        <span style={{color: 'var(--color-neutral-500)', fontSize: 11.5}}>{asset.account ?? '—'}</span>
+      ),
+      exportValue: (asset) => asset.account ?? '',
     },
     {
       key: 'qty',
       label: 'Qtd',
       align: 'right',
-      tooltip: {
-        title: 'Quantidade',
-        body: 'Total de unidades do ativo somando todas as suas contas.',
-      },
-    },
-    {
-      key: 'avgPrice',
-      label: 'Preço Médio',
-      align: 'right',
-      tooltip: {
-        title: 'Preço médio',
-        body: 'Custo médio das compras já ajustado por desdobramentos e proventos.',
-        formula: '∑ (preço · qtd) ÷ qtd total',
-      },
+      visible: show.qty,
+      cell: (asset) => (
+        <span style={{color: 'var(--color-neutral-300)'}}>{asset.amount ? formatQuantity(asset.amount) : '—'}</span>
+      ),
+      exportValue: (asset) => asset.amount ?? '',
     },
     {
       key: 'price',
-      label: 'Cotação',
+      label: 'Preço',
       align: 'right',
-      tooltip: {
-        title: 'Cotação',
-        body: 'Último preço fechado na fonte de mercado. Pode ter atraso de até 15 min conforme o ativo.',
+      visible: show.price,
+      cell: (asset) => {
+        const price = asset.currentPrice ?? asset.price;
+        return (
+          <span
+            title={asset.currentPrice == null && price ? 'Fechamento informado no relatório da B3' : undefined}
+            style={{color: asset.currentPrice == null ? 'var(--color-neutral-500)' : 'var(--color-neutral-300)'}}>
+            {price ? formatCurrency(price) : '—'}
+          </span>
+        );
       },
+      exportValue: (asset) => asset.currentPrice ?? asset.price ?? '',
     },
     {
       key: 'value',
-      label: 'Valor',
+      label: 'Posição',
       align: 'right',
-      tooltip: {
-        title: 'Valor de mercado',
-        body: 'Posição marcada a mercado no preço atual, na moeda base da carteira.',
-        formula: 'qtd · cotação',
-      },
+      visible: true,
+      cell: (asset) => <span style={{fontWeight: 600}}>{formatCurrency(asset.value)}</span>,
+      exportValue: (asset) => asset.value,
     },
     {
       key: 'pnl',
-      label: 'P&L R$',
+      label: 'Resultado',
       align: 'right',
-      tooltip: {
-        title: 'Lucro/prejuízo não realizado',
-        body: 'Ganho ou perda em relação ao preço médio, sem considerar imposto ou custos.',
-        formula: '(cotação − preço médio) · qtd',
-      },
-    },
-    {
-      key: 'dy',
-      label: 'DY',
-      align: 'right',
-      tooltip: {
-        title: 'Dividend Yield',
-        body: 'Proventos pagos nos últimos 12 meses divididos pelo preço médio da sua posição.',
-        formula: 'proventos 12m ÷ preço médio',
-      },
+      visible: true,
+      cell: (asset) =>
+        asset.profitLossPercentage == null ? (
+          <span
+            title="Sem preço médio: importe o Extrato de Negociação da B3 para calcular o resultado."
+            style={{color: 'var(--color-neutral-500)'}}>
+            —
+          </span>
+        ) : (
+          <span style={{fontWeight: 600, color: asset.profitLossPercentage >= 0 ? 'var(--pos)' : 'var(--neg)'}}>
+            {formatSignedPctPtBr(asset.profitLossPercentage)}
+          </span>
+        ),
+      exportValue: (asset) => asset.profitLoss ?? '',
     },
     {
       key: 'weight',
       label: 'Peso',
       align: 'right',
-      tooltip: {
-        title: 'Peso na carteira',
-        body: 'Percentual do valor total da carteira que esse ativo representa hoje.',
-        formula: 'valor do ativo ÷ valor total',
-      },
+      visible: show.weight,
+      tooltip: COLUMN_TIPS.weight,
+      cell: (asset) => (
+        <span style={{color: 'var(--color-neutral-300)'}}>{formatPctPtBr(asset.allocation, 1)}</span>
+      ),
+      exportValue: (asset) => Number(asset.allocation.toFixed(2)),
     },
     {
       key: 'beta',
       label: 'Beta',
       align: 'right',
-      tooltip: {
-        title: 'Beta vs IBOV',
-        body: 'Sensibilidade do ativo ao índice de referência. Acima de 1 amplifica movimentos do índice; abaixo de 1 amortece.',
-        formula: 'cov(ativo, ibov) ÷ var(ibov)',
-      },
+      visible: show.beta,
+      tooltip: COLUMN_TIPS.beta,
+      cell: (asset) => (
+        <span style={{color: 'var(--color-neutral-400)'}}>
+          {asset.beta != null ? asset.beta.toFixed(2).replace('.', ',') : '—'}
+        </span>
+      ),
+      exportValue: (asset) => asset.beta ?? '',
     },
     {
       key: 'signal',
       label: 'Sinal',
       align: 'right',
-      tooltip: {
-        title: 'Sinal do Trackerr',
-        body: 'Leitura combinada de valuation, dividendos e desempenho. Não é recomendação — use como um dos insumos.',
+      visible: true,
+      cell: (asset) => {
+        const signal = positionSignal(asset);
+        return (
+          <span style={{display: 'inline-flex', alignItems: 'center', gap: 8.4}}>
+            {signal ? (
+              <span style={badgeStyle(signal.severity)}>{signal.label}</span>
+            ) : (
+              <span style={{color: 'var(--color-neutral-500)'}}>—</span>
+            )}
+            <i className="ph ph-caret-right" style={{fontSize: 12, color: 'var(--color-neutral-600)'}} />
+          </span>
+        );
       },
+      exportValue: (asset) => positionSignal(asset)?.label ?? '',
     },
   ];
-  const activeColumns = allColDefs
-    .filter((c) => c.always || (visibleCols[c.key] ?? true))
-    .map(({label, align, tooltip}) => ({label, align, tooltip}));
+  const activeColumns = columns.filter((c) => c.visible);
 
   const handleExportXlsx = () => {
-    const exportColumns = allColDefs.filter((c) => c.always || (visibleCols[c.key] ?? true));
-    const rows = filteredAssets.map((asset) => {
-      const row: Record<string, string | number> = {};
-      exportColumns.forEach((c) => {
-        const getValue = COLUMN_VALUE_GETTERS[c.key];
-        row[c.label] = getValue ? getValue(asset) : '';
-      });
-      return row;
-    });
+    const rows = filteredAssets.map((asset) =>
+      Object.fromEntries(activeColumns.map((c) => [c.label, c.exportValue(asset)])),
+    );
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Posições');
     const today = new Date().toISOString().slice(0, 10);
     XLSX.writeFile(workbook, `posicoes-trackerr-${today}.xlsx`);
+    toast.success(
+      'Planilha exportada',
+      `${filteredAssets.length} posições · arquivo enviado para downloads.`,
+    );
   };
+
+  const syncedAt = assetsUpdatedAt
+    ? new Date(assetsUpdatedAt).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})
+    : null;
+  const positionsLabel = `${filteredAssets.length} ${filteredAssets.length === 1 ? 'posição' : 'posições'}`;
+  const accountsLabel = `${accountCount} ${accountCount === 1 ? 'conta' : 'contas'}`;
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
@@ -715,9 +596,9 @@ const Portfolio = () => {
         />
       )}
 
-      {/* Toolbar: agregação + filtros + meta line + ações da carteira */}
+      {/* Toolbar: agregação + filtros + meta line */}
       <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 11.2}}>
-        <div style={{display: 'flex', padding: 2.8, gap: 2.8, border: '1px solid var(--hair)', borderRadius: 8}}>
+        <div style={{display: 'flex', padding: 2.8, gap: 2.8, border: '1px solid var(--hair)', borderRadius: 8, background: 'rgba(var(--rgb-bg),0.8)'}}>
           {(
             [
               {id: 'class', label: 'Classe'},
@@ -741,28 +622,11 @@ const Portfolio = () => {
         </div>
 
         <div style={{display: 'flex', gap: 5.6, flexWrap: 'wrap'}}>
-          <Select value={selectedPortfolioId} onValueChange={setSelectedPortfolioId}>
-            <SelectTrigger
-              style={{
-                height: 26,
-                padding: '0 8.4px',
-                borderRadius: 6,
-                border: '1px solid var(--hair)',
-                background: 'transparent',
-                fontSize: 11.5,
-                color: 'var(--color-neutral-400)',
-              }}>
-              <i className="ph ph-buildings" style={{fontSize: 12, marginRight: 5}} />
-              <SelectValue placeholder="Todas as contas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as contas</SelectItem>
-              {portfolios.map((p: any) => (
-                <SelectItem key={p.id || p._id} value={p.id || p._id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span style={{display: 'inline-flex', alignItems: 'center', gap: 5.6, height: 26, padding: '0 8.4px', border: '1px solid var(--hair)', borderRadius: 6, fontSize: 11.5, color: 'var(--color-neutral-400)'}}>
+          <span style={CHIP_STYLE}>
+            <i className="ph ph-wallet" style={{fontSize: 12}} />
+            {selectedPortfolio?.name ?? 'Todas as contas'}
+          </span>
+          <span style={CHIP_STYLE}>
             <i className="ph ph-currency-circle-dollar" style={{fontSize: 12}} />
             Moeda: BRL
           </span>
@@ -770,73 +634,46 @@ const Portfolio = () => {
             type="button"
             onClick={() => setIncludeFixedIncome((v) => !v)}
             aria-pressed={includeFixedIncome}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5.6,
-              height: 26,
-              padding: '0 8.4px',
-              border: '1px solid var(--hair)',
-              borderRadius: 6,
-              fontSize: 11.5,
-              cursor: 'pointer',
-              background: includeFixedIncome ? 'rgba(145,132,217,0.12)' : 'transparent',
-              color: includeFixedIncome ? 'var(--color-accent-100)' : 'var(--color-neutral-400)',
-            }}>
-            <i className={`ph ph-${includeFixedIncome ? 'check-circle' : 'circle'}`} style={{fontSize: 12}} />
+            style={{...CHIP_STYLE, cursor: 'pointer'}}>
+            <i className={includeFixedIncome ? 'ph ph-check-square' : 'ph ph-square'} style={{fontSize: 12}} />
             Inclui renda fixa
           </button>
+          {!isAll && (
+            <ConfirmDialog
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              title="Remover carteira?"
+              description={
+                <>Isso vai remover <span style={{fontWeight: 500}}>{selectedPortfolio?.name ?? 'esta carteira'}</span> e todos os ativos importados/manualmente adicionados nela. Essa ação não pode ser desfeita.</>
+              }
+              trigger={
+                <button type="button" disabled={deletePortfolioMutation.isPending} style={{...CHIP_STYLE, cursor: 'pointer'}}>
+                  {deletePortfolioMutation.isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
+                  Remover carteira
+                </button>
+              }
+              confirmLabel="Remover"
+              cancelLabel="Cancelar"
+              confirmIcon={<Trash2 className="h-4 w-4 mr-2" />}
+              confirmVariant="destructive"
+              loading={deletePortfolioMutation.isPending}
+              onConfirm={() => deletePortfolioMutation.mutate(selectedId)}
+            />
+          )}
         </div>
 
-        <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 11.2}}>
-          <span style={{fontSize: 11.5, color: 'var(--color-neutral-500)', fontVariantNumeric: 'tabular-nums'}}>
-            {filteredAssets.length} posições · {formatCurrency(totalValue)}
-          </span>
-          <ConfirmDialog
-            open={deleteDialogOpen}
-            onOpenChange={setDeleteDialogOpen}
-            title="Remover carteira?"
-            description={
-              <>Isso vai remover <span style={{fontWeight: 500}}>{selectedPortfolioName}</span> e todos os ativos importados/manualmente adicionados nela. Essa ação não pode ser desfeita.</>
-            }
-            trigger={
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={selectedPortfolioId === 'all' || deletePortfolioMutation.isPending}
-                style={{height: 26, padding: '0 10px', fontSize: 11.5}}>
-                {deletePortfolioMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3 w-3 mr-1.5" />
-                )}
-                Remover carteira
-              </Button>
-            }
-            confirmLabel="Remover"
-            cancelLabel="Cancelar"
-            confirmIcon={<Trash2 className="h-4 w-4 mr-2" />}
-            confirmVariant="destructive"
-            loading={deletePortfolioMutation.isPending}
-            disabled={selectedPortfolioId === 'all'}
-            onConfirm={() => {
-              if (!selectedPortfolioId || selectedPortfolioId === 'all') return;
-              deletePortfolioMutation.mutate(selectedPortfolioId);
-            }}
-          />
+        <div style={{marginLeft: 'auto', fontSize: 11.5, color: 'var(--color-neutral-600)', fontVariantNumeric: 'tabular-nums'}}>
+          {positionsLabel} · {formatCurrency(totalValue)}
+          {syncedAt ? ` · sincronizado ${syncedAt}` : ''}
         </div>
-        <input
-          type="file"
-          accept=".xlsx,.xls,.csv"
-          style={{display: 'none'}}
-          id="b3-upload"
-          onChange={handleB3Import}
-          disabled={isUploadingB3}
-        />
       </div>
 
       {/* Grid Exposição + Risco */}
-      <div style={{display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16.8}}>
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: 16.8}}>
         {exposureRows.length > 0 && (
           <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
             <SectionHeader
@@ -851,23 +688,18 @@ const Portfolio = () => {
                     : `Peso atual por ${groupLabel}`
               }
               action={
-                <span style={{fontSize: 11, color: 'var(--color-neutral-500)'}}>
+                <span style={{fontSize: 10.5, color: 'var(--color-neutral-600)'}}>
                   {hasPolicyTarget ? 'peso · desvio' : 'peso'}
                 </span>
               }
             />
-            <div style={{padding: '14px 16.8px 16.8px', display: 'flex', flexDirection: 'column', gap: 14}}>
+            <div style={{padding: 16.8, display: 'flex', flexDirection: 'column', gap: 14}}>
               {exposureRows.map((row) => (
                 <div key={row.label}>
                   <div style={{display: 'flex', alignItems: 'baseline', gap: 8.4, fontSize: 12.5}}>
                     <span style={{flex: 1, color: 'var(--color-neutral-200)'}}>{row.label}</span>
                     <span style={{color: 'var(--color-neutral-500)', fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(row.value)}</span>
                     <span style={{width: 46, textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{formatPctPtBr(row.pct, 1)}</span>
-                    {/*
-                      Desvio só existe contra a política real. Antes, sem alvo,
-                      a coluna exibia '—' em toda linha; agora ela não aparece
-                      — e o cabeçalho deixa de prometer "desvio".
-                    */}
                     {hasPolicyTarget && (
                       <span
                         style={{
@@ -885,7 +717,7 @@ const Portfolio = () => {
                     <div
                       style={{
                         position: 'absolute',
-                        inset: 0,
+                        inset: '0 auto 0 0',
                         width: `${Math.min(row.pct, 100)}%`,
                         background: row.color,
                         borderRadius: 2,
@@ -895,8 +727,8 @@ const Portfolio = () => {
                       <div
                         style={{
                           position: 'absolute',
-                          top: -2,
-                          bottom: -2,
+                          top: -3,
+                          bottom: -3,
                           left: `${Math.min(row.target, 100)}%`,
                           width: 2,
                           background: 'var(--color-neutral-400)',
@@ -906,7 +738,6 @@ const Portfolio = () => {
                   </div>
                 </div>
               ))}
-              {/* Legenda da marca de alvo só quando existe alvo desenhado. */}
               {hasPolicyTarget && (
                 <div style={{display: 'flex', alignItems: 'center', gap: 8.4, fontSize: 11, color: 'var(--color-neutral-600)', paddingTop: 5.6, borderTop: '1px solid var(--hair-soft)'}}>
                   <span style={{width: 2, height: 12, background: 'var(--color-neutral-400)'}} />
@@ -917,100 +748,72 @@ const Portfolio = () => {
           </section>
         )}
 
-      {/* Contribuição de risco por posição */}
-      {riskRows.length > 0 && (
-        <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
-          <SectionHeader title={riskSectionTitle} subtitle={riskSectionSubtitle} />
-          {/* Linhas do handoff: ticker · barra · fatia do risco · peso. */}
-          <div
-            data-testid="risk-contribution-rows"
-            style={{padding: 16.8, display: 'flex', flexDirection: 'column', gap: 11.2}}>
-            {riskRows.map((row) => (
-              <div key={row.symbol} style={{display: 'flex', alignItems: 'center', gap: 11.2}}>
-                <span style={{width: 62, fontSize: 12, fontWeight: 600, color: 'var(--color-neutral-200)'}}>
-                  {row.symbol}
-                </span>
-                <div style={{flex: 1, height: 10, borderRadius: 2, background: 'rgba(var(--rgb-line),0.06)', overflow: 'hidden'}}>
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${riskBarWidthPct(row.sharePct)}%`,
-                      background: row.warn ? 'var(--warn)' : 'var(--color-accent-400)',
-                    }}
-                  />
+        {riskRows.length > 0 && (
+          <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
+            <SectionHeader title={riskSectionTitle} subtitle={riskSectionSubtitle} />
+            {/* Linhas do handoff: ticker · barra · fatia do risco · peso. */}
+            <div
+              data-testid="risk-contribution-rows"
+              style={{padding: 16.8, display: 'flex', flexDirection: 'column', gap: 11.2}}>
+              {riskRows.map((row) => (
+                <div key={row.symbol} style={{display: 'flex', alignItems: 'center', gap: 11.2}}>
+                  <span style={{width: 62, fontSize: 12, fontWeight: 600, color: 'var(--color-neutral-200)'}}>
+                    {row.symbol}
+                  </span>
+                  <div style={{flex: 1, height: 10, borderRadius: 2, background: 'rgba(var(--rgb-line),0.06)', overflow: 'hidden'}}>
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${riskBarWidthPct(row.sharePct)}%`,
+                        background: row.warn ? 'var(--warn)' : 'var(--color-accent-400)',
+                      }}
+                    />
+                  </div>
+                  <span style={{width: 52, textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-300)'}}>
+                    {row.share}
+                  </span>
+                  <span style={{width: 44, textAlign: 'right', fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-600)'}}>
+                    {row.weight}
+                  </span>
                 </div>
-                <span style={{width: 52, textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-300)'}}>
-                  {row.share}
-                </span>
-                <span style={{width: 44, textAlign: 'right', fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-600)'}}>
-                  {row.weight}
-                </span>
-              </div>
-            ))}
-            {(riskInsight || riskExcludedNote) && (
-              <div style={{fontSize: 11.5, color: 'var(--color-neutral-500)', lineHeight: 1.5, paddingTop: 8.4, borderTop: '1px solid var(--hair-soft)'}}>
-                {riskInsight}
-                {riskInsight && riskExcludedNote ? ' ' : ''}
-                {riskExcludedNote}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+              ))}
+              {(riskInsight || riskExcludedNote) && (
+                <div style={{fontSize: 11.5, color: 'var(--color-neutral-500)', lineHeight: 1.5, paddingTop: 8.4, borderTop: '1px solid var(--hair-soft)'}}>
+                  {riskInsight}
+                  {riskInsight && riskExcludedNote ? ' ' : ''}
+                  {riskExcludedNote}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </div>
 
-      {/* 4. Table */}
+      {/* Todas as posições */}
       <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
         <SectionHeader
           title="Todas as posições"
-          subtitle="Clique em uma linha para abrir a análise completa do ativo."
+          subtitle={
+            isAdvanced
+              ? `${positionsLabel} · ${accountsLabel} · beta e sinal por ativo`
+              : `${positionsLabel} · ${accountsLabel}`
+          }
           action={
-            <div style={{display: 'flex', gap: 8}}>
-              <button
-                type="button"
-                onClick={() => setB3GuideOpen(true)}
-                disabled={isUploadingB3}
-                style={{
-                  height: 30,
-                  padding: '0 11.2px',
-                  border: '1px solid var(--hair)',
-                  borderRadius: 8,
-                  background: 'transparent',
-                  color: 'var(--color-neutral-400)',
-                  cursor: isUploadingB3 ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5.6,
-                }}>
-                {isUploadingB3 ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <i className="ph ph-upload" style={{fontSize: 14}} />
-                )}
-                Importar B3
-              </button>
+            <div style={{display: 'flex', gap: 8.4}}>
+              <ColumnMenu hidden={hiddenCols} onToggle={toggleCol} showBeta={isAdvanced} />
               <button
                 type="button"
                 onClick={handleExportXlsx}
-                style={{
-                  height: 30,
-                  padding: '0 11.2px',
-                  border: '1px solid var(--hair)',
-                  borderRadius: 8,
-                  background: 'transparent',
-                  color: 'var(--color-neutral-400)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5.6,
-                }}>
-                <i className="ph ph-file-xls" style={{fontSize: 14}} /> Exportar
+                disabled={filteredAssets.length === 0}
+                style={{height: 30, padding: '0 11.2px', border: '1px solid var(--color-accent-700)', borderRadius: 8, background: 'transparent', color: 'var(--color-accent-200)', fontFamily: 'var(--font-body)', fontSize: 11.5, cursor: 'pointer'}}>
+                Exportar XLSX
               </button>
-              <ColumnConfigurator visibleCols={visibleCols} onToggle={toggleCol} />
             </div>
           }
         />
-        <DataTable minWidth={900} columns={activeColumns}>
+        <DataTable
+          minWidth={860}
+          columns={activeColumns.map(({label, align, tooltip}) => ({label, align, tooltip}))}>
           {loading ? (
             <tr>
               <td colSpan={activeColumns.length} style={{...TD_STYLE, textAlign: 'center', color: 'var(--color-neutral-500)'}}>
@@ -1020,7 +823,9 @@ const Portfolio = () => {
           ) : filteredAssets.length === 0 ? (
             <tr>
               <td colSpan={activeColumns.length} style={{...TD_STYLE, textAlign: 'center', color: 'var(--color-neutral-500)', fontSize: 12.5}}>
-                Nenhum ativo encontrado.
+                {portfolios.length === 0
+                  ? 'Nenhuma carteira ainda. Importe seus arquivos da B3 em Adicionar ativo.'
+                  : 'Nenhum ativo encontrado.'}
               </td>
             </tr>
           ) : (
@@ -1029,70 +834,22 @@ const Portfolio = () => {
                 key={asset._id || asset.symbol}
                 onClick={() => openAssetDetails(asset)}
                 style={{borderTop: '1px solid var(--hair-soft)', cursor: 'pointer'}}
-                className="hover:bg-[rgba(145,132,217,0.06)]">
-                <td style={{padding: '9.8px 16.8px', fontWeight: 600}}>{asset.symbol}</td>
-                {(visibleCols['class'] ?? true) && (
-                  <td style={{padding: '9.8px 16.8px', color: 'var(--color-neutral-500)', fontSize: 11.5}}>{asset.type}</td>
-                )}
-                {(visibleCols['qty'] ?? true) && (
-                  <td style={{...TD_RIGHT, fontVariantNumeric: 'tabular-nums'}}>{asset.amount}</td>
-                )}
-                {(visibleCols['avgPrice'] ?? true) && (
-                  <td style={{...TD_RIGHT, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(asset.avgPrice ?? asset.price)}</td>
-                )}
-                {(visibleCols['price'] ?? true) && (
-                  <td style={{...TD_RIGHT, fontVariantNumeric: 'tabular-nums', color: asset.currentPrice == null ? 'var(--color-neutral-500)' : undefined}}>
-                    {asset.currentPrice != null ? formatCurrency(asset.currentPrice) : '—'}
+                className="hover:bg-[rgba(152,160,171,0.06)]">
+                {activeColumns.map((column) => (
+                  <td
+                    key={column.key}
+                    style={column.align === 'right' ? TD_RIGHT : TD_STYLE}>
+                    {column.cell(asset)}
                   </td>
-                )}
-                {(visibleCols['value'] ?? true) && (
-                  <td style={{...TD_RIGHT, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>{formatCurrency(asset.value)}</td>
-                )}
-                {(visibleCols['pnl'] ?? true) && (
-                  <td style={{...TD_RIGHT, color: asset.profitLoss == null ? 'var(--color-neutral-500)' : asset.profitLoss >= 0 ? 'var(--pos)' : 'var(--neg)', fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>
-                    {asset.profitLoss != null ? formatCurrency(asset.profitLoss) : '—'}
-                  </td>
-                )}
-                {(visibleCols['dy'] ?? true) && (
-                  <td style={{...TD_RIGHT, fontVariantNumeric: 'tabular-nums'}}>{asset.dividendYield ? `${asset.dividendYield.toFixed(1)}%` : '—'}</td>
-                )}
-                {(visibleCols['weight'] ?? true) && (
-                  <td style={{...TD_RIGHT, color: 'var(--color-neutral-400)', fontVariantNumeric: 'tabular-nums'}}>{asset.allocation?.toFixed(1)}%</td>
-                )}
-                {(visibleCols['account'] ?? true) && (
-                  <td style={{...TD_STYLE, color: 'var(--color-neutral-500)', fontSize: 11.5}}>{asset.account ?? '—'}</td>
-                )}
-                {(visibleCols['beta'] ?? false) && (
-                  <td style={{...TD_RIGHT, fontVariantNumeric: 'tabular-nums', color: 'var(--color-neutral-400)'}}>
-                    {asset.beta != null ? asset.beta.toFixed(2) : '—'}
-                  </td>
-                )}
-                {(visibleCols['signal'] ?? true) && (
-                  <td style={{...TD_RIGHT}}>
-                    <SignalBadge signal={asset.signal} />
-                  </td>
-                )}
+                ))}
               </tr>
             ))
           )}
         </DataTable>
+        <div style={{padding: '11.2px 16.8px', borderTop: '1px solid var(--hair-soft)', fontSize: 11, color: 'var(--color-neutral-600)'}}>
+          Clique em uma linha para abrir a análise completa do ativo — indicadores, balanço, resultados, dividendos e a sua posição.
+        </div>
       </section>
-
-      {/* Asset Detail Modal */}
-      <AssetDetailModal selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset} />
-
-      <B3ImportGuideModal
-        open={b3GuideOpen}
-        onOpenChange={setB3GuideOpen}
-        onImportReport={() => {
-          setB3GuideOpen(false);
-          document.getElementById('b3-upload')?.click();
-        }}
-        onGoToTransactions={() => {
-          setB3GuideOpen(false);
-          navigate('/transactions');
-        }}
-      />
     </div>
   );
 };
