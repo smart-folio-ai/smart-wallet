@@ -21,6 +21,21 @@ export function tierFromPlanName(rawName: string | null | undefined): UserPlanTi
   return 'free';
 }
 
+/**
+ * Tier do plano: o campo `tier` gravado no plano manda (renomear o plano não
+ * muda o acesso); o nome só decide para planos antigos sem o campo.
+ */
+export function tierOfPlan(plan: {tier?: string | null; name?: string | null} | null | undefined): UserPlanTier {
+  const tier = plan?.tier;
+  if (tier && tier in PLAN_RANK) return tier as UserPlanTier;
+  return tierFromPlanName(plan?.name);
+}
+
+/** Aceita um tier já resolvido ou, por compatibilidade, o nome do plano. */
+export function toTier(value: string | null | undefined): UserPlanTier {
+  return value && value in PLAN_RANK ? (value as UserPlanTier) : tierFromPlanName(value);
+}
+
 export function planAtLeast(actual: UserPlanTier, required: UserPlanTier): boolean {
   return PLAN_RANK[actual] >= PLAN_RANK[required];
 }

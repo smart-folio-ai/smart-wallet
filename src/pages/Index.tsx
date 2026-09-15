@@ -306,7 +306,7 @@ const Dashboard = () => {
   const {data: returnsData} = usePortfolioReturns();
   const {data: composition} = usePortfolioComposition();
   const {
-    planName,
+    tier,
     isSubscribed,
     isLoading: loadingSubscription,
   } = useSubscription();
@@ -647,8 +647,8 @@ const Dashboard = () => {
     [optimizerData?.opportunities],
   );
 
-  const hasProOrHigher = isProOrHigherPlan(planName, isSubscribed);
-  const aiPlan = getAiPlanFromPlanName(planName);
+  const hasProOrHigher = isProOrHigherPlan(tier, isSubscribed);
+  const aiPlan = getAiPlanFromPlanName(tier);
   const aiSignature = useMemo(
     () => buildAiCacheSignature(apiAssets),
     [apiAssets],

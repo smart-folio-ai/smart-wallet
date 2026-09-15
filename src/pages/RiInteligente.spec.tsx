@@ -66,6 +66,7 @@ describe('RiInteligente', () => {
     });
     useSubscriptionMock.mockReturnValue({
       planName: 'premium',
+      tier: 'premium',
       isSubscribed: true,
     });
     autocompleteRiAssetsMock.mockResolvedValue([
@@ -276,6 +277,7 @@ describe('RiInteligente', () => {
   it('applies plan gating for free users', async () => {
     useSubscriptionMock.mockReturnValue({
       planName: 'free',
+      tier: 'free',
       isSubscribed: false,
     });
 

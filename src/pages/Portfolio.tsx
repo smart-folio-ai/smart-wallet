@@ -34,10 +34,15 @@ import {
   riskBarWidthPct,
 } from '@/pages/risk-contribution-display.utils';
 import type {AllocationBucket} from '@/hooks/usePortfolioComposition';
+import {buildExposureRowsFromBuckets} from '@/pages/composition-display.utils';
 import {
-  buildExposureRowsFromBuckets,
-  deviationColor,
-} from '@/pages/composition-display.utils';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {formatPctPtBr, formatPpPtBr, formatSignedPctPtBr} from '@/utils/formatters';
 import {
   ASSET_CLASS_LABEL as CLASS_LABEL,
@@ -113,6 +118,24 @@ function computeExposure(
     })
     .sort((a, b) => b.value - a.value);
 }
+
+/** Escala e cores das barras de exposição do handoff (`buckets`). */
+const EXPOSURE_SCALE = 2.2;
+const exposureDevColor = (dev: number) =>
+  dev > 1.5 ? 'var(--warn)' : dev < -1.5 ? 'var(--color-accent-300)' : 'var(--color-neutral-600)';
+
+const RISK_TIPS = {
+  riskcontrib: {
+    title: 'Contribuição de risco',
+    body: 'A fatia do risco total da carteira que vem de um único ativo. Um papel com 10% de peso pode responder por 20% do risco se oscilar mais que os outros.',
+    formula: 'peso × covariância do ativo com a carteira ÷ variância da carteira',
+  },
+  correl: {
+    title: 'Concentração do risco',
+    body: 'Quanto cada ativo move a carteira. Ativos que oscilam mais pesam mais no sobe-e-desce do que o valor investido sugere.',
+    formula: 'peso × covariância do ativo com a carteira ÷ variância da carteira',
+  },
+};
 
 /**
  * Leitura da posição no vocabulário do handoff ("Em linha", "Concentração"…).
@@ -267,6 +290,8 @@ const Portfolio = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [exposureGroupBy, setExposureGroupBy] = useState<ExposureGroupBy>('class');
   const [includeFixedIncome, setIncludeFixedIncome] = useState(true);
+  const [sectorFilter, setSectorFilter] = useState<string | null>(null);
+  const [riskTipOpen, setRiskTipOpen] = useState(false);
   const [hiddenCols, toggleCol] = useReducer(hiddenColumnsReducer, {
     class: false,
     account: false,
@@ -328,8 +353,12 @@ const Portfolio = () => {
   });
 
   const FIXED_INCOME_TYPES = new Set(['fund', 'other']);
+  const availableSectors = Array.from(
+    new Set(assets.map((asset) => String(asset.sector || '').trim()).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b));
   const filteredAssets = assets
     .filter((asset) => includeFixedIncome || !FIXED_INCOME_TYPES.has(asset.type))
+    .filter((asset) => !sectorFilter || String(asset.sector || '').trim() === sectorFilter)
     .sort((a, b) => b.value - a.value);
 
   const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
@@ -633,6 +662,30 @@ const Portfolio = () => {
             <i className={includeFixedIncome ? 'ph ph-check-square' : 'ph ph-square'} style={{fontSize: 12}} />
             Inclui renda fixa
           </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                style={{
+                  ...CHIP_STYLE,
+                  cursor: 'pointer',
+                  ...(sectorFilter ? {borderColor: 'var(--color-accent-700)', color: 'var(--color-accent-200)'} : {}),
+                }}>
+                <i className="ph ph-funnel" style={{fontSize: 12}} />
+                {sectorFilter ?? 'Mais filtros'}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[200px]">
+              <DropdownMenuLabel>Setor</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => setSectorFilter(null)}>Todos os setores</DropdownMenuItem>
+              {availableSectors.length > 0 ? <DropdownMenuSeparator /> : null}
+              {availableSectors.map((sector) => (
+                <DropdownMenuItem key={sector} onClick={() => setSectorFilter(sector)}>
+                  {sector}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           {!isAll && (
             <ConfirmDialog
               open={deleteDialogOpen}
@@ -702,7 +755,7 @@ const Portfolio = () => {
                           textAlign: 'right',
                           fontVariantNumeric: 'tabular-nums',
                           fontSize: 11.5,
-                          color: deviationColor(row.dev),
+                          color: exposureDevColor(row.dev),
                         }}>
                         {formatPpPtBr(row.dev)}
                       </span>
@@ -713,8 +766,8 @@ const Portfolio = () => {
                       style={{
                         position: 'absolute',
                         inset: '0 auto 0 0',
-                        width: `${Math.min(row.pct, 100)}%`,
-                        background: row.color,
+                        width: `${Math.min(row.pct * EXPOSURE_SCALE, 100)}%`,
+                        background: hasPolicyTarget && row.dev > 1.5 ? 'var(--warn)' : 'var(--color-accent-400)',
                         borderRadius: 2,
                       }}
                     />
@@ -724,7 +777,7 @@ const Portfolio = () => {
                           position: 'absolute',
                           top: -3,
                           bottom: -3,
-                          left: `${Math.min(row.target, 100)}%`,
+                          left: `${Math.min(row.target * EXPOSURE_SCALE, 100)}%`,
                           width: 2,
                           background: 'var(--color-neutral-400)',
                         }}
@@ -745,7 +798,30 @@ const Portfolio = () => {
 
         {riskRows.length > 0 && (
           <section style={{border: '1px solid var(--hair)', borderRadius: 8, background: 'var(--nk-card)'}}>
-            <SectionHeader title={riskSectionTitle} subtitle={riskSectionSubtitle} />
+            <div style={{padding: '14px 16.8px', borderBottom: '1px solid var(--hair-soft)'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 5.6, position: 'relative'}}>
+                <span style={{fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 600}}>{riskSectionTitle}</span>
+                <button
+                  type="button"
+                  aria-label="O que é isso?"
+                  onMouseEnter={() => setRiskTipOpen(true)}
+                  onMouseLeave={() => setRiskTipOpen(false)}
+                  onFocus={() => setRiskTipOpen(true)}
+                  onBlur={() => setRiskTipOpen(false)}
+                  onClick={() => setRiskTipOpen((open) => !open)}
+                  style={{width: 15, height: 15, flexShrink: 0, borderRadius: 4, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-500)', cursor: 'help', display: 'grid', placeItems: 'center', padding: 0}}>
+                  <i className="ph-fill ph-info" style={{fontSize: 10}} />
+                </button>
+                {riskTipOpen && (
+                  <div style={{position: 'absolute', top: 24, left: 0, zIndex: 60, width: 292, maxWidth: 'calc(100vw - 48px)', border: '1px solid rgba(152,160,171,0.35)', borderRadius: 8, background: 'var(--surf-4)', boxShadow: 'var(--shadow-lg)', padding: '11.2px 14px'}}>
+                    <div style={{fontSize: 12.5, fontWeight: 600, color: 'var(--color-neutral-100)'}}>{RISK_TIPS[isAdvanced ? 'riskcontrib' : 'correl'].title}</div>
+                    <div style={{fontSize: 12, color: 'var(--color-neutral-400)', lineHeight: 1.55, marginTop: 5.6}}>{RISK_TIPS[isAdvanced ? 'riskcontrib' : 'correl'].body}</div>
+                    <div style={{fontSize: 11, color: 'var(--color-accent-300)', marginTop: 8.4, paddingTop: 8.4, borderTop: '1px solid var(--hair-soft)', lineHeight: 1.45}}>{RISK_TIPS[isAdvanced ? 'riskcontrib' : 'correl'].formula}</div>
+                  </div>
+                )}
+              </div>
+              <div style={{fontSize: 11, color: 'var(--color-neutral-600)', marginTop: 2}}>{riskSectionSubtitle}</div>
+            </div>
             {/* Linhas do handoff: ticker · barra · fatia do risco · peso. */}
             <div
               data-testid="risk-contribution-rows"
