@@ -359,5 +359,36 @@ export const reportsService = {
   deleteSchedule: (id: string) => apiClient.delete(`/reports/schedules/${encodeURIComponent(id)}`),
 };
 
+export type GoalKind = 'independence' | 'emergency' | 'custom';
+
+export interface FinancialGoal {
+  id: string;
+  title: string;
+  kind: GoalKind;
+  targetAmount: number;
+  currentAmount: number;
+  monthlyContribution: number;
+}
+
+export interface FinancialPlan {
+  monthlyContribution: number;
+  expectedRealReturnPct: number;
+  horizonYears: number;
+  goals: FinancialGoal[];
+}
+
+export type FinancialPlanSettings = Omit<FinancialPlan, 'goals'>;
+export type FinancialGoalInput = Omit<FinancialGoal, 'id'>;
+
+export const financialPlanService = {
+  // TRA-177: plano e metas do próprio usuário.
+  get: () => apiClient.get<FinancialPlan>('/financial-plan'),
+  updateSettings: (settings: FinancialPlanSettings) => apiClient.put<FinancialPlan>('/financial-plan', settings),
+  addGoal: (goal: FinancialGoalInput) => apiClient.post<FinancialPlan>('/financial-plan/goals', goal),
+  updateGoal: (id: string, goal: Partial<FinancialGoalInput>) =>
+    apiClient.patch<FinancialPlan>(`/financial-plan/goals/${encodeURIComponent(id)}`, goal),
+  removeGoal: (id: string) => apiClient.delete<FinancialPlan>(`/financial-plan/goals/${encodeURIComponent(id)}`),
+};
+
 export {apiClient as api};
 export default apiClient;
