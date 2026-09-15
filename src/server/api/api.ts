@@ -248,6 +248,7 @@ export const brokerSyncService = {
     provider: string;
     apiKey?: string;
     apiSecret?: string;
+    apiPassphrase?: string;
     cpf?: string;
   }) => apiClient.post('/broker-sync/connect', data),
   sync: (provider: string) => apiClient.post(`/broker-sync/sync/${provider}`),
