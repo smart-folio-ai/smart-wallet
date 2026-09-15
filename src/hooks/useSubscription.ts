@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import {subscriptionService} from '@/server/api/api';
-import {planAtLeast, tierFromPlanName} from '@/services/subscription/plan-tier';
+import {planAtLeast, tierOfPlan} from '@/services/subscription/plan-tier';
 import type {UserPlanTier} from '@/interface/subscription';
 
 type CurrentSubscriptionPayload = {
@@ -74,7 +74,7 @@ export function useSubscription() {
   const isSubscribed =
     hasAnySubscription && (status === 'active' || status === 'trialing');
   const planName = normalizePlanName(rawPlan?.name);
-  const tier = tierFromPlanName(rawPlan?.name);
+  const tier = tierOfPlan(rawPlan);
   const apiFeatures = Array.isArray(rawPlan?.features) ? rawPlan.features : [];
   const features =
     apiFeatures.length > 0

@@ -110,6 +110,12 @@ export default function Subscription() {
     checkout.mutate(plan);
   };
 
+  // "Ver planos" leva direto ao checkout do Stripe do plano em destaque.
+  const featuredPlan =
+    columns.find((column) => column.plan.isFeatured && column.monthlyPrice > 0 && !column.plan.isComingSoon)?.plan ??
+    columns.find((column) => column.monthlyPrice > 0 && !column.plan.isComingSoon)?.plan ??
+    null;
+
   const planSummary = !currentPlan
     ? 'Você está no plano gratuito. Faça upgrade quando quiser — sem fidelidade.'
     : subscription?.currentPeriodEnd
@@ -148,12 +154,14 @@ export default function Subscription() {
                   {portal.isPending ? 'Abrindo…' : 'Gerenciar assinatura'}
                 </button>
               ) : (
-                <a
-                  href="#comparar-planos"
-                  className="hover:brightness-[1.08]"
-                  style={{height: 34, padding: '0 14px', borderRadius: 8, background: 'var(--grad-violet)', color: 'var(--sunk)', fontSize: 12.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', textDecoration: 'none'}}>
-                  Ver planos
-                </a>
+                <button
+                  type="button"
+                  onClick={() => (featuredPlan ? subscribe(featuredPlan) : document.getElementById('comparar-planos')?.scrollIntoView({behavior: 'smooth'}))}
+                  disabled={checkout.isPending}
+                  className="hover:brightness-[1.08] disabled:opacity-60"
+                  style={{height: 34, padding: '0 14px', borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: 'var(--sunk)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', cursor: 'pointer'}}>
+                  {checkout.isPending ? 'Abrindo checkout…' : 'Ver planos'}
+                </button>
               )}
               <a
                 href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Assinatura Trackerr')}`}

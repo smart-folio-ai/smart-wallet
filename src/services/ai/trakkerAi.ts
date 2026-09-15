@@ -1,4 +1,4 @@
-import {planAtLeast, tierFromPlanName} from '@/services/subscription/plan-tier';
+import {planAtLeast, toTier} from '@/services/subscription/plan-tier';
 import {AiAnalysisResult, aiAnalysisService} from '@/services/ai';
 import {fiscalService} from '@/server/api/api';
 
@@ -44,14 +44,14 @@ function normalizeAssets(rawAssets: any[]): NormalizedAsset[] {
     .filter((asset) => Boolean(asset.symbol));
 }
 
-export function getAiPlanFromPlanName(planName: string): AiPlan {
-  const tier = tierFromPlanName(planName);
+export function getAiPlanFromPlanName(planTierOrName: string): AiPlan {
+  const tier = toTier(planTierOrName);
   if (planAtLeast(tier, 'premium')) return 'premium';
   return tier === 'pro' ? 'pro' : 'free';
 }
 
-export function isProOrHigherPlan(planName: string, isSubscribed: boolean): boolean {
-  return isSubscribed && planAtLeast(tierFromPlanName(planName), 'pro');
+export function isProOrHigherPlan(planTierOrName: string, isSubscribed: boolean): boolean {
+  return isSubscribed && planAtLeast(toTier(planTierOrName), 'pro');
 }
 
 export function buildAiCacheSignature(rawAssets: any[]): string {

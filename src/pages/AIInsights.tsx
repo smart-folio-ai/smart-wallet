@@ -54,13 +54,13 @@ function buildModelCardRows(data: AiInsightsData | undefined, updatedAt: number)
 }
 
 const AIInsights: React.FC = () => {
-  const {planName, isSubscribed, isLoading: subLoading} = useSubscription();
+  const {tier, isSubscribed, isLoading: subLoading} = useSubscription();
   const {level, profile, setLevel, clearOverride} = useAdaptiveLevel();
   const [filter, setFilter] = useState(ALL_TAB);
 
-  const isPremium = isProOrHigherPlan(planName, isSubscribed);
+  const isPremium = isProOrHigherPlan(tier, isSubscribed);
   const insightsQuery = useAiInsightsData({
-    plan: getAiPlanFromPlanName(planName),
+    plan: getAiPlanFromPlanName(tier),
     enabled: !subLoading && isPremium,
   });
   const simulator = useFutureSimulator(level !== 'iniciante');
