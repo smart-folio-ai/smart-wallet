@@ -39,7 +39,11 @@ import {
   deviationColor,
 } from '@/pages/composition-display.utils';
 import {formatPctPtBr, formatPpPtBr, formatSignedPctPtBr} from '@/utils/formatters';
-import {describeAsset} from '@/pages/portfolio-asset-display.utils';
+import {
+  ASSET_CLASS_LABEL as CLASS_LABEL,
+  describeAsset,
+  resolvePositionPricing,
+} from '@/pages/portfolio-asset-display.utils';
 
 // ── Exposure + Risk helpers ────────────────────────────────────────────────
 //
@@ -59,10 +63,6 @@ const BUCKET_COLOR_KEY: Record<AllocationBucket, string> = {
 };
 const TYPE_LABEL: Record<string, string> = {
   stock: 'Ações', fii: 'FIIs', fund: 'Renda Fixa', etf: 'ETFs', crypto: 'Cripto', other: 'Outros',
-};
-/** Classe no singular, como na coluna "Classe" do handoff. */
-const CLASS_LABEL: Record<string, string> = {
-  stock: 'Ação BR', fii: 'FII', fund: 'Renda fixa', etf: 'ETF', crypto: 'Cripto', other: 'Outros',
 };
 
 // Mesma paleta usada no donut/legenda de alocação do dashboard (ver ALLOCATION_COLORS em Index.tsx),
@@ -304,15 +304,7 @@ const Portfolio = () => {
   // das negociações importadas; sem ele o P&L fica indisponível em vez de
   // virar um zero falso (TRA-92).
   const assets: Asset[] = displayApiAssets.map((a: any) => {
-    // Em lançamento manual `price` é o preço de compra, não mercado: só o
-    // fechamento do relatório da B3 serve de fallback para a cotação.
-    const reportPrice = a.source === 'b3' && a.price > 0 ? a.price : undefined;
-    const marketPrice = hasFreshQuote(a) ? a.currentPrice : reportPrice;
-    const avg = Number(a.avgPrice) > 0 ? Number(a.avgPrice) : undefined;
-    const pnlPct =
-      avg && marketPrice > 0 ? ((marketPrice - avg) / avg) * 100 : undefined;
-    const pnlValue =
-      avg && marketPrice > 0 ? (marketPrice - avg) * (a.quantity ?? 0) : undefined;
+    const {reportPrice, avgPrice: avg, pnlPct, pnlValue} = resolvePositionPricing(a);
 
     return {
       _id: a.id || a._id,
@@ -349,8 +341,8 @@ const Portfolio = () => {
   );
 
   const openAssetDetails = (asset: Asset) => {
-    if (asset._id) navigate(`/portfolio/asset/${asset._id}`);
-    else navigate(`/portfolio/asset/symbol/${asset.symbol}`);
+    // Rota por símbolo: é a que o menu lateral reconhece para "Ativo · X".
+    navigate(`/portfolio/asset/symbol/${encodeURIComponent(asset.symbol)}`);
   };
 
   const deletePortfolioMutation = useMutation({

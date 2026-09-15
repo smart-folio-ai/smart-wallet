@@ -35,7 +35,7 @@ import {useThemeToggle} from '@/components/ThemeToggle';
 import {CommandPalette} from './CommandPalette';
 import {NotificationBell} from './NotificationBell';
 import {openTutorial} from '@/components/onboarding/OnboardingTutorial';
-import {sections} from './nav-data';
+import {assetFromPath, sections} from './nav-data';
 import {CreatePortfolioDialog} from '@/components/portfolio/CreatePortfolioDialog';
 import {
   ALL_PORTFOLIOS,
@@ -75,7 +75,8 @@ function findMetaFromNav(pathname: string): PageMeta | null {
 function getPageMeta(pathname: string): PageMeta {
   if (OVERRIDES[pathname]) return OVERRIDES[pathname];
   if (pathname.startsWith('/portfolio/asset') || pathname.startsWith('/asset/')) {
-    return {crumb: 'Carteira', title: 'Detalhe do Ativo'};
+    const asset = assetFromPath(pathname);
+    return {crumb: 'Carteira', title: asset ? `Ativo · ${asset.symbol}` : 'Detalhe do Ativo'};
   }
   if (pathname.startsWith('/dividends/')) {
     return {crumb: 'Carteira', title: 'Detalhe de Dividendos'};
