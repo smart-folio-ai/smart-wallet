@@ -4,7 +4,6 @@ import {UpcomingDividendsCard} from '@/components/dashboard/UpcomingDividendsCar
 import {useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 import {fiscalService, stockServices} from '@/server/api/api';
-import {FeatureTourModal} from '@/components/ui/feature-tour-modal';
 import {
   Area,
   CartesianGrid,
@@ -312,9 +311,7 @@ const Dashboard = () => {
     isLoading: loadingSubscription,
   } = useSubscription();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
-  const [openFeatureTour, setOpenFeatureTour] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('1M');
-  const featureTourStorageKey = 'dashboard_feature_tour_seen_v1';
 
   const {data: portfolios = []} = useQuery({
     queryKey: ['portfolios'],
@@ -397,13 +394,6 @@ const Dashboard = () => {
       };
     },
   });
-
-  useEffect(() => {
-    const hasSeen = localStorage.getItem(featureTourStorageKey) === '1';
-    if (!hasSeen) {
-      setOpenFeatureTour(true);
-    }
-  }, []);
 
   const apiAssets = useMemo(() => {
     if (!portfolioPayload) return [];
@@ -1443,55 +1433,6 @@ const Dashboard = () => {
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: 16.8}}>
-      {/* Feature tour (logic preserved, modal invisible until triggered) */}
-      <FeatureTourModal
-        open={openFeatureTour}
-        onOpenChange={setOpenFeatureTour}
-        heading="Conheça as novidades"
-        subheading="Recursos que melhoram suas decisões"
-        items={[
-          {
-            title: 'Investment Score',
-            description:
-              'Uma nota de 0-100 baseada em diversificação, risco e consistência, visível na página de Insights.',
-          },
-          {
-            title: 'Simulador de Futuro',
-            description:
-              'Agora você pode simular aportes mensais e ver projeções em cenários otimistas, neutros e pessimistas.',
-          },
-          {
-            title: 'Radar Anti-Erro',
-            description:
-              'A IA detecta erros de concentração de setor e correlação, emitindo alertas preventivos.',
-          },
-          {
-            title: 'Radar de Oportunidades',
-            description:
-              'Uma lista premium de ativos com potencial de valorização baseada na análise da IA.',
-          },
-          {
-            title: 'Opinião Trackerr IA',
-            description:
-              'Integrada na página de detalhes de cada ativo para entregar um resumo estratégico rápido.',
-          },
-        ]}
-        onExit={() => {
-          localStorage.setItem(featureTourStorageKey, '1');
-          setOpenFeatureTour(false);
-          navigate('/portfolio');
-        }}
-        onSkip={() => {
-          localStorage.setItem(featureTourStorageKey, '1');
-          setOpenFeatureTour(false);
-        }}
-        onStartTutorial={() => {
-          localStorage.setItem(featureTourStorageKey, '1');
-          setOpenFeatureTour(false);
-          navigate('/ai-insights');
-        }}
-      />
-
       {marketStatus.isStale && (
         <MarketDataStaleBanner
           updatedAt={portfolioUpdatedAt || null}

@@ -7,6 +7,7 @@ import {TooltipProvider} from '@/components/ui/tooltip';
 import {SidebarInset, SidebarProvider} from '@/components/ui/sidebar';
 import {AppSidebar} from '@/components/app-sidebar';
 import {AppTopbar} from '@/components/layout/AppTopbar';
+import {OnboardingTutorial} from '@/components/onboarding/OnboardingTutorial';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import {AdminHostRedirect} from '@/components/AdminHostRedirect';
 import {ConsentProvider} from '@/contexts/ConsentContext';
@@ -135,6 +136,7 @@ const App = () => (
                     <AppSidebar />
                     <SidebarInset className="bg-transparent">
                       <AppTopbar />
+                      <OnboardingTutorial />
                       <main
                         className="flex-1 px-3 py-4 md:p-[22.4px]"
                         data-app-main="true">
