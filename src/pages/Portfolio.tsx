@@ -304,7 +304,10 @@ const Portfolio = () => {
   // das negociações importadas; sem ele o P&L fica indisponível em vez de
   // virar um zero falso (TRA-92).
   const assets: Asset[] = displayApiAssets.map((a: any) => {
-    const marketPrice = hasFreshQuote(a) ? a.currentPrice : a.price;
+    // Em lançamento manual `price` é o preço de compra, não mercado: só o
+    // fechamento do relatório da B3 serve de fallback para a cotação.
+    const reportPrice = a.source === 'b3' && a.price > 0 ? a.price : undefined;
+    const marketPrice = hasFreshQuote(a) ? a.currentPrice : reportPrice;
     const avg = Number(a.avgPrice) > 0 ? Number(a.avgPrice) : undefined;
     const pnlPct =
       avg && marketPrice > 0 ? ((marketPrice - avg) / avg) * 100 : undefined;
@@ -315,7 +318,7 @@ const Portfolio = () => {
       _id: a.id || a._id,
       symbol: a.symbol,
       name: a.name || a.symbol,
-      price: a.price,
+      price: reportPrice ?? 0,
       currentPrice: hasFreshQuote(a) ? a.currentPrice : undefined,
       change24h: a.change24h ?? 0,
       amount: a.quantity,
