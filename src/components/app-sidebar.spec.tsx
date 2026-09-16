@@ -1,4 +1,4 @@
-import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeAll, beforeEach, afterEach} from 'vitest';
 import {render, screen, within} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -9,8 +9,9 @@ vi.mock('@/services/portfolio', () => ({
   default: {getAssets: vi.fn().mockResolvedValue([])},
 }));
 
+const useAuthMock = vi.fn(() => ({role: null as string | null}));
 vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({role: null}),
+  useAuth: () => useAuthMock(),
 }));
 
 beforeAll(() => {
@@ -31,6 +32,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   localStorage.clear();
+  useAuthMock.mockReturnValue({role: null});
 });
 
 function renderSidebar(path = '/dashboard') {
@@ -115,5 +117,26 @@ describe('AppSidebar', () => {
       'ph',
       'ph-magnifying-glass',
     );
+  });
+});
+
+describe('AppSidebar no host do admin', () => {
+  const realLocation = window.location;
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {configurable: true, value: realLocation});
+  });
+
+  it('mostra apenas a administração quando o host é o do painel', () => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {...realLocation, hostname: 'admin.trackerr.com.br'},
+    });
+    useAuthMock.mockReturnValue({role: 'admin'});
+
+    renderSidebar('/admin');
+
+    expect(linkLabels()).toEqual(['Dashboard Admin', 'Planos', 'Concessões']);
+    expect(screen.queryByText('Carteira')).not.toBeInTheDocument();
   });
 });
