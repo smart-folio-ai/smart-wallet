@@ -2,6 +2,7 @@ import {useState, type CSSProperties} from 'react';
 import {Link} from 'react-router-dom';
 import {badgeStyle, type BadgeSeverity} from '@/components/shared/badge-style';
 import {ConnectAccountModal, type ConnectTab} from '@/components/accounts/ConnectAccountModal';
+import {CpfSyncComingSoonModal} from '@/components/accounts/CpfSyncComingSoonModal';
 import useAppToast from '@/hooks/use-app-toast';
 import {useSubscription} from '@/hooks/useSubscription';
 import {
@@ -36,6 +37,14 @@ const neutralBadge: CSSProperties = {
 };
 
 const statusBadge = (severity: BadgeSeverity | 'neutral') => (severity === 'neutral' ? neutralBadge : badgeStyle(severity));
+
+const formatCpf = (value: string) => {
+  const digits = value.replace(/D/g, '').slice(0, 11);
+  return digits
+    .replace(/(d{3})(d)/, '$1.$2')
+    .replace(/(d{3})(d)/, '$1.$2')
+    .replace(/(d{3})(d{1,2})$/, '$1-$2');
+};
 
 const ctaStyle = (primary: boolean): CSSProperties => ({
   height: 34,
@@ -107,6 +116,69 @@ function SourceCard({name, initials, kind, status, what, steps, security, gradie
         {children}
       </div>
     </section>
+  );
+}
+
+/**
+ * Gancho para a sincronização automática via CPF — ainda não existe (a B3
+ * não abre consulta de custódia por CPF para terceiros hoje), mas fica
+ * visível e convidativo para quem for procurar, com aviso claro de "em
+ * breve" em vez de escondido ou fingindo que funciona.
+ */
+function CpfSyncHook() {
+  const [cpf, setCpf] = useState('');
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      style={{
+        marginTop: 4,
+        borderRadius: 8,
+        padding: 1,
+        background: 'linear-gradient(90deg, var(--cy), var(--pos), var(--cy))',
+        backgroundSize: '200% 100%',
+        animation: 'cpf-sync-glow 3.5s ease-in-out infinite',
+      }}>
+      <div style={{borderRadius: 7, background: 'var(--nk-card)', padding: 11.2, display: 'flex', flexDirection: 'column', gap: 8.4}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+          <i className="ph-fill ph-sparkle" style={{fontSize: 13, color: '#9fe4fb'}} aria-hidden />
+          <span style={{fontSize: 11.5, fontWeight: 600, color: 'var(--color-neutral-100)', flex: 1}}>Sincronizar via CPF</span>
+          <span
+            style={{
+              flexShrink: 0,
+              borderRadius: 999,
+              padding: '2px 8px',
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              color: '#17140b',
+              background: 'linear-gradient(90deg, var(--cy), var(--pos))',
+            }}>
+            Em breve
+          </span>
+        </div>
+        <div style={{display: 'flex', gap: 6.4}}>
+          <input
+            aria-label="CPF"
+            inputMode="numeric"
+            placeholder="000.000.000-00"
+            value={cpf}
+            onChange={(e) => setCpf(formatCpf(e.target.value))}
+            style={{flex: 1, height: 32, padding: '0 9.8px', border: '1px solid var(--hair)', borderRadius: 7, background: 'rgba(var(--rgb-bg),0.6)', color: 'var(--color-text)', fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none'}}
+          />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="hover:brightness-110"
+            style={{height: 32, padding: '0 11.2px', borderRadius: 7, border: 'none', background: 'linear-gradient(90deg, var(--cy), var(--pos))', color: '#17140b', fontFamily: 'var(--font-body)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'}}>
+            Sincronizar
+          </button>
+        </div>
+      </div>
+      <style>{'@keyframes cpf-sync-glow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }'}</style>
+      <CpfSyncComingSoonModal open={open} onOpenChange={setOpen} />
+    </div>
   );
 }
 
@@ -262,6 +334,7 @@ export default function SyncAccounts() {
           <button type="button" onClick={() => openConnect('b3')} style={ctaStyle(false)}>
             Importar arquivos da B3
           </button>
+          <CpfSyncHook />
         </SourceCard>
 
         {!planLoading &&
