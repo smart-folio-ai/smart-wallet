@@ -3,7 +3,7 @@ import {Link} from 'react-router-dom';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {useSubscription} from '@/hooks/useSubscription';
-import {planAtLeast} from '@/services/subscription/plan-tier';
+import {PREMIUM_ACCESS_LEVEL, planAtLeast} from '@/services/subscription/plan-tier';
 import type {UserPlanTier} from '@/interface/subscription';
 import {
   RiAssetSuggestion,
@@ -128,7 +128,7 @@ function buildDocumentDisplayTitle(document: RiDocumentListItem): string {
 }
 
 function isPremiumOrGlobal(tier: UserPlanTier, isSubscribed: boolean) {
-  return isSubscribed && planAtLeast(tier, 'premium');
+  return isSubscribed && planAtLeast(tier, PREMIUM_ACCESS_LEVEL);
 }
 
 interface SearchState {

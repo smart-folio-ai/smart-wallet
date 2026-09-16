@@ -4,13 +4,19 @@ import {latestMonth} from '@/services/fiscal/fiscal-summary';
 import {DarfHero, MonthCalcCard} from '@/components/fiscal/DarfHero';
 import {FiscalRoadmapSection} from '@/components/fiscal/FiscalRoadmapSection';
 import {FiscalToolsSection} from '@/components/fiscal/FiscalToolsSection';
+import {ComingSoonBlur} from '@/components/shared';
 
 /**
  * Fiscal & IR — bloco `isFiscal` de design_handoff_trackerr/Trackerr App.dc.html.
  * Simulador, importações, guia do IR e relatórios não estão no handoff, mas são
  * fluxos reais: seguem abaixo, no mesmo desenho de card.
+ *
+ * O módulo inteiro ainda não está 100% pronto pro handoff — mesmo quem paga
+ * o Pro vê o mesmo aviso "em breve" que as outras telas incompletas do
+ * sistema (TRA-182). O conteúdo real continua renderizado por baixo, só
+ * borrado; nada foi removido.
  */
-export default function Fiscal() {
+function FiscalContent() {
   const [year, setYear] = useState<number | undefined>();
   const summary = useFiscalSummary(year);
   const optimizer = useFiscalOptimizer(year);
@@ -42,5 +48,18 @@ export default function Fiscal() {
         onYearChange={setYear}
       />
     </div>
+  );
+}
+
+export default function Fiscal() {
+  return (
+    <ComingSoonBlur
+      title="Módulo fiscal — em breve"
+      description="Apuração automática de IR, buckets, histórico de DARFs e exportação estão em desenvolvimento. Os números abaixo são reais, mas a tela ainda vai mudar."
+      icon="ph-fill ph-receipt"
+      noticeMessage="A apuração completa do módulo fiscal vai aparecer nesta tela assim que for lançada."
+      minHeight={480}>
+      <FiscalContent />
+    </ComingSoonBlur>
   );
 }

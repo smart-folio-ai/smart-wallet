@@ -11,7 +11,11 @@ export interface SubscriptionInterface {
   ): Promise<{url: string}>;
 }
 
-export type UserPlanTier = 'free' | 'pro' | 'premium' | 'global_investor';
+/**
+ * Nível de acesso do plano — número livre (TRA-182). Não há lista fixa de
+ * nomes: o admin define o nível de cada plano em /admin/plans.
+ */
+export type UserPlanTier = number;
 
 export interface ISubscription {
   _id: string;
@@ -21,7 +25,7 @@ export interface ISubscription {
   currency: string;
   interval: string;
   intervalCount: number;
-  tier: UserPlanTier;
+  accessLevel: UserPlanTier;
   stripePriceId: string;
   stripeProductId: string;
   annualPrice?: number;
@@ -42,7 +46,7 @@ export interface ICreateSubscription {
   currency: string;
   interval: string;
   intervalCount: number;
-  tier: UserPlanTier;
+  accessLevel: UserPlanTier;
   features: string[];
   annualPrice?: number;
   annualStripePriceId?: string;
@@ -57,7 +61,7 @@ export interface IUpdateSubscription {
   currency?: string;
   interval?: string;
   intervalCount?: number;
-  tier?: UserPlanTier;
+  accessLevel?: UserPlanTier;
   stripePriceId?: string;
   stripeProductId?: string;
   annualPrice?: number;

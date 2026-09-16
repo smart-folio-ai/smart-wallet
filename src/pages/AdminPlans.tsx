@@ -2,8 +2,8 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {FormEvent, useState} from 'react';
 import {toast} from 'sonner';
 import {AdminPlan} from '@/interface/admin';
-import {UserPlanTier} from '@/interface/subscription';
 import AdminService from '@/services/admin';
+import {FREE_ACCESS_LEVEL, PREMIUM_ACCESS_LEVEL, PRO_ACCESS_LEVEL} from '@/services/subscription/plan-tier';
 
 type PlanFormState = {
   name: string;
@@ -12,7 +12,7 @@ type PlanFormState = {
   currency: string;
   interval: 'month' | 'year' | 'week' | 'day';
   intervalCount: string;
-  tier: UserPlanTier | '';
+  accessLevel: string;
   features: string;
   annualPrice: string;
   annualStripePriceId: string;
@@ -27,7 +27,7 @@ const initialForm: PlanFormState = {
   currency: 'brl',
   interval: 'month',
   intervalCount: '1',
-  tier: '',
+  accessLevel: '',
   features: '',
   annualPrice: '',
   annualStripePriceId: '',
@@ -43,7 +43,7 @@ function mapPlanToForm(plan: AdminPlan): PlanFormState {
     currency: plan.currency || 'brl',
     interval: (plan.interval as PlanFormState['interval']) || 'month',
     intervalCount: String(plan.intervalCount || 1),
-    tier: plan.tier || '',
+    accessLevel: plan.accessLevel != null ? String(plan.accessLevel) : '',
     features: (plan.features || []).join('\n'),
     annualPrice: plan.annualPrice != null ? String(plan.annualPrice) : '',
     annualStripePriceId: plan.annualStripePriceId || '',
@@ -79,8 +79,8 @@ export default function AdminPlans() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!form.tier) {
-        throw new Error('Selecione o nível de acesso do plano.');
+      if (form.accessLevel.trim() === '') {
+        throw new Error('Informe o nível de acesso do plano.');
       }
       const payload = {
         name: form.name.trim(),
@@ -89,7 +89,7 @@ export default function AdminPlans() {
         currency: form.currency.trim().toLowerCase(),
         interval: form.interval,
         intervalCount: Number(form.intervalCount),
-        tier: form.tier,
+        accessLevel: Number(form.accessLevel),
         features: form.features
           .split('\n')
           .map((item) => item.trim())
@@ -296,24 +296,45 @@ export default function AdminPlans() {
             </div>
 
             <div>
-              <label style={labelStyle}>Nível de acesso</label>
-              <select
-                value={form.tier}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    tier: event.target.value as PlanFormState['tier'],
-                  }))
-                }
-                style={{...inputStyle, cursor:'pointer'}}>
-                <option value="">Selecione</option>
-                <option value="free">Free</option>
-                <option value="pro">Pro</option>
-                <option value="premium">Premium</option>
-                <option value="global_investor">Global Investor</option>
-              </select>
-              <p style={{fontSize:12, color:'var(--color-neutral-500)', margin:'4px 0 0'}}>
-                Define o acesso liberado pro assinante — independente do nome do plano.
+              <label htmlFor="plan-access-level" style={labelStyle}>Nível de acesso</label>
+              <input
+                id="plan-access-level"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="Ex.: 0, 10, 15, 20..."
+                value={form.accessLevel}
+                onChange={(event) => setForm((prev) => ({...prev, accessLevel: event.target.value}))}
+                required
+                style={inputStyle}
+              />
+              <div style={{display:'flex', gap:6, marginTop:6, flexWrap:'wrap'}}>
+                {[
+                  {label: `Gratuito (${FREE_ACCESS_LEVEL})`, value: FREE_ACCESS_LEVEL},
+                  {label: `Pro (${PRO_ACCESS_LEVEL})`, value: PRO_ACCESS_LEVEL},
+                  {label: `Wealth (${PREMIUM_ACCESS_LEVEL})`, value: PREMIUM_ACCESS_LEVEL},
+                ].map((preset) => (
+                  <button
+                    key={preset.value}
+                    type="button"
+                    onClick={() => setForm((prev) => ({...prev, accessLevel: String(preset.value)}))}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid var(--hair)',
+                      borderRadius: 6,
+                      padding: '3px 8px',
+                      fontSize: 11,
+                      color: 'var(--color-neutral-400)',
+                      cursor: 'pointer',
+                    }}>
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <p style={{fontSize:12, color:'var(--color-neutral-500)', margin:'6px 0 0'}}>
+                Qualquer número inteiro — quem tem o nível mais alto libera tudo que o mais baixo libera.
+                Não é uma lista fixa: dá pra criar um plano intermediário (ex.: 15, entre Pro e Wealth) sem
+                mexer em código. Os botões acima só preenchem os patamares que as features de hoje usam.
               </p>
             </div>
 
@@ -484,7 +505,7 @@ export default function AdminPlans() {
                         {plan.intervalCount}x {plan.interval}
                       </div>
                     </td>
-                    <td style={{padding:'10px 12px', fontSize:14}}>{plan.tier || '—'}</td>
+                    <td style={{padding:'10px 12px', fontSize:14}}>{plan.accessLevel ?? '—'}</td>
                     <td style={{padding:'10px 12px', fontSize:14}}>
                       {plan.currency?.toUpperCase()} {plan.price.toFixed(2)}
                     </td>
