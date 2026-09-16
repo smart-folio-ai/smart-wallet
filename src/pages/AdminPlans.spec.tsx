@@ -1,6 +1,5 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import AdminPlans from './AdminPlans';
 import AdminService from '@/services/admin';
@@ -18,12 +17,12 @@ function renderPage() {
   );
 }
 
-// Select de tier e o segundo combobox do formulario (o primeiro e Intervalo).
-async function selectTier(optionName: RegExp | string) {
-  const user = userEvent.setup();
-  const comboboxes = screen.getAllByRole('combobox');
-  await user.click(comboboxes[1]);
-  await user.click(await screen.findByRole('option', {name: optionName}));
+// Nível de acesso (TRA-182) é um número livre, não um select — sem lista
+// fixa de nomes.
+function setAccessLevel(level: number) {
+  fireEvent.change(screen.getByLabelText(/Nível de acesso/i), {
+    target: {value: String(level)},
+  });
 }
 
 describe('AdminPlans — plan presentation flags', () => {
@@ -63,13 +62,13 @@ describe('AdminPlans — plan presentation flags', () => {
 
     fireEvent.click(screen.getByLabelText(/Destacar na landing/i));
     fireEvent.click(screen.getByLabelText(/Exibir como "em breve"/i));
-    await selectTier('Pro');
+    setAccessLevel(10);
 
     fireEvent.click(screen.getByRole('button', {name: /Criar plano/i}));
 
     await waitFor(() => {
       expect(AdminService.createPlan).toHaveBeenCalledWith(
-        expect.objectContaining({isFeatured: true, isComingSoon: true, tier: 'pro'}),
+        expect.objectContaining({isFeatured: true, isComingSoon: true, accessLevel: 10}),
       );
     });
   });
@@ -89,7 +88,7 @@ describe('AdminPlans — plan presentation flags', () => {
     fireEvent.change(screen.getByLabelText(/Stripe Price ID anual/i), {
       target: {value: 'price_annual_123'},
     });
-    await selectTier('Premium');
+    setAccessLevel(20);
 
     fireEvent.click(screen.getByRole('button', {name: /Criar plano/i}));
 
@@ -112,7 +111,7 @@ describe('AdminPlans — plan presentation flags', () => {
     fireEvent.change(screen.getByLabelText(/^Preço$/i), {
       target: {value: '19.9'},
     });
-    await selectTier('Free');
+    setAccessLevel(0);
 
     fireEvent.click(screen.getByRole('button', {name: /Criar plano/i}));
 
@@ -133,7 +132,7 @@ describe('AdminPlans — plan presentation flags', () => {
     fireEvent.change(screen.getByLabelText(/^Preço$/i), {
       target: {value: '19.9'},
     });
-    await selectTier('Free');
+    setAccessLevel(0);
 
     fireEvent.click(screen.getByRole('button', {name: /Criar plano/i}));
 

@@ -10,3 +10,5 @@ export {DataTable, TD_STYLE, TD_RIGHT} from './DataTable';
 export type {DataTableProps, DataTableColumn} from './DataTable';
 export {MarketDataStaleBanner} from './MarketDataStaleBanner';
 export type {MarketDataStaleBannerProps} from './MarketDataStaleBanner';
+export {ComingSoonBlur} from './ComingSoonBlur';
+export type {ComingSoonBlurProps} from './ComingSoonBlur';

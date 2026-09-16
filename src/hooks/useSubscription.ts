@@ -1,6 +1,11 @@
 import {useQuery} from '@tanstack/react-query';
 import {subscriptionService} from '@/server/api/api';
-import {planAtLeast, tierOfPlan} from '@/services/subscription/plan-tier';
+import {
+  PREMIUM_ACCESS_LEVEL,
+  PRO_ACCESS_LEVEL,
+  planAtLeast,
+  tierOfPlan,
+} from '@/services/subscription/plan-tier';
 import type {UserPlanTier} from '@/interface/subscription';
 
 type CurrentSubscriptionPayload = {
@@ -12,6 +17,7 @@ type CurrentSubscriptionPayload = {
     name?: string;
     features?: string[];
     price?: number;
+    accessLevel?: number;
   } | null;
   subscription?: {
     status?: string;
@@ -21,22 +27,27 @@ type CurrentSubscriptionPayload = {
       name?: string;
       features?: string[];
       price?: number;
+      accessLevel?: number;
     } | null;
   } | null;
 };
 
-const FEATURES_BY_TIER: Record<UserPlanTier, string[]> = {
-  free: [],
-  pro: ['comparator', 'broker_sync'],
-  premium: ['comparator', 'broker_sync', 'ai_insights'],
-  global_investor: ['comparator', 'broker_sync', 'ai_insights'],
-};
+/**
+ * Lista padrão de features quando o plano não tem `features` próprias
+ * (plano antigo). Não é uma lista fechada por nome — é só o comportamento
+ * de fallback para os dois patamares de hoje.
+ */
+function defaultFeaturesForLevel(level: UserPlanTier): string[] {
+  if (level >= PREMIUM_ACCESS_LEVEL) return ['comparator', 'broker_sync', 'ai_insights'];
+  if (level >= PRO_ACCESS_LEVEL) return ['comparator', 'broker_sync'];
+  return [];
+}
 
-/** Plano mínimo de cada feature paga (a checagem real é do server). */
+/** Nível mínimo de cada feature paga (a checagem real é do server). */
 const FEATURE_MIN_TIER: Record<string, UserPlanTier> = {
-  comparator: 'pro',
-  broker_sync: 'pro',
-  ai_insights: 'premium',
+  comparator: PRO_ACCESS_LEVEL,
+  broker_sync: PRO_ACCESS_LEVEL,
+  ai_insights: PREMIUM_ACCESS_LEVEL,
 };
 
 function normalizePlanName(name: string | undefined | null): string {
@@ -79,7 +90,7 @@ export function useSubscription() {
   const features =
     apiFeatures.length > 0
       ? apiFeatures
-      : FEATURES_BY_TIER[tier];
+      : defaultFeaturesForLevel(tier);
   const currentPeriodEnd =
     subscription?.subscription?.currentPeriodEnd ||
     subscription?.currentPeriodEnd ||
