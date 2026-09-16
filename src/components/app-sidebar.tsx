@@ -19,6 +19,7 @@ import {
   type LastAsset,
   type NavItem,
 } from './layout/nav-data';
+import {ADMIN_HOSTNAME} from '@/components/AdminHostRedirect';
 
 // Estilos de `navStyle` e do <aside> de design_handoff_trackerr/Trackerr App.dc.html.
 const ITEM_BASE =
@@ -60,8 +61,13 @@ function NavGroup({label, children}: {label: string; children: React.ReactNode})
   );
 }
 
+/** O host do admin serve o mesmo build, mas só mostra a administração. */
+const onAdminHost = () =>
+  typeof window !== 'undefined' && window.location.hostname === ADMIN_HOSTNAME;
+
 export function AppSidebar() {
   const {role} = useAuth();
+  const isAdminHost = onAdminHost();
   const {pathname} = useLocation();
   const [lastAsset, setLastAsset] = useState<LastAsset | null>(readLastAsset);
 
@@ -82,7 +88,7 @@ export function AppSidebar() {
       const data = await portfolioService.getAssets();
       return Array.isArray(data) ? data : [];
     },
-    enabled: !lastAsset,
+    enabled: !lastAsset && !isAdminHost,
     staleTime: 60_000,
   });
   const assetItem = useMemo<LastAsset | null>(() => {
@@ -124,7 +130,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-[16.8px] px-[8.4px] py-[11.2px]">
-        {sections.map((section) => (
+        {(isAdminHost ? [] : sections).map((section) => (
           <NavGroup key={section.label} label={section.label}>
             {section.items.map((item) => (
               <div key={item.to} className="contents">

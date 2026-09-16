@@ -37,6 +37,7 @@ import {NotificationBell} from './NotificationBell';
 import {openTutorial} from '@/components/onboarding/OnboardingTutorial';
 import {assetFromPath, sections} from './nav-data';
 import {CreatePortfolioDialog} from '@/components/portfolio/CreatePortfolioDialog';
+import {ADMIN_HOSTNAME} from '@/components/AdminHostRedirect';
 import {
   ALL_PORTFOLIOS,
   portfolioIdOf,
@@ -103,6 +104,10 @@ export function AppTopbar() {
   const {theme, toggleTheme} = useThemeToggle();
   const [walletOpen, setWalletOpen] = useState(false);
 
+  // No host do admin não existe carteira nem nível de detalhe: a barra fica
+  // só com o título e a conta.
+  const isAdminHost =
+    typeof window !== 'undefined' && window.location.hostname === ADMIN_HOSTNAME;
   const {portfolios, selectedId, selectedPortfolio, isAll, setSelectedId} =
     useSelectedPortfolio();
 
@@ -235,7 +240,9 @@ export function AppTopbar() {
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-wrap items-center gap-2 border-t border-border/50 px-4 py-2 sm:gap-3 md:px-6">
+      <div
+        hidden={isAdminHost}
+        className="flex min-w-0 flex-wrap items-center gap-2 border-t border-border/50 px-4 py-2 sm:gap-3 md:px-6">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
