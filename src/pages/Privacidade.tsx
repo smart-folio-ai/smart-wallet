@@ -61,7 +61,7 @@ export default function Privacidade() {
   return (
     <LegalDocLayout
       title="Política de privacidade"
-      updatedLabel="Última atualização em 2 de setembro de 2026 · rascunho"
+      updatedLabel="Última atualização em 2 de setembro de 2026"
       sections={sections}
     />
   );
