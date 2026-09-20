@@ -67,7 +67,12 @@ export default function AdminPlans() {
     queryFn: () => AdminService.getWebhookStatus(),
   });
 
-  const {data: webhookEvents, isLoading: isLoadingEvents} = useQuery({
+  const {
+    data: webhookEvents,
+    isLoading: isLoadingEvents,
+    isError: isWebhookEventsError,
+    error: webhookEventsError,
+  } = useQuery({
     queryKey: ['admin-webhook-events'],
     queryFn: () => AdminService.getWebhookEvents(10),
   });
@@ -613,7 +618,18 @@ export default function AdminPlans() {
                     </td>
                   </tr>
                 ))}
-                {!isLoadingEvents && !webhookEvents?.length ? (
+                {isWebhookEventsError ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      style={{padding:'20px 12px', textAlign:'center', fontSize:14, color:'var(--neg)'}}>
+                      Não foi possível carregar os eventos:{' '}
+                      {(webhookEventsError as any)?.response?.data?.message ||
+                        (webhookEventsError as any)?.message ||
+                        'erro desconhecido'}
+                    </td>
+                  </tr>
+                ) : !isLoadingEvents && !webhookEvents?.length ? (
                   <tr>
                     <td
                       colSpan={4}

@@ -82,7 +82,11 @@ export default function Subscription() {
     onSuccess: (session) => {
       window.location.href = session.url;
     },
-    onError: () => toast.error('Não foi possível abrir o portal', 'Tente novamente em instantes.'),
+    onError: (error: any) =>
+      toast.error(
+        'Não foi possível abrir o portal',
+        error?.response?.data?.message || 'Tente novamente em instantes.',
+      ),
   });
 
   const checkout = useMutation({
