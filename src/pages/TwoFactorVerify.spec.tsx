@@ -126,7 +126,7 @@ describe('TwoFactorVerify', () => {
       renderPage();
 
       await userEvent.type(screen.getByLabelText(/código de 6 dígitos/i), '123456');
-      await userEvent.click(screen.getByRole('button', {name: /verificar código/i}));
+      await userEvent.click(screen.getByRole('button', {name: /verificar e entrar/i}));
 
       await waitFor(() =>
         expect(mockNavigate).toHaveBeenCalledWith('/admin', {replace: true}),
@@ -141,7 +141,7 @@ describe('TwoFactorVerify', () => {
       renderPage();
 
       await userEvent.type(screen.getByLabelText(/código de 6 dígitos/i), '123456');
-      await userEvent.click(screen.getByRole('button', {name: /verificar código/i}));
+      await userEvent.click(screen.getByRole('button', {name: /verificar e entrar/i}));
 
       await waitFor(() =>
         expect(mockNavigate).toHaveBeenCalledWith('/dashboard', {replace: true}),

@@ -9,6 +9,7 @@ import {
 } from '@/services/authentication/session';
 import {recoveryCodesService, RecoveryCodesError} from '@/services/two-factor/recovery-codes';
 import {ADMIN_HOSTNAME} from '@/components/AdminHostRedirect';
+import {AuthLayout} from '@/components/auth/AuthLayout';
 import {
   hasRecoveryCodeContent,
   prepareRecoveryCodeForSubmit,
@@ -174,128 +175,158 @@ export default function TwoFactorVerify() {
 
   const disabled = state.loading || !canSubmit || blocked;
 
+  // Caixas de dígito do handoff: espelham o que está no input, que continua
+  // sendo o campo real (um input por dígito quebraria colar o código e o
+  // preenchimento automático do `one-time-code`).
+  const codeDigits = Array.from({length: 6}, (_, index) => ({
+    value: state.totpCode[index] ?? '',
+    filled: index < state.totpCode.length,
+  }));
+
   return (
-    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--surf-1)', padding:'0 16px'}}>
+    <AuthLayout>
       <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
-      <div style={{width:'100%', maxWidth:420, display:'flex', flexDirection:'column', gap:24}}>
-        {/* Icon + heading */}
-        <div style={{textAlign:'center', display:'flex', flexDirection:'column', gap:8, alignItems:'center'}}>
-          <div style={{width:64, height:64, borderRadius:16, background:'rgba(145,132,217,0.15)', display:'flex', alignItems:'center', justifyContent:'center'}}>
-            <i className={isRecovery ? 'ph-fill ph-key' : 'ph-fill ph-shield-check'} style={{fontSize:32, color:'var(--ac)'}} />
-          </div>
-          <h1 style={{fontSize:22, fontWeight:700, fontFamily:'var(--font-heading)'}}>Verificação em Dois Fatores</h1>
-          <p style={{fontSize:13, color:'var(--color-neutral-500)'}}>
-            {isRecovery
-              ? 'Digite um dos códigos de recuperação que você guardou'
-              : 'Abra seu aplicativo autenticador e insira o código de 6 dígitos'}
-          </p>
-        </div>
 
-        {/* Card */}
-        <div style={{border:'1px solid var(--hair)', borderRadius:14, background:'var(--nk-card)', overflow:'hidden', boxShadow:'var(--shadow-sm)'}}>
-          <div style={{padding:'20px 24px 12px', textAlign:'center', borderBottom:'1px solid var(--hair-soft)'}}>
-            <p style={{fontWeight:600, fontSize:14}}>
-              {isRecovery ? 'Código de recuperação' : 'Código de verificação'}
-            </p>
-            <p style={{fontSize:12, color:'var(--color-neutral-500)', marginTop:4}}>
-              {isRecovery
-                ? 'Cada código funciona uma única vez'
-                : 'Google Authenticator, Authy ou similar'}
-            </p>
-          </div>
-          <div style={{padding:'16px 24px', display:'flex', flexDirection:'column', gap:12}}>
-            {isRecovery ? (
-              <div style={{display:'flex', flexDirection:'column', gap:6}}>
-                <label htmlFor="recovery-code" style={{fontSize:12, fontWeight:500, color:'var(--color-neutral-500)'}}>Código de recuperação</label>
-                <input
-                  ref={recoveryInputRef}
-                  id="recovery-code"
-                  type="text"
-                  maxLength={32}
-                  placeholder="XXXX-XXXX"
-                  value={state.recoveryCode}
-                  onChange={(e) => dispatch({type:'set-recovery', value: e.target.value})}
-                  onKeyDown={handleKeyDown}
-                  disabled={blocked}
-                  autoFocus
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  style={{width:'100%', height:54, textAlign:'center', fontSize:20, letterSpacing:'0.16em', fontFamily:'monospace', border:'1px solid var(--hair)', borderRadius:8, background:'var(--surf-3)', color:'inherit', outline:'none', boxSizing:'border-box' as const}}
-                />
-              </div>
-            ) : (
-              <div style={{display:'flex', flexDirection:'column', gap:6}}>
-                <label htmlFor="code" style={{fontSize:12, fontWeight:500, color:'var(--color-neutral-500)'}}>Código de 6 dígitos</label>
-                <input
-                  ref={totpInputRef}
-                  id="code"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  placeholder="000000"
-                  value={state.totpCode}
-                  onChange={(e) => dispatch({type:'set-totp', value: e.target.value.replace(/\D/g, '').slice(0, 6)})}
-                  onKeyDown={handleKeyDown}
-                  disabled={blocked}
-                  autoFocus
-                  autoComplete="one-time-code"
-                  style={{width:'100%', height:54, textAlign:'center', fontSize:24, letterSpacing:'0.3em', fontFamily:'monospace', border:'1px solid var(--hair)', borderRadius:8, background:'var(--surf-3)', color:'inherit', outline:'none', boxSizing:'border-box' as const}}
-                />
-              </div>
-            )}
-
-            {state.error && (
-              <div role="alert" style={{display:'flex', gap:8, padding:'10px 12px', borderRadius:8, background:'var(--badge-neg-bg)', border:'1px solid var(--neg)'}}>
-                <i className="ph-fill ph-warning-circle" style={{fontSize:15, color:'var(--neg)', flexShrink:0, marginTop:1}} />
-                <div style={{fontSize:12.5, lineHeight:1.45}}>
-                  <strong style={{color:'var(--neg)'}}>{state.error.title}</strong>
-                  <div style={{color:'var(--color-neutral-400)', marginTop:2}}>{state.error.description}</div>
-                </div>
-              </div>
-            )}
-          </div>
-          <div style={{padding:'0 24px 20px', display:'flex', flexDirection:'column', gap:8}}>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={disabled}
-              style={{width:'100%', height:44, borderRadius:8, border:'none', background: disabled ? 'var(--surf-3)' : 'var(--grad-violet)', color: disabled ? 'var(--color-neutral-500)' : '#fff', fontSize:14, fontWeight:600, cursor: disabled ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6}}
-            >
-              {state.loading ? (
-                <><i className="ph-fill ph-spinner" style={{fontSize:15, animation:'spin 0.8s linear infinite'}} />Verificando...</>
-              ) : isRecovery ? 'Entrar com código de recuperação' : 'Verificar Código'}
-            </button>
-
-            {!blocked && (
-              <button
-                type="button"
-                onClick={() => switchMode(isRecovery ? 'totp' : 'recovery')}
-                style={{background:'none', border:'none', cursor:'pointer', fontSize:13, color:'var(--ac)', display:'flex', alignItems:'center', justifyContent:'center', gap:4, padding:'4px 0'}}
-              >
-                <i className={isRecovery ? 'ph-fill ph-device-mobile' : 'ph-fill ph-key'} style={{fontSize:14}} />
-                {isRecovery
-                  ? 'Voltar para o código do autenticador'
-                  : 'Usar um código de recuperação'}
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              style={{background:'none', border:'none', cursor:'pointer', fontSize:13, color:'var(--color-neutral-500)', display:'flex', alignItems:'center', justifyContent:'center', gap:4, padding:'4px 0'}}
-            >
-              <i className="ph-fill ph-arrow-left" style={{fontSize:14}} />Voltar para o login
-            </button>
-          </div>
-        </div>
-
-        <p style={{textAlign:'center', fontSize:11.5, color:'var(--color-neutral-500)'}}>
-          Não tem acesso ao seu aplicativo nem aos códigos?{' '}
-          <a href="mailto:suporte@trackerr.com.br" style={{color:'var(--ac)'}}>Contate o suporte</a>
+      <div>
+        <h2
+          style={{
+            fontFamily: 'var(--font-heading)',
+            fontSize: 24,
+            fontWeight: 600,
+            letterSpacing: '-0.025em',
+            margin: 0,
+          }}>
+          Verificação em duas etapas
+        </h2>
+        <p style={{fontSize: 13, color: 'var(--color-neutral-500)', margin: '8.4px 0 0', lineHeight: 1.55}}>
+          {isRecovery
+            ? 'Digite um dos códigos de recuperação que você guardou. Cada um funciona uma única vez.'
+            : 'Abra seu aplicativo autenticador e digite o código de 6 dígitos. Ele muda a cada 30 segundos.'}
         </p>
       </div>
-    </div>
+
+      <div style={{marginTop: 22.4}}>
+        {isRecovery ? (
+          <label style={{display: 'flex', flexDirection: 'column', gap: 5.6}}>
+            <span style={{fontSize: 11.5, color: 'var(--color-neutral-400)'}}>Código de recuperação</span>
+            <input
+              ref={recoveryInputRef}
+              id="recovery-code"
+              type="text"
+              maxLength={32}
+              placeholder="XXXX-XXXX"
+              value={state.recoveryCode}
+              onChange={(e) => dispatch({type: 'set-recovery', value: e.target.value})}
+              onKeyDown={handleKeyDown}
+              disabled={blocked}
+              autoFocus
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              style={{width: '100%', height: 42, textAlign: 'center', letterSpacing: '0.16em', border: '1px solid var(--hair)', borderRadius: 8, background: 'rgba(var(--rgb-bg),0.65)', color: 'var(--color-text)', fontFamily: 'var(--font-body)', fontSize: 15, boxSizing: 'border-box'}}
+            />
+          </label>
+        ) : (
+          <>
+            <div aria-hidden style={{display: 'flex', gap: 8.4, justifyContent: 'space-between'}}>
+              {codeDigits.map((digit, index) => (
+                <div
+                  key={index}
+                  style={{
+                    width: 46,
+                    height: 52,
+                    border: `1px solid ${digit.filled ? 'var(--color-accent-600)' : 'var(--hair)'}`,
+                    borderRadius: 8,
+                    background: 'rgba(var(--rgb-bg),0.65)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: 21,
+                    fontWeight: 600,
+                  }}>
+                  {digit.value}
+                </div>
+              ))}
+            </div>
+            <label htmlFor="code" className="sr-only">
+              Código de 6 dígitos
+            </label>
+            <input
+              ref={totpInputRef}
+              id="code"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              placeholder="Digite o código de 6 dígitos"
+              value={state.totpCode}
+              onChange={(e) => dispatch({type: 'set-totp', value: e.target.value.replace(/\D/g, '').slice(0, 6)})}
+              onKeyDown={handleKeyDown}
+              disabled={blocked}
+              autoFocus
+              autoComplete="one-time-code"
+              style={{marginTop: 11.2, width: '100%', height: 42, textAlign: 'center', letterSpacing: '0.3em', border: '1px solid var(--hair)', borderRadius: 8, background: 'rgba(var(--rgb-bg),0.65)', color: 'var(--color-text)', fontFamily: 'var(--font-body)', fontSize: 15, boxSizing: 'border-box'}}
+            />
+          </>
+        )}
+
+        {state.error && (
+          <div
+            role="alert"
+            style={{display: 'flex', gap: 8, padding: '10px 12px', borderRadius: 8, background: 'var(--badge-neg-bg)', border: '1px solid var(--neg)', marginTop: 14}}>
+            <i className="ph-fill ph-warning-circle" style={{fontSize: 15, color: 'var(--neg)', flexShrink: 0, marginTop: 1}} />
+            <div style={{fontSize: 12.5, lineHeight: 1.45}}>
+              <strong style={{color: 'var(--neg)'}}>{state.error.title}</strong>
+              <div style={{color: 'var(--color-neutral-400)', marginTop: 2}}>{state.error.description}</div>
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={disabled}
+          className="hover:brightness-[1.08] disabled:cursor-not-allowed"
+          style={{marginTop: 14, width: '100%', height: 44, borderRadius: 8, border: 'none', background: disabled ? 'var(--surf-3)' : 'var(--grad-violet)', color: disabled ? 'var(--color-neutral-500)' : 'var(--sunk)', fontFamily: 'var(--font-body)', fontSize: 13.5, fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer', boxShadow: disabled ? 'none' : '0 8px 28px rgba(152,160,171,0.26)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8.4}}>
+          {state.loading ? (
+            <>
+              <i className="ph-fill ph-spinner" style={{fontSize: 15, animation: 'spin 0.8s linear infinite'}} />
+              Verificando...
+            </>
+          ) : (
+            <>
+              {isRecovery ? 'Entrar com código de recuperação' : 'Verificar e entrar'}
+              <i className="ph ph-arrow-right" style={{fontSize: 15}} />
+            </>
+          )}
+        </button>
+
+        {!blocked && (
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 16.8, fontSize: 12}}>
+            <button
+              type="button"
+              onClick={() => switchMode(isRecovery ? 'totp' : 'recovery')}
+              style={{border: 'none', background: 'none', padding: 0, color: 'var(--color-neutral-500)', fontFamily: 'var(--font-body)', fontSize: 12, cursor: 'pointer'}}>
+              {isRecovery ? 'Voltar para o código do autenticador' : 'Usar um código de recuperação'}
+            </button>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => navigate('/signin')}
+          style={{display: 'flex', alignItems: 'center', gap: 5.6, border: 'none', background: 'none', padding: 0, marginTop: 22.4, color: 'var(--color-neutral-500)', fontFamily: 'var(--font-body)', fontSize: 12, cursor: 'pointer'}}>
+          <i className="ph ph-arrow-left" style={{fontSize: 13}} />
+          <span>Voltar para o login</span>
+        </button>
+
+        <p style={{fontSize: 11.5, color: 'var(--color-neutral-500)', marginTop: 22.4, lineHeight: 1.5}}>
+          Não tem acesso ao autenticador nem aos códigos?{' '}
+          <a href="mailto:suporte@trackerr.com.br" style={{color: 'var(--color-accent-300)'}}>
+            Contate o suporte
+          </a>
+        </p>
+      </div>
+    </AuthLayout>
   );
 }
