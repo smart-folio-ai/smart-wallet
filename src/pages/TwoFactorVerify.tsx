@@ -8,6 +8,7 @@ import {
   SessionTokens,
 } from '@/services/authentication/session';
 import {recoveryCodesService, RecoveryCodesError} from '@/services/two-factor/recovery-codes';
+import {ADMIN_HOSTNAME} from '@/components/AdminHostRedirect';
 import {
   hasRecoveryCodeContent,
   prepareRecoveryCodeForSubmit,
@@ -101,7 +102,12 @@ export default function TwoFactorVerify() {
 
   const finish = () => {
     toast.success('Autenticação concluída!', 'Bem-vindo ao Trackerr.');
-    navigate('/dashboard', {replace: true});
+    // O host admin serve só `/admin*`: mandar para /dashboard ali fazia o
+    // AdminHostRedirect tratar a rota como inválida e devolver ao /signin,
+    // logo depois de o segundo fator ter passado. Editor é corrigido para
+    // /admin/grants pelo próprio AdminHostRedirect.
+    const isAdminHost = window.location.hostname === ADMIN_HOSTNAME;
+    navigate(isAdminHost ? '/admin' : '/dashboard', {replace: true});
   };
 
   const handleVerifyTotp = async () => {

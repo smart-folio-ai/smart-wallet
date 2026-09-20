@@ -51,10 +51,14 @@ export const useAuth = (): UseAuthReturn => {
     // Verifica autenticação inicial
     checkAuth();
 
-    // Escuta eventos de login/logout
+    // Escuta eventos de login/logout.
+    //
+    // Relê o token em vez de só ligar a flag: `role` e `userId` vêm de
+    // dentro do JWT, e deixá-los defasados fazia o host admin tratar um
+    // admin recém-logado como conta sem papel administrativo — expulsando
+    // para o app em vez de abrir o painel.
     const handleLogin = () => {
-      setIsAuthenticated(true);
-      setIsLoading(false);
+      checkAuth();
     };
 
     const handleLogout = () => {

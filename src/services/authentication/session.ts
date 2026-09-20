@@ -16,6 +16,11 @@ export function establishSession({accessToken, refreshToken}: SessionTokens): vo
   localStorage.setItem('access_token', accessToken);
   localStorage.setItem('refresh_token', refreshToken);
   sessionStorage.removeItem(TEMP_TOKEN_STORAGE_KEY);
+  // Sem este evento o `useAuth` já montado continua com `isAuthenticated:
+  // false` depois do segundo fator — o login normal dispara, este caminho
+  // não disparava. No host admin isso mandava quem acabou de passar no 2FA
+  // de volta para /signin, porque o AdminHostRedirect só vê o estado do hook.
+  window.dispatchEvent(new CustomEvent('auth:login'));
 }
 
 /**

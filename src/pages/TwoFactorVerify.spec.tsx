@@ -1,4 +1,4 @@
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
@@ -100,6 +100,53 @@ describe('TwoFactorVerify', () => {
     await waitFor(() =>
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard', {replace: true}),
     );
+  });
+
+  /**
+   * Regressão: no host admin o destino era /dashboard, rota que aquele host
+   * não serve. O AdminHostRedirect tratava como inválida e devolvia ao
+   * /signin logo depois do segundo fator ter passado — parecia que o 2FA
+   * tinha falhado quando na verdade tinha funcionado.
+   */
+  describe('destino após o segundo fator depende do host', () => {
+    const setHostname = (hostname: string) => {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: {...window.location, hostname, search: ''},
+      });
+    };
+
+    afterEach(() => setHostname('localhost'));
+
+    it('manda para /admin no host do painel administrativo', async () => {
+      setHostname('admin.trackerr.com.br');
+      apiPost.mockResolvedValue({
+        data: {accessToken: 'access-abc', refreshToken: 'refresh-abc'},
+      });
+      renderPage();
+
+      await userEvent.type(screen.getByLabelText(/código de 6 dígitos/i), '123456');
+      await userEvent.click(screen.getByRole('button', {name: /verificar código/i}));
+
+      await waitFor(() =>
+        expect(mockNavigate).toHaveBeenCalledWith('/admin', {replace: true}),
+      );
+    });
+
+    it('mantém /dashboard no host do app', async () => {
+      setHostname('trackerr.com.br');
+      apiPost.mockResolvedValue({
+        data: {accessToken: 'access-abc', refreshToken: 'refresh-abc'},
+      });
+      renderPage();
+
+      await userEvent.type(screen.getByLabelText(/código de 6 dígitos/i), '123456');
+      await userEvent.click(screen.getByRole('button', {name: /verificar código/i}));
+
+      await waitFor(() =>
+        expect(mockNavigate).toHaveBeenCalledWith('/dashboard', {replace: true}),
+      );
+    });
   });
 
   it('mostra a mensagem certa para código inválido ou já usado', async () => {
