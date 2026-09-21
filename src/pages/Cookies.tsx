@@ -162,7 +162,7 @@ export default function Cookies() {
   return (
     <LegalDocLayout
       title="Política de cookies"
-      updatedLabel="Última atualização em 2 de setembro de 2026 · rascunho"
+      updatedLabel="Última atualização em 2 de setembro de 2026"
       sections={sections}>
       <CookiePreferencesWidget />
     </LegalDocLayout>

@@ -63,7 +63,7 @@ export default function Termos() {
   return (
     <LegalDocLayout
       title="Termos de uso"
-      updatedLabel="Última atualização em 2 de setembro de 2026 · rascunho"
+      updatedLabel="Última atualização em 2 de setembro de 2026"
       sections={sections}
     />
   );

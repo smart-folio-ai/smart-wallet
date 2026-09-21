@@ -1,5 +1,4 @@
 import {ReactNode} from 'react';
-import {AlertTriangle} from '@/components/ui/icons';
 import {LegalHeader} from '@/components/legal/LegalHeader';
 
 export interface LegalSection {
@@ -36,21 +35,6 @@ export function LegalDocLayout({
       <LegalHeader />
 
       <div className="mx-auto max-w-5xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
-        {/* Aviso de rascunho — obrigatório em todo conteúdo jurídico ainda
-            não revisado por um advogado/contador. Não remover nem
-            enfraquecer o texto sem aprovação jurídica. */}
-        <div className="mb-8 flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-on-surface">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" weight="fill" aria-hidden />
-          <p className="leading-relaxed text-on-surface-muted">
-            <span className="font-semibold text-on-surface">
-              Este documento é um rascunho gerado para revisão jurídica.
-            </span>{' '}
-            Ele não constitui a versão final de {title} até aprovação de um
-            advogado ou contador responsável. Não utilize este texto como
-            base legal definitiva.
-          </p>
-        </div>
-
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside className="hidden lg:block">
             <div className="sticky top-24 flex flex-col gap-0.5">
@@ -112,10 +96,10 @@ export function LegalDocLayout({
 
       <footer className="border-t border-surface-hairline/[0.07]">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-5 text-[11.5px] text-on-surface-muted/60 sm:px-6 lg:px-8">
-          <span>
-            © {new Date().getFullYear()} Trackerr Tecnologia Ltda · CNPJ [CNPJ
-            a confirmar]
-          </span>
+          {/* CNPJ sai do ar até a empresa ser aberta: exibir "a confirmar"
+              num rodapé jurídico é pior que não exibir nada. Quando o número
+              existir, volta como `· CNPJ 00.000.000/0001-00`. */}
+          <span>© {new Date().getFullYear()} Trackerr Tecnologia Ltda</span>
           <span>LGPD · Senhas com Argon2id · TLS em trânsito</span>
         </div>
       </footer>
