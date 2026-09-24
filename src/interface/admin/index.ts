@@ -1,5 +1,15 @@
 import {ICreateSubscription, ISubscription, IUpdateSubscription} from '@/interface/subscription';
 
+/** Contagens agregadas de usuários — nunca dado pessoal (TRA-192). */
+export type AdminUserCounts = {
+  total: number;
+  newLast7Days: number;
+  newLast30Days: number;
+  activeLast24h: number;
+  activeLast7Days: number;
+  activeLast30Days: number;
+};
+
 export type AdminOverviewResponse = {
   totalActiveSubscriptions: number;
   totalTrialSubscriptions: number;
@@ -14,6 +24,8 @@ export type AdminOverviewResponse = {
     planName: string;
     count: number;
   }>;
+  /** Opcional: API anterior ao TRA-192 não envia. */
+  users?: AdminUserCounts;
 };
 
 export type ManualGrantType = 'TRIAL' | 'PERMANENT';
