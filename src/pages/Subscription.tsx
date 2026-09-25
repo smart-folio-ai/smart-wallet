@@ -14,6 +14,7 @@ import {PixCheckoutModal} from '@/components/subscription/PixCheckoutModal';
 import {PlanCard} from '@/components/subscription/PlanCard';
 import {planCtaStyle} from '@/components/subscription/plan-cta-style';
 import {cumulativeFeatures} from '@/utils/planFeatures';
+import {checkoutErrorMessage} from '@/services/subscription/checkout-error';
 
 type PricingPeriod = 'monthly' | 'annual';
 
@@ -115,7 +116,8 @@ export default function Subscription() {
     onSuccess: (session) => {
       window.location.href = session.url;
     },
-    onError: () => toast.error('Não foi possível iniciar o checkout', 'O pagamento está indisponível agora. Tente novamente em instantes.'),
+    onError: (error) =>
+      toast.error('Não foi possível iniciar o checkout', checkoutErrorMessage(error)),
   });
 
   const subscribe = (plan: ISubscription) => {
