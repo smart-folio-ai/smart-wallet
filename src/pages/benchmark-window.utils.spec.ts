@@ -62,13 +62,24 @@ describe('getEffectiveHistoryWindow', () => {
     // 23:30 em horário local de um dia D corresponde a D+1 em UTC quando o
     // fuso é negativo (ex.: UTC-3). Usar toISOString() cru deslocaria essa
     // data para o dia seguinte.
-    vi.setSystemTime(new Date('2026-01-15T12:00:00-03:00'));
-    const localLateNight = new Date('2026-01-10T23:30:00-03:00');
+    //
+    // O fuso é fixado explicitamente (não o da máquina que roda o teste):
+    // sem isso, o teste passa em quem desenvolve em UTC-3 e quebra no
+    // runner de CI, que roda em UTC — onde a borda que o teste existe para
+    // pegar nunca aparece.
+    const originalTz = process.env.TZ;
+    process.env.TZ = 'America/Sao_Paulo';
+    try {
+      vi.setSystemTime(new Date('2026-01-15T12:00:00-03:00'));
+      const localLateNight = new Date('2026-01-10T23:30:00-03:00');
 
-    const window = getEffectiveHistoryWindow([{date: localLateNight}]);
+      const window = getEffectiveHistoryWindow([{date: localLateNight}]);
 
-    expect(window!.fromIso).toBe('2026-01-10');
-    vi.useRealTimers();
+      expect(window!.fromIso).toBe('2026-01-10');
+    } finally {
+      vi.useRealTimers();
+      process.env.TZ = originalTz;
+    }
   });
 });
 

@@ -56,4 +56,27 @@ describe('AdminDashboard', () => {
     expect(screen.getAllByText('Investidor Pro')).toHaveLength(2);
     expect(screen.getByText('Free')).toBeInTheDocument();
   });
+
+  it('exibe a contagem de usuários vinda do overview (TRA-192)', async () => {
+    mockGetOverview.mockResolvedValue({
+      totalActiveSubscriptions: 0,
+      totalTrialSubscriptions: 0,
+      totalManualGrants: 0,
+      mostUsedPlan: null,
+      usersByPlan: [],
+      users: {
+        total: 987,
+        newLast7Days: 11,
+        newLast30Days: 40,
+        activeLast24h: 21,
+        activeLast7Days: 88,
+        activeLast30Days: 210,
+      },
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('987')).toBeInTheDocument();
+    expect(screen.getByText('210')).toBeInTheDocument();
+  });
 });
