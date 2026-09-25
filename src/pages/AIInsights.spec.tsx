@@ -373,6 +373,43 @@ describe('AIInsights — feed de insights', () => {
 
     await waitFor(() => expect(getOrCreateAiAnalysisMock).toHaveBeenCalledTimes(2));
   });
+
+  it('mostra spinner girando enquanto a análise inicial carrega', async () => {
+    let resolveAnalysis: (value: {ai_analysis: object}) => void = () => {};
+    getOrCreateAiAnalysisMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAnalysis = resolve;
+      }),
+    );
+
+    renderPage();
+
+    expect(await screen.findByTestId('ai-insights-loading-spinner')).toBeInTheDocument();
+    expect(screen.getByText('Trackerr IA está analisando sua carteira…')).toBeInTheDocument();
+
+    resolveAnalysis({ai_analysis: {}});
+    await waitFor(() => expect(screen.queryByTestId('ai-insights-loading-spinner')).not.toBeInTheDocument());
+  });
+
+  it('botão de atualizar gira durante o refetch e volta ao ícone normal ao terminar', async () => {
+    renderPage();
+    const refresh = await screen.findByLabelText('Atualizar análise');
+    await waitFor(() => expect(refresh).not.toBeDisabled());
+
+    let resolveRefetch: (value: {ai_analysis: object}) => void = () => {};
+    getOrCreateAiAnalysisMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRefetch = resolve;
+      }),
+    );
+    fireEvent.click(refresh);
+
+    await waitFor(() => expect(refresh.querySelector('.ph-circle-notch')).toBeInTheDocument());
+    expect(refresh.querySelector('.ph-arrow-clockwise')).not.toBeInTheDocument();
+
+    resolveRefetch({ai_analysis: {}});
+    await waitFor(() => expect(refresh.querySelector('.ph-arrow-clockwise')).toBeInTheDocument());
+  });
 });
 
 describe('AIInsights — usuário sem plano Pro', () => {
