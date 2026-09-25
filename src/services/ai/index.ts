@@ -113,6 +113,39 @@ export interface PortfolioErrorRadarResponse {
   positionsCount: number;
 }
 
+/**
+ * Espelha `OpportunityRadarOpportunity`/`OpportunityRadarOutput` do server
+ * (TRA-8/TRA-14) — não o `OpportunityRadarItem` legado da resposta Python,
+ * que este endpoint substitui.
+ */
+export interface OpportunityRadarOpportunity {
+  symbol: string;
+  type: 'attractive_range' | 'portfolio_fit' | 'sector_underallocated' | 'watchlist_trigger';
+  rationale: {
+    signals: string[];
+    metrics: {
+      price: number | null;
+      priceToEarnings: number | null;
+      dividendYield: number | null;
+      changePercent: number | null;
+      sector: string;
+    };
+  };
+}
+
+export interface OpportunityRadarResponse {
+  modelVersion: 'opportunity_radar_v1';
+  opportunities: OpportunityRadarOpportunity[];
+  underallocatedSectors: Array<{
+    sector: string;
+    currentPercentage: number;
+    targetPercentage: number;
+    deltaPercentage: number;
+  }>;
+  unavailableSymbols: string[];
+  warnings: string[];
+}
+
 /** Espelha FutureSimulatorHorizon do server. */
 export type FutureSimulatorHorizon = '6m' | '1y' | '5y' | '10y';
 
@@ -347,6 +380,11 @@ class AiAnalysisService {
 
   async errorRadar(): Promise<PortfolioErrorRadarResponse> {
     const response = await aiService.errorRadar();
+    return response.data;
+  }
+
+  async opportunityRadar(): Promise<OpportunityRadarResponse> {
+    const response = await aiService.opportunityRadar();
     return response.data;
   }
 

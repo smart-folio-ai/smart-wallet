@@ -1,5 +1,6 @@
 import type {
   AiAnalysisResult,
+  OpportunityRadarResponse,
   PortfolioErrorRadarAlert,
   PortfolioErrorRadarAlertType,
   PortfolioErrorRadarResponse,
@@ -61,8 +62,9 @@ export function buildFeedInsights(params: {
   radar: PortfolioErrorRadarResponse | null;
   analysis: AiAnalysisResult | null;
   radarUpdatedAt: number | null;
+  opportunityRadar?: OpportunityRadarResponse | null;
 }): FeedInsight[] {
-  const {radar, analysis, radarUpdatedAt} = params;
+  const {radar, analysis, radarUpdatedAt, opportunityRadar} = params;
   const aiData = analysis?.ai_analysis ?? analysis;
 
   const alerts = [...(radar?.alerts ?? [])].sort(
@@ -86,19 +88,22 @@ export function buildFeedInsights(params: {
     action: assetAction(alert.symbol),
   }));
 
-  const opportunityInsights = (aiData?.opportunity_radar ?? []).map<FeedInsight>(
+  // TRA-14: endpoint dedicado (TRA-8) no lugar de `aiData?.opportunity_radar`,
+  // que vinha embutido na resposta legada do trackerr-ia e nunca foi
+  // religado a este feed.
+  const opportunityInsights = (opportunityRadar?.opportunities ?? []).map<FeedInsight>(
     (item, index) => ({
       id: `opp-${item.symbol}-${index}`,
       category: 'Oportunidade',
       priority: null,
       severity: 'info',
       title: item.symbol,
-      body: item.rationale,
+      body: item.rationale.signals.join(' · ') || `${item.symbol} em condição interessante.`,
       confidence: null,
       sources: null,
-      generatedAt: null,
-      model: 'Trackerr IA',
-      aiGenerated: true,
+      generatedAt: opportunityRadar ? radarUpdatedAt : null,
+      model: opportunityRadar?.modelVersion ?? 'opportunity_radar_v1',
+      aiGenerated: false,
       action: assetAction(item.symbol),
     }),
   );

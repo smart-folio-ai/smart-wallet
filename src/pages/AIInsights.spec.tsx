@@ -10,6 +10,7 @@ import {
 
 const portfolioScoreMock = vi.fn();
 const errorRadarMock = vi.fn();
+const opportunityRadarMock = vi.fn();
 const futureSimulatorMock = vi.fn();
 const getOrCreateAiAnalysisMock = vi.fn();
 const useSubscriptionMock = vi.fn();
@@ -32,6 +33,7 @@ vi.mock('@/services/ai', () => ({
   aiAnalysisService: {
     portfolioScore: (...args: unknown[]) => portfolioScoreMock(...args),
     errorRadar: (...args: unknown[]) => errorRadarMock(...args),
+    opportunityRadar: (...args: unknown[]) => opportunityRadarMock(...args),
     futureSimulator: (...args: unknown[]) => futureSimulatorMock(...args),
   },
 }));
@@ -124,6 +126,14 @@ const baseSimulation = {
   confidence: 'high',
 };
 
+const clearOpportunityRadar = {
+  modelVersion: 'opportunity_radar_v1',
+  opportunities: [],
+  underallocatedSectors: [],
+  unavailableSymbols: [],
+  warnings: [],
+};
+
 const cdiSeries = {
   data: {series: [{date: '2025-01-01', value: 0.04}, {date: '2025-06-01', value: 0.04}]},
 };
@@ -150,6 +160,7 @@ beforeEach(() => {
   getOrCreateAiAnalysisMock.mockResolvedValue({ai_analysis: {}});
   portfolioScoreMock.mockResolvedValue(okScore);
   errorRadarMock.mockResolvedValue(clearRadar);
+  opportunityRadarMock.mockResolvedValue(clearOpportunityRadar);
   getInvestorProfileMock.mockResolvedValue(profileWith('intermediate'));
   getCdiSeriesMock.mockResolvedValue(cdiSeries);
 });
@@ -347,21 +358,54 @@ describe('AIInsights — feed de insights', () => {
     expect(await screen.findByText(/Nenhum alerta no momento/)).toBeInTheDocument();
   });
 
-  it('marca oportunidades do LLM com o aviso de conteúdo gerado por IA', async () => {
+  it('marca movimentação de rebalanceamento do LLM com o aviso de conteúdo gerado por IA', async () => {
     getOrCreateAiAnalysisMock.mockResolvedValue({
-      ai_analysis: {
-        opportunity_radar: [{symbol: 'BBAS3', type: 'attractive_range', price: 20, rationale: 'P/L baixo'}],
-      },
+      ai_analysis: {rebalancing: {top_moves: ['Reduzir 5% em BBAS3']}},
     });
     renderPage();
 
-    const title = await screen.findByText('BBAS3');
+    const title = await screen.findByText('Reduzir 5% em BBAS3');
     const card = title.closest('section') as HTMLElement;
     // Sem prioridade na resposta do LLM: o badge não inventa uma.
     expect(within(card).queryByText(/^(Alta|Média|Baixa)$/)).not.toBeInTheDocument();
     expect(
       screen.getByText('Esse texto foi gerado com o auxílio de inteligência artificial.'),
     ).toBeInTheDocument();
+  });
+
+  it('religa o Radar de Oportunidades no endpoint dedicado (TRA-8/14), não mais na resposta legada', async () => {
+    // Continua vindo na resposta legada — prova que o feed NÃO lê mais daqui.
+    getOrCreateAiAnalysisMock.mockResolvedValue({
+      ai_analysis: {
+        opportunity_radar: [{symbol: 'LEGADO3', type: 'attractive_range', price: 20, rationale: 'não deveria aparecer'}],
+      },
+    });
+    opportunityRadarMock.mockResolvedValue({
+      modelVersion: 'opportunity_radar_v1',
+      opportunities: [
+        {
+          symbol: 'BBAS3',
+          type: 'attractive_range',
+          rationale: {
+            signals: ['P/L abaixo da média do setor', 'Dividend yield acima de 6%'],
+            metrics: {price: 20, priceToEarnings: 8, dividendYield: 0.07, changePercent: -2, sector: 'Financeiro'},
+          },
+        },
+      ],
+      underallocatedSectors: [],
+      unavailableSymbols: [],
+      warnings: [],
+    });
+    renderPage();
+
+    expect(await screen.findByText('BBAS3')).toBeInTheDocument();
+    expect(screen.getByText('P/L abaixo da média do setor · Dividend yield acima de 6%')).toBeInTheDocument();
+    expect(screen.queryByText('LEGADO3')).not.toBeInTheDocument();
+
+    // Determinístico (regras sobre dados de mercado, não LLM) — sem o aviso de IA.
+    expect(
+      screen.queryByText('Esse texto foi gerado com o auxílio de inteligência artificial.'),
+    ).not.toBeInTheDocument();
   });
 
   it('atualiza a análise pelo botão do cabeçalho do feed', async () => {

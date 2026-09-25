@@ -62,6 +62,9 @@ export const aiService = {
   assetOpinion: (symbol: string) =>
     apiClient.post('/ai/asset-opinion', {symbol}),
   errorRadar: () => apiClient.get('/ai/error-radar'),
+  // TRA-14: endpoint dedicado (TRA-8), no lugar do opportunity_radar
+  // embutido na resposta legada do trackerr-ia.
+  opportunityRadar: () => apiClient.post('/ai/opportunity-radar', {}),
   futureSimulator: (payload: {
     horizon: '6m' | '1y' | '5y' | '10y';
     monthlyContribution?: number;
