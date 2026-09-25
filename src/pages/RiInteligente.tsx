@@ -3,8 +3,6 @@ import {Link} from 'react-router-dom';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import {AiGeneratedNotice} from '@/components/ui/ai-generated-notice';
 import {useSubscription} from '@/hooks/useSubscription';
-import {PREMIUM_ACCESS_LEVEL, planAtLeast} from '@/services/subscription/plan-tier';
-import type {UserPlanTier} from '@/interface/subscription';
 import {
   RiAssetSuggestion,
   RiDocumentListItem,
@@ -127,10 +125,6 @@ function buildDocumentDisplayTitle(document: RiDocumentListItem): string {
   return document.period ? `${typeLabel} · ${document.period}` : typeLabel;
 }
 
-function isPremiumOrGlobal(tier: UserPlanTier, isSubscribed: boolean) {
-  return isSubscribed && planAtLeast(tier, PREMIUM_ACCESS_LEVEL);
-}
-
 interface SearchState {
   draft: string;
   query: string;
@@ -202,8 +196,7 @@ const chipStyle: CSSProperties = {
 const RiInteligente = () => {
   const [search, dispatch] = useReducer(searchReducer, initialSearch);
   const [showSlowNotice, setShowSlowNotice] = useState(false);
-  const {tier, isSubscribed} = useSubscription();
-  const canUseAiSummary = isPremiumOrGlobal(tier, isSubscribed);
+  const {hasRiAiSummary: canUseAiSummary} = useSubscription();
 
   const draft = search.draft.trim();
   const query = search.query.trim();

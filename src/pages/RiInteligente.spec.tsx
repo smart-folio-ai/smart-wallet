@@ -69,6 +69,7 @@ describe('RiInteligente', () => {
       planName: 'premium',
       tier: PREMIUM_ACCESS_LEVEL,
       isSubscribed: true,
+      hasRiAiSummary: true,
     });
     autocompleteRiAssetsMock.mockResolvedValue([
       {ticker: 'BBDC4', company: 'Banco Bradesco S.A.'},
@@ -280,6 +281,7 @@ describe('RiInteligente', () => {
       planName: 'free',
       tier: FREE_ACCESS_LEVEL,
       isSubscribed: false,
+      hasRiAiSummary: false,
     });
 
     renderPage();

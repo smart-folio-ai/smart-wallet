@@ -8,8 +8,22 @@ import {
 } from '@/services/subscription/plan-tier';
 import type {UserPlanTier} from '@/interface/subscription';
 
+/** Espelho de `PlanCapability` do server (user-plan.types.ts). */
+export type PlanCapability =
+  | 'fiscal.ir_report'
+  | 'broker.sync'
+  | 'ai.rag'
+  | 'ai.insights'
+  | 'fiscal.darf'
+  | 'reports.export'
+  | 'risk.analytics'
+  | 'policy.investment'
+  | 'research.comparator'
+  | 'ri.ai_summary';
+
 type CurrentSubscriptionPayload = {
   hasSubscription?: boolean;
+  capabilities?: string[];
   status?: string;
   currentPeriodEnd?: string;
   plan?: {
@@ -49,6 +63,21 @@ const FEATURE_MIN_TIER: Record<string, UserPlanTier> = {
   broker_sync: PRO_ACCESS_LEVEL,
   ai_insights: PREMIUM_ACCESS_LEVEL,
 };
+
+/**
+ * O server manda `capabilities` já resolvidas com a mesma regra do gate
+ * (TRA-200). Enquanto houver server sem o campo, cai na regra antiga.
+ */
+export function resolveCapability(
+  serverCapabilities: string[] | undefined,
+  capability: PlanCapability,
+  legacy: () => boolean,
+): boolean {
+  if (Array.isArray(serverCapabilities)) {
+    return serverCapabilities.includes(capability);
+  }
+  return legacy();
+}
 
 function normalizePlanName(name: string | undefined | null): string {
   return String(name || 'free')
@@ -103,6 +132,20 @@ export function useSubscription() {
     return Boolean(minTier && planAtLeast(tier, minTier));
   }
 
+  const serverCapabilities = subscription?.capabilities;
+
+  function hasCapability(capability: PlanCapability): boolean {
+    return resolveCapability(serverCapabilities, capability, () => {
+      if (capability === 'ri.ai_summary') {
+        return isSubscribed && planAtLeast(tier, PREMIUM_ACCESS_LEVEL);
+      }
+      if (capability === 'research.comparator') return hasFeature('comparator');
+      if (capability === 'ai.insights') return hasFeature('ai_insights');
+      if (capability === 'broker.sync') return hasFeature('broker_sync');
+      return false;
+    });
+  }
+
   return {
     subscription,
     isLoading,
@@ -114,8 +157,10 @@ export function useSubscription() {
     displayPlanName: rawPlanName,
     features,
     hasFeature,
-    hasAiInsights: hasFeature('ai_insights'),
-    hasComparator: hasFeature('comparator'),
-    hasBrokerSync: hasFeature('broker_sync'),
+    hasCapability,
+    hasAiInsights: hasCapability('ai.insights'),
+    hasComparator: hasCapability('research.comparator'),
+    hasBrokerSync: hasCapability('broker.sync'),
+    hasRiAiSummary: hasCapability('ri.ai_summary'),
   };
 }
