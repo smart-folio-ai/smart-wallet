@@ -129,7 +129,11 @@ const AIInsights: React.FC = () => {
                 disabled={insightsQuery.isFetching}
                 className={GHOST_BUTTON_CLASS}
                 style={{...SMALL_BUTTON_STYLE, marginLeft: 'auto', width: 28, padding: 0, display: 'grid', placeItems: 'center'}}>
-                <i className="ph ph-arrow-clockwise" style={{fontSize: 13}} />
+                <i
+                  className={`ph ${insightsQuery.isFetching ? 'ph-circle-notch animate-spin' : 'ph-arrow-clockwise'}`}
+                  style={{fontSize: 13}}
+                  aria-hidden
+                />
               </button>
             )}
           </div>
@@ -137,7 +141,8 @@ const AIInsights: React.FC = () => {
           {!isPremium && !subLoading && <UpgradeCard />}
 
           {isLoading && (
-            <section style={{...CARD_STYLE, padding: '14px 16.8px'}}>
+            <section style={{...CARD_STYLE, padding: '14px 16.8px', display: 'flex', alignItems: 'center', gap: 8.4}}>
+              <i className="ph ph-circle-notch animate-spin" style={{fontSize: 16}} data-testid="ai-insights-loading-spinner" aria-hidden />
               <div style={MUTED_TEXT_STYLE}>Trackerr IA está analisando sua carteira…</div>
             </section>
           )}

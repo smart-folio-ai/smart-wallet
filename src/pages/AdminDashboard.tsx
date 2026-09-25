@@ -1,5 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import AdminService from '@/services/admin';
+import {UserCountsCards} from '@/components/admin/UserCountsCards';
 
 const metricCards = [
   {
@@ -27,6 +28,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      <UserCountsCards counts={data?.users} isLoading={isLoading} />
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metricCards.map(({key, label, icon}) => (
           <div
