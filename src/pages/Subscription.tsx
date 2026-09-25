@@ -9,6 +9,8 @@ import {configUrlStripePaymentSuccessOrCancel} from '@/utils';
 import {cancelUrl, successUrl} from '@/utils/env';
 import {normalizePlanPricing} from '@/utils/planPricing';
 import {formatCurrency} from '@/utils/formatters';
+import PixPaymentService from '@/services/pix';
+import {PixCheckoutModal} from '@/components/subscription/PixCheckoutModal';
 
 type PricingPeriod = 'monthly' | 'annual';
 
@@ -50,6 +52,9 @@ export default function Subscription() {
   const current = useQuery<CurrentSubscriptionResponse>({queryKey: ['current-subscription'], queryFn: () => SubscriptionService.getCurrentPlan()});
   const plansQuery = useQuery<ISubscription[]>({queryKey: ['plans'], queryFn: () => SubscriptionService.getPlans()});
   const invoices = useQuery<SubscriptionInvoice[]>({queryKey: ['subscription-invoices'], queryFn: () => SubscriptionService.getInvoices()});
+  // PIX (TRA-195): a opção só aparece quando o server consegue de fato cobrar.
+  const pixAvailable = useQuery({queryKey: ['pix-availability'], queryFn: () => PixPaymentService.isAvailable()});
+  const [pixPlan, setPixPlan] = useState<{id: string; name: string} | null>(null);
 
   const columns = useMemo<PlanColumn[]>(
     () =>
@@ -269,6 +274,15 @@ export default function Subscription() {
                             {column.plan.isComingSoon ? 'Em breve' : checkout.isPending && checkout.variables?._id === column.plan._id ? 'Abrindo…' : `Assinar ${column.plan.name}`}
                           </button>
                         )}
+                        {!isCurrent && !free && !column.plan.isComingSoon && pixAvailable.data && (
+                          <button
+                            type="button"
+                            onClick={() => setPixPlan({id: column.plan._id, name: column.plan.name})}
+                            className="hover:text-[color:var(--color-neutral-100)]"
+                            style={{display: 'block', margin: '6px auto 0', padding: 0, border: 'none', background: 'transparent', color: 'var(--color-neutral-400)', fontFamily: 'var(--font-body)', fontSize: 11, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3}}>
+                            ou pagar com PIX
+                          </button>
+                        )}
                       </td>
                     );
                   })}
@@ -330,6 +344,17 @@ export default function Subscription() {
           </div>
         </section>
       </div>
+
+      <PixCheckoutModal
+        open={pixPlan !== null}
+        onOpenChange={(open) => !open && setPixPlan(null)}
+        plan={pixPlan}
+        interval={period === 'annual' ? 'year' : 'month'}
+        onManageSubscription={() => {
+          setPixPlan(null);
+          portal.mutate();
+        }}
+      />
     </div>
   );
 }
