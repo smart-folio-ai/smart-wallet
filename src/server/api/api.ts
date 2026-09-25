@@ -214,6 +214,13 @@ export const notificationService = {
   markAllAsRead: () => apiClient.patch('/notifications/read-all'),
 };
 
+// TRA-202 — resumo semanal de carteira por e-mail.
+export const portfolioDigestService = {
+  getPreference: () => apiClient.get('/notifications/digest/preferences'),
+  updatePreference: (enabled: boolean) =>
+    apiClient.patch('/notifications/digest/preferences', {enabled}),
+};
+
 // TRA-195: pagamento por PIX (Asaas). O plano é liberado pelo webhook no
 // server; o web só emite a cobrança e acompanha o estado.
 export const pixService = {
