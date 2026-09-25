@@ -1,22 +1,17 @@
 import {useMemo, useState, type CSSProperties} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import SubscriptionService from '@/services/subscription';
 import Profile from '@/services/profile';
 import useAppToast from '@/hooks/use-app-toast';
 import {badgeStyle, type BadgeSeverity} from '@/components/shared/badge-style';
-import type {CurrentSubscriptionResponse, ISubscription, SubscriptionInvoice} from '@/interface/subscription';
-import {configUrlStripePaymentSuccessOrCancel} from '@/utils';
-import {cancelUrl, successUrl} from '@/utils/env';
-import {normalizePlanPricing} from '@/utils/planPricing';
+import type {CurrentSubscriptionResponse, SubscriptionInvoice} from '@/interface/subscription';
 import {formatCurrency} from '@/utils/formatters';
 import PixPaymentService from '@/services/pix';
 import {PixCheckoutModal} from '@/components/subscription/PixCheckoutModal';
-import {PlanCard} from '@/components/subscription/PlanCard';
-import {planCtaStyle} from '@/components/subscription/plan-cta-style';
-import {cumulativeFeatures} from '@/utils/planFeatures';
-import {checkoutErrorMessage} from '@/services/subscription/checkout-error';
+import {PeriodToggle} from '@/components/subscription/PeriodToggle';
+import {priceLabel, usePlanCatalog, usePlanCheckout, type PricingPeriod} from '@/hooks/usePlanCatalog';
 
-type PricingPeriod = 'monthly' | 'annual';
 
 const SUPPORT_EMAIL = 'suporte@trackerr.com.br';
 
@@ -34,54 +29,24 @@ const INVOICE_STATUS: Record<string, {label: string; severity: BadgeSeverity}> =
   void: {label: 'Cancelada', severity: 'info'},
 };
 
-interface PlanColumn {
-  plan: ISubscription;
-  monthlyPrice: number;
-  annualPrice: number;
-  hasRealAnnualPrice: boolean;
-}
-
-function priceLabel(column: PlanColumn, period: PricingPeriod): string {
-  if (column.monthlyPrice <= 0) return 'Grátis';
-  // Sem preço anual real no Stripe, mostra o mensal: nunca inventa desconto.
-  if (period === 'annual' && column.hasRealAnnualPrice) return `${formatCurrency(column.annualPrice)}/ano`;
-  return `${formatCurrency(column.monthlyPrice)}/mês`;
-}
-
 /** Assinatura — bloco `isPlans` de design_handoff_trackerr/Trackerr App.dc.html. */
 export default function Subscription() {
   const toast = useAppToast();
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<PricingPeriod>('monthly');
 
   const current = useQuery<CurrentSubscriptionResponse>({queryKey: ['current-subscription'], queryFn: () => SubscriptionService.getCurrentPlan()});
-  const plansQuery = useQuery<ISubscription[]>({queryKey: ['plans'], queryFn: () => SubscriptionService.getPlans()});
   const invoices = useQuery<SubscriptionInvoice[]>({queryKey: ['subscription-invoices'], queryFn: () => SubscriptionService.getInvoices()});
   // PIX (TRA-195): a opção só aparece quando o server consegue de fato cobrar.
   const pixAvailable = useQuery({queryKey: ['pix-availability'], queryFn: () => PixPaymentService.isAvailable()});
   const [pixPlan, setPixPlan] = useState<{id: string; name: string} | null>(null);
 
-  const columns = useMemo<PlanColumn[]>(
-    () =>
-      (plansQuery.data ?? [])
-        .filter((plan) => plan.isActive || plan.isComingSoon)
-        .map((plan) => ({plan, ...normalizePlanPricing(plan)}))
-        .sort((a, b) => a.monthlyPrice - b.monthlyPrice),
-    [plansQuery.data],
-  );
-
-  const discountBadge = useMemo(() => {
-    const discounts = columns
-      .filter((column) => column.hasRealAnnualPrice && column.monthlyPrice > 0)
-      .map((column) => 1 - column.annualPrice / (column.monthlyPrice * 12));
-    const best = Math.round(Math.max(0, ...discounts) * 100);
-    return best > 0 ? `Economize ${best}%` : null;
-  }, [columns]);
-
-  const featuresByPlan = useMemo(() => cumulativeFeatures(columns.map((column) => column.plan)), [columns]);
+  const {isLoading: plansLoading, columns, discountBadge, featuresByPlan} = usePlanCatalog();
   const features = useMemo(
     () => Array.from(new Set(columns.flatMap((column) => featuresByPlan.get(column.plan._id) ?? []))),
     [columns, featuresByPlan],
   );
+  const {subscribe, isPending: checkoutPending, isOpening} = usePlanCheckout(period);
 
   const currentPlan = current.data?.plan ?? null;
   const subscription = current.data?.subscription ?? null;
@@ -101,32 +66,6 @@ export default function Subscription() {
         error?.response?.data?.message || 'Tente novamente em instantes.',
       ),
   });
-
-  const checkout = useMutation({
-    mutationFn: async (plan: ISubscription) => {
-      const user = await Profile.getProfile();
-      return SubscriptionService.createCheckoutSession(
-        plan._id,
-        user._id,
-        configUrlStripePaymentSuccessOrCancel(successUrl),
-        configUrlStripePaymentSuccessOrCancel(cancelUrl),
-        period,
-      );
-    },
-    onSuccess: (session) => {
-      window.location.href = session.url;
-    },
-    onError: (error) =>
-      toast.error('Não foi possível iniciar o checkout', checkoutErrorMessage(error)),
-  });
-
-  const subscribe = (plan: ISubscription) => {
-    if (plan.isComingSoon || !plan.isActive) {
-      toast.info?.('Em breve', 'Este plano estará disponível em breve.');
-      return;
-    }
-    checkout.mutate(plan);
-  };
 
   const planSummary = !currentPlan
     ? 'Você está no plano gratuito. Faça upgrade quando quiser — sem fidelidade.'
@@ -168,7 +107,7 @@ export default function Subscription() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => document.getElementById('planos')?.scrollIntoView({behavior: 'smooth'})}
+                  onClick={() => navigate('/plans')}
                   className="hover:brightness-[1.08] disabled:opacity-60"
                   style={{height: 34, padding: '0 14px', borderRadius: 8, border: 'none', background: 'var(--grad-violet)', color: 'var(--sunk)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', cursor: 'pointer'}}>
                   Ver planos
@@ -193,91 +132,16 @@ export default function Subscription() {
         </div>
       </section>
 
-      <section id="planos" aria-label="Planos" style={{display: 'flex', flexDirection: 'column', gap: 11.2}}>
-        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 11.2, flexWrap: 'wrap'}}>
-          <div>
-            <h2 style={{fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 600, margin: 0}}>Planos</h2>
-            <div style={{fontSize: 11, color: 'var(--color-neutral-600)', marginTop: 2}}>Cobrança {period === 'annual' ? 'anual' : 'mensal'} · cancele quando quiser</div>
-          </div>
-          <div style={{display: 'flex', alignItems: 'center', gap: 11.2}}>
-            {discountBadge && <span style={badgeStyle('ok')}>{discountBadge}</span>}
-            <div role="group" aria-label="Período de cobrança" style={{display: 'flex', gap: 2.8, padding: 2.8, border: '1px solid var(--hair)', borderRadius: 8, background: 'rgba(var(--rgb-bg),0.6)'}}>
-              {(['monthly', 'annual'] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  aria-pressed={period === option}
-                  onClick={() => setPeriod(option)}
-                  style={{height: 24, padding: '0 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 500, fontFamily: 'var(--font-body)', ...(period === option ? {background: 'rgba(152,160,171,0.20)', color: 'var(--color-accent-200)', boxShadow: 'inset 0 0 0 1px rgba(152,160,171,0.45)'} : {background: 'transparent', color: 'var(--color-neutral-500)'})}}>
-                  {option === 'monthly' ? 'Mensal' : 'Anual'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-        {plansQuery.isLoading ? (
-          <div style={{...cardStyle, padding: 16.8, fontSize: 12.5, color: 'var(--color-neutral-500)'}}>Carregando planos…</div>
-        ) : columns.length === 0 ? (
-          <div style={{...cardStyle, padding: 16.8, fontSize: 12.5, color: 'var(--color-neutral-500)'}}>Nenhum plano disponível no momento.</div>
-        ) : (
-          <div className="grid grid-cols-1 items-stretch gap-[16.8px] md:grid-cols-3">
-            {columns.map((column) => {
-              const isCurrent = column.plan._id === currentPlanId || (!currentPlanId && column.monthlyPrice <= 0);
-              const free = column.monthlyPrice <= 0;
-              const showAnnual = period === 'annual' && column.hasRealAnnualPrice && !free;
-              return (
-                <div key={column.plan._id} style={{display: 'flex'}}>
-                  <PlanCard
-                    name={column.plan.name}
-                    price={free ? 'Grátis' : formatCurrency(showAnnual ? column.annualPrice : column.monthlyPrice)}
-                    period={free ? '' : showAnnual ? '/ano' : '/mês'}
-                    priceNote={showAnnual ? `equivale a ${formatCurrency(column.annualPrice / 12)}/mês` : undefined}
-                    detail={column.plan.description}
-                    features={featuresByPlan.get(column.plan._id) ?? []}
-                    featured={Boolean(column.plan.isFeatured)}
-                    badge={isCurrent ? 'Plano atual' : column.plan.isComingSoon ? 'Em breve' : column.plan.isFeatured ? 'Mais assinado' : undefined}>
-                    {isCurrent ? (
-                      <span style={{...planCtaStyle(false), cursor: 'default', color: 'var(--color-neutral-500)'}}>Seu plano</span>
-                    ) : free ? (
-                      <span style={{...planCtaStyle(false), cursor: 'default', color: 'var(--color-neutral-500)'}}>Disponível pelo portal</span>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => subscribe(column.plan)}
-                          disabled={checkout.isPending || column.plan.isComingSoon}
-                          className="disabled:cursor-not-allowed disabled:opacity-60"
-                          style={planCtaStyle(Boolean(column.plan.isFeatured))}>
-                          {column.plan.isComingSoon ? 'Em breve' : checkout.isPending && checkout.variables?._id === column.plan._id ? 'Abrindo…' : `Assinar ${column.plan.name}`}
-                        </button>
-                        {!column.plan.isComingSoon && pixAvailable.data && (
-                          <button
-                            type="button"
-                            onClick={() => setPixPlan({id: column.plan._id, name: column.plan.name})}
-                            className="hover:text-[color:var(--color-neutral-100)]"
-                            style={{margin: '8.4px auto 0', padding: 0, border: 'none', background: 'transparent', color: 'var(--color-neutral-400)', fontFamily: 'var(--font-body)', fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3}}>
-                            ou pagar com PIX
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </PlanCard>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
       <section id="comparar-planos" style={cardStyle}>
         <div style={{padding: '14px 16.8px', borderBottom: '1px solid var(--hair-soft)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 11.2, flexWrap: 'wrap'}}>
           <div>
             <h2 style={{fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 600, margin: 0}}>Comparar planos</h2>
             <div style={{fontSize: 11, color: 'var(--color-neutral-600)', marginTop: 2}}>Cobrança {period === 'annual' ? 'anual' : 'mensal'} · valores por titular</div>
           </div>
+          <PeriodToggle period={period} onChange={setPeriod} discountBadge={discountBadge} />
         </div>
         <div style={{overflowX: 'auto'}}>
-          {plansQuery.isLoading ? (
+          {plansLoading ? (
             <div style={{padding: 16.8, fontSize: 12.5, color: 'var(--color-neutral-500)'}}>Carregando planos…</div>
           ) : columns.length === 0 ? (
             <div style={{padding: 16.8, fontSize: 12.5, color: 'var(--color-neutral-500)'}}>Nenhum plano disponível no momento.</div>
@@ -331,10 +195,10 @@ export default function Subscription() {
                           <button
                             type="button"
                             onClick={() => subscribe(column.plan)}
-                            disabled={checkout.isPending || column.plan.isComingSoon}
+                            disabled={checkoutPending || column.plan.isComingSoon}
                             className="hover:bg-[rgba(152,160,171,0.12)] disabled:cursor-not-allowed disabled:opacity-60"
                             style={{height: 30, padding: '0 12px', borderRadius: 8, border: '1px solid var(--color-accent-700)', background: 'transparent', color: 'var(--color-accent-200)', fontFamily: 'var(--font-body)', fontSize: 11.5, fontWeight: 500, cursor: 'pointer'}}>
-                            {column.plan.isComingSoon ? 'Em breve' : checkout.isPending && checkout.variables?._id === column.plan._id ? 'Abrindo…' : `Assinar ${column.plan.name}`}
+                            {column.plan.isComingSoon ? 'Em breve' : isOpening(column.plan) ? 'Abrindo…' : `Assinar ${column.plan.name}`}
                           </button>
                         )}
                         {!isCurrent && !free && !column.plan.isComingSoon && pixAvailable.data && (

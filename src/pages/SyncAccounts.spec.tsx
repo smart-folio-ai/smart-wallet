@@ -75,7 +75,7 @@ describe('SyncAccounts', () => {
       renderPage();
 
       expect(within(card('B3 · Área do investidor')).getByRole('button', {name: 'Importar arquivos da B3'})).toBeInTheDocument();
-      expect(within(card('Binance')).getByRole('link', {name: 'Disponível no Pro'})).toHaveAttribute('href', '/subscription');
+      expect(within(card('Binance')).getByRole('link', {name: 'Disponível no Pro'})).toHaveAttribute('href', '/plans');
       expect(brokerSyncService.getConnections).not.toHaveBeenCalled();
 
       fireEvent.click(screen.getByRole('button', {name: /Conectar nova conta/}));

@@ -194,7 +194,7 @@ function ExchangeCard({exchange, canSync, onConnect}: {exchange: ExchangeSource;
   let cta: React.ReactNode;
   if (!canSync) {
     cta = (
-      <Link to="/subscription" style={ctaStyle(false)}>
+      <Link to="/plans" style={ctaStyle(false)}>
         Disponível no Pro
       </Link>
     );

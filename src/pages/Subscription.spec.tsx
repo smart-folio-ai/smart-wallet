@@ -1,6 +1,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, fireEvent, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import Subscription from './Subscription';
 import SubscriptionService from '@/services/subscription';
 import Profile from '@/services/profile';
@@ -39,7 +40,12 @@ const PLANS = [
 const renderPage = () =>
   render(
     <QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>
-      <Subscription />
+      <MemoryRouter initialEntries={['/subscription']}>
+        <Routes>
+          <Route path="/subscription" element={<Subscription />} />
+          <Route path="/plans" element={<div>Página de planos</div>} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 
@@ -74,17 +80,13 @@ describe('Subscription', () => {
     expect(within(essencialOnly).getAllByText('✓')).toHaveLength(4);
   });
 
-  it('shows one card per plan with cumulative benefits', async () => {
+  it('keeps plan cards off this page and sends "Ver planos" to /plans', async () => {
     renderPage();
+    await waitFor(() => expect(screen.getAllByTestId('plan-column')).toHaveLength(4));
 
-    await waitFor(() => expect(screen.getAllByTestId('plan-card')).toHaveLength(4));
-    const card = (name: string) => screen.getAllByTestId('plan-card').find((el) => el.textContent?.includes(name))!;
-    const wealth = card('Wealth Premium');
-    expect(within(wealth).getByText('Alocação e proventos')).toBeInTheDocument();
-    expect(within(wealth).getByText('Relatórios exportáveis')).toBeInTheDocument();
-    expect(within(wealth).getByText('R$ 24,90')).toBeInTheDocument();
-    expect(within(card('Essencial')).getByText('Plano atual')).toBeInTheDocument();
-    expect(within(card('Pro')).getByRole('button', {name: 'Assinar Pro'})).toBeInTheDocument();
+    expect(screen.queryByTestId('plan-card')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Ver planos'}));
+    expect(await screen.findByText('Página de planos')).toBeInTheDocument();
   });
 
   it('shows the real annual price only when Stripe has one, with the real discount', async () => {
@@ -103,7 +105,7 @@ describe('Subscription', () => {
     renderPage();
     await waitFor(() => expect(screen.getAllByTestId('plan-column')).toHaveLength(4));
     fireEvent.click(screen.getByRole('button', {name: 'Anual'}));
-    fireEvent.click(screen.getAllByRole('button', {name: 'Assinar Pro'})[0]);
+    fireEvent.click(screen.getByRole('button', {name: 'Assinar Pro'}));
 
     await waitFor(() =>
       expect(SubscriptionService.createCheckoutSession).toHaveBeenCalledWith('pro', 'user_1', expect.any(String), expect.any(String), 'annual'),

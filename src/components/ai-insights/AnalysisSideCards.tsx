@@ -68,7 +68,7 @@ export function UpgradeCard() {
       </div>
       <button
         type="button"
-        onClick={() => navigate('/subscription')}
+        onClick={() => navigate('/plans')}
         className={ACCENT_BUTTON_CLASS}
         style={{
           height: 28,

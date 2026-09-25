@@ -72,7 +72,7 @@ export const PremiumBlur = ({
             <p className="text-xs text-muted-foreground">{description}</p>
           </div>
 
-          <Button size="sm" onClick={() => navigate('/subscription')}>
+          <Button size="sm" onClick={() => navigate('/plans')}>
             <Zap className="mr-1.5 h-3.5 w-3.5" />
             Fazer upgrade
           </Button>

@@ -48,6 +48,7 @@ type PageMeta = {crumb: string; title: string};
 
 const OVERRIDES: Record<string, PageMeta> = {
   '/subscription': {crumb: 'Conta', title: 'Assinatura'},
+  '/plans': {crumb: 'Conta', title: 'Planos'},
   '/admin': {crumb: 'Administração', title: 'Admin Dashboard'},
   '/admin/plans': {crumb: 'Administração', title: 'Planos'},
   '/admin/grants': {crumb: 'Administração', title: 'Concessões'},
@@ -168,7 +169,7 @@ export function AppTopbar() {
               type="button"
               size="sm"
               className="hidden bg-primary text-primary-foreground shadow-sm hover:brightness-110 sm:flex"
-              onClick={() => navigate('/subscription')}>
+              onClick={() => navigate('/plans')}>
               <Sparkles className="mr-2 h-3.5 w-3.5" />
               Upgrade
             </Button>

@@ -545,7 +545,7 @@ const MyAssetDetail = () => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => navigate('/subscription')}
+                        onClick={() => navigate('/plans')}
                         style={{alignSelf: 'flex-start', height: 30, padding: '0 11.2px', borderRadius: 8, border: '1px solid var(--color-accent-700)', background: 'transparent', color: 'var(--color-accent-200)', fontSize: 11.5, cursor: 'pointer'}}>
                         Ver planos
                       </button>

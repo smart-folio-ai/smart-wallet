@@ -23,6 +23,7 @@ import SyncAccounts from './pages/SyncAccounts';
 import AIInsights from './pages/AIInsights';
 import ChatInteligente from './pages/ChatInteligente';
 import Subscription from './pages/Subscription';
+import Plans from './pages/Plans';
 import Settings from './pages/Settings';
 import Security from './pages/Security';
 import NotFound from './pages/NotFound';
@@ -170,6 +171,7 @@ const App = () => (
                               path="/subscription"
                               element={<Subscription />}
                             />
+                            <Route path="/plans" element={<Plans />} />
                             <Route path="/portfolio" element={<Portfolio />} />
                             <Route
                               path="/portfolio/asset/:assetId"
