@@ -67,8 +67,24 @@ describe('Subscription', () => {
     ]);
     expect(within(column('Pro')).getByText('Popular')).toBeInTheDocument();
     expect(within(column('Global Investor')).getByText('Em breve')).toBeInTheDocument();
-    const row = screen.getByText('Módulo fiscal com DARF').closest('tr')!;
-    expect(within(row).getAllByText('✓')).toHaveLength(2);
+    const row = screen.getAllByText('Módulo fiscal com DARF').map((el) => el.closest('tr')).find(Boolean)!;
+    // Cumulativo: Pro lista, e Wealth e Global herdam — Essencial não.
+    expect(within(row).getAllByText('✓')).toHaveLength(3);
+    const essencialOnly = screen.getAllByText('Alocação e proventos').map((el) => el.closest('tr')).find(Boolean)!;
+    expect(within(essencialOnly).getAllByText('✓')).toHaveLength(4);
+  });
+
+  it('shows one card per plan with cumulative benefits', async () => {
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByTestId('plan-card')).toHaveLength(4));
+    const card = (name: string) => screen.getAllByTestId('plan-card').find((el) => el.textContent?.includes(name))!;
+    const wealth = card('Wealth Premium');
+    expect(within(wealth).getByText('Alocação e proventos')).toBeInTheDocument();
+    expect(within(wealth).getByText('Relatórios exportáveis')).toBeInTheDocument();
+    expect(within(wealth).getByText('R$ 24,90')).toBeInTheDocument();
+    expect(within(card('Essencial')).getByText('Plano atual')).toBeInTheDocument();
+    expect(within(card('Pro')).getByRole('button', {name: 'Assinar Pro'})).toBeInTheDocument();
   });
 
   it('shows the real annual price only when Stripe has one, with the real discount', async () => {
@@ -87,7 +103,7 @@ describe('Subscription', () => {
     renderPage();
     await waitFor(() => expect(screen.getAllByTestId('plan-column')).toHaveLength(4));
     fireEvent.click(screen.getByRole('button', {name: 'Anual'}));
-    fireEvent.click(screen.getByRole('button', {name: 'Assinar Pro'}));
+    fireEvent.click(screen.getAllByRole('button', {name: 'Assinar Pro'})[0]);
 
     await waitFor(() =>
       expect(SubscriptionService.createCheckoutSession).toHaveBeenCalledWith('pro', 'user_1', expect.any(String), expect.any(String), 'annual'),
