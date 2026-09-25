@@ -27,15 +27,24 @@ Object.defineProperty(window, 'location', {
   writable: true,
 });
 
+// `src/utils/env.ts` lê VITE_DEV_MODE/VITE_API_URL_* de `import.meta.env` no
+// carregamento do módulo. Esses valores vêm do `.env` local, que é
+// gitignored — no CI ele não existe, `isDev` cai em `false`, e o interceptor
+// monta a URL de refresh com `apiUrlProduction` (também undefined),
+// virando a string literal "undefined/auth/refresh-token". Fixado aqui,
+// antes do import do interceptor, para o teste não depender de arquivo
+// nenhum existir no disco.
+vi.stubEnv('VITE_DEV_MODE', 'true');
+vi.stubEnv('VITE_API_URL_DEVELOPMENT', 'http://localhost:3000');
+
 // Importar o apiClient e os interceptores
-// O import deve vir DEPOIS do mock do localStorage para que os interceptores
-// já enxerguem o localStorage mockado ao serem executados.
+// O import deve vir DEPOIS do mock do localStorage e do stub de env para que
+// os interceptores já enxerguem o localStorage mockado e a URL correta ao
+// serem executados.
 const {default: apiClient} = await import('@/server/api/api');
 await import('./interceptors');
 
-const REFRESH_URL =
-  (import.meta.env.VITE_API_URL_DEVELOPMENT ?? 'http://localhost:3000') +
-  '/auth/refresh-token';
+const REFRESH_URL = 'http://localhost:3000/auth/refresh-token';
 
 describe('Interceptors — Request', () => {
   let mock: InstanceType<typeof MockAdapter>;
