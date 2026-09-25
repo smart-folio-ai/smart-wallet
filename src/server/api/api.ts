@@ -214,6 +214,15 @@ export const notificationService = {
   markAllAsRead: () => apiClient.patch('/notifications/read-all'),
 };
 
+// TRA-195: pagamento por PIX (Asaas). O plano é liberado pelo webhook no
+// server; o web só emite a cobrança e acompanha o estado.
+export const pixService = {
+  availability: () => apiClient.get('/payments/pix/availability'),
+  checkout: (data: {planId: string; interval: 'month' | 'year'; cpf?: string}) =>
+    apiClient.post('/payments/pix/checkout', data),
+  getCharge: (chargeId: string) => apiClient.get(`/payments/pix/charges/${chargeId}`),
+};
+
 // TRA-136 (fase 6) — Web Push.
 export const pushNotificationService = {
   getVapidPublicKey: () =>
