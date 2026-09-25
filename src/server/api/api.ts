@@ -214,6 +214,13 @@ export const notificationService = {
   markAllAsRead: () => apiClient.patch('/notifications/read-all'),
 };
 
+// TRA-202 — resumo semanal de carteira por e-mail.
+export const portfolioDigestService = {
+  getPreference: () => apiClient.get('/notifications/digest/preferences'),
+  updatePreference: (enabled: boolean) =>
+    apiClient.patch('/notifications/digest/preferences', {enabled}),
+};
+
 // TRA-136 (fase 6) — Web Push.
 export const pushNotificationService = {
   getVapidPublicKey: () =>

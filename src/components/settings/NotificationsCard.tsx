@@ -4,6 +4,7 @@ import {
   useSaveEmailNotifications,
 } from '@/hooks/useAccountSettings';
 import {PushNotificationToggle} from './PushNotificationToggle';
+import {PortfolioDigestToggle} from './PortfolioDigestToggle';
 import {CARD_STYLE, SettingsCardHeader} from './settings-ui';
 
 /**
@@ -43,6 +44,7 @@ export function NotificationsCard() {
           />
         </div>
         <PushNotificationToggle />
+        <PortfolioDigestToggle />
       </div>
     </section>
   );
