@@ -667,7 +667,7 @@ const RiInteligente = () => {
               Disponível para planos Premium e Global Investor.
             </div>
             <Link
-              to="/subscription"
+              to="/plans"
               style={{
                 marginTop: 4,
                 height: 32,

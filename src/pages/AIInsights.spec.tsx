@@ -78,7 +78,7 @@ function renderPage() {
           <Routes>
             <Route path="/ai-insights" element={<AIInsights />} />
             <Route path="/asset/:symbol" element={<div>Página do ativo</div>} />
-            <Route path="/subscription" element={<div>Página de planos</div>} />
+            <Route path="/plans" element={<div>Página de planos</div>} />
           </Routes>
         </AdaptiveLevelProvider>
       </MemoryRouter>

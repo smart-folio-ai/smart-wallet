@@ -1,6 +1,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, fireEvent, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import Subscription from './Subscription';
 import SubscriptionService from '@/services/subscription';
 import Profile from '@/services/profile';
@@ -39,7 +40,12 @@ const PLANS = [
 const renderPage = () =>
   render(
     <QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>
-      <Subscription />
+      <MemoryRouter initialEntries={['/subscription']}>
+        <Routes>
+          <Route path="/subscription" element={<Subscription />} />
+          <Route path="/plans" element={<div>Página de planos</div>} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 
@@ -67,8 +73,20 @@ describe('Subscription', () => {
     ]);
     expect(within(column('Pro')).getByText('Popular')).toBeInTheDocument();
     expect(within(column('Global Investor')).getByText('Em breve')).toBeInTheDocument();
-    const row = screen.getByText('Módulo fiscal com DARF').closest('tr')!;
-    expect(within(row).getAllByText('✓')).toHaveLength(2);
+    const row = screen.getAllByText('Módulo fiscal com DARF').map((el) => el.closest('tr')).find(Boolean)!;
+    // Cumulativo: Pro lista, e Wealth e Global herdam — Essencial não.
+    expect(within(row).getAllByText('✓')).toHaveLength(3);
+    const essencialOnly = screen.getAllByText('Alocação e proventos').map((el) => el.closest('tr')).find(Boolean)!;
+    expect(within(essencialOnly).getAllByText('✓')).toHaveLength(4);
+  });
+
+  it('keeps plan cards off this page and sends "Ver planos" to /plans', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getAllByTestId('plan-column')).toHaveLength(4));
+
+    expect(screen.queryByTestId('plan-card')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Ver planos'}));
+    expect(await screen.findByText('Página de planos')).toBeInTheDocument();
   });
 
   it('shows the real annual price only when Stripe has one, with the real discount', async () => {

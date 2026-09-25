@@ -27,7 +27,7 @@ describe('ConnectedAccountsCard', () => {
     renderCard();
 
     expect(screen.getByText('Disponível no plano Pro')).toBeInTheDocument();
-    expect(screen.getByRole('link', {name: 'Ver planos'})).toHaveAttribute('href', '/subscription');
+    expect(screen.getByRole('link', {name: 'Ver planos'})).toHaveAttribute('href', '/plans');
     expect(screen.queryByRole('link', {name: 'Conectar corretora'})).not.toBeInTheDocument();
     expect(brokerSyncService.getConnections).not.toHaveBeenCalled();
   });

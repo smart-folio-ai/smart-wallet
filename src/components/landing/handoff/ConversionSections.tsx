@@ -5,6 +5,9 @@ import SubscriptionService from '@/services/subscription';
 import {normalizePlanPricing} from '@/utils/planPricing';
 import {formatCurrency} from '@/utils/formatters';
 import {PurchaseIntentModal} from '../PurchaseIntentModal';
+import {PlanCard} from '@/components/subscription/PlanCard';
+import {planCtaStyle} from '@/components/subscription/plan-cta-style';
+import {cumulativeFeatures} from '@/utils/planFeatures';
 import {TrackerrMark} from './TrackerrMark';
 import {CONTACT_EMAIL, CTA_BULLETS, FAQ, FOOTER_COLUMNS} from './landing-content';
 
@@ -48,6 +51,7 @@ export function PlansSection() {
 
   const active = [...(data ?? [])].filter((plan) => plan.isActive).sort((a, b) => a.price - b.price);
   const featuredIndex = active.findIndex((plan) => plan.isFeatured === true);
+  const featuresByPlan = cumulativeFeatures(active);
   const plans: LandingPlan[] = active.map((plan, index) => {
     const {monthlyPrice} = normalizePlanPricing(plan);
     const isFree = monthlyPrice === 0;
@@ -58,7 +62,7 @@ export function PlansSection() {
       price: isFree ? 'Grátis' : formatCurrency(monthlyPrice, plan.currency),
       period: isFree ? '' : '/mês',
       detail: plan.description,
-      features: plan.features ?? [],
+      features: featuresByPlan.get(plan._id) ?? [],
       isFree,
       featured: index === featuredIndex,
       comingSoon,
@@ -66,25 +70,6 @@ export function PlansSection() {
     };
   });
 
-  const ctaStyle = (featured: boolean): React.CSSProperties => ({
-    marginTop: 22.4,
-    height: 38,
-    borderRadius: 8,
-    cursor: 'pointer',
-    fontFamily: 'var(--font-body)',
-    fontSize: 13,
-    fontWeight: 500,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...(featured
-      ? {
-          border: '1px solid var(--color-accent)',
-          background: 'rgba(152,160,171,0.14)',
-          color: 'var(--color-accent-100)',
-        }
-      : {border: '1px solid var(--hair)', background: 'transparent', color: 'var(--color-neutral-200)'}),
-  });
 
   return (
     <section id="planos" style={{maxWidth: 1200, margin: '0 auto', padding: '80px 32px'}}>
@@ -146,7 +131,7 @@ export function PlansSection() {
           <div style={{fontSize: 13.5, color: 'var(--color-neutral-400)'}}>
             Nenhum plano disponível no momento. Você já pode criar sua conta e começar grátis.
           </div>
-          <Link to="/register" className="tl-plan-cta" style={{...ctaStyle(true), marginTop: 0, padding: '0 16.8px'}}>
+          <Link to="/register" className="tl-plan-cta" style={{...planCtaStyle(true), marginTop: 0, padding: '0 16.8px'}}>
             Criar conta
           </Link>
         </div>
@@ -161,97 +146,33 @@ export function PlansSection() {
             alignItems: 'start',
           }}>
           {plans.map((p) => (
-            <div
-              key={p.id}
-              data-testid="landing-plan"
-              style={{
-                borderRadius: 8,
-                padding: 22.4,
-                display: 'flex',
-                flexDirection: 'column',
-                background: 'var(--nk-card)',
-                ...(p.featured
-                  ? {
-                      border: '1px solid rgba(152,160,171,0.45)',
-                      boxShadow: '0 0 0 1px rgba(152,160,171,0.12), 0 20px 48px rgba(0,0,0,0.45)',
-                    }
-                  : {border: '1px solid var(--hair)'}),
-              }}>
-              <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8.4}}>
-                <div style={{...H2_BASE, fontSize: 15}}>{p.name}</div>
-                {p.featured && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      color: 'var(--color-accent-200)',
-                      border: '1px solid rgba(152,160,171,0.45)',
-                      borderRadius: 6,
-                      padding: '2px 6px',
-                    }}>
-                    Mais assinado
-                  </span>
+            <div key={p.id} data-testid="landing-plan" style={{display: 'flex'}}>
+              <PlanCard
+                name={p.name}
+                price={p.price}
+                period={p.period}
+                detail={p.detail}
+                features={p.features}
+                featured={p.featured}
+                badge={p.featured ? 'Mais assinado' : undefined}>
+                {p.comingSoon ? (
+                  <button type="button" disabled style={{...planCtaStyle(false), cursor: 'not-allowed', opacity: 0.6}}>
+                    {p.cta}
+                  </button>
+                ) : p.isFree ? (
+                  <Link to="/register" className="tl-plan-cta" style={planCtaStyle(p.featured)}>
+                    {p.cta}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className="tl-plan-cta"
+                    onClick={() => setModalPlan({id: p.id, name: p.name})}
+                    style={planCtaStyle(p.featured)}>
+                    {p.cta}
+                  </button>
                 )}
-              </div>
-              <div style={{display: 'flex', alignItems: 'baseline', gap: 5.6, marginTop: 14}}>
-                <span
-                  style={{
-                    ...H2_BASE,
-                    fontSize: 28,
-                    letterSpacing: '-0.025em',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}>
-                  {p.price}
-                </span>
-                <span style={{fontSize: 12, color: 'var(--color-neutral-600)'}}>{p.period}</span>
-              </div>
-              <div
-                style={{
-                  fontSize: 12.5,
-                  color: 'var(--color-neutral-500)',
-                  marginTop: 8.4,
-                  lineHeight: 1.5,
-                  minHeight: 38,
-                }}>
-                {p.detail}
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8.4,
-                  marginTop: 16.8,
-                  paddingTop: 16.8,
-                  borderTop: '1px solid var(--hair-soft)',
-                }}>
-                {p.features.map((feature) => (
-                  <div
-                    key={feature}
-                    style={{display: 'flex', gap: 8.4, fontSize: 12.5, color: 'var(--color-neutral-300)', lineHeight: 1.45}}>
-                    <i className="ph ph-check" style={{fontSize: 13, color: 'var(--color-accent-300)', marginTop: 2}} />
-                    <span>{feature}</span>
-                  </div>
-                ))}
-              </div>
-              {p.comingSoon ? (
-                <button type="button" disabled style={{...ctaStyle(false), cursor: 'not-allowed', opacity: 0.6}}>
-                  {p.cta}
-                </button>
-              ) : p.isFree ? (
-                <Link to="/register" className="tl-plan-cta" style={ctaStyle(p.featured)}>
-                  {p.cta}
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  className="tl-plan-cta"
-                  onClick={() => setModalPlan({id: p.id, name: p.name})}
-                  style={ctaStyle(p.featured)}>
-                  {p.cta}
-                </button>
-              )}
+              </PlanCard>
             </div>
           ))}
         </div>

@@ -76,7 +76,7 @@ export function ConnectedAccountsCard() {
           title="Contas conectadas"
           subtitle="Disponível no plano Pro"
           action={
-            <Link to="/subscription" className={ACCENT_SMALL_BUTTON_CLASS} style={ACCENT_SMALL_BUTTON_STYLE}>
+            <Link to="/plans" className={ACCENT_SMALL_BUTTON_CLASS} style={ACCENT_SMALL_BUTTON_STYLE}>
               Ver planos
             </Link>
           }
