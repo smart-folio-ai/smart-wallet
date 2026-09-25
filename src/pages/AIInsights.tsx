@@ -76,6 +76,7 @@ const AIInsights: React.FC = () => {
     radar: data?.radar ?? null,
     analysis: data?.analysis ?? null,
     radarUpdatedAt: data ? insightsQuery.dataUpdatedAt : null,
+    opportunityRadar: data?.opportunityRadar ?? null,
   });
   const tabs = buildInsightTabs(insights);
   // Se a categoria escolhida sumiu após atualizar, volta para "Tudo".

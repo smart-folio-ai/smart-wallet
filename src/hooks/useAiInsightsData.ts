@@ -2,6 +2,7 @@ import {useQuery} from '@tanstack/react-query';
 import {
   aiAnalysisService,
   type AiAnalysisResult,
+  type OpportunityRadarResponse,
   type PortfolioErrorRadarResponse,
   type PortfolioScoreResponse,
 } from '@/services/ai';
@@ -19,6 +20,8 @@ export interface AiInsightsData {
    * dois casos e não serve sozinho para decidir se mostra o estado de falha.
    */
   radarFailed: boolean;
+  /** Radar de Oportunidades (TRA-8/14) — endpoint dedicado, best-effort. */
+  opportunityRadar: OpportunityRadarResponse | null;
 }
 
 function extractAssets(rawData: unknown): unknown[] {
@@ -32,13 +35,15 @@ async function fetchAiInsights(plan: AiPlan): Promise<AiInsightsData> {
   const portfolioResponse = await portfolioService.getAssets();
   const assets = extractAssets(portfolioResponse.data);
 
-  // Score e radar vêm do backend determinístico e independem da análise do
-  // LLM: se o trackerr-ia cair, os dois continuam aparecendo, e vice-versa.
-  const [analysisOutcome, scoreOutcome, radarOutcome] = await Promise.allSettled([
-    getOrCreateAiAnalysis({rawAssets: assets, plan}),
-    aiAnalysisService.portfolioScore(),
-    aiAnalysisService.errorRadar(),
-  ]);
+  // Score e radares vêm do backend determinístico e independem da análise
+  // do LLM: se o trackerr-ia cair, eles continuam aparecendo, e vice-versa.
+  const [analysisOutcome, scoreOutcome, radarOutcome, opportunityOutcome] =
+    await Promise.allSettled([
+      getOrCreateAiAnalysis({rawAssets: assets, plan}),
+      aiAnalysisService.portfolioScore(),
+      aiAnalysisService.errorRadar(),
+      aiAnalysisService.opportunityRadar(),
+    ]);
 
   if (analysisOutcome.status === 'rejected') throw analysisOutcome.reason;
 
@@ -47,6 +52,8 @@ async function fetchAiInsights(plan: AiPlan): Promise<AiInsightsData> {
     score: scoreOutcome.status === 'fulfilled' ? scoreOutcome.value : null,
     radar: radarOutcome.status === 'fulfilled' ? radarOutcome.value : null,
     radarFailed: radarOutcome.status === 'rejected',
+    opportunityRadar:
+      opportunityOutcome.status === 'fulfilled' ? opportunityOutcome.value : null,
   };
 }
 
