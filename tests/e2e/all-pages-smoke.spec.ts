@@ -51,15 +51,20 @@ const ADMIN_ROUTES = ['/admin', '/admin/plans', '/admin/grants'];
 
 async function backendDown(page: Page) {
   const appOrigin = new URL(test.info().project.use.baseURL as string).origin;
-  await page.route(
-    (url) => url.origin !== appOrigin,
-    (route) =>
-      route.fulfill({
-        status: 503,
-        contentType: 'application/json',
-        body: JSON.stringify({message: 'indisponível (e2e)'}),
-      }),
-  );
+  // Chamada de API é fetch/xhr, na origem da API ou na do próprio app (no CI
+  // não há VITE_API_URL e a base cai na origem do Vite). Assets do Vite e a
+  // navegação passam; o resto de fora do app também responde 503.
+  await page.route('**/*', (route) => {
+    const request = route.request();
+    const isApiCall = ['fetch', 'xhr'].includes(request.resourceType());
+    const isExternal = new URL(request.url()).origin !== appOrigin;
+    if (!isApiCall && !isExternal) return route.continue();
+    return route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({message: 'indisponível (e2e)'}),
+    });
+  });
 }
 
 async function signIn(page: Page, role: 'user' | 'admin') {
