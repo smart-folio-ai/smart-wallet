@@ -13,6 +13,7 @@ import {
   searchRiDocuments,
   summarizeRiDocument,
 } from '@/services/ri-intelligence';
+import {safeExternalUrl} from '@/utils/safeExternalUrl';
 
 type TypeFilter = RiDocumentType | 'all';
 
@@ -255,7 +256,8 @@ const RiInteligente = () => {
 
   const openDocument = (document: RiDocumentListItem) => {
     if (!document.source?.value) return;
-    window.open(document.source.value, '_blank', 'noopener,noreferrer');
+    const safeUrl = safeExternalUrl(document.source.value);
+    if (safeUrl) window.open(safeUrl, '_blank', 'noopener,noreferrer');
   };
 
   const generateSummary = () => {
