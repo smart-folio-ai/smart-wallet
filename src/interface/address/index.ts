@@ -1,5 +1,4 @@
 interface AddressInterface {
-  getUsers: () => void;
   getAddressByUser: (userId: string) => Promise<AddressResponse>;
 }
 
