@@ -1,9 +1,30 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {toast} from 'sonner';
 import {useQuery} from '@tanstack/react-query';
 import {CurrentSubscriptionResponse} from '@/interface/subscription';
 import SubscriptionService from '@/services/subscription';
+import {
+  CONFIRMATION_POLL_MS,
+  CONFIRMATION_TIMEOUT_MS,
+  confirmationState,
+  shouldPoll,
+  type ConfirmationState,
+} from './subscription-success-state';
+
+const WAITING_COPY: Record<Exclude<ConfirmationState, 'confirmed'>, {icon: string; title: string; text: string}> = {
+  checking: {icon: 'ph-circle-notch', title: 'Confirmando seu pagamento…', text: 'Isso leva só alguns segundos.'},
+  pending: {icon: 'ph-circle-notch', title: 'Confirmando seu pagamento…', text: 'Recebemos o retorno do Stripe e estamos ativando seu plano.'},
+  delayed: {
+    icon: 'ph-hourglass-medium',
+    title: 'Pagamento em processamento',
+    text: 'A confirmação está demorando mais que o normal. Seu plano é liberado assim que o Stripe confirmar; acompanhe em Assinatura.',
+  },
+  error: {
+    icon: 'ph-warning-circle',
+    title: 'Não conseguimos verificar sua assinatura agora',
+    text: 'Se o pagamento foi concluído no Stripe, ele não se perde. Confira o status em Assinatura em alguns instantes.',
+  },
+};
 
 interface SubscriptionDetails {
   planName: string;
@@ -21,10 +42,24 @@ export default function SubscriptionSuccess() {
 
   const sessionId = searchParams.get('session_id');
 
-  const {data, isLoading} = useQuery<CurrentSubscriptionResponse>({
+  const [startedAt] = useState(() => Date.now());
+  const {data, isLoading, isError} = useQuery<CurrentSubscriptionResponse>({
     queryKey: ['current-subscription'],
     queryFn: SubscriptionService.getCurrentPlan,
+    retry: 1,
+    refetchInterval: (query) =>
+      shouldPoll(
+        confirmationState({
+          data: query.state.data,
+          isLoading: query.state.status === 'pending',
+          isError: query.state.status === 'error',
+          elapsedMs: Date.now() - startedAt,
+        }),
+      )
+        ? CONFIRMATION_POLL_MS
+        : false,
   });
+  const state = confirmationState({data, isLoading, isError, elapsedMs: Date.now() - startedAt});
 
   const subscriptionData = data?.subscription;
   const planData = data?.plan;
@@ -57,11 +92,28 @@ export default function SubscriptionSuccess() {
     });
   };
 
-  if (isLoading) {
+  if (state !== 'confirmed') {
+    const copy = WAITING_COPY[state];
+    const spinning = state === 'checking' || state === 'pending';
     return (
-      <div style={{minHeight:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--surf-1)'}}>
-        <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
-        <div style={{width:40, height:40, borderRadius:'50%', border:'3px solid var(--surf-3)', borderTopColor:'var(--ac)', animation:'spin 0.8s linear infinite'}} />
+      <div style={{minHeight:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'var(--surf-1)'}}>
+        <div data-testid="subscription-confirmation" data-state={state} style={{width:'100%', maxWidth:520, border:'1px solid var(--hair)', borderRadius:16, background:'var(--nk-card)', padding:'32px 24px', textAlign:'center', boxShadow:'var(--shadow-lg)'}}>
+          <i className={`ph ${copy.icon}${spinning ? ' animate-spin' : ''}`} style={{fontSize:36, color: state === 'error' ? 'var(--neg)' : 'var(--ac)'}} aria-hidden />
+          <h1 style={{fontSize:22, fontWeight:700, fontFamily:'var(--font-heading)', margin:'16px 0 8px'}}>{copy.title}</h1>
+          <p style={{fontSize:14, color:'var(--color-neutral-500)', lineHeight:1.55}}>{copy.text}</p>
+          {!spinning && (
+            <div style={{display:'flex', flexWrap:'wrap', gap:10, justifyContent:'center', marginTop:20}}>
+              <button type="button" onClick={() => navigate('/subscription')}
+                style={{height:44, padding:'0 18px', borderRadius:9, border:'none', background:'var(--grad-violet)', color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer'}}>
+                Ver minha assinatura
+              </button>
+              <button type="button" onClick={() => navigate('/dashboard')}
+                style={{height:44, padding:'0 18px', borderRadius:9, border:'1px solid var(--hair)', background:'transparent', fontSize:14, cursor:'pointer', color:'inherit'}}>
+                Ir para Dashboard
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -112,7 +164,7 @@ export default function SubscriptionSuccess() {
                 <div>
                   <p style={{fontSize:12.5, fontWeight:500, color:'var(--color-neutral-500)'}}>ID da Sessão</p>
                   <p style={{fontSize:12, fontFamily:'monospace', background:'var(--surf-2)', padding:'2px 6px', borderRadius:4, marginTop:2, wordBreak:'break-all'}}>
-                    {sessionId?.slice(0, 20)}...
+                    {sessionId ? `${sessionId.slice(0, 20)}…` : "—"}
                   </p>
                 </div>
               </div>
@@ -160,9 +212,9 @@ export default function SubscriptionSuccess() {
                 style={{height:48, padding:'0 20px', borderRadius:9, border:'1px solid var(--hair)', background:'transparent', fontSize:14, fontWeight:500, cursor:'pointer', color:'inherit'}}>
                 Conectar Contas
               </button>
-              <button type="button" onClick={() => toast.success('Recibo enviado por email!')}
+              <button type="button" onClick={() => navigate('/subscription')}
                 style={{height:48, padding:'0 16px', borderRadius:9, border:'1px solid var(--hair)', background:'transparent', fontSize:14, cursor:'pointer', color:'inherit', display:'flex', alignItems:'center', gap:6}}>
-                <i className="ph-fill ph-download-simple" style={{fontSize:15}} />Recibo
+                <i className="ph-fill ph-receipt" style={{fontSize:15}} />Ver faturas
               </button>
             </div>
           </div>
