@@ -49,7 +49,6 @@ export const profileService = {
     apiClient.patch(`/profile/${profileId}`, data),
   createProfile: (userId: string, data: any) =>
     apiClient.post(`/profile/create/${userId}`, data),
-  getAllAddress: () => apiClient.get(`addresses/addresses`),
   getAddressUser: (userId: string) => apiClient.get(`addresses/user/${userId}`),
 };
 

@@ -49,6 +49,19 @@ const APP_ROUTES = [
 
 const ADMIN_ROUTES = ['/admin', '/admin/plans', '/admin/grants'];
 
+/** Proxy/manutenção/URL errada: a API responde a SPA em HTML com status 200. */
+async function backendAnswersHtml(page: Page) {
+  await page.route('**/*', (route) => {
+    const request = route.request();
+    if (!['fetch', 'xhr'].includes(request.resourceType())) return route.continue();
+    return route.fulfill({
+      status: 200,
+      contentType: 'text/html; charset=utf-8',
+      body: '<!doctype html><html><body>manutenção</body></html>',
+    });
+  });
+}
+
 async function backendDown(page: Page) {
   const appOrigin = new URL(test.info().project.use.baseURL as string).origin;
   // Chamada de API é fetch/xhr, na origem da API ou na do próprio app (no CI
@@ -133,5 +146,16 @@ for (const path of ADMIN_ROUTES) {
     await userPage.waitForLoadState('networkidle').catch(() => undefined);
     expect(new URL(userPage.url()).pathname, `${path} abriu para usuário comum`).not.toBe(path);
     await context.close();
+  });
+}
+
+for (const path of [...APP_ROUTES, ...ADMIN_ROUTES]) {
+  test(`${path} não quebra quando a API responde HTML com status 200`, async ({page}) => {
+    await backendAnswersHtml(page);
+    await signIn(page, ADMIN_ROUTES.includes(path) ? 'admin' : 'user');
+    const {pageErrors, bodyText} = await visit(page, path);
+
+    expect(pageErrors, `erro de JS em ${path}`).toEqual([]);
+    expect(bodyText.length, `tela branca em ${path}`).toBeGreaterThan(20);
   });
 }

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import apiClient from '../server/api/api';
 import {apiUrlDevelopment, apiUrlProduction, isDev} from '@/utils/env';
+import {rejectHtmlResponse} from './response-guard';
 
 let isRefreshing = false;
 let refreshSubscribers = [];
@@ -33,7 +34,7 @@ apiClient.interceptors.request.use(
 );
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => rejectHtmlResponse(response),
   async (error) => {
     const originalRequest = error.config;
     if (isRecoveryPublicRoute(originalRequest?.url)) {
