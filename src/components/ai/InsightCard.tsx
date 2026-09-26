@@ -5,6 +5,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {safeExternalUrl} from '@/utils/safeExternalUrl';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -345,11 +346,12 @@ export const InsightCard: React.FC<InsightCardProps> = ({insight}) => {
               alignItems: 'center',
               gap: 4,
             };
-            if (src.url) {
+            const safeUrl = safeExternalUrl(src.url);
+            if (safeUrl) {
               return (
                 <a
                   key={i}
-                  href={src.url}
+                  href={safeUrl}
                   target="_blank"
                   rel="noreferrer noopener"
                   style={{...baseStyle, color: 'var(--color-accent-300)'}}>
